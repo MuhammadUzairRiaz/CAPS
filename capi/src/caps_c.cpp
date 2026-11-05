@@ -119,6 +119,7 @@
 #include "caps/miller.hpp"
 #include "caps/cell_relax.hpp"
 #include "caps/table_tools.hpp"
+#include "caps/pointgroup.hpp"
 #include "caps/ring_edit.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/nano.hpp"
@@ -8941,6 +8942,7 @@ void geometry_orders(caps::System& s) {
 }
 }  // namespace
 
+static caps::Json point_group_json(const caps::PointGroupReport& pg);   // below, with caps_point_group
 extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t cap) {
   caps::Json r = caps::Json::object();
   try {
@@ -9365,6 +9367,13 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       for (const auto& b : m.bonds) s.bonds.push_back({b.i + base, b.j + base, b.order});
       s.has_mol = true;
       what = "Place " + j.text("name", "molecule");
+    } else if (op == "symmetrize_molecule") {   // v107 {tolerance}: the atoms made exactly symmetric under the point group found
+      const double before = caps::point_group(s, j.num("tolerance", 0.1)).max_deviation;
+      const auto pg = caps::symmetrize_molecule(s, j.num("tolerance", 0.1));
+      char b[200];
+      std::snprintf(b, sizeof b, "Symmetrise to %s (order %d): images meet to %.1e Å (were %.3f Å apart)", pg.group.c_str(), pg.order, pg.max_deviation, before);
+      what = b;
+      r["point_group"] = point_group_json(pg);
     } else if (op == "relax_cell") {   // v105 {hold: ["c", "beta", …], pressure (atm), ftol, steps, cutoff} (cell_relax.hpp)
       caps::CellRelaxOptions co;
       static const char* names[6] = {"a", "b", "c", "alpha", "beta", "gamma"};
@@ -10146,6 +10155,34 @@ extern "C" caps_doc* caps_reaction_path(caps_doc* d, const char* json, char* out
     report_out(r.dump(0), out, cap);
     return nullptr;
   }
+}
+
+// ---------------------------------------------------------------- molecular point groups (v107, pointgroup.hpp)
+static caps::Json point_group_json(const caps::PointGroupReport& pg) {
+  caps::Json r = caps::Json::object(), el = caps::Json::array(), nt = caps::Json::array(), c = caps::Json::array();
+  for (const auto& e : pg.elements) {
+    caps::Json x = caps::Json::object(), ax = caps::Json::array();
+    for (int k = 0; k < 3; ++k) ax.push_back(e.axis[size_t(k)]);
+    x["kind"] = e.kind, x["n"] = double(e.n), x["axis"] = ax;
+    el.push_back(x);
+  }
+  for (const auto& x : pg.notes) nt.push_back(x);
+  for (int k = 0; k < 3; ++k) c.push_back(pg.centre[size_t(k)]);
+  r["group"] = pg.group, r["order"] = double(pg.order), r["elements"] = el, r["max_deviation"] = pg.max_deviation, r["centre"] = c, r["notes"] = nt;
+  return r;
+}
+extern "C" int32_t caps_point_group(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    r = point_group_json(caps::point_group(d->frame, j.num("tolerance", 0.1)));
+    if (d->frame.cell.valid()) r["notes"].push_back(std::string("the structure has a cell: the point group is that of the atoms as they are, not of the crystal"));
+    r["ok"] = true;
+  } catch (const std::exception& ex) {
+    r = caps::Json::object();
+    r["ok"] = false, r["error"] = std::string(ex.what());
+  }
+  return report_out(r.dump(0), out, cap);
 }
 
 // ---------------------------------------------------------------- study-table tools (v106, table_tools.hpp)

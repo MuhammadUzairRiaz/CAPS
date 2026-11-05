@@ -1982,6 +1982,20 @@
     "--sdf": "page",
     "--structure": "partial: the page uses each row's own structure file"
    }
+  },
+  "pointgroup": {
+   "status": "gui",
+   "studio": "Unit cell › Point group (molecule)",
+   "where": "Views/Pages/CellEditorPage.axaml|Point group (molecule)",
+   "capi": [
+    "caps_point_group",
+    "caps_edit"
+   ],
+   "options": {
+    "--tolerance": "page",
+    "--tol": "page",
+    "--symmetrize": "page"
+   }
   }
  },
  "hidden_options": {

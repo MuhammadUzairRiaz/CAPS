@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 106, "ABI 106")
+check(caps.abi_version() == 107, "ABI 107")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -914,6 +914,13 @@ _sdfp = os.path.join(tempfile.mkdtemp(), "rows.sdf")
 _ws = caps.write_sdf_table([{"title": "m", "structure": _mp, "data": {"Tg (K)": 350}}, {"title": "none"}], _sdfp)
 check(_ws["records"] == 1 and ">  <Tg (K)>\n350\n" in open(_sdfp).read(), f"sdf table {_ws}")
 print("ok   histogram, write_sdf_table")
+
+# molecular point groups (ABI 107): benzene from SMILES is D6h; symmetrised, its images meet exactly
+_bz = caps.build.smiles("c1ccccc1", seed=1)
+_pg = _bz.point_group(0.15)
+_sy = _bz.symmetrize_molecule(0.15)
+check(_pg["group"] == "D6h" and _sy["group"] == "D6h" and _sy["order"] == 24 and _sy["max_deviation"] < 1e-8, f"point group {_pg['group']} {_sy}")
+print("ok   point_group, symmetrize_molecule")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))

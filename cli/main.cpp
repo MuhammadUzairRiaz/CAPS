@@ -93,6 +93,7 @@
 #include "caps/miller.hpp"
 #include "caps/cell_relax.hpp"
 #include "caps/table_tools.hpp"
+#include "caps/pointgroup.hpp"
 #include "caps/dpd.hpp"
 #include "caps/qeq.hpp"
 #include "caps/pores.hpp"
@@ -276,6 +277,8 @@ int usage() {
                "  caps convert FILE OUT.data|xyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA]   (.car: with its .mdf)\n"
                "  caps table   CSV [--sort 'A,-B'] [--hist COLUMN [--rule fd|scott|sturges|N]] [--sdf OUT.sdf --structure COLUMN]\n"
                "               a table's rows ordered by columns (- descending), a histogram of a column, an SD file of the rows\n"
+               "  caps pointgroup FILE [--tolerance 0.1] [--symmetrize -o OUT]   the molecule's point group and symmetry elements;\n"
+               "               --symmetrize makes it exactly symmetric\n"
                "  caps planes  FILE --hkl h,k,l [--shift 0.5] [--max N] [--json OUT]   lattice planes (hkl) of the cell: d-spacing,\n"
                "               normal, each plane cut to the cell, and the view angles that look down the normal\n"
                "  caps edit    FILE --ops 'OP ARGS; OP ARGS …' | --ops-file OPS.txt -o OUT   edits in order, atoms numbered from 1:\n"
@@ -6809,6 +6812,28 @@ int main(int argc, char** argv) {
       }
       std::printf("# r(Å) g(r)\n");
       for (auto [r, g] : rdf(s, ea, eb, rmax, dr, o.count("--inter"))) std::printf("%.3f %.5f\n", r, g);
+      return 0;
+    }
+    if (cmd == "pointgroup") {
+      const double tol = o.count("--tolerance") ? std::stod(o["--tolerance"]) : o.count("--tol") ? std::stod(o["--tol"]) : 0.1;
+      PointGroupReport r = point_group(s, tol);
+      if (o.count("--symmetrize")) {
+        if (!o.count("-o")) throw std::invalid_argument("--symmetrize needs -o OUT");
+        const double before = r.max_deviation;
+        r = symmetrize_molecule(s, tol);
+        std::printf("symmetrised: the images met to %.4f Å, now to %.2e Å\n", before, r.max_deviation);
+      }
+      std::printf("point group %s · order %d · largest image miss %.6f Å (tolerance %.3f Å)\n", r.group.c_str(), r.order, r.max_deviation, tol);
+      for (const auto& e : r.elements) {
+        const std::string k = e.kind == "sigma" ? "σ" : e.kind == "i" ? "i" : e.kind + (e.n > 0 ? std::to_string(e.n) : std::string("∞"));
+        if (e.kind == "i") std::printf("  i\n");
+        else std::printf("  %-4s %s (%.5f, %.5f, %.5f)\n", k.c_str(), e.kind == "sigma" ? "normal" : "axis", e.axis[0], e.axis[1], e.axis[2]);
+      }
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      if (o.count("--symmetrize")) {
+        write_structure_file(s, o["-o"]);
+        std::printf("wrote %s\n", o["-o"].c_str());
+      }
       return 0;
     }
     if (cmd == "planes") {

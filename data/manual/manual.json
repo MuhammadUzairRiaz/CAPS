@@ -3985,6 +3985,40 @@
    "tex": "d_{hkl} = \\frac{1}{\\left|h\\,\\mathbf a^* + k\\,\\mathbf b^* + l\\,\\mathbf c^*\\right|},\\qquad \\mathbf a^* = \\frac{\\mathbf b\\times\\mathbf c}{V},\\quad \\mathbf b^* = \\frac{\\mathbf c\\times\\mathbf a}{V},\\quad \\mathbf c^* = \\frac{\\mathbf a\\times\\mathbf b}{V}"
   },
   {
+   "id": "point-groups",
+   "group": "Growth",
+   "title": "Molecular point groups and symmetrisation",
+   "summary": "The symmetry operations a molecule has within a tolerance, its Schoenflies point group, and the molecule made exactly symmetric. The candidate axes, following the strategy of Beruski and Vidal, are the principal axes of inertia and the directions of atoms, of midpoints of like atoms, of differences and normals of pairs of like atoms, and of normals to planes through three like atoms (C₃ axes through the faces of octahedra and icosahedra). An operation holds when every atom lands within the tolerance on an atom of its element. C_n up to n = 8 and mirror planes are tested on every candidate, S_2n and S_n on every rotation axis, and the inversion. The group follows the usual flowchart: linear molecules give C∞v or D∞h; two or more C₃ axes give the cubic and icosahedral groups; n C₂ axes perpendicular to the principal C_n give Dnh, Dnd or Dn; otherwise Cnh, Cnv, S2n or Cn, and finally Cs, Ci or C1. The group is closed on the atoms' permutations, with each operation's sign, so a planar molecule's own mirror counts. Symmetrisation replaces every atom by the mean of its images over the group, g⁻¹ x_π(i), where each operation's matrix is the orthogonal polar factor that best carries the atoms onto their partners. It repeats, with the axes found again, until the atoms stop moving.",
+   "equation": "x_i ← (1/|G|) Σ_{g∈G} R_gᵀ x_{π_g(i)},  R_g = H_g (H_gᵀ H_g)^(−1/2),  H_g = Σ_i x_{π_g(i)} x_iᵀ",
+   "equation_note": "positions about the centre of mass; π_g the permutation of operation g; R_g its matrix, refitted at each pass",
+   "symbols": [
+    [
+     "G",
+     "the point group",
+     "—"
+    ],
+    [
+     "π_g",
+     "atom i's partner under g",
+     "—"
+    ],
+    [
+     "R_g",
+     "matrix of operation g",
+     "—"
+    ]
+   ],
+   "when": "Naming a molecule's symmetry before a QM or vibrational calculation, cleaning a drawn or embedded monomer, curative or cluster to exact symmetry, and checking a built cage or complex.",
+   "cites": [
+    "beruski2014"
+   ],
+   "source": "core/src/pointgroup.cpp",
+   "tested": "tests/test_pointgroup.cpp (water C2v, ammonia C3v, methane Td, benzene D6h, SF₆ Oh, a B₁₂ icosahedron Ih, staggered and eclipsed ethane D3d and D3h, H₂O₂ C2, CHFClBr C1, CO₂ D∞h and HCN C∞v, with the group orders 4, 6, 24, 24, 48, 120, 12, 12, 2, 1; methane and benzene with every atom moved by up to 0.04 Å symmetrised back to Td and D6h with the images meeting to 10⁻⁹ Å, equal bonds and the tetrahedral angle to 10⁻⁷°); tests/python/test_bindings.py",
+   "deviation": "C_n is tested up to n = 8. Pair candidates are used up to 300 atoms and three-atom planes up to 60; a larger molecule is searched along its principal axes and atom directions only. A cell, if any, is ignored: the group is that of the atoms as they are.",
+   "engines": "caps pointgroup FILE [--tolerance 0.1] [--symmetrize -o OUT]; Python Document.point_group(tolerance), symmetrize_molecule(tolerance); Studio Unit cell › Point group (molecule)",
+   "tex": "\\mathbf x_i \\leftarrow \\frac{1}{|G|}\\sum_{g\\in G} \\mathbf R_g^{\\mathsf T}\\,\\mathbf x_{\\pi_g(i)},\\qquad \\mathbf R_g = \\mathbf H_g\\left(\\mathbf H_g^{\\mathsf T}\\mathbf H_g\\right)^{-1/2},\\qquad \\mathbf H_g = \\sum_i \\mathbf x_{\\pi_g(i)}\\,\\mathbf x_i^{\\mathsf T}"
+  },
+  {
    "id": "cell-relax-held",
    "group": "Minimisers",
    "title": "Cell relaxation with held lattice parameters",

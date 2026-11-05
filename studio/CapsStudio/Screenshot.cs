@@ -250,6 +250,15 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("rpath: " + vm.PathResult + (vm.PathHasError ? " · error " + vm.PathError : ""));
             }
+            if (kv[0] == "pointgroup")   // pointgroup=TOL[|sym]: the point group found (and the molecule symmetrised)
+            {
+                var vm = w.ViewModel;
+                var f = kv[1].Split('|');
+                vm.PgTolerance = decimal.Parse(f[0], System.Globalization.CultureInfo.InvariantCulture);
+                if (f.Length > 1 && f[1] == "sym") vm.SymmetrizeMolecule(); else vm.FindPointGroup();
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("pointgroup: " + vm.PgText + " · " + vm.PgNote);
+            }
             if (kv[0] == "study")   // study=CSV|SORT|FILTER|COLOUR_COLUMN|hist: the Study page with a CSV loaded and the extras applied
             {
                 var vm = w.ViewModel;

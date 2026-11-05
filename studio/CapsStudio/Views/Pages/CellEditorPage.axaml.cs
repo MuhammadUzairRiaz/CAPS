@@ -24,6 +24,8 @@ public partial class CellEditorPage : PageBase
         if (change.Property == IsVisibleProperty && IsVisible) Show();
     }
     private void OnApply(object? s, RoutedEventArgs e) { Vm.ApplyCell(); Show(); }
+    private void OnFindPointGroup(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.FindPointGroup();
+    private void OnSymmetrizeMolecule(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.SymmetrizeMolecule();
     private void OnShowMiller(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.ShowMiller();
     private void OnViewMiller(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.ViewOntoMiller();
     private void OnHideMiller(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.HideMiller();

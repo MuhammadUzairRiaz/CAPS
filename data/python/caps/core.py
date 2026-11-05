@@ -1818,7 +1818,26 @@ def _relax_cell(self, hold=(), pressure: float = 0.0, ftol: float = 0.01, steps:
     r = self.edit(op="relax_cell", hold=[str(h) for h in hold], pressure=float(pressure), ftol=float(ftol), steps=int(steps), cutoff=float(cutoff))
     return r["cell_relax"]
 
+def _point_group(self, tolerance: float = 0.1) -> dict:
+    """The molecule's point group within tolerance (Å): {group (Schoenflies, "C*v"/"D*h" when linear), order, elements
+    [{kind C | S | sigma | i, n, axis}], max_deviation, centre, notes}."""
+    f = library().caps_point_group
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    r = _json_call(f, self._h, _enc(json.dumps({"tolerance": float(tolerance)})))
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "point group failed"))
+    return r
+
+
+def _symmetrize_molecule(self, tolerance: float = 0.1) -> dict:
+    """Makes the molecule exactly symmetric under the point group found within tolerance (Å); undoable. Returns the
+    point group after it."""
+    return self.edit(op="symmetrize_molecule", tolerance=float(tolerance))["point_group"]
+
 Document.miller = _miller
+Document.point_group = _point_group
+Document.symmetrize_molecule = _symmetrize_molecule
 Document.relax_cell = _relax_cell
 Document.clear_planes = _clear_planes
 

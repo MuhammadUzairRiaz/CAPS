@@ -68,6 +68,22 @@
           <Border Classes="pcard">
             <StackPanel Spacing="6">
               <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small" Content="Symmetrise" Click="OnSymmetrizeMolecule" IsEnabled="{Binding HasDocument}" Margin="6,0,0,0"
+                        ToolTip.Tip="Move the atoms so the molecule is exactly symmetric under the group found (undo with ⌘Z)" />
+                <Button DockPanel.Dock="Right" Classes="small" Content="Find" Click="OnFindPointGroup" IsEnabled="{Binding HasDocument}" ToolTip.Tip="The molecule's point group within the tolerance" />
+                <TextBlock Text="Point group (molecule)" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Tolerance (Å)" Classes="label" VerticalAlignment="Center" />
+                <NumericUpDown Value="{Binding PgTolerance}" Minimum="0.001" Maximum="1" Increment="0.05" FormatString="0.000" Width="96" />
+              </StackPanel>
+              <TextBlock Text="{Binding PgText}" FontSize="12.5" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding PgNote}" Classes="dim" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="6">
+              <DockPanel>
                 <Button DockPanel.Dock="Right" Classes="small" Content="Hide" Click="OnHideMiller" IsVisible="{Binding MillerShown}" Margin="6,0,0,0" ToolTip.Tip="Remove the planes from the view" />
                 <TextBlock Text="Lattice planes" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
               </DockPanel>
