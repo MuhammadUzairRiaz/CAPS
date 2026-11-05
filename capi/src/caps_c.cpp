@@ -9152,9 +9152,24 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       if (at.empty()) throw std::invalid_argument("pick or select the atoms to move");
       if (!j.has("by") || !j["by"].is_array() || j["by"].size() != 3) throw std::invalid_argument("translate needs by: [dx, dy, dz]");
       const caps::Vec3 by{j["by"][0].number(), j["by"][1].number(), j["by"][2].number()};
-      for (uint32_t a : at) s.atoms[a].pos = s.atoms[a].pos + by;
-      char b[96];
-      std::snprintf(b, sizeof b, "Move %zu atom(s) by %.2f Å", at.size(), caps::norm(by));
+      const bool mirror = j.has("symmetric") && j["symmetric"].kind() == caps::Json::Bool && j["symmetric"].boolean() && !s.symmetry.ops.empty() &&
+                          caps::symmetry_holds(s, s.symmetry, 0.05);
+      size_t moved = 0;
+      if (mirror) {   // v99: each atom's symmetry images moved with it (the kept space group)
+        std::vector<char> done(s.atoms.size(), 0);
+        for (uint32_t a : at) {
+          if (done[a]) continue;
+          const caps::System pre = s;
+          moved += caps::move_atom_symmetric(s, a, s.atoms[a].pos + by);
+          for (size_t k = 0; k < s.atoms.size(); ++k)
+            if (caps::norm(s.atoms[k].pos - pre.atoms[k].pos) > 0) done[k] = 1;
+        }
+      } else {
+        for (uint32_t a : at) s.atoms[a].pos = s.atoms[a].pos + by;
+        moved = at.size();
+      }
+      char b[120];
+      std::snprintf(b, sizeof b, "Move %zu atom(s) by %.2f Å%s", moved, caps::norm(by), mirror ? " with their symmetry images" : "");
       what = b;
     } else if (op == "set_geometry") {   // {atoms: [i, j (, k (, l))], value}: the length, angle or dihedral made exact
       if (!j.has("atoms") || !j["atoms"].is_array()) throw std::invalid_argument("set_geometry needs atoms: [i, j …]");
@@ -10444,8 +10459,11 @@ extern "C" int32_t caps_centre_on(caps_doc* d, const int32_t* idx, int32_t n) {
 extern "C" int32_t caps_set_cell(caps_doc* d, const char* json) {
   return guard([&] {
     const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
-    const caps::Cell nc = caps::cell_parameters(j.num("a", 10), j.num("b", 10), j.num("c", 10), j.num("alpha", 90), j.num("beta", 90), j.num("gamma", 90));
+    caps::Cell nc = caps::cell_parameters(j.num("a", 10), j.num("b", 10), j.num("c", 10), j.num("alpha", 90), j.num("beta", 90), j.num("gamma", 90));
     if (!(nc.volume() > 1e-6)) throw std::invalid_argument("these parameters give no volume");
+    // v99 symmetric: the cell made to fit the kept space group's crystal system (the metric averaged over its point group)
+    if (j.has("symmetric") && j["symmetric"].kind() == caps::Json::Bool && j["symmetric"].boolean() && !d->traj.topology.symmetry.ops.empty())
+      nc = caps::symmetric_cell(nc, d->traj.topology.symmetry);
     const bool scale = !j.has("scale") || j["scale"].kind() != caps::Json::Bool || j["scale"].boolean();
     const caps::Cell old = d->traj.topology.cell;
     push_undo(d, "Cell " + g6(j.num("a", 10)) + " × " + g6(j.num("b", 10)) + " × " + g6(j.num("c", 10)) + (scale ? " (atoms scaled)" : ""));
@@ -10461,6 +10479,47 @@ extern "C" int32_t caps_set_cell(caps_doc* d, const char* json) {
   });
 }
 
+// v99 the space group kept with the structure: {op: "info" | "find" (tolerance Å) | "clear"} → {ok, kept, name, number,
+// operations, holds, worst, asymmetric, system}
+extern "C" int32_t caps_symmetry(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const std::string op = j.text("op", "info");
+    if (op == "find") {
+      const caps::System s = d->traj.frame(d->current);
+      caps::Symmetry g = caps::symmetry_of(s, j.num("tolerance", 0.1));
+      push_undo(d, "Keep space group " + g.name);
+      d->traj.topology.symmetry = std::move(g);
+      refresh(d);
+    } else if (op == "clear") {
+      push_undo(d, "Space group dropped (P 1)");
+      d->traj.topology.symmetry = {};
+      refresh(d);
+    } else if (op != "info") {
+      throw std::invalid_argument("symmetry: op info, find or clear");
+    }
+    const caps::System s = d->traj.frame(d->current);
+    const auto& g = d->traj.topology.symmetry;
+    r["ok"] = true;
+    r["kept"] = !g.ops.empty();
+    r["name"] = g.ops.empty() ? std::string("P 1") : g.name;
+    r["number"] = double(g.ops.empty() ? 1 : g.number);
+    r["operations"] = double(g.ops.size());
+    r["system"] = g.number > 0 ? caps::crystal_system(g.number) : std::string(g.ops.empty() ? "triclinic" : "");
+    double worst = 0;
+    const bool holds = !g.ops.empty() && caps::symmetry_holds(s, g, 0.05, &worst);
+    r["holds"] = holds;
+    r["worst"] = worst;
+    r["asymmetric"] = double(holds ? caps::asymmetric_unit(s, g, 0.05).size() : s.atoms.size());
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
 extern "C" int32_t caps_supercell(caps_doc* d, int32_t na, int32_t nb, int32_t nc) {
   return guard([&] {
     if (na < 1 || nb < 1 || nc < 1 || na * nb * nc > 1000) throw std::invalid_argument("supercell: 1 … 1000 copies");
@@ -10474,6 +10533,7 @@ extern "C" int32_t caps_supercell(caps_doc* d, int32_t na, int32_t nb, int32_t n
     for (const auto& a : top.atoms) maxmol = std::max(maxmol, a.mol);
     std::vector<caps::Vec3> out;
     caps::System s = top;
+    s.symmetry = {};   // the operations belong to the old cell
     s.atoms.clear();
     s.bonds.clear();
     int copy = 0;

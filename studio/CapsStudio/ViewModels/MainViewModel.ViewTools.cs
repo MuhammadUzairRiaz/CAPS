@@ -62,7 +62,7 @@ public sealed partial class MainViewModel
     public void TranslateAtoms(int[] atoms, double[] by)
     {
         if (atoms.Length == 0 || by.Length != 3) return;
-        RunEdit(new { op = "translate", atoms, by });
+        RunEdit(new { op = "translate", atoms, by, symmetric = _sgMirror });
     }
 
     /// <summary>A screen drag (view points) as a move in the view plane, from the projection of the atoms: the map

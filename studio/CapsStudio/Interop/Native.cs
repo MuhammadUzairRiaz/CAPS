@@ -525,6 +525,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_molecule_info")] public static extern int MoleculeInfo(IntPtr doc, int atom, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_sasa")] public static extern int Sasa(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_atom_values")] public static extern int SetAtomValues(IntPtr doc, double[]? values, int n, int ramp);
+    [DllImport(Lib, EntryPoint = "caps_symmetry")] public static extern int Symmetry(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_cell")] public static extern int SetCell(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_supercell")] public static extern int Supercell(IntPtr doc, int na, int nb, int nc);
     [DllImport(Lib, EntryPoint = "caps_recipe_check")] public static extern int RecipeCheck([MarshalAs(UnmanagedType.LPUTF8Str)] string recipe, byte[]? outJson, int cap);
@@ -2303,6 +2304,8 @@ public sealed class CapsDocument : IDisposable
     }
     public void SetAtomValues(double[]? values, int ramp = 0) { using (Hold()) { Alive(); Native.SetAtomValues(H, values, values?.Length ?? 0, ramp); } }
     public void SetCell(string json) { using (Hold()) { Alive(); Check(Native.SetCell(H, json)); } }
+    /// <summary>The space group kept with the structure (caps_symmetry): info, find or clear, JSON.</summary>
+    public string Symmetry(string json) { using (Hold()) { Alive(); return JsonCallOnce((b, c) => Native.Symmetry(H, json, b, c)); } }
     public void Supercell(int na, int nb, int nc) { using (Hold()) { Alive(); Check(Native.Supercell(H, na, nb, nc)); } }
     /// <summary>The periodic box: crossing molecules, pieces when wrapped, one molecule measured three ways.</summary>
     public string Periodic(string json) { using (Hold()) { Alive(); return JsonCallOnce((b, c) => Native.Periodic(H, json, b, c)); } }

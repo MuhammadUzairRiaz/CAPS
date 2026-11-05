@@ -36,6 +36,20 @@ struct Cell {
   Vec3 wrap(const Vec3& r) const;     // position folded into the cell
 };
 
+// A crystallographic symmetry operation on fractional coordinates: f′ = R f + t.
+struct SymOp {
+  double R[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+  double t[3] = {0, 0, 0};
+};
+
+// The space group a structure was built in, read with or found to have (caps/spacegroup.hpp), as its operations in the
+// structure's own fractional coordinates. Kept with the structure; writers check that it still holds before using it.
+struct Symmetry {
+  std::string name;            // Hermann–Mauguin, "P 32 2 1"
+  int number = 0;              // International Tables number, 0 unknown
+  std::vector<SymOp> ops;      // empty: none kept (P 1)
+};
+
 struct Atom {
   int64_t id = 0;        // file identifier (1-based in most formats)
   int64_t mol = 0;       // molecule identifier, 0 = none
@@ -109,6 +123,7 @@ struct System {
   bool has_charges = false;
   bool has_mol = false;
   bool unwrapped = false;   // positions are unwrapped (xu/yu/zu or image flags applied)
+  Symmetry symmetry;        // the space group kept with the structure (empty: none)
   std::vector<std::string> notes;  // what the reader inferred or skipped
   std::shared_ptr<const ExplicitTopology> topology;   // bonded terms given term by term, or null
   std::shared_ptr<const ForceField> forcefield;       // the force field the file carries for these atoms (AMBER prmtop, a CAPS data file), or null

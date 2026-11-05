@@ -3875,6 +3875,43 @@
    "engines": []
   },
   {
+   "id": "space-group-kept",
+   "group": "Growth",
+   "title": "The space group kept with the structure",
+   "summary": "A structure keeps the space group it was read with (a CIF's operations, when every operation maps the ordered atoms onto themselves), built in (the crystal builder) or found (the highest group its atoms have within a tolerance, as operations in the structure's own coordinates). A CIF is then written as the asymmetric unit, one atom of every orbit, with the operations, as long as the group still holds after any edits; otherwise as P 1. A supercell or a primitive cell drops the group, because its operations belong to the old cell. The cell editor fits six numbers to the crystal system by averaging the lattice metric over the group's rotations. Moving an atom moves every symmetry image of it. On a special position the move is first projected onto the displacements the site symmetry allows, so the atom stays there.",
+   "equation": "G = MᵀM,  G ← (1/|P|) Σ_{R∈P} Rᵀ G R;  Δ ← (1/|S|) Σ_{R∈S} R Δ;  f_j′ = R(f_i + Δ) + t + n",
+   "equation_note": "a lattice's metric is unchanged by its symmetry operations (RᵀGR = G); S the site-symmetry group of the moved atom, n the lattice vector of each image",
+   "symbols": [
+    [
+     "G",
+     "metric tensor of the cell",
+     "Å²"
+    ],
+    [
+     "P",
+     "point group (the distinct rotation parts)",
+     "—"
+    ],
+    [
+     "S",
+     "site-symmetry group",
+     "—"
+    ],
+    [
+     "Δ",
+     "move in fractional coordinates",
+     "—"
+    ]
+   ],
+   "when": "Crystals of fillers and polymers kept in their space group through edits, and CIFs others can read with their symmetry.",
+   "cites": [],
+   "source": "core/src/spacegroup.cpp",
+   "tested": "tests/test_symmetry_kept.cpp (rock salt built in F m -3 m written as two sites with 192 operations and read back as the same eight atoms; quartz kept as P 32 2 1, written as two sites, found again after the group is stripped, written as P 1 once an edit breaks it; a cubic cell from a = 5, b = 6, c = 7, β = 95° becomes a = b = c = √((25 + 36 + 49)/3) with right angles, quartz's γ = 118° becomes 120° with the fractional coordinates kept; an oxygen's move carries its five images, a silicon on a twofold axis moves along it with its two images, and the group holds after both); tests/python/test_bindings.py symmetry",
+   "deviation": "fitting the cell averages the whole metric, so lengths can change too (quartz a = 4.913 Å with γ = 117° gives a = 4.988 Å with γ = 120°): set the lengths after the angles if they matter. Other writers than CIF write the full cell.",
+   "engines": [],
+   "tex": "\\mathbf G = \\mathbf M^{\\mathsf T}\\mathbf M,\\qquad \\mathbf G \\leftarrow \\frac{1}{|P|}\\sum_{\\mathbf R\\in P}\\mathbf R^{\\mathsf T}\\mathbf G\\,\\mathbf R,\\qquad \\Delta \\leftarrow \\frac{1}{|S|}\\sum_{\\mathbf R\\in S}\\mathbf R\\,\\Delta,\\qquad \\mathbf f_j' = \\mathbf R(\\mathbf f_i + \\Delta) + \\mathbf t + \\mathbf n"
+  },
+  {
    "id": "copolymer-sequences",
    "group": "Growth",
    "title": "Copolymers of several units: terminal and penultimate models, drift with conversion",

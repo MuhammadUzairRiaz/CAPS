@@ -1863,6 +1863,21 @@
     "--json": "partial: the Studio shows the result on the page",
     "--cube": "cli: the distance field as a Gaussian cube"
    }
+  },
+  "symmetry": {
+   "status": "gui",
+   "studio": "Studio › Unit cell › Space group",
+   "where": "Views/Pages/CellEditorPage.axaml|Space group",
+   "capi": [
+    "caps_symmetry",
+    "caps_set_cell"
+   ],
+   "options": {
+    "--find": "page",
+    "--clear": "page",
+    "--cell": "page",
+    "--tolerance": "cli: the page finds the group within 0.1 Å"
+   }
   }
  },
  "hidden_options": {

@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 98, "ABI 98")
+check(caps.abi_version() == 99, "ABI 99")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -799,6 +799,23 @@ _pn = _lta.pores(probe=1.2)
 check(_pn["channel_dims"] == 3 and any(not c["channel"] for c in _pn["clusters"]) and _pn["lcd"] > _pn["pld"] > 0, f"pores lta {_pn['lcd']:.2f} {_pn['pld']:.2f}")
 check(_pn["asa"] > 0 and _pn["nasa"] > 0 and abs(_pn["asa_mass"] / _pn["asa_volume"] - 1 / _pn["density"]) < 1e-9, "pores surface: m²/g = m²/cm³ / ρ")
 print("ok   pores: channels, pockets, LCD, PLD, surface")
+
+# the space group kept (ABI 99): quartz keeps P 32 2 1; a cell fitted to it; a mirrored move keeps it; the CIF is 2 sites
+_sq = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "alpha-quartz.cif"))
+_sy = _sq.symmetry()
+check(_sy["kept"] and _sy["number"] == 154 and _sy["operations"] == 6 and _sy["holds"] and _sy["asymmetric"] == 2, f"symmetry info {_sy}")
+_sq.set_cell(4.9, 5.0, 5.4, 91, 89, 118, symmetric=True)
+check(_sq.symmetry()["holds"], "symmetric cell keeps the group")
+_o = next(i for i in range(_sq.atoms) if _sq.atom(i)["element"] == "O")
+_mv = _sq.edit(op="translate", atoms=[_o], by=[0.05, 0.02, -0.03], symmetric=True)
+check(_sq.symmetry()["holds"], f"mirrored move keeps the group {_mv}")
+_cif = os.path.join(tempfile.mkdtemp(), "quartz_sym.cif")
+_sq.save(_cif)
+check(sum(1 for l in open(_cif) if l.startswith(("Si1 ", "O1 ", "Si2 ", "O2 "))) == 2, "CIF as the asymmetric unit")
+check(caps.open(_cif).symmetry()["operations"] == 6, "the CIF read back keeps the group")
+_sq.symmetry("clear")
+check(not _sq.symmetry()["kept"], "symmetry cleared")
+print("ok   symmetry: kept, cell by crystal system, mirrored moves, asymmetric CIF")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))

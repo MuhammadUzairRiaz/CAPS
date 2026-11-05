@@ -51,6 +51,21 @@
             </StackPanel>
           </Border>
           <Border Classes="pcard">
+            <StackPanel Spacing="6">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small" Content="Drop" Click="OnDropGroup" IsVisible="{Binding SgKept}" Margin="6,0,0,0" ToolTip.Tip="Forget the group: the structure is P 1 (undoable)" />
+                <Button DockPanel.Dock="Right" Classes="small" Content="Find" Click="OnFindGroup" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Find the highest space group the atoms have (0.1 Å) and keep it" />
+                <TextBlock Text="Space group" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <TextBlock Text="{Binding SgText}" FontSize="12.5" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding SgNote}" Classes="dim" TextWrapping="Wrap" />
+              <CheckBox Content="Apply fits the cell to the crystal system" IsChecked="{Binding SgFitCell}" IsEnabled="{Binding SgKept}"
+                        ToolTip.Tip="The metric averaged over the group's rotations: cubic a = b = c, tetragonal a = b, hexagonal γ = 120°, right angles where the group has them" />
+              <CheckBox Content="Moving an atom moves its symmetry images" IsChecked="{Binding SgMirror}" IsEnabled="{Binding SgKept}"
+                        ToolTip.Tip="On a special position the move keeps to the directions its site symmetry allows" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
             <StackPanel Spacing="8">
               <TextBlock Text="Supercell" FontSize="13.5" FontWeight="SemiBold" />
               <StackPanel Orientation="Horizontal" Spacing="8">

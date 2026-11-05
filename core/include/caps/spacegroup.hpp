@@ -20,10 +20,6 @@
 
 namespace caps {
 
-struct SymOp {
-  double R[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
-  double t[3] = {0, 0, 0};
-};
 SymOp parse_symop(std::string s);          // "x,y,z+1/2"
 std::string symop_string(const SymOp& op);
 
@@ -78,6 +74,25 @@ struct SymmetryFound {
   std::vector<CrystalSite> sites;    // asymmetric unit in the setting's origin
 };
 SymmetryFound find_symmetry(const System& crystal, double tolerance = 0.1);
+
+// The space group kept with a structure (System::symmetry):
+//  symmetry_of          find_symmetry's group as operations in the structure's own coordinates (t′ = t + (I − R) s).
+//  symmetry_holds       every operation maps every atom onto an atom of the same element within `tolerance` Å; `worst`
+//                       gets the largest such distance.
+//  asymmetric_unit      one atom of every orbit, in the structure's order (what a CIF lists with the operations).
+//  symmetric_cell       the lattice metric G = MᵀM made invariant under the point group, G ← (1/|P|) Σ RᵀGR (a lattice's
+//                       metric is unchanged by its symmetry operations), so any six numbers become a cell of the crystal
+//                       system: cubic a = b = c, angles 90°; hexagonal a = b, γ = 120°; and so on. The cell keeps a along x.
+//  set_cell_symmetric   the cell from six parameters, made symmetric, the atoms kept at their fractional coordinates.
+//  move_atom_symmetric  an atom moved and every symmetry image of it moved to match; on a special position the move is
+//                       first projected onto the displacements its site symmetry allows ((1/|S|) Σ_S R Δ), so the atom
+//                       stays on it. Returns the atoms moved.
+Symmetry symmetry_of(const System& s, double tolerance = 0.1);
+bool symmetry_holds(const System& s, const Symmetry& g, double tolerance = 0.05, double* worst = nullptr);
+std::vector<size_t> asymmetric_unit(const System& s, const Symmetry& g, double tolerance = 0.05);
+Cell symmetric_cell(const Cell& c, const Symmetry& g);
+void set_cell_symmetric(System& s, double a, double b, double c, double alpha, double beta, double gamma);
+size_t move_atom_symmetric(System& s, size_t atom, const Vec3& position, double tolerance = 0.05);
 
 // The primitive cell of a centred lattice; centring 'A' 'B' 'C' 'I' 'F' or 'R' (hexagonal axes). 'P' returns a copy.
 System primitive_cell(const System& crystal, char centring);

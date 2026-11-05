@@ -317,9 +317,15 @@ std::string symop_string(const SymOp& op) {
     }
     const double t = op.t[i] - std::floor(op.t[i] + 1e-9);
     if (t > 1e-6) {
-      int best = 1;
+      int best = 0;
       for (int d : {2, 3, 4, 6, 8, 12, 24}) if (std::fabs(t * d - std::round(t * d)) < 1e-6) { best = d; break; }
-      c += "+" + std::to_string(int(std::lround(t * best))) + "/" + std::to_string(best);
+      if (best) {
+        c += "+" + std::to_string(int(std::lround(t * best))) + "/" + std::to_string(best);
+      } else {   // not a rational of the usual denominators (an origin shift): written as a decimal
+        char v[32];
+        std::snprintf(v, sizeof v, "+%.6f", t);
+        c += v;
+      }
     }
     out += (i ? "," : "") + (c.empty() ? std::string("0") : c);
   }
@@ -456,6 +462,7 @@ System build_crystal(const CrystalSpec& spec, CrystalReport* report) {
   s.unwrapped = true;
   R.atoms_per_cell = s.atoms.size();
   R.volume = s.cell.volume();
+  s.symmetry = {sg->hm, sg->number, ops};
   if (spec.supercell[0] * spec.supercell[1] * spec.supercell[2] > 1) s = supercell(s, spec.supercell[0], spec.supercell[1], spec.supercell[2]);
   s.bonds = crystal_bonds(s);
   char b[200];
@@ -582,6 +589,7 @@ System primitive_cell(const System& s, char centring) {
     out.atoms.push_back(b);
   }
   out.bonds = crystal_bonds(out);
+  out.symmetry = {};
   out.notes.insert(out.notes.begin(), "primitive cell of the " + std::string(1, char(std::toupper(static_cast<unsigned char>(centring)))) + "-centred lattice · " +
                                           std::to_string(out.atoms.size()) + " atoms (from " + std::to_string(s.atoms.size()) + ")");
   return out;
@@ -669,6 +677,150 @@ SymmetryFound find_symmetry(const System& s, double tol) {
   r.key = "1"; r.hm = "P 1"; r.number = 1; r.system = "triclinic"; r.operations = 1;
   for (size_t i = 0; i < n; ++i) r.sites.push_back({s.atoms[i].name, s.atoms[i].element, f[i], 1});
   return r;
+}
+
+// ---------------------------------------------------------------- the space group kept with the structure
+
+Symmetry symmetry_of(const System& s, double tol) {
+  const SymmetryFound f = find_symmetry(s, tol);
+  Symmetry g;
+  g.name = f.hm, g.number = f.number;
+  const auto* sg = find_space_group(f.key);
+  if (!sg) return g;
+  for (const auto& op : hall_operations(sg->hall)) {
+    SymOp o = op;   // in the structure's coordinates: t′ = t + (I − R) s
+    for (int i = 0; i < 3; ++i) {
+      double v = 0;
+      for (int k = 0; k < 3; ++k) v += ((i == k) - op.R[i][k]) * f.origin[size_t(k)];
+      o.t[i] = op.t[i] + v;
+      o.t[i] -= std::floor(o.t[i] + 1e-9);
+    }
+    g.ops.push_back(o);
+  }
+  return g;
+}
+
+bool symmetry_holds(const System& s, const Symmetry& g, double tol, double* worst) {
+  if (worst) *worst = 0;
+  if (!s.cell.valid() || g.ops.empty()) return false;
+  const size_t n = s.atoms.size();
+  std::vector<Vec3> f(n);
+  for (size_t i = 0; i < n; ++i) f[i] = s.cell.to_fractional(s.atoms[i].pos);
+  std::map<int, std::vector<size_t>> by;
+  for (size_t i = 0; i < n; ++i) by[s.atoms[i].element].push_back(i);
+  double w = 0;
+  for (const auto& op : g.ops)
+    for (size_t i = 0; i < n; ++i) {
+      const Vec3 h = apply_op(op, f[i]);
+      double best = 1e300;
+      for (size_t j : by[s.atoms[i].element]) best = std::min(best, frac_distance(s.cell, h - f[j]));
+      w = std::max(w, best);
+      if (w > tol && !worst) return false;
+    }
+  if (worst) *worst = w;
+  return w <= tol;
+}
+
+std::vector<size_t> asymmetric_unit(const System& s, const Symmetry& g, double tol) {
+  const size_t n = s.atoms.size();
+  std::vector<Vec3> f(n);
+  for (size_t i = 0; i < n; ++i) f[i] = s.cell.to_fractional(s.atoms[i].pos);
+  std::vector<char> done(n, 0);
+  std::vector<size_t> keep;
+  for (size_t i = 0; i < n; ++i) {
+    if (done[i]) continue;
+    keep.push_back(i);
+    for (const auto& op : g.ops) {
+      const Vec3 h = apply_op(op, f[i]);
+      for (size_t j = 0; j < n; ++j)
+        if (!done[j] && s.atoms[j].element == s.atoms[i].element && frac_distance(s.cell, h - f[j]) < tol) done[j] = 1;
+    }
+    done[i] = 1;
+  }
+  return keep;
+}
+
+Cell symmetric_cell(const Cell& c, const Symmetry& g) {
+  const Vec3 e[3] = {c.a, c.b, c.c};
+  double G[3][3], A[3][3] = {};
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 3; ++j) G[i][j] = dot(e[i], e[j]);
+  // the distinct rotation parts (the point group); Rᵀ G R averaged over them
+  std::vector<const SymOp*> rots;
+  for (const auto& op : g.ops) {
+    bool seen = false;
+    for (const auto* r : rots) {
+      bool same = true;
+      for (int i = 0; i < 3 && same; ++i)
+        for (int j = 0; j < 3 && same; ++j) same = std::fabs(r->R[i][j] - op.R[i][j]) < 1e-9;
+      seen = seen || same;
+    }
+    if (!seen) rots.push_back(&op);
+  }
+  if (rots.empty()) return c;
+  for (const auto* r : rots)
+    for (int i = 0; i < 3; ++i)
+      for (int j = 0; j < 3; ++j) {
+        double v = 0;
+        for (int k = 0; k < 3; ++k)
+          for (int l = 0; l < 3; ++l) v += r->R[k][i] * G[k][l] * r->R[l][j];
+        A[i][j] += v / double(rots.size());
+      }
+  const double a = std::sqrt(A[0][0]), b = std::sqrt(A[1][1]), cc = std::sqrt(A[2][2]);
+  auto ang = [](double x) { return std::acos(std::clamp(x, -1.0, 1.0)) * 180 / M_PI; };
+  Cell out = cell_from(a, b, cc, ang(A[1][2] / (b * cc)), ang(A[0][2] / (a * cc)), ang(A[0][1] / (a * b)));
+  out.origin = c.origin;
+  out.periodic = c.periodic;
+  return out;
+}
+
+void set_cell_symmetric(System& s, double a, double b, double c, double alpha, double beta, double gamma) {
+  Cell want = cell_from(a, b, c, alpha, beta, gamma);
+  if (!(want.volume() > 1e-9)) throw CrystalError("these cell parameters give no volume");
+  if (!s.symmetry.ops.empty()) want = symmetric_cell(want, s.symmetry);
+  want.origin = s.cell.origin;
+  want.periodic = s.cell.periodic;
+  const Cell old = s.cell;
+  for (auto& at : s.atoms) at.pos = want.to_cartesian(old.to_fractional(at.pos));
+  s.cell = want;
+}
+
+size_t move_atom_symmetric(System& s, size_t i, const Vec3& pos, double tol) {
+  if (i >= s.atoms.size()) throw std::out_of_range("move: no atom " + std::to_string(i + 1));
+  const auto& ops = s.symmetry.ops;
+  if (ops.empty() || !s.cell.valid() || !symmetry_holds(s, s.symmetry, tol)) {
+    s.atoms[i].pos = pos;
+    return 1;
+  }
+  const size_t n = s.atoms.size();
+  std::vector<Vec3> f(n);
+  for (size_t k = 0; k < n; ++k) f[k] = s.cell.to_fractional(s.atoms[k].pos);
+  const Vec3 fi = f[i], d = s.cell.to_fractional(pos) - fi;
+  // the site-symmetry group: the move projected onto what it leaves invariant
+  Vec3 dp{0, 0, 0};
+  int ns = 0;
+  for (const auto& op : ops)
+    if (frac_distance(s.cell, apply_op(op, fi) - fi) < tol) {
+      SymOp r = op;
+      for (double& t : r.t) t = 0;
+      dp = dp + apply_op(r, d);
+      ++ns;
+    }
+  dp = dp * (1.0 / std::max(1, ns));
+  std::vector<char> done(n, 0);
+  size_t moved = 0;
+  for (const auto& op : ops) {
+    const Vec3 h = apply_op(op, fi);
+    for (size_t j = 0; j < n; ++j) {
+      if (done[j] || s.atoms[j].element != s.atoms[i].element || frac_distance(s.cell, h - f[j]) >= tol) continue;
+      Vec3 shift = f[j] - h;
+      for (auto& x : shift) x = std::round(x);
+      s.atoms[j].pos = s.cell.to_cartesian(apply_op(op, fi + dp) + shift);
+      done[j] = 1, ++moved;
+      break;
+    }
+  }
+  return moved;
 }
 
 }  // namespace caps

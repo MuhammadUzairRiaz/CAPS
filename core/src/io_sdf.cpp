@@ -7,6 +7,7 @@
 #include <map>
 
 #include "caps/elements.hpp"
+#include "caps/spacegroup.hpp"
 #include "caps/io.hpp"
 #include "caps/typing.hpp"
 #include "io_util.hpp"
@@ -212,14 +213,32 @@ void write_cif(const System& s, const std::string& path) {
   std::string formula;
   for (const auto& e : order) formula += (formula.empty() ? "" : " ") + e + (nel[e] > 1 ? std::to_string(nel[e]) : "");
   // both the current (_space_group_*) and the older (_symmetry_*) names, so every reader finds the space group
+  // the space group kept with the structure, when every operation still maps the atoms onto themselves: the asymmetric
+  // unit and the operations; P 1 otherwise
+  const bool keep_sym = s.symmetry.ops.size() > 1 && symmetry_holds(s, s.symmetry, 0.05);
+  const std::string hm = keep_sym && !s.symmetry.name.empty() ? s.symmetry.name : keep_sym ? std::string("?") : std::string("P 1");
+  const int itn = keep_sym ? s.symmetry.number : 1;
   out << "# written by CAPS\ndata_" << name << "\n_chemical_formula_sum '" << formula << "'\n"
-      << "_space_group_name_H-M_alt 'P 1'\n_space_group_IT_number 1\n_symmetry_space_group_name_H-M 'P 1'\n_symmetry_Int_Tables_number 1\n";
+      << "_space_group_name_H-M_alt '" << hm << "'\n";
+  if (itn > 0) out << "_space_group_IT_number " << itn << "\n";
+  out << "_symmetry_space_group_name_H-M '" << hm << "'\n";
+  if (itn > 0) out << "_symmetry_Int_Tables_number " << itn << "\n";
   std::snprintf(b, sizeof b, "_cell_length_a %.6f\n_cell_length_b %.6f\n_cell_length_c %.6f\n_cell_angle_alpha %.6f\n_cell_angle_beta %.6f\n_cell_angle_gamma %.6f\n_cell_volume %.4f\n",
                 la, lb, lc, ang(c.b, c.c), ang(c.a, c.c), ang(c.a, c.b), c.volume());
-  out << b << "loop_\n_space_group_symop_operation_xyz\n'x, y, z'\nloop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\n";
+  out << b << "loop_\n_space_group_symop_operation_xyz\n";
+  if (keep_sym)
+    for (const auto& op : s.symmetry.ops) out << "'" << symop_string(op) << "'\n";
+  else
+    out << "'x, y, z'\n";
+  out << "loop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\n";
   if (s.has_charges) out << "_atom_site_charge\n";
   std::map<int, int> count;
-  for (const auto& a : s.atoms) {
+  std::vector<size_t> rows;
+  if (keep_sym) rows = asymmetric_unit(s, s.symmetry, 0.05);
+  else
+    for (size_t i = 0; i < s.atoms.size(); ++i) rows.push_back(i);
+  for (size_t r : rows) {
+    const Atom& a = s.atoms[r];
     Vec3 f = c.to_fractional(a.pos);
     for (int k = 0; k < 3; ++k) f[size_t(k)] -= std::floor(f[size_t(k)]);
     const char* sym = element(a.element).symbol;

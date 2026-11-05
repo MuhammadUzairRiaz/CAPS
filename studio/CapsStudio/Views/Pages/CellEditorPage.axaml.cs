@@ -24,6 +24,8 @@ public partial class CellEditorPage : PageBase
         if (change.Property == IsVisibleProperty && IsVisible) Show();
     }
     private void OnApply(object? s, RoutedEventArgs e) { Vm.ApplyCell(); Show(); }
+    private void OnFindGroup(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.FindSpaceGroup();
+    private void OnDropGroup(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.DropSpaceGroup();
     private void OnSupercell(object? s, RoutedEventArgs e) { Vm.MakeSupercell(); Show(); }
     private void OnPreset(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is CellPresetRow p) Vm.UseCellPreset(p); }
 }

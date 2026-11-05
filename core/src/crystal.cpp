@@ -710,6 +710,19 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
   s.notes.insert(s.notes.begin(), std::to_string(ops.size()) + " symmetry operations · " + std::to_string(s.atoms.size()) + " atoms in the " +
                                       (random ? "supercell" : "cell") + " (" + hill(count) + ") · " + std::to_string(s.bonds.size()) + " bonds");
   for (const auto& n : R.notes) s.notes.push_back(n);
+  // the space group stays with an ordered cell that its operations still map onto itself
+  if (ops.size() > 1 && !random && R.groups == 0 && nplaces == 0) {
+    Symmetry g;
+    for (const char* k : {"_space_group_name_h-m_alt", "_symmetry_space_group_name_h-m"})
+      if (g.name.empty() && !item(k).empty() && item(k) != "?") g.name = item(k);
+    for (const char* k : {"_space_group_it_number", "_symmetry_int_tables_number"})
+      if (g.number == 0 && !item(k).empty()) g.number = int(cif_number(item(k), 0));
+    if (g.number == 0 && !g.name.empty())
+      if (const auto* sg = find_space_group(g.name)) g.number = sg->number;   // the number from the symbol
+    g.ops = ops;
+    if (symmetry_holds(s, g, 0.05)) s.symmetry = std::move(g);
+    else s.notes.push_back("the symmetry operations do not map the atoms read onto themselves: kept as P 1");
+  }
   if (report) *report = R;
   return s;
 }

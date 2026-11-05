@@ -338,6 +338,15 @@ public partial class MainViewModel
             Preset("α-quartz", 4.9134, 4.9134, 5.4052, 90, 90, 120, 3, 60.084, "2.65");
             Preset("PET (Daubeny 1954)", 4.56, 5.94, 10.75, 98.5, 118, 112, 1, 192.17, "1.455");
         }
+        ReadOpenCell();
+        RefreshSpaceGroup();
+        SetModule(58);
+        RaiseCell();
+    }
+
+    /// <summary>The open structure's cell into the editor's fields.</summary>
+    private void ReadOpenCell()
+    {
         if (_doc?.Summary() is { CellValid: not 0 } s)
         {
             // the open cell: its parameters from the summary lengths; the angles from the document's cell vectors when known
@@ -353,7 +362,6 @@ public partial class MainViewModel
             CeFormulaText = $"the open structure · {s.TotalMass.ToString("N1", CultureInfo.InvariantCulture)} g/mol per cell";
             foreach (var n in new[] { nameof(CeA), nameof(CeB), nameof(CeC), nameof(CeZ) }) Raise(n);
         }
-        SetModule(58);
         RaiseCell();
     }
 
@@ -370,9 +378,12 @@ public partial class MainViewModel
     {
         if (_doc == null) return;
         if (EditLocked()) return;
-        var j = new JsonObject { ["a"] = (double)_ceA, ["b"] = (double)_ceB, ["c"] = (double)_ceC, ["alpha"] = (double)_ceAl, ["beta"] = (double)_ceBe, ["gamma"] = (double)_ceGa, ["scale"] = _ceScale };
+        var j = new JsonObject { ["a"] = (double)_ceA, ["b"] = (double)_ceB, ["c"] = (double)_ceC, ["alpha"] = (double)_ceAl, ["beta"] = (double)_ceBe, ["gamma"] = (double)_ceGa, ["scale"] = _ceScale,
+                                 ["symmetric"] = _sgKept && _sgFitCell };
         try { _doc.SetCell(j.ToJsonString()); CeError = ""; }
         catch (Exception e) { CeError = e.Message; return; }
+        if (_sgKept && _sgFitCell) ReadOpenCell();   // the parameters as fitted to the crystal system
+        RefreshSpaceGroup();
         AfterEdit($"Cell applied · V = {CeVolume}" + (_ceScale ? " · atoms scaled" : "") + " (undo with ⌘Z)");
     }
 

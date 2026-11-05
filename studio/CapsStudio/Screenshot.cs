@@ -226,6 +226,15 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("pores: " + vm.PnClusters + " · " + vm.PnDiameters + " · " + vm.PnVolume + " · " + vm.PnSurface + " · " + vm.PnNote);
             }
+            if (kv[0] == "spacegroup")   // spacegroup=GAMMA: Unit cell page with the kept group; γ set and applied (fitted to the crystal system)
+            {
+                var vm = w.ViewModel;
+                vm.OpenCellEditor();
+                vm.CeGamma = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+                vm.ApplyCell();
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine($"spacegroup: {vm.SgText} · {vm.SgNote} · γ now {vm.CeGamma} · {vm.CeError}");
+            }
             if (kv[0] == "pageview")   // pageview=YAW,PITCH[,ZOOM]: the open page's own structure view turned to that camera
             {
                 var c = kv[1].Split(',').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();

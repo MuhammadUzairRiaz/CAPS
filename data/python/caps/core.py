@@ -1754,6 +1754,37 @@ def _pores(self, probe: float = 1.4, grid: float = 0.25, samples: int = 2000, ra
 Document.pores = _pores
 
 
+def _symmetry(self, op: str = "info", tolerance: float = 0.1) -> dict:
+    """The space group kept with the structure (read from a CIF, built, or found): op "info", "find" (keeps the group found
+    within tolerance Å) or "clear". Returns {kept, name, number, operations, system, holds, worst, asymmetric}. A kept group
+    that holds makes save("x.cif") write the asymmetric unit with the operations; edit(op="translate", ..., symmetric=True)
+    moves every image of each atom with it."""
+    f = library().caps_symmetry
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    r = _json_call(f, self._h, _enc(json.dumps({"op": op, "tolerance": float(tolerance)})))
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "symmetry failed"))
+    return r
+
+
+def _set_cell(self, a: float, b: float, c: float, alpha: float = 90.0, beta: float = 90.0, gamma: float = 90.0, scale: bool = True,
+              symmetric: bool = False) -> None:
+    """The cell from its six parameters (Å, degrees); scale keeps the atoms' fractional coordinates; symmetric fits the
+    parameters to the kept space group's crystal system first (cubic a = b = c, hexagonal γ = 120°, …)."""
+    f = library().caps_set_cell
+    f.argtypes = [C.c_void_p, C.c_char_p]
+    f.restype = C.c_int32
+    o = {"a": float(a), "b": float(b), "c": float(c), "alpha": float(alpha), "beta": float(beta), "gamma": float(gamma), "scale": bool(scale),
+         "symmetric": bool(symmetric)}
+    if f(self._h, _enc(json.dumps(o))) != 0:
+        raise _error()
+
+
+Document.symmetry = _symmetry
+Document.set_cell = _set_cell
+
+
 def _domains(self, group: str = "", grid: float = 0.8, sigma: float = 1.5, threshold: float = 0.0, below: bool = False,
              min_voxels: int = 1, slice: Optional[dict] = None, cube: str = "") -> dict:
     """Domains of the current frame's mass-density field of `group` (a selection query; all atoms by default): regions
