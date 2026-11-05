@@ -81,6 +81,7 @@ struct RecipeResult {
   Manifest manifest;
   std::shared_ptr<const ForceField> field;   // the typed force field (null when nothing typed it)
   std::string forcefield;                    // its name
+  std::string sequence_report;               // a copolymer's statistics, model against built (polymer.hpp sequence_report)
 };
 
 // The stages the recipe will run, in order (checks the keys; throws RecipeError 2).

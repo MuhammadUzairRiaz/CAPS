@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "caps/grow.hpp"
+#include "caps/json.hpp"
 #include "caps/molecule.hpp"
 #include "caps/system.hpp"
 
@@ -29,11 +30,16 @@ struct RepeatUnit {
 // Random: each position drawn with `weights` (Bernoulli / multinomial). Gradient: the share of A falls linearly
 // from 1 at the head to 0 at the tail (two units; with more, the last unit rises). Pattern: `pattern` repeated
 // ("AAB", letters A, B, C … for the units).
-enum class Sequence { Homopolymer, Alternating, Block, Random, Gradient, Pattern, Terminal, Shuffled };
+enum class Sequence { Homopolymer, Alternating, Block, Random, Gradient, Pattern, Terminal, Shuffled, Markov, Penultimate };
 // homopolymer | alternating | block | random | gradient | pattern | terminal (the Mayo–Lewis terminal model: two units,
 // reactivity ratios r1, r2 and the feed fraction weights[0] of unit A; a first-order Markov chain along each chain) |
 // shuffled (random order, exact composition: every chain holds round(DP × weight) of each unit — largest remainders so
-// they add up to DP — where random draws each unit independently and chains scatter around the ratio)
+// they add up to DP — where random draws each unit independently and chains scatter around the ratio) |
+// terminal with a `reactivity` matrix: n units, P_ij ∝ f_j / r_ij (polystats.hpp terminal_model) | markov: the n × n
+// `transition` matrix given | penultimate: two units, `penultimate` = r1, r1', r2, r2' (Merz, Alfrey & Goldfinger).
+// The first unit (pair) from the stationary distribution. With `drift` "chains" each chain is made at a conversion drawn
+// evenly up to `conversion`, from the feed left then (batch, chains formed at once); "along": position i of a chain at
+// conversion X·(i + ½)/DP (living chains growing through the batch); the feed by composition_drift.
 Sequence sequence_from_string(const std::string& s);
 const char* to_string(Sequence s);
 
@@ -72,6 +78,11 @@ struct ChainSpec {
                                    // "mmr" …) in place of a random draw
   std::string forcefield;          // caps-forcefield JSON with typing rules for the unit templates (optional)
   double r1 = 1, r2 = 1;           // Terminal: reactivity ratios of A and B
+  std::vector<double> reactivity;  // Terminal, n units: r_ij row-major (n × n, diagonal ignored); overrides r1, r2
+  std::vector<double> transition;  // Markov: P_ij row-major (n × n), rows normalised
+  std::vector<double> penultimate; // Penultimate: r1, r1', r2, r2'
+  std::string drift = "none";      // Terminal / Penultimate: none | chains | along
+  double conversion = 0.5;         // drift: the final conversion of the batch
   std::vector<int> chain_dp;       // per chain (polydispersity): overrides dp for chain k when given
   Architecture architecture = Architecture::Linear;
   int arms = 4;                    // Star: arms on the core (3 or 4), each of dp units
@@ -122,6 +133,11 @@ UnitInfo repeat_unit_info(const std::string& smiles);
 
 // Unit index for each position of a chain (the sequence kind; Random draws from the seed).
 std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed);
+
+// The copolymer statistics of a sequence kind against chains built with it: {units, kind, model {composition, dyads,
+// triads, run_length} (terminal, markov, penultimate; without drift), drift [{conversion, feed, instantaneous,
+// cumulative}] (with drift), built {count, composition, dyads, triads, run_length}}. Dyads n × n and triads n³ row-major.
+Json sequence_report(const ChainSpec& spec, const std::vector<std::vector<int>>& chains);
 
 // Which positions of an n-unit chain are reversed under spec.linkage (empty for head-to-tail); Random draws from the seed.
 std::vector<char> chain_inversions(const ChainSpec& spec, size_t n, uint64_t seed);

@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <stdexcept>
+#include <limits>
 #include <random>
 
 #include "caps/kspace.hpp"
@@ -14,6 +16,215 @@ namespace caps {
 double mayo_lewis(double r1, double r2, double f1) {
   const double f2 = 1 - f1, den = r1 * f1 * f1 + 2 * f1 * f2 + r2 * f2 * f2;
   return den > 0 ? (r1 * f1 * f1 + f1 * f2) / den : f1;
+}
+
+namespace {
+// stationary distribution of a row-stochastic m × m matrix: π (P − I) = 0 with Σ π = 1, solved directly (the last
+// balance equation replaced by the normalisation; Gaussian elimination with partial pivoting)
+std::vector<double> stationary(const std::vector<double>& P, int m) {
+  std::vector<double> A(size_t(m * (m + 1)), 0.0);   // rows: equations j, columns: π_i, last column the right side
+  for (int j = 0; j < m; ++j) {
+    for (int i = 0; i < m; ++i) A[size_t(j * (m + 1) + i)] = P[size_t(i * m + j)] - (i == j ? 1.0 : 0.0);
+  }
+  for (int i = 0; i < m; ++i) A[size_t((m - 1) * (m + 1) + i)] = 1.0;
+  A[size_t((m - 1) * (m + 1) + m)] = 1.0;
+  for (int c = 0; c < m; ++c) {
+    int piv = c;
+    for (int r = c + 1; r < m; ++r)
+      if (std::fabs(A[size_t(r * (m + 1) + c)]) > std::fabs(A[size_t(piv * (m + 1) + c)])) piv = r;
+    if (std::fabs(A[size_t(piv * (m + 1) + c)]) < 1e-300) throw std::invalid_argument("copolymer model: the chain has no single stationary composition");
+    if (piv != c)
+      for (int k = 0; k <= m; ++k) std::swap(A[size_t(c * (m + 1) + k)], A[size_t(piv * (m + 1) + k)]);
+    for (int r = 0; r < m; ++r) {
+      if (r == c) continue;
+      const double f = A[size_t(r * (m + 1) + c)] / A[size_t(c * (m + 1) + c)];
+      if (f == 0) continue;
+      for (int k = c; k <= m; ++k) A[size_t(r * (m + 1) + k)] -= f * A[size_t(c * (m + 1) + k)];
+    }
+  }
+  std::vector<double> pi(static_cast<size_t>(m), 0.0);
+  for (int i = 0; i < m; ++i) pi[size_t(i)] = std::max(0.0, A[size_t(i * (m + 1) + m)] / A[size_t(i * (m + 1) + i)]);
+  double s = 0;
+  for (double v : pi) s += v;
+  for (double& v : pi) v /= s;
+  return pi;
+}
+
+void finish(SequenceModel& m) {
+  const int n = m.units;
+  m.dyads.assign(size_t(n * n), 0.0);
+  m.triads.assign(size_t(n * n * n), 0.0);
+  m.composition.assign(size_t(n), 0.0);
+  if (m.order == 1) {
+    m.composition = stationary(m.P, n);
+    for (int i = 0; i < n; ++i)
+      for (int j = 0; j < n; ++j) {
+        m.dyads[size_t(i * n + j)] = m.composition[size_t(i)] * m.P[size_t(i * n + j)];
+        for (int k = 0; k < n; ++k) m.triads[size_t((i * n + j) * n + k)] = m.dyads[size_t(i * n + j)] * m.P[size_t(j * n + k)];
+      }
+  } else {
+    // the chain over pairs (i, j) → (j, k)
+    const int s2 = n * n;
+    std::vector<double> Q(size_t(s2 * s2), 0.0);
+    for (int i = 0; i < n; ++i)
+      for (int j = 0; j < n; ++j)
+        for (int k = 0; k < n; ++k) Q[size_t((i * n + j) * s2 + (j * n + k))] = m.P[size_t((i * n + j) * n + k)];
+    const auto pi = stationary(Q, s2);
+    for (int i = 0; i < n; ++i)
+      for (int j = 0; j < n; ++j) {
+        m.dyads[size_t(i * n + j)] = pi[size_t(i * n + j)];
+        m.composition[size_t(j)] += pi[size_t(i * n + j)];
+        for (int k = 0; k < n; ++k) m.triads[size_t((i * n + j) * n + k)] = pi[size_t(i * n + j)] * m.P[size_t((i * n + j) * n + k)];
+      }
+  }
+  m.run_length.assign(size_t(n), 0.0);
+  for (int a = 0; a < n; ++a) {
+    double in = 0;
+    for (int b = 0; b < n; ++b)
+      if (b != a) in += m.dyads[size_t(b * n + a)];
+    m.run_length[size_t(a)] = in > 0 ? m.composition[size_t(a)] / in : std::numeric_limits<double>::infinity();
+  }
+}
+
+std::vector<double> normalised(std::vector<double> f) {
+  double s = 0;
+  for (double& v : f) v = std::max(0.0, v), s += v;
+  if (s <= 0) throw std::invalid_argument("copolymer: the feed is empty");
+  for (double& v : f) v /= s;
+  return f;
+}
+}  // namespace
+
+SequenceModel terminal_model(const std::vector<double>& feed, const std::vector<double>& r) {
+  const int n = int(feed.size());
+  if (n < 1) throw std::invalid_argument("terminal model: units");
+  if (r.size() != size_t(n * n)) throw std::invalid_argument("terminal model: " + std::to_string(n) + " × " + std::to_string(n) + " reactivity ratios");
+  const auto f = normalised(feed);
+  SequenceModel m;
+  m.units = n, m.order = 1;
+  m.P.assign(size_t(n * n), 0.0);
+  for (int i = 0; i < n; ++i) {
+    double s = 0;
+    for (int j = 0; j < n; ++j) {
+      const double rij = i == j ? 1.0 : r[size_t(i * n + j)];
+      if (i != j && !(rij > 0)) throw std::invalid_argument("terminal model: r_" + std::to_string(i + 1) + std::to_string(j + 1) + " must be positive");
+      m.P[size_t(i * n + j)] = f[size_t(j)] / rij;
+      s += m.P[size_t(i * n + j)];
+    }
+    for (int j = 0; j < n; ++j) m.P[size_t(i * n + j)] = s > 0 ? m.P[size_t(i * n + j)] / s : (i == j ? 1.0 : 0.0);
+  }
+  finish(m);
+  return m;
+}
+
+SequenceModel transition_model(const std::vector<double>& P, int n) {
+  if (n < 1 || P.size() != size_t(n * n)) throw std::invalid_argument("transition model: an n × n matrix");
+  SequenceModel m;
+  m.units = n, m.order = 1, m.P = P;
+  for (int i = 0; i < n; ++i) {
+    double s = 0;
+    for (int j = 0; j < n; ++j) {
+      if (P[size_t(i * n + j)] < 0) throw std::invalid_argument("transition model: probabilities are not negative");
+      s += P[size_t(i * n + j)];
+    }
+    if (s <= 0) throw std::invalid_argument("transition model: row " + std::to_string(i + 1) + " is empty");
+    for (int j = 0; j < n; ++j) m.P[size_t(i * n + j)] /= s;
+  }
+  finish(m);
+  return m;
+}
+
+SequenceModel penultimate_model(double f1, double r1, double r1p, double r2, double r2p) {
+  if (!(r1 >= 0 && r1p >= 0 && r2 >= 0 && r2p >= 0)) throw std::invalid_argument("penultimate model: ratios are not negative");
+  f1 = std::clamp(f1, 0.0, 1.0);
+  const double f2 = 1 - f1;
+  SequenceModel m;
+  m.units = 2, m.order = 2;
+  m.P.assign(8, 0.0);
+  auto set = [&](int i, int j, double p_same) {   // pair (i, j): the next is j with p_same
+    m.P[size_t((i * 2 + j) * 2 + j)] = p_same, m.P[size_t((i * 2 + j) * 2 + (1 - j))] = 1 - p_same;
+  };
+  auto frac = [](double a, double b) { return a + b > 0 ? a / (a + b) : 0.5; };
+  set(0, 0, frac(r1 * f1, f2));    // ~AA*
+  set(1, 0, frac(r1p * f1, f2));   // ~BA*
+  set(1, 1, frac(r2 * f2, f1));    // ~BB*
+  set(0, 1, frac(r2p * f2, f1));   // ~AB*
+  finish(m);
+  return m;
+}
+
+std::vector<DriftPoint> composition_drift(const std::vector<double>& feed0, const std::vector<double>& r, double x_max, int points,
+                                          const std::vector<double>& pen) {
+  const auto f0 = normalised(feed0);
+  const int n = int(f0.size());
+  if (!(x_max > 0 && x_max < 1)) throw std::invalid_argument("composition drift: a conversion between 0 and 1");
+  if (!pen.empty() && (n != 2 || pen.size() != 4)) throw std::invalid_argument("composition drift: the penultimate model has two units and four ratios");
+  auto inst = [&](const std::vector<double>& f) {
+    if (!pen.empty()) return penultimate_model(f[0], pen[0], pen[1], pen[2], pen[3]).composition;
+    return terminal_model(f, r).composition;
+  };
+  points = std::max(2, points);
+  std::vector<DriftPoint> out;
+  std::vector<double> f = f0, made(size_t(n), 0.0);   // made: units in the copolymer so far (fractions of the start)
+  double lnM = 0;
+  const double lnM_end = std::log(1 - x_max);
+  const int sub = 20;
+  auto deriv = [&](const std::vector<double>& ff) {   // d f / d ln M
+    const auto F = inst(ff);
+    std::vector<double> d(static_cast<size_t>(n), 0.0);
+    for (int i = 0; i < n; ++i) d[size_t(i)] = F[size_t(i)] - ff[size_t(i)];
+    return d;
+  };
+  auto push = [&](double conv) {
+    DriftPoint p;
+    p.conversion = conv, p.feed = f, p.instantaneous = inst(f);
+    p.cumulative.assign(size_t(n), 0.0);
+    for (int i = 0; i < n; ++i) p.cumulative[size_t(i)] = conv > 0 ? (f0[size_t(i)] - (1 - conv) * f[size_t(i)]) / conv : p.instantaneous[size_t(i)];
+    out.push_back(p);
+  };
+  push(0);
+  for (int k = 1; k < points; ++k) {
+    const double target = lnM_end * double(k) / double(points - 1);
+    const double h = (target - lnM) / sub;
+    for (int s = 0; s < sub; ++s) {
+      auto add = [&](const std::vector<double>& a, const std::vector<double>& d, double c) {
+        std::vector<double> o(static_cast<size_t>(n), 0.0);
+        for (int i = 0; i < n; ++i) o[size_t(i)] = std::clamp(a[size_t(i)] + c * d[size_t(i)], 0.0, 1.0);
+        return o;
+      };
+      const auto k1 = deriv(f), k2 = deriv(add(f, k1, h / 2)), k3 = deriv(add(f, k2, h / 2)), k4 = deriv(add(f, k3, h));
+      for (int i = 0; i < n; ++i) f[size_t(i)] = std::clamp(f[size_t(i)] + h / 6 * (k1[size_t(i)] + 2 * k2[size_t(i)] + 2 * k3[size_t(i)] + k4[size_t(i)]), 0.0, 1.0);
+      double s1 = 0;
+      for (double v : f) s1 += v;
+      for (double& v : f) v /= s1;
+      lnM += h;
+    }
+    push(1 - std::exp(lnM));
+  }
+  (void)made;
+  return out;
+}
+
+SequenceStats sequence_statistics(const std::vector<std::vector<int>>& chains, int n) {
+  SequenceStats s;
+  s.units = n;
+  s.composition.assign(size_t(n), 0.0), s.dyads.assign(size_t(n * n), 0.0), s.triads.assign(size_t(n * n * n), 0.0), s.run_length.assign(size_t(n), 0.0);
+  std::vector<double> runs(size_t(n), 0.0);
+  double nd = 0, nt = 0;
+  for (const auto& c : chains) {
+    for (size_t i = 0; i < c.size(); ++i) {
+      if (c[i] < 0 || c[i] >= n) continue;
+      s.composition[size_t(c[i])] += 1, ++s.count;
+      if (i == 0 || c[i] != c[i - 1]) runs[size_t(c[i])] += 1;
+      if (i + 1 < c.size()) s.dyads[size_t(c[i] * n + c[i + 1])] += 1, nd += 1;
+      if (i + 2 < c.size()) s.triads[size_t((c[i] * n + c[i + 1]) * n + c[i + 2])] += 1, nt += 1;
+    }
+  }
+  for (int a = 0; a < n; ++a) s.run_length[size_t(a)] = runs[size_t(a)] > 0 ? s.composition[size_t(a)] / runs[size_t(a)] : 0;
+  for (double& v : s.composition) v /= std::max<double>(1, double(s.count));
+  for (double& v : s.dyads) v /= std::max(1.0, nd);
+  for (double& v : s.triads) v /= std::max(1.0, nt);
+  return s;
 }
 
 CopolymerModel copolymer_terminal(double r1, double r2, double f1) {

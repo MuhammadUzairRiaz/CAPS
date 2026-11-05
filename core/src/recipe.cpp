@@ -627,6 +627,11 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           spec.dyads = text(P, "dyads", "");   // a dyad pattern, "mr" …
           if (P.has("r1")) spec.r1 = P["r1"].number();                                                        // terminal model
           if (P.has("r2")) spec.r2 = P["r2"].number();
+          if (P.has("reactivity") && P["reactivity"].is_array()) for (const auto& x : P["reactivity"].items()) spec.reactivity.push_back(x.number());   // n units
+          if (P.has("transition") && P["transition"].is_array()) for (const auto& x : P["transition"].items()) spec.transition.push_back(x.number());
+          if (P.has("penultimate") && P["penultimate"].is_array()) for (const auto& x : P["penultimate"].items()) spec.penultimate.push_back(x.number());
+          spec.drift = text(P, "drift", "none");
+          if (P.has("conversion")) spec.conversion = P["conversion"].number();
           // end groups (a preset or a SMILES with *) and the linkage of the units
           spec.head_cap = text(P, "head_cap", "");
           spec.tail_cap = text(P, "tail_cap", "");
@@ -943,7 +948,17 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           gp[1] = {"DP", "per chain, sample Nn " + g6(nn) + ", Đ " + g6(s2 / s1 / nn) + ", " + std::to_string(*std::min_element(spec.chain_dp.begin(), spec.chain_dp.end())) + "–" +
                          std::to_string(*std::max_element(spec.chain_dp.begin(), spec.chain_dp.end()))};
         }
-        if (spec.sequence == Sequence::Terminal) gp.push_back({"sequence", "terminal model, r1 " + g6(spec.r1) + ", r2 " + g6(spec.r2)});
+        if (spec.sequence == Sequence::Terminal || spec.sequence == Sequence::Markov || spec.sequence == Sequence::Penultimate) {
+          auto list = [](const std::vector<double>& v) { std::string t; for (double x : v) t += (t.empty() ? "" : ", ") + g6(x); return t; };
+          std::string m = spec.sequence == Sequence::Markov ? "Markov chain, transition matrix " + list(spec.transition)
+                        : spec.sequence == Sequence::Penultimate ? "penultimate model, r1 r1' r2 r2' " + list(spec.penultimate)
+                        : !spec.reactivity.empty() ? "terminal model of " + std::to_string(spec.units.size()) + " units, reactivity ratios " + list(spec.reactivity)
+                                                   : "terminal model, r1 " + g6(spec.r1) + ", r2 " + g6(spec.r2);
+          if (!spec.drift.empty() && spec.drift != "none" && spec.sequence != Sequence::Markov)
+            m += ", composition drift (" + spec.drift + ") to conversion " + g6(spec.conversion);
+          gp.push_back({"sequence", m});
+          if (spec.units.size() > 1 && !gr.sequences.empty()) res.sequence_report = sequence_report(spec, gr.sequences).dump(0);
+        }
         if (spec.p_mr >= 0 && spec.p_rm >= 0) gp.push_back({"tacticity", "Markov, P(r|m) " + g6(spec.p_mr) + ", P(m|r) " + g6(spec.p_rm)});
         if (spec.architecture == Architecture::Star) gp.push_back({"architecture", "star, " + std::to_string(spec.arms) + " arms of DP units on one core carbon"});
         else if (spec.architecture == Architecture::Comb)

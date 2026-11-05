@@ -1593,6 +1593,50 @@ def solve_structure(data: str, molecule: str, cell, space_group: str = "P 1", wa
     return _index_call({"op": "solve", "data": str(data), "molecule": str(molecule), "cell": [float(x) for x in cell], "space_group": space_group,
                         "wavelength": float(wavelength), "steps": int(steps), "restarts": int(restarts), "seed": int(seed), "path": str(path)})
 
+def copolymer_statistics(feed, r1: Optional[float] = None, r2: Optional[float] = None, reactivity=None, transition=None, penultimate=None,
+                    conversion: Optional[float] = None, points: int = 41) -> dict:
+    """Copolymer statistics of n units: composition, dyads (n × n), triads (n³) and number-average run lengths of the
+    terminal model (r1, r2 for two units, or reactivity=[[1, r12, …], …]), a given transition matrix or the penultimate
+    model ([r1, r1', r2, r2']); conversion= adds the drift of feed and copolymer with conversion in a batch."""
+    flat = lambda m: [float(x) for row in m for x in (row if isinstance(row, (list, tuple)) else [row])]
+    o = {"feed": [float(x) for x in feed], "points": int(points)}
+    if r1 is not None: o["r1"] = float(r1)
+    if r2 is not None: o["r2"] = float(r2)
+    if reactivity is not None: o["reactivity"] = flat(reactivity)
+    if transition is not None: o["transition"] = flat(transition)
+    if penultimate is not None: o["penultimate"] = [float(x) for x in penultimate]
+    if conversion is not None: o["conversion"] = float(conversion)
+    f = library().caps_copolymer_model
+    f.argtypes = [C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 20)
+    n = f(_enc(json.dumps(o)), buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(_enc(json.dumps(o)), buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "copolymer model failed"))
+    return r
+
+
+def _sequence_report(self) -> dict:
+    """The copolymer statistics of the chains grown into this document: {units, kind, model | drift, built {count,
+    composition, dyads, triads, run_length}}; {} when it was not grown as a copolymer."""
+    f = library().caps_sequence_report
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 20)
+    n = f(self._h, buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(self._h, buf, len(buf))
+    return json.loads(buf.value.decode())
+
+
+Document.sequence_report = _sequence_report
+
+
 def _set_restraints(self, text: str) -> int:
     """Restraints of every kind for minimise, md, equilibrate and the LAMMPS / GROMACS exports, in text form with atoms
     from 1: "distance 1 2 3.0 20; angle 1 2 3 100:110; torsion 1 2 3 4 180 50; position 1-40 5 axes z radius 0.5"
@@ -2002,7 +2046,8 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
             arms: Optional[int] = None, arm_dp: Optional[int] = None, spacing: Optional[int] = None,
             branch_probability: Optional[float] = None, generations: Optional[int] = None, region: Optional[dict] = None,
             method: str = "trials", method_temperature: float = 450.0, orientation: Optional[dict] = None, lookahead: int = 1,
-            head_cap: str = "", tail_cap: str = "") -> Document:
+            head_cap: str = "", tail_cap: str = "", reactivity: Optional[list] = None, transition: Optional[list] = None,
+            penultimate: Optional[list] = None, drift: str = "none", conversion: Optional[float] = None) -> Document:
     """Chains of a repeat unit (SMILES with two * points, or a list of them for copolymers — sequence alternating, block
     with blocks=[…], random with weights=[…], gradient, pattern="AAB", terminal with r1, r2 and weights=[f1, f2]) grown
     in a periodic cell: one chain in a roomy cell by default (0.1 g/cm³), a melt with chains=… density=…. Atactic
@@ -2017,7 +2062,11 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
     "rosenbluth_lj" (the same with UFF Lennard-Jones), at method_temperature (K). orientation={"axis": "z", "strength": 4}
     grows oriented chains (an aligning field −s P₂ in kT on each unit's backbone chord; the report gives ⟨P₂⟩).
     head_cap / tail_cap: end groups in place of the end hydrogens (hydrogen, methyl, ethyl, tert-butyl, sec-butyl, phenyl,
-    hydroxyl, carboxyl, vinyl, amine, or a SMILES with one *), bonded to the atom at the unit's first / second *."""
+    hydroxyl, carboxyl, vinyl, amine, or a SMILES with one *), bonded to the atom at the unit's first / second *.
+    Copolymers of n units: sequence="terminal" with weights (the feed) and reactivity=[[1, r12, …], [r21, 1, …], …],
+    sequence="markov" with transition=[[p11, p12, …], …], sequence="penultimate" with penultimate=[r1, r1', r2, r2'];
+    drift="chains" or "along" with conversion=X for the feed's drift in a batch. Document.sequence_report() compares
+    the chains built with the model."""
     units = [smiles] if isinstance(smiles, str) else list(smiles)
     # the sequence follows from what is given (a pattern, blocks, weights); several units with none of them is a mistake,
     # not a homopolymer of the first
@@ -2026,8 +2075,12 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
             sequence = "pattern"
         elif blocks:
             sequence = "block"
-        elif weights and r1 is not None:
+        elif weights and (r1 is not None or reactivity is not None):
             sequence = "terminal"
+        elif transition is not None:
+            sequence = "markov"
+        elif penultimate is not None:
+            sequence = "penultimate"
         elif weights:
             sequence = "random"
         elif len(units) > 1:
@@ -2044,6 +2097,16 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
                  ("spacing", spacing), ("branch_probability", branch_probability), ("generations", generations)):
         if v is not None:
             r["build"]["polymer"][k] = v
+    flat = lambda m: [float(x) for row in m for x in (row if isinstance(row, (list, tuple)) else [row])]
+    if reactivity is not None:
+        r["build"]["polymer"]["reactivity"] = flat(reactivity)
+    if transition is not None:
+        r["build"]["polymer"]["transition"] = flat(transition)
+    if penultimate is not None:
+        r["build"]["polymer"]["penultimate"] = [float(x) for x in penultimate]
+    if drift != "none":
+        r["build"]["polymer"]["drift"] = drift
+        r["build"]["polymer"]["conversion"] = float(conversion if conversion is not None else 0.5)
     if architecture != "linear":
         r["build"]["polymer"]["architecture"] = architecture
     if region:

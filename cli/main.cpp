@@ -83,6 +83,7 @@
 #include "caps/powder_index.hpp"
 #include "caps/sqs.hpp"
 #include "caps/zmethod.hpp"
+#include "caps/polystats.hpp"
 #include "caps/restraints.hpp"
 #include "caps/ddft.hpp"
 #include "caps/yaml.hpp"
@@ -330,6 +331,9 @@ int usage() {
                "  caps semicrystalline FILE --analyse [--report R.json] [--labels L.txt]   loops, bridges, tails, P2 crystallinity, profiles\n"
                "               of any frame; --labels: each atom's id, class (stem, loop, bridge, tail, none) and segment (side atoms as their backbone atom)\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
+               "               copolymers: --sequence terminal|markov|penultimate --weights FEED [--r1 R --r2 R | --reactivity 'r11,r12;r21,r22'\n"
+               "                | --transition 'p11,p12;p21,p22' | --penultimate r1,r1p,r2,r2p] [--drift none|chains|along --conversion 0.8]\n"
+               "                [--sequence-report OUT.json]   composition, dyads, triads and run lengths, model against built\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|shuffled|gradient|pattern\n"
                "                --weights 0.7,0.3 --blocks 20,20 --pattern AAB --ff FF.json --method trials|rosenbluth|rosenbluth_lj\n"
@@ -356,6 +360,8 @@ int usage() {
                "             a molecular crystal found by simulated annealing against the pattern (direct space)\n"
                "  caps zmelt CRYSTAL --temps 100,200,300,400 [--ff FF] [--steps 10000] [--dt 1] [--bisect 3] [--cutoff 10] [--sample-every 20]\n"
                "              [--csv OUT] [--json OUT]   melting point by the Z method: NVE runs from the perfect crystal (Belonoshko et al.)\n"
+               "  caps copolymer --feed 0.3,0.3,0.4 (--r1 R --r2 R | --reactivity 'r11,r12,r13;…' | --transition '…' | --penultimate r1,r1p,r2,r2p)\n"
+               "               [--conversion 0.9 [--points 21]] [--csv OUT.csv] [--json OUT]   copolymer model: composition, dyads, triads, runs, drift\n"
                "  caps sqs CRYSTAL --from Cu --to Au [--fraction 0.5] [--supercell 2,2,2] [--shells 3] [--steps 20000] [--restarts 4] [--seed 1] -o OUT.cif\n"
                "              special quasirandom structure: the random alloy's pair correlations on the first shells (Zunger et al.)\n"
                "  caps enumerate CRYSTAL --from Cu --to Au [--count 1] [--supercell 2,2,2] [--max-configurations 200000] [--write DIR]\n"
@@ -490,7 +496,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -620,6 +626,70 @@ ProvStep ml_prov_step(const MlFill& f, const std::string& model) {
 
 // The force field for commands that take --ff FF.json [--typing RULES] [--charges MODE]: typed by the force field's
 // rules (or the atom names in the file); without --ff the built-in GAFF of C and H.
+// copolymer options (grow, interface): --r1 --r2, --reactivity 'r11,r12,r13;r21,…' (rows by ';'), --transition (the same
+// layout), --penultimate r1,r1',r2,r2', --drift none|chains|along, --conversion X
+std::vector<double> cli_matrix(const std::string& t, const char* what) {
+  std::vector<double> v;
+  size_t rows = 0, cols = 0;
+  std::stringstream rs(t);
+  for (std::string row; std::getline(rs, row, ';');) {
+    size_t c = 0;
+    std::stringstream cs(row);
+    for (std::string x; std::getline(cs, x, ',');) v.push_back(std::stod(x)), ++c;
+    if (rows == 0) cols = c;
+    else if (c != cols) throw std::invalid_argument(std::string(what) + ": every row needs " + std::to_string(cols) + " numbers");
+    ++rows;
+  }
+  if (rows != cols || rows == 0) throw std::invalid_argument(std::string(what) + ": a square matrix, rows split by ';'");
+  return v;
+}
+void copolymer_options(ChainSpec& spec, std::map<std::string, std::string>& o) {
+  if (o.count("--r1")) spec.r1 = std::stod(o["--r1"]);
+  if (o.count("--r2")) spec.r2 = std::stod(o["--r2"]);
+  if (o.count("--reactivity")) spec.reactivity = cli_matrix(o["--reactivity"], "--reactivity");
+  if (o.count("--transition")) spec.transition = cli_matrix(o["--transition"], "--transition");
+  if (o.count("--penultimate")) {
+    std::stringstream ss(o["--penultimate"]);
+    for (std::string x; std::getline(ss, x, ',');) spec.penultimate.push_back(std::stod(x));
+    if (spec.penultimate.size() != 4) throw std::invalid_argument("--penultimate r1,r1',r2,r2'");
+  }
+  if (o.count("--drift")) spec.drift = o["--drift"];
+  if (o.count("--conversion")) spec.conversion = std::stod(o["--conversion"]);
+  const size_t n = spec.units.size();
+  if (!spec.reactivity.empty() && spec.reactivity.size() != n * n) throw std::invalid_argument("--reactivity: " + std::to_string(n) + " × " + std::to_string(n) + " for the units given");
+  if (!spec.transition.empty() && spec.transition.size() != n * n) throw std::invalid_argument("--transition: " + std::to_string(n) + " × " + std::to_string(n) + " for the units given");
+}
+// the sequence report of a grown copolymer: printed, and whole to --sequence-report FILE.json
+void print_sequence_report(const ChainSpec& spec, const GrowReport& rep, std::map<std::string, std::string>& o) {
+  if (spec.units.size() < 2 || rep.sequences.empty()) return;
+  const Json r = sequence_report(spec, rep.sequences);
+  const int n = int(r["units"].number());
+  auto row = [&](const char* name, const Json& a) {
+    std::printf("  %-22s", name);
+    for (const auto& x : a.items()) std::printf(" %9.4f", x.is_number() ? x.number() : std::nan(""));
+    std::printf("\n");
+  };
+  std::printf("sequence (%s), units", r["kind"].str().c_str());
+  for (int k = 0; k < n; ++k) std::printf(" %9c", char('A' + k));
+  std::printf("\n");
+  if (r.has("model")) row("model composition", r["model"]["composition"]);
+  if (r.has("drift")) row("model cumulative", r["drift"].items().back()["cumulative"]);
+  row("built composition", r["built"]["composition"]);
+  if (r.has("model")) row("model run length", r["model"]["run_length"]);
+  row("built run length", r["built"]["run_length"]);
+  if (r.has("model")) {
+    double worst = 0;
+    const auto& md = r["model"]["dyads"].items();
+    const auto& bd = r["built"]["dyads"].items();
+    for (size_t k = 0; k < md.size() && k < bd.size(); ++k) worst = std::max(worst, std::fabs(md[k].number() - bd[k].number()));
+    std::printf("  largest dyad difference built − model %.4f over %.0f units\n", worst, r["built"]["count"].number());
+  }
+  if (o.count("--sequence-report") && o["--sequence-report"] != "1") {
+    std::ofstream(o["--sequence-report"]) << r.dump(1) << "\n";
+    std::printf("wrote %s\n", o["--sequence-report"].c_str());
+  }
+}
+
 // --restraints 'distance 1 2 3.0 20; position 1-10 5' or a file of them (relax, md, equilibrate, ff apply's exports)
 std::vector<Restraint> cli_restraints(const System& s, std::map<std::string, std::string>& o, bool quiet) {
   if (!o.count("--restraints")) return {};
@@ -1790,6 +1860,7 @@ int main(int argc, char** argv) {
         spec.tacticity = g.tacticity;
         if (o.count("--sequence")) spec.sequence = sequence_from_string(o["--sequence"]);
         if (o.count("--weights")) for (const auto& w : split(o["--weights"])) spec.weights.push_back(std::stod(w));
+        copolymer_options(spec, o);
         if (o.count("--blocks")) for (const auto& b : split(o["--blocks"])) spec.blocks.push_back(std::stoi(b));
         if (o.count("--pattern")) spec.pattern = o["--pattern"];
         if (o.count("--ff")) spec.forcefield = o["--ff"];
@@ -1801,6 +1872,7 @@ int main(int argc, char** argv) {
         if (o.count("--threads")) g.threads = std::stoi(o["--threads"]);
         if (o.count("--lookahead")) g.lookahead = std::clamp(std::stoi(o["--lookahead"]), 1, 4);
         s = grow_chains(spec, g, &rep);
+        print_sequence_report(spec, rep, o);
       } else
         s = grow(g, &rep);
       const std::string out = o["-o"];
@@ -2360,6 +2432,7 @@ int main(int argc, char** argv) {
       if (o.count("--tacticity")) spec.tacticity = tacticity_from_string(o["--tacticity"]);
       if (o.count("--sequence")) spec.sequence = sequence_from_string(o["--sequence"]);
       if (o.count("--weights")) for (const auto& w : list(o["--weights"])) spec.weights.push_back(std::stod(w));
+      copolymer_options(spec, o);
       if (o.count("--blocks")) for (const auto& b : list(o["--blocks"])) spec.blocks.push_back(std::stoi(b));
       if (o.count("--pattern")) spec.pattern = o["--pattern"];
       if (o.count("--ff")) spec.forcefield = o["--ff"];
@@ -4220,6 +4293,72 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps solve: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "copolymer") {
+    try {
+      if (!o.count("--feed")) return usage();
+      std::vector<double> feed;
+      {
+        std::stringstream ss(o["--feed"]);
+        for (std::string x; std::getline(ss, x, ',');) feed.push_back(std::stod(x));
+      }
+      const int n = int(feed.size());
+      if (n < 2) throw std::invalid_argument("--feed: two or more units");
+      ChainSpec spec;
+      spec.units.resize(size_t(n));
+      spec.weights = feed;
+      copolymer_options(spec, o);
+      spec.sequence = !spec.transition.empty() ? Sequence::Markov : !spec.penultimate.empty() ? Sequence::Penultimate : Sequence::Terminal;
+      if (spec.sequence == Sequence::Terminal && spec.reactivity.empty() && n > 2) throw std::invalid_argument("three or more units need --reactivity");
+      SequenceModel m;
+      std::vector<double> r = spec.reactivity;
+      if (r.empty() && n == 2) r = {1, spec.r1, spec.r2, 1};
+      if (spec.sequence == Sequence::Markov) m = transition_model(spec.transition, n);
+      else if (spec.sequence == Sequence::Penultimate) m = penultimate_model(feed[0] / (feed[0] + feed[1]), spec.penultimate[0], spec.penultimate[1], spec.penultimate[2], spec.penultimate[3]);
+      else m = terminal_model(feed, r);
+      std::printf("%s model, %d units\nunit  composition  run length\n", to_string(spec.sequence), n);
+      for (int i = 0; i < n; ++i) std::printf("%4c  %11.6f  %10.4f\n", char('A' + i), m.composition[size_t(i)], m.run_length[size_t(i)]);
+      std::printf("dyads (row: first unit)\n");
+      for (int i = 0; i < n; ++i) {
+        std::printf("  %c ", char('A' + i));
+        for (int j = 0; j < n; ++j) std::printf(" %9.6f", m.dyads[size_t(i * n + j)]);
+        std::printf("\n");
+      }
+      std::vector<DriftPoint> drift;
+      if (o.count("--conversion")) {
+        if (spec.sequence == Sequence::Markov) throw std::invalid_argument("--conversion: a transition matrix has no feed to drift");
+        drift = composition_drift(feed, r, std::stod(o["--conversion"]), o.count("--points") ? std::stoi(o["--points"]) : 21, spec.penultimate);
+        std::printf("drift: conversion, feed, instantaneous and cumulative copolymer (unit A%s)\n", n > 2 ? ", then the others in the CSV" : "");
+        for (const auto& p : drift) std::printf("  %6.3f  %9.6f  %9.6f  %9.6f\n", p.conversion, p.feed[0], p.instantaneous[0], p.cumulative[0]);
+      }
+      if (o.count("--csv")) {
+        std::ofstream f(o["--csv"]);
+        if (drift.empty()) {
+          f << "unit,composition,run_length\n";
+          for (int i = 0; i < n; ++i) f << char('A' + i) << "," << m.composition[size_t(i)] << "," << m.run_length[size_t(i)] << "\n";
+        } else {
+          f << "conversion";
+          for (const char* w : {"feed", "instantaneous", "cumulative"})
+            for (int i = 0; i < n; ++i) f << "," << w << "_" << char('A' + i);
+          f << "\n";
+          for (const auto& p : drift) {
+            f << p.conversion;
+            for (const auto* v : {&p.feed, &p.instantaneous, &p.cumulative})
+              for (double x : *v) f << "," << x;
+            f << "\n";
+          }
+        }
+        std::printf("wrote %s\n", o["--csv"].c_str());
+      }
+      if (o.count("--json") && o["--json"] != "1") {
+        std::ofstream(o["--json"]) << sequence_report(spec, {}).dump(1) << "\n";
+        std::printf("wrote %s\n", o["--json"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps copolymer: %s\n", e.what());
       return 1;
     }
   }

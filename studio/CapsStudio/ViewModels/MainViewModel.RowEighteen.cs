@@ -290,10 +290,11 @@ public partial class MainViewModel
             ["r1"] = (double)_coR1,
             ["r2"] = (double)_coR2,
         };
+        CoSpecMore(o);
         if (DefaultCleanForceField() is { } ff) o["forcefield"] = ff;
         return o;
     }
-    private string CoName => $"P({CoMonomers[_coM1].Short}-co-{CoMonomers[_coM2].Short})";
+    private string CoName => $"P({CoMonomers[_coM1].Short}-co-{CoMonomers[_coM2].Short}" + (CoHasThird ? $"-co-{CoMonomers[_coThird - 1].Short})" : ")");
 
     public void CoRecompute(bool rebuild)
     {
@@ -323,6 +324,7 @@ public partial class MainViewModel
             var c = r["curve"]!;
             CoCurve = (c["f1"] as JsonArray ?? []).Select(x => (double)x!).Zip((c["F1"] as JsonArray ?? []).Select(x => (double)x!)).ToArray();
             Raise(nameof(CoM1Name)); Raise(nameof(CoM2Name)); Raise(nameof(CoBuildText));
+            if (CoExtended) CoRecomputeMore();
             CoChanged?.Invoke();
             if (rebuild) _ = BuildCoChain();
         }
@@ -345,7 +347,7 @@ public partial class MainViewModel
             if (ticket != _coBuildTicket) { doc.Dispose(); return; }
             // atoms coloured by their unit: amber for M₁, blue for M₂ (the design's category pair)
             var res = doc.AtomResidues();
-            doc.SetAtomValues(res.Select(k => k >= 1 && k <= seq.Length ? (seq[k - 1] == 0 ? 1.0 : 0.0) : 0.5).ToArray(), 1);
+            doc.SetAtomValues(res.Select(k => k >= 1 && k <= seq.Length ? (seq[k - 1] == 0 ? 1.0 : seq[k - 1] == 1 ? 0.0 : 0.5) : 0.5).ToArray(), 1);
             var old = _coDoc;
             CoDoc = doc;
             old?.Dispose();

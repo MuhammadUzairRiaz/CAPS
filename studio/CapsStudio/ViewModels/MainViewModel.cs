@@ -1056,7 +1056,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (double.IsFinite(_growUnitsTotal)) { GrowUnitsText = $"{_growUnitsTotal:0} / {_growUnitsTotal:0}"; GrowUnitFraction = 1; }
             GrowDensityNowText = doc.Summary().Density.ToString("0.00", CultureInfo.InvariantCulture) + " g/cm³" + (_growShape > 0 ? " (cell)" : "");
             GrowElapsed = sw.Elapsed.TotalSeconds;
-            GrowLog = (failures.Count > 0 ? string.Join("\n", failures) + $"\nused seed {used} instead\n" : "") + report + $"\nbuilt in {sw.Elapsed.TotalSeconds:F2} s" + densityNote;
+            GrowLog = (failures.Count > 0 ? string.Join("\n", failures) + $"\nused seed {used} instead\n" : "") + report + $"\nbuilt in {sw.Elapsed.TotalSeconds:F2} s" + densityNote + SequenceSummary(doc);
             Status = $"Grown {name} · save it as LAMMPS data, PDB or XYZ";
         }
         catch (Exception e)

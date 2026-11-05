@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 87, "ABI 87")
+check(caps.abi_version() == 88, "ABI 88")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
@@ -797,6 +797,14 @@ except caps.CapsError as _e:
     check("outside" in str(_e), f"restraints: {_e}")
 check(_cu.set_restraints("") == 0, "restraints: cleared")
 print("ok   restraints: text form, values, refusal")
+# copolymers of n units (ABI 88): the model equals Mayo–Lewis for two units; a grown terpolymer reports model and built
+_cm = caps.copolymer_statistics([0.6, 0.4], r1=0.5, r2=0.2, conversion=0.5, points=5)
+check(abs(_cm["model"]["composition"][0] - 0.606936416) < 1e-6 and len(_cm["drift"]) == 5, f"copolymer_statistics: {_cm['model']['composition']}")
+_tp = caps.polymer(["*CC(*)c1ccccc1", "*CC=CC*", "*CC(*)C#N"], dp=20, chains=2, density=0.2, sequence="terminal", weights=[0.3, 0.5, 0.2],
+                   reactivity=[[1, 0.5, 0.4], [1.4, 1, 0.3], [0.04, 0.05, 1]])
+_sr = _tp.sequence_report()
+check(_sr.get("units") == 3 and _sr["built"]["count"] == 40 and len(_sr["model"]["triads"]) == 27, f"sequence_report: {list(_sr)}")
+print("ok   copolymers: n-unit model, sequence report of a grown terpolymer")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

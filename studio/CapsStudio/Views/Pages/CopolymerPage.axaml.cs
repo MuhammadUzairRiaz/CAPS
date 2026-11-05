@@ -12,7 +12,7 @@ public partial class CopolymerPage : PageBase
     public CopolymerPage()
     {
         AvaloniaXamlLoader.Load(this);
-        this.FindControl<SequenceStrip>("Strip")!.Palette = ["#F0A83C", "#2271DB"];
+        this.FindControl<SequenceStrip>("Strip")!.Palette = ["#F0A83C", "#2271DB", "#7DC884"];
         DataContextChanged += (_, _) =>
         {
             if (DataContext is not MainViewModel vm || vm == _hooked) return;

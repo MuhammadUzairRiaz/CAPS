@@ -25,6 +25,44 @@ struct CopolymerModel {
 double mayo_lewis(double r1, double r2, double f1);
 CopolymerModel copolymer_terminal(double r1, double r2, double f1);
 
+// ---- copolymers of n units as Markov chains along the chain.
+//  terminal     P_ij = (f_j / r_ij) / Σ_k (f_k / r_ik), r_ii = 1 (k_ij = k_ii / r_ij; Alfrey & Goldfinger, J. Chem. Phys. 12,
+//               322 (1944); Walling & Briggs, J. Am. Chem. Soc. 67, 1774 (1945)); two units: Mayo–Lewis
+//  transition   the matrix given directly (rows normalised)
+//  penultimate  two units, the last two deciding (Merz, Alfrey & Goldfinger, J. Polym. Sci. 1, 75 (1946)):
+//               r1 = k111/k112, r1' = k211/k212, r2 = k222/k221, r2' = k122/k121
+// The composition is the stationary distribution; dyads D_ij and triads are its joint probabilities along the chain;
+// the number-average run length of unit a is F_a / Σ_(b≠a) D_ba.
+struct SequenceModel {
+  int units = 0;
+  int order = 1;                        // 1: P is n × n; 2: P is (n·n) × n, row i·n + j (… i j) → next k
+  std::vector<double> P;
+  std::vector<double> composition;      // F_i
+  std::vector<double> dyads;            // n × n, D_ij = P(i then j)
+  std::vector<double> triads;           // n³
+  std::vector<double> run_length;       // n
+};
+// feed f (n, normalised), r: n × n row-major (diagonal ignored)
+SequenceModel terminal_model(const std::vector<double>& feed, const std::vector<double>& r);
+SequenceModel transition_model(const std::vector<double>& P, int n);
+SequenceModel penultimate_model(double f1, double r1, double r1p, double r2, double r2p);
+
+// Composition drift in a batch: the unreacted monomer M (fraction of the start) loses F_i dM of unit i, so
+// d f_i / d ln M = F_i − f_i (Skeist, J. Am. Chem. Soc. 68, 1781 (1946)); integrated by RK4 in ln M up to conversion
+// x_max. Each point: conversion X = 1 − M, the feed, the instantaneous and the cumulative copolymer composition.
+struct DriftPoint { double conversion = 0; std::vector<double> feed, instantaneous, cumulative; };
+// model(f) gives the instantaneous composition for a feed (terminal or penultimate)
+std::vector<DriftPoint> composition_drift(const std::vector<double>& feed0, const std::vector<double>& r, double x_max, int points = 100,
+                                          const std::vector<double>& penultimate = {});
+
+// What built chains hold: composition, dyads (n × n), triads (n³) and number-average run lengths, over all chains.
+struct SequenceStats {
+  int units = 0;
+  size_t count = 0;                     // units counted
+  std::vector<double> composition, dyads, triads, run_length;
+};
+SequenceStats sequence_statistics(const std::vector<std::vector<int>>& chains, int n);
+
 // ---- stereo sequence statistics (Bovey; Randall). Dyads are 'm' or 'r'.
 constexpr int kPentadCount = 10;
 // mmmm mmmr rmmr mmrr mmrm rmrm rmrr rrrr rrrm mrrm (reversed sequences counted with their pair)

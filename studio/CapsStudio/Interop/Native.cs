@@ -488,6 +488,8 @@ internal static class Native
     }
 
     [DllImport(Lib, EntryPoint = "caps_unit_info")] public static extern int UnitInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_copolymer_model")] public static extern int CopolymerModel([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_sequence_report")] public static extern int SequenceReport(IntPtr doc, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_chain_preview")] public static extern int ChainPreview([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, ulong seed, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_grow_chains_live")] public static extern IntPtr GrowChainsLive([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, CapsGrowLive? live, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_live")] public static extern int SetLive(IntPtr doc, CapsGrowLive? live, IntPtr user);
@@ -1011,6 +1013,8 @@ public sealed class CapsDocument : IDisposable
     public static string EnumerateAnalogs(string json) { var t = JsonCallOnce((b, c) => Native.EnumerateAnalogs(json, b, c)); if (t.Length == 0) throw new InvalidOperationException(Native.LastError()); return t; }
     public static string ChainLengths(string json) => JsonCallOnce((b, c) => Native.ChainLengths(json, b, c));
     public static string Copolymer(string json) => JsonCallOnce((b, c) => Native.Copolymer(json, b, c));
+    /// <summary>Copolymers of n units (caps_copolymer_model): composition, dyads, triads, run lengths, drift; JSON.</summary>
+    public static string CopolymerModel(string json) => JsonCallOnce((b, c) => Native.CopolymerModel(json, b, c));
     public static string Stereo(string json) => JsonCallOnce((b, c) => Native.Stereo(json, b, c));
     public static string BlendPhase(string json) => JsonCallOnce((b, c) => Native.BlendPhase(json, b, c));
     /// <summary>Cooling scans that ran elsewhere read back and fitted (caps_tg_fit): {ok, scans, properties} or {ok: false, error}.</summary>
@@ -1364,6 +1368,8 @@ public sealed class CapsDocument : IDisposable
     public int SetRestraints(string json) { using (Hold()) { var n = Native.SetRestraints(H, json); if (n < 0) throw new InvalidOperationException(Native.LastError()); return n; } }
     public long HeldMolecule() { using (Hold()) return Native.HeldMolecule(H); }
     /// <summary>Atoms held in place besides the held molecule (frame indices); an empty list clears them.</summary>
+    /// <summary>The copolymer statistics of the chains grown into this document (caps_sequence_report), JSON ("{}" none).</summary>
+    public string SequenceReport() { using (Hold()) return JsonCallOnce((b, c) => Native.SequenceReport(H, b, c)); }
     /// <summary>Restraints of every kind in text form (caps_set_restraint_text): the count, or −1 and the reason.</summary>
     public (int Count, string Error) SetRestraintText(string text)
     {

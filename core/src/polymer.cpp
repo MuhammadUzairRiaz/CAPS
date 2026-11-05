@@ -1,6 +1,8 @@
 // CAPS polymer builder: chains of any repeat unit grown into a periodic cell (see polymer.hpp).
 #include "caps/rng.hpp"
 #include "caps/polymer.hpp"
+
+#include "caps/polystats.hpp"
 #include "caps/edit.hpp"
 #include "caps/uff.hpp"
 
@@ -776,6 +778,8 @@ Sequence sequence_from_string(const std::string& s) {
   if (s == "terminal") return Sequence::Terminal;
   if (s == "pattern") return Sequence::Pattern;
   if (s == "shuffled") return Sequence::Shuffled;
+  if (s == "markov") return Sequence::Markov;
+  if (s == "penultimate") return Sequence::Penultimate;
   return Sequence::Homopolymer;
 }
 
@@ -807,6 +811,8 @@ const char* to_string(Sequence s) {
     case Sequence::Terminal: return "terminal";
     case Sequence::Pattern: return "pattern";
     case Sequence::Shuffled: return "shuffled";
+    case Sequence::Markov: return "markov";
+    case Sequence::Penultimate: return "penultimate";
     default: return "homopolymer";
   }
 }
@@ -903,10 +909,98 @@ UnitInfo repeat_unit_info(const std::string& smiles) {
   return u;
 }
 
+namespace {
+// the feed of n units from the weights (equal when not given)
+std::vector<double> feed_of(const ChainSpec& spec, int nu) {
+  std::vector<double> f(static_cast<size_t>(nu), 1.0);
+  for (int k = 0; k < nu && k < int(spec.weights.size()); ++k) f[size_t(k)] = std::max(0.0, spec.weights[size_t(k)]);
+  return f;
+}
+// the model for a feed (Terminal with a matrix, Markov, Penultimate)
+SequenceModel model_for(const ChainSpec& spec, int nu, const std::vector<double>& f) {
+  if (spec.sequence == Sequence::Markov) return transition_model(spec.transition, nu);
+  if (spec.sequence == Sequence::Penultimate) {
+    if (spec.penultimate.size() != 4 || nu != 2) throw std::invalid_argument("penultimate model: two units and four ratios r1, r1', r2, r2'");
+    return penultimate_model(f[0] / std::max(1e-300, f[0] + f[1]), spec.penultimate[0], spec.penultimate[1], spec.penultimate[2], spec.penultimate[3]);
+  }
+  std::vector<double> r = spec.reactivity;
+  if (r.empty() && nu == 2) r = {1, spec.r1, spec.r2, 1};
+  return terminal_model(f, r);
+}
+// one chain drawn from a model at each position (models.size() 1: the same throughout)
+void draw_chain(std::vector<int>& s, const std::vector<const SequenceModel*>& at, std::mt19937_64& rng) {
+  auto u01 = [&] { return double(rng() >> 11) * (1.0 / 9007199254740992.0); };
+  auto pick = [&](const double* p, int m) {
+    double u = u01(), c = 0;
+    for (int k = 0; k < m; ++k)
+      if ((c += p[k]) > u) return k;
+    return m - 1;
+  };
+  const int n = int(s.size());
+  for (int i = 0; i < n; ++i) {
+    const SequenceModel& M = *at[std::min(at.size() - 1, size_t(i))];
+    const int nu = M.units;
+    if (i == 0) {
+      if (M.order == 1 || n == 1) s[0] = pick(M.composition.data(), nu);
+      else {   // the first pair from the dyads
+        const int q = pick(M.dyads.data(), nu * nu);
+        s[0] = q / nu;
+        if (n > 1) s[1] = q % nu, i = 1;
+      }
+      continue;
+    }
+    const double* row = M.order == 1 ? &M.P[size_t(s[size_t(i - 1)] * nu)] : &M.P[size_t((s[size_t(i - 2)] * nu + s[size_t(i - 1)]) * nu)];
+    s[size_t(i)] = pick(row, nu);
+  }
+}
+}  // namespace
+
 std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
   const int n = std::max(1, spec.dp), nu = std::max<int>(1, int(spec.units.size()));
   std::vector<int> s(size_t(n), 0);
   std::mt19937_64 rng(seed * 0x9E3779B97F4A7C15ull + 99);
+  // the n-unit, given-matrix and penultimate models, and any model with drift (the binary terminal model without drift
+  // keeps its own draws below)
+  const bool modelled = spec.sequence == Sequence::Markov || spec.sequence == Sequence::Penultimate ||
+                        (spec.sequence == Sequence::Terminal && (!spec.reactivity.empty() || nu > 2 || (spec.drift != "none" && !spec.drift.empty())));
+  if (modelled) {
+    const auto f0 = feed_of(spec, nu);
+    const std::string drift = spec.drift.empty() ? "none" : spec.drift;
+    if (drift == "none" || spec.sequence == Sequence::Markov) {
+      const SequenceModel M = model_for(spec, nu, f0);
+      draw_chain(s, {&M}, rng);
+      return s;
+    }
+    if (drift != "chains" && drift != "along") throw std::invalid_argument("drift: none, chains or along");
+    std::vector<double> r = spec.reactivity;
+    if (r.empty() && nu == 2) r = {1, spec.r1, spec.r2, 1};
+    const int npts = 201;
+    const auto table = composition_drift(f0, r, spec.conversion, npts, spec.sequence == Sequence::Penultimate ? spec.penultimate : std::vector<double>{});
+    auto feed_at = [&](double x) {   // linear in conversion between the table's points
+      size_t k = 1;
+      while (k + 1 < table.size() && table[k].conversion < x) ++k;
+      const auto& a = table[k - 1];
+      const auto& b = table[k];
+      const double t = b.conversion > a.conversion ? std::clamp((x - a.conversion) / (b.conversion - a.conversion), 0.0, 1.0) : 0.0;
+      std::vector<double> f(a.feed.size());
+      for (size_t q = 0; q < f.size(); ++q) f[q] = a.feed[q] + t * (b.feed[q] - a.feed[q]);
+      return f;
+    };
+    if (drift == "chains") {
+      const double x = spec.conversion * double(rng() >> 11) * (1.0 / 9007199254740992.0);
+      const SequenceModel M = model_for(spec, nu, feed_at(x));
+      draw_chain(s, {&M}, rng);
+    } else {
+      // positions in 64 bands of conversion, one model each
+      const int bands = std::min(n, 64);
+      std::vector<SequenceModel> ms;
+      for (int b = 0; b < bands; ++b) ms.push_back(model_for(spec, nu, feed_at(spec.conversion * (b + 0.5) / bands)));
+      std::vector<const SequenceModel*> at(static_cast<size_t>(n), nullptr);
+      for (int i = 0; i < n; ++i) at[size_t(i)] = &ms[size_t(std::min(bands - 1, i * bands / n))];
+      draw_chain(s, at, rng);
+    }
+    return s;
+  }
   switch (spec.sequence) {
     case Sequence::Homopolymer: break;
     case Sequence::Alternating:
@@ -977,6 +1071,8 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
       }
       break;
     }
+    case Sequence::Markov:
+    case Sequence::Penultimate: break;   // handled above
     case Sequence::Pattern: {
       std::vector<int> p;
       for (char c : spec.pattern)
@@ -988,6 +1084,40 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
     }
   }
   return s;
+}
+
+Json sequence_report(const ChainSpec& spec, const std::vector<std::vector<int>>& chains) {
+  const int nu = std::max<int>(1, int(spec.units.size()));
+  auto arr = [](const std::vector<double>& v) { Json a = Json::array(); for (double x : v) a.push_back(std::isfinite(x) ? Json(x) : Json(nullptr)); return a; };
+  Json r = Json::object();
+  r["units"] = double(nu), r["kind"] = std::string(to_string(spec.sequence));
+  const bool drifting = !spec.drift.empty() && spec.drift != "none" && spec.sequence != Sequence::Markov;
+  const bool modelled = spec.sequence == Sequence::Terminal || spec.sequence == Sequence::Markov || spec.sequence == Sequence::Penultimate;
+  if (modelled) {
+    const auto f0 = feed_of(spec, nu);
+    if (!drifting) {
+      const SequenceModel m = model_for(spec, nu, f0);
+      Json mj = Json::object();
+      mj["composition"] = arr(m.composition), mj["dyads"] = arr(m.dyads), mj["triads"] = arr(m.triads), mj["run_length"] = arr(m.run_length);
+      r["model"] = mj;
+    } else {
+      std::vector<double> rr = spec.reactivity;
+      if (rr.empty() && nu == 2) rr = {1, spec.r1, spec.r2, 1};
+      const auto table = composition_drift(f0, rr, spec.conversion, 21, spec.sequence == Sequence::Penultimate ? spec.penultimate : std::vector<double>{});
+      Json d = Json::array();
+      for (const auto& p : table) {
+        Json q = Json::object();
+        q["conversion"] = p.conversion, q["feed"] = arr(p.feed), q["instantaneous"] = arr(p.instantaneous), q["cumulative"] = arr(p.cumulative);
+        d.push_back(q);
+      }
+      r["drift"] = d;
+    }
+  }
+  const SequenceStats st = sequence_statistics(chains, nu);
+  Json b = Json::object();
+  b["count"] = double(st.count), b["composition"] = arr(st.composition), b["dyads"] = arr(st.dyads), b["triads"] = arr(st.triads), b["run_length"] = arr(st.run_length);
+  r["built"] = b;
+  return r;
 }
 
 Linkage linkage_from_string(const std::string& s) {
@@ -2550,6 +2680,8 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   }
   s.bonds_from_file = true;
   rep.chains_placed = nchains;
+  rep.sequences.clear();
+  for (const auto& ch : C) rep.sequences.push_back(ch.seq);
   char cb[96];
   if (ortho) std::snprintf(cb, sizeof cb, "cell %.2f × %.2f × %.2f Å", Lv[0], Lv[1], Lv[2]);
   else std::snprintf(cb, sizeof cb, "box %.3f Å", L);

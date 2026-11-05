@@ -49,6 +49,32 @@
               <TextBlock Text="{Binding CoError}" Classes="err" TextWrapping="Wrap" />
             </StackPanel>
             <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="18,14">
+              <StackPanel Spacing="10">
+                <TextBlock Text="MODEL AND DRIFT" Classes="h3" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.CoModels}" SelectedIndex="{Binding CoModel}" HorizontalAlignment="Stretch"
+                          ToolTip.Tip="Terminal: the last unit decides the next. Penultimate: the last two (two monomers only)" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding CoPenultimate}">
+                  <StackPanel Spacing="4" ToolTip.Tip="k₂₁₁ / k₂₁₂: M₁ adding to ~M₂M₁•"><TextBlock Text="r₁′ (after M₂M₁)" Classes="label" /><NumericUpDown Value="{Binding CoR1p}" Minimum="0" Maximum="100" Increment="0.01" FormatString="0.00" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4" ToolTip.Tip="k₁₂₂ / k₁₂₁: M₂ adding to ~M₁M₂•"><TextBlock Text="r₂′ (after M₁M₂)" Classes="label" /><NumericUpDown Value="{Binding CoR2p}" Minimum="0" Maximum="100" Increment="0.01" FormatString="0.00" /></StackPanel>
+                </Grid>
+                <StackPanel Spacing="4" IsVisible="{Binding CoThirdAllowed}">
+                  <TextBlock Text="M₃ (a third monomer)" Classes="label" />
+                  <ComboBox ItemsSource="{Binding CoThirdNames}" SelectedIndex="{Binding CoThird}" HorizontalAlignment="Stretch"
+                            ToolTip.Tip="A terpolymer: its share of the feed and four more reactivity ratios" />
+                </StackPanel>
+                <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8" IsVisible="{Binding CoHasThird}">
+                  <StackPanel Spacing="4" ToolTip.Tip="M₃ in the feed; M₁ and M₂ share the rest as f₁ says"><TextBlock Text="f₃ feed" Classes="label" /><NumericUpDown Value="{Binding CoF3}" Minimum="0.01" Maximum="0.98" Increment="0.01" FormatString="0.00" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4" ToolTip.Tip="k₁₁ / k₁₃"><TextBlock Text="r₁₃" Classes="label" /><NumericUpDown Value="{Binding CoR13}" Minimum="0.001" Maximum="100" Increment="0.01" FormatString="0.00" /></StackPanel>
+                  <StackPanel Grid.Column="2" Spacing="4" ToolTip.Tip="k₃₃ / k₃₁"><TextBlock Text="r₃₁" Classes="label" /><NumericUpDown Value="{Binding CoR31}" Minimum="0.001" Maximum="100" Increment="0.01" FormatString="0.00" /></StackPanel>
+                  <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4" ToolTip.Tip="k₂₂ / k₂₃"><TextBlock Text="r₂₃" Classes="label" /><NumericUpDown Value="{Binding CoR23}" Minimum="0.001" Maximum="100" Increment="0.01" FormatString="0.00" /></StackPanel>
+                  <StackPanel Grid.Row="1" Grid.Column="2" Spacing="4" ToolTip.Tip="k₃₃ / k₃₂"><TextBlock Text="r₃₂" Classes="label" /><NumericUpDown Value="{Binding CoR32}" Minimum="0.001" Maximum="100" Increment="0.01" FormatString="0.00" /></StackPanel>
+                </Grid>
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.CoDrifts}" SelectedIndex="{Binding CoDrift}" HorizontalAlignment="Stretch"
+                          ToolTip.Tip="The feed changes as the faster monomer is used up: chains made late differ from chains made early (batch), or one chain changes from head to tail (living)" />
+                <StackPanel Spacing="4" IsVisible="{Binding CoHasDrift}"><TextBlock Text="Final conversion" Classes="label" /><NumericUpDown Value="{Binding CoConversion}" Minimum="0.01" Maximum="0.99" Increment="0.05" FormatString="0.00" Width="110" HorizontalAlignment="Left" /></StackPanel>
+              </StackPanel>
+            </Border>
+            <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="18,14">
               <StackPanel Spacing="6">
                 <TextBlock Text="COMPOSITION" Classes="h3" />
                 <v:SciPlot x:Name="Comp" Height="250" />
@@ -67,6 +93,7 @@
             <TextBlock Text="{Binding CoTitle}" FontSize="12" VerticalAlignment="Center" />
             <StackPanel Orientation="Horizontal" Spacing="5"><Ellipse Width="8" Height="8" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="{Binding CoM1Name}" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5"><Ellipse Width="8" Height="8" Fill="#2271DB" VerticalAlignment="Center" /><TextBlock Text="{Binding CoM2Name}" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding CoHasThird}"><Ellipse Width="8" Height="8" Fill="#7DC884" VerticalAlignment="Center" /><TextBlock Text="{Binding CoM3Name}" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></StackPanel>
           </StackPanel>
         </Border>
         <TextBlock Text="Building the chain…" Classes="dim" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="14" IsVisible="{Binding CoBuilding}" />

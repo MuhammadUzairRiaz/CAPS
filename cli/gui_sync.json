@@ -950,7 +950,15 @@
     "--auto-scale": "page",
     "--method": "page",
     "--lookahead": "page",
-    "--threads": "page"
+    "--threads": "page",
+    "--r1": "Views/Pages/CopolymerPage.axaml|r₁",
+    "--r2": "Views/Pages/CopolymerPage.axaml|r₂",
+    "--reactivity": "partial: the Copolymer page takes a third monomer and its four ratios (three units)",
+    "--transition": "cli: the Copolymer page draws from reactivity ratios, not a given matrix",
+    "--penultimate": "Views/Pages/CopolymerPage.axaml|r₁′ (after M₂M₁)",
+    "--drift": "Views/Pages/CopolymerPage.axaml|MODEL AND DRIFT",
+    "--conversion": "Views/Pages/CopolymerPage.axaml|Final conversion",
+    "--sequence-report": "partial: the Grow log shows the cell's composition and runs against the model"
    }
   },
   "field": {
@@ -1670,6 +1678,26 @@
     "--topology": "page",
     "--quiet": "cli: no progress line",
     "--no-coulomb": "cli: without electrostatics"
+   }
+  },
+  "copolymer": {
+   "status": "gui",
+   "studio": "Builders › Copolymer",
+   "where": "Views/Pages/CopolymerPage.axaml|MODEL AND DRIFT",
+   "capi": [
+    "caps_copolymer_model"
+   ],
+   "options": {
+    "--feed": "page",
+    "--r1": "page",
+    "--r2": "page",
+    "--reactivity": "partial: the page takes up to three units",
+    "--transition": "cli: the page works from reactivity ratios",
+    "--penultimate": "page",
+    "--conversion": "page",
+    "--points": "cli: the page uses 21 points",
+    "--csv": "cli: the page shows the numbers",
+    "--json": "cli: the page shows the numbers"
    }
   }
  },

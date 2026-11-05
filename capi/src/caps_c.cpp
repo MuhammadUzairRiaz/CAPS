@@ -221,6 +221,7 @@ struct caps_doc {
   std::vector<caps::RelaxOptions::Restraint> restraints;   // distance restraints for caps_relax
   std::vector<caps::RelaxOptions::DihedralRestraint> dihedral_restraints;   // and dihedral ones
   std::vector<caps::Restraint> restraint_set;   // v87: restraints of every kind for minimisation, MD and the exports
+  std::string sequence_report;          // v88: the copolymer statistics of the chains grown into it (JSON), "" none
   std::unique_ptr<caps::Pipeline> pipeline;        // caps_pipeline_set: steps run on every shown frame
   std::unique_ptr<caps::PipelineState> pstate;     // its result for the current frame
   // results cached per frame (design/boards/PipelineSteps "results cached per frame"): kept while the pipeline and the
@@ -6148,6 +6149,10 @@ caps::ChainSpec spec_from(const std::string& text) {
   c.pattern = j.text("pattern");
   c.pm = j.num("pm", 0.5);
   c.r1 = j.num("r1", 1), c.r2 = j.num("r2", 1);
+  if (j.has("reactivity")) for (const auto& x : j["reactivity"].items()) c.reactivity.push_back(x.number());
+  if (j.has("transition")) for (const auto& x : j["transition"].items()) c.transition.push_back(x.number());
+  if (j.has("penultimate")) for (const auto& x : j["penultimate"].items()) c.penultimate.push_back(x.number());
+  c.drift = j.text("drift", "none"), c.conversion = j.num("conversion", 0.5);
   c.p_mr = j.num("p_mr", -1), c.p_rm = j.num("p_rm", -1);
   c.dyads = j.text("dyads", "");
   for (char ch : c.dyads)
@@ -6362,6 +6367,7 @@ caps_doc* grow_chains_impl(const char* spec_json, const caps_grow_opts* o, caps_
     caps::GrowReport rep;
     caps::System s = caps::grow_chains(c, g, &rep);
     auto* d = new caps_doc;
+    if (c.units.size() > 1 && !rep.sequences.empty()) d->sequence_report = caps::sequence_report(c, rep.sequences).dump(0);
     d->traj.topology = s;
     std::vector<caps::Vec3> p;
     for (const auto& a : s.atoms) p.push_back(a.pos);
@@ -11030,6 +11036,7 @@ extern "C" caps_doc* caps_recipe_run(const char* recipe, const char* options_jso
     auto res = caps::run_recipe(r, ro);
     caps_doc* d = doc_of(res.system);
     d->prov = res.manifest;
+    d->sequence_report = res.sequence_report;
     if (res.field) {
       d->field = std::make_unique<FieldState>();
       d->field->ff_path = res.forcefield;
@@ -11283,6 +11290,50 @@ extern "C" int32_t caps_chain_lengths(const char* json, char* out, int32_t cap) 
     caps::Json curve = caps::Json::object();
     curve["n"] = num_array(xs), curve["number"] = num_array(nf), curve["weight"] = num_array(wf);
     r["curve"] = std::move(curve);
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
+}
+
+// v88 the copolymer statistics of the chains grown into this document (caps_grow_chains): JSON, {} when none
+extern "C" int32_t caps_sequence_report(const caps_doc* d, char* out, int32_t cap) {
+  return report_out(d && !d->sequence_report.empty() ? d->sequence_report : std::string("{}"), out, cap);
+}
+
+// v88 copolymers of n units: {feed [..], reactivity [n×n] | transition [n×n] | penultimate [4], conversion (drift), points}
+// → {ok, error, kind, units, model {composition, dyads, triads, run_length}, drift [...]}
+extern "C" int32_t caps_copolymer_model(const char* json, char* out, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    caps::ChainSpec c;
+    if (j.has("feed")) for (const auto& x : j["feed"].items()) c.weights.push_back(x.number());
+    const size_t n = c.weights.size();
+    if (n < 2) throw std::invalid_argument("feed: two or more units");
+    c.units.resize(n);
+    if (j.has("reactivity")) for (const auto& x : j["reactivity"].items()) c.reactivity.push_back(x.number());
+    if (j.has("transition")) for (const auto& x : j["transition"].items()) c.transition.push_back(x.number());
+    if (j.has("penultimate")) for (const auto& x : j["penultimate"].items()) c.penultimate.push_back(x.number());
+    c.r1 = j.num("r1", 1), c.r2 = j.num("r2", 1);
+    c.sequence = !c.transition.empty() ? caps::Sequence::Markov : !c.penultimate.empty() ? caps::Sequence::Penultimate : caps::Sequence::Terminal;
+    if (c.sequence == caps::Sequence::Terminal && c.reactivity.empty() && n > 2) throw std::invalid_argument("three or more units need reactivity ratios");
+    const caps::Json full = caps::sequence_report(c, {});
+    caps::Json r = caps::Json::object();
+    r["kind"] = full["kind"], r["units"] = full["units"];
+    if (full.has("model")) r["model"] = full["model"];
+    if (j.has("conversion") && c.sequence != caps::Sequence::Markov) {
+      std::vector<double> rr = c.reactivity;
+      if (rr.empty() && n == 2) rr = {1, c.r1, c.r2, 1};
+      const auto table = caps::composition_drift(c.weights, rr, j.num("conversion", 0.5), int(j.num("points", 41)), c.penultimate);
+      caps::Json d = caps::Json::array();
+      for (const auto& p : table) {
+        caps::Json q = caps::Json::object();
+        q["conversion"] = p.conversion, q["feed"] = num_array(p.feed), q["instantaneous"] = num_array(p.instantaneous), q["cumulative"] = num_array(p.cumulative);
+        d.push_back(q);
+      }
+      r["drift"] = d;
+    }
+    r["ok"] = true;
     return report_out(r.dump(0), out, cap);
   } catch (const std::exception& e) {
     return json_error(e, out, cap);

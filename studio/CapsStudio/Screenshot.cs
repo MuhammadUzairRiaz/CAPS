@@ -804,7 +804,19 @@ internal static class Screenshot
                             vm.OpenPolydispersity();
                         }
                         break;
-                    case "copolymer": vm.OpenCopolymer(); t = vm.BuildCoChain(); break;
+                    case "copolymer":   // copolymer[:THIRD:MODEL:DRIFT:CONVERSION] — e.g. copolymer:5:0:2:0.8 (M₃ the 5th monomer, terminal, drift along)
+                        vm.OpenCopolymer();
+                        if (parts.Length > 4)
+                        {
+                            vm.CoModel = int.Parse(parts[2]);
+                            vm.CoThird = int.Parse(parts[1]);
+                            vm.CoDrift = int.Parse(parts[3]);
+                            vm.CoConversion = decimal.Parse(parts[4], System.Globalization.CultureInfo.InvariantCulture);
+                            Console.WriteLine("copolymer: " + vm.CoStatus + (vm.CoError.Length > 0 ? " · error " + vm.CoError : "") + "\n" +
+                                              string.Join("\n", vm.CoRows.Select(r => $"{r.Label}: model {r.A}, chain {r.B}")) + "\n" + vm.CoMoreText);
+                        }
+                        t = vm.BuildCoChain();
+                        break;
                     case "solvents": vm.OpenSolventScreen(); break;
                     case "tacticity": vm.OpenTacticityStats(); t = vm.TsBuild(); break;
                     case "blendphase": vm.OpenBlendPhase(); break;

@@ -108,6 +108,11 @@ const Cite kCites[] = {
     {"pawley1981", "@article{pawley1981,\n  author = {Pawley, G. S.},\n  title = {Unit-cell refinement from powder diffraction scans},\n  journal = {J. Appl. Cryst.}, volume = {14}, pages = {357--361}, year = {1981}, doi = {10.1107/S0021889881009618}\n}"},
     {"rietveld1969", "@article{rietveld1969,\n  author = {Rietveld, H. M.},\n  title = {A profile refinement method for nuclear and magnetic structures},\n  journal = {J. Appl. Cryst.}, volume = {2}, pages = {65--71}, year = {1969}, doi = {10.1107/S0021889869006558}\n}"},
     {"hill1987", "@article{hill1987,\n  author = {Hill, R. J. and Howard, C. J.},\n  title = {Quantitative phase analysis from neutron powder diffraction data using the {R}ietveld method},\n  journal = {J. Appl. Cryst.}, volume = {20}, pages = {467--474}, year = {1987}, doi = {10.1107/S0021889887086199}\n}"},
+    {"mayo1944", "@article{mayo1944,\n  author = {Mayo, F. R. and Lewis, F. M.},\n  title = {Copolymerization. {I}. {A} basis for comparing the behavior of monomers in copolymerization; the copolymerization of styrene and methyl methacrylate},\n  journal = {J. Am. Chem. Soc.}, volume = {66}, pages = {1594--1601}, year = {1944}, doi = {10.1021/ja01237a052}\n}"},
+    {"alfrey1944", "@article{alfrey1944,\n  author = {Alfrey, T. and Goldfinger, G.},\n  title = {Copolymerization of systems of three and more components},\n  journal = {J. Chem. Phys.}, volume = {12}, pages = {322}, year = {1944}, doi = {10.1063/1.1723949}\n}"},
+    {"walling1945", "@article{walling1945,\n  author = {Walling, C. and Briggs, E. R.},\n  title = {Copolymerization. {III}. {S}ystems containing more than two monomers},\n  journal = {J. Am. Chem. Soc.}, volume = {67}, pages = {1774--1778}, year = {1945}, doi = {10.1021/ja01226a047}\n}"},
+    {"merz1946", "@article{merz1946,\n  author = {Merz, E. and Alfrey, T. and Goldfinger, G.},\n  title = {Intramolecular reactions in vinyl polymers as a means of investigation of the propagation step},\n  journal = {J. Polym. Sci.}, volume = {1}, pages = {75--82}, year = {1946}, doi = {10.1002/pol.1946.120010202}\n}"},
+    {"skeist1946", "@article{skeist1946,\n  author = {Skeist, I.},\n  title = {Copolymerization: the composition distribution curve},\n  journal = {J. Am. Chem. Soc.}, volume = {68}, pages = {1781--1784}, year = {1946}, doi = {10.1021/ja01213a031}\n}"},
     {"belonoshko2006", "@article{belonoshko2006,\n  author = {Belonoshko, A. B. and Skorodumova, N. V. and Rosengren, A. and Johansson, B.},\n  title = {Melting and critical superheating},\n  journal = {Phys. Rev. B}, volume = {73}, pages = {012201}, year = {2006}, doi = {10.1103/PhysRevB.73.012201}\n}"},
     {"zunger1990", "@article{zunger1990,\n  author = {Zunger, A. and Wei, S.-H. and Ferreira, L. G. and Bernard, J. E.},\n  title = {Special quasirandom structures},\n  journal = {Phys. Rev. Lett.}, volume = {65}, pages = {353--356}, year = {1990}, doi = {10.1103/PhysRevLett.65.353}\n}"},
     {"gale2003", "@article{gale2003,\n  author = {Gale, J. D. and Rohl, A. L.},\n  title = {The {G}eneral {U}tility {L}attice {P}rogram ({GULP})},\n  journal = {Mol. Simul.}, volume = {29}, pages = {291--341}, year = {2003}, doi = {10.1080/0892702031000104887}\n}"},
@@ -436,6 +441,19 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
       t = (chains.empty() ? std::string("Polymer chains were") : chains + (chains == "1" ? " chain" : " chains") + (dp.empty() ? "" : " of " + dp + " repeat units") + (chains == "1" ? " was" : " were")) + " grown" +
           (e == "interface.build" ? " against the surface" : e == "nano.embed" ? " around the filler" : e == "grow.blend" ? " as a blend" : " in a periodic cell") + where +
           " with " + version + ", each unit placed from internal coordinates" + cite({"parsons2005"}) + " by choosing among trial torsions the one with the largest clearance from atoms already placed.";
+      // the copolymer's sequence model: the recipe's text, or the spec's own keys (the C API)
+      const std::string sq = param(s, "sequence"), dr = param(s, "drift");
+      const bool drifting = sq.find("drift") != std::string::npos || dr == "chains" || dr == "along";
+      if (sq.find("penultimate") != std::string::npos)
+        t += " The comonomer sequence followed the penultimate model" + cite({"merz1946"});
+      else if (sq.find("terminal model of") != std::string::npos || (sq == "terminal" && !param(s, "reactivity").empty()))
+        t += " The comonomer sequence followed the terminal model of several monomers" + cite({"alfrey1944", "walling1945"});
+      else if (sq.rfind("terminal", 0) == 0)
+        t += " The comonomer sequence followed the terminal model" + cite({"mayo1944"});
+      else if (sq.rfind("Markov chain", 0) == 0 || sq == "markov")
+        t += " The comonomer sequence was a first-order Markov chain with a given transition matrix";
+      if (!t.empty() && t.back() != '.' && (sq.find("terminal") != std::string::npos || sq.find("penultimate") != std::string::npos || sq.find("Markov") != std::string::npos || sq == "markov"))
+        t += drifting ? std::string(", with the feed's drift over the batch's conversion") + cite({"skeist1946"}) + "." : ".";
       built = true;
     } else if (e == "field.assign") {
       const std::string ff = param(s, "force field"), ch = param(s, "charges");

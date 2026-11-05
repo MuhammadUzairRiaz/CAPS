@@ -3592,6 +3592,64 @@
    ]
   },
   {
+   "id": "copolymer-sequences",
+   "group": "Growth",
+   "title": "Copolymers of several units: terminal and penultimate models, drift with conversion",
+   "summary": "The order of the units along a chain is a Markov chain. In the terminal model the last unit decides the next: P_ij = (f_j / r_ij) / Σ_k (f_k / r_ik), with f the feed and r_ij = k_ii / k_ij the reactivity ratios (r_ii = 1); for two units this is the Mayo–Lewis model, for more the Alfrey–Goldfinger and Walling–Briggs one. A transition matrix can also be given directly. In the penultimate model (two units) the last two decide: r1 = k111/k112 and r1′ = k211/k212 for a chain ending in A, r2 and r2′ for one ending in B. The copolymer composition is the stationary distribution of the chain (solved directly), the dyad and triad fractions are its joint probabilities along the chain, and the number-average run length of a unit a is F_a / Σ_(b≠a) D_ba. In a batch the faster monomer is used up first, so the feed drifts: the unreacted monomer M loses F_i dM of unit i, d f_i / d ln M = F_i − f_i, which is integrated by fourth-order Runge–Kutta in ln M up to the chosen conversion (for two units this reproduces the closed form of Meyer and Lowry). With drift between chains each chain is made at a conversion drawn evenly up to the final one, from the feed left then; with drift along the chain (living growth) position i of a chain belongs to conversion X (i + ½)/DP. The builder reports the composition, dyads, triads and run lengths of the cell it grew against the model.",
+   "equation": "P_ij = (f_j/r_ij) / Σ_k (f_k/r_ik);  F P = F, Σ F = 1;  D_ij = F_i P_ij;  n̄_a = F_a / Σ_(b≠a) D_ba;  d f_i / d ln M = F_i(f) − f_i",
+   "equation_note": "Mayo & Lewis 1944; Alfrey & Goldfinger 1944; Walling & Briggs 1945; Merz, Alfrey & Goldfinger 1946; Skeist 1946; Meyer & Lowry 1965",
+   "tex": "P_{ij} = \\frac{f_j / r_{ij}}{\\sum_k f_k / r_{ik}}, \\qquad \\mathbf{F}\\,\\mathsf{P} = \\mathbf{F}, \\quad \\sum_i F_i = 1, \\qquad D_{ij} = F_i P_{ij}, \\qquad \\bar n_a = \\frac{F_a}{\\sum_{b \\ne a} D_{ba}} \\\\ \\frac{d f_i}{d \\ln M} = F_i(\\mathbf{f}) - f_i",
+   "symbols": [
+    [
+     "f_i",
+     "feed fraction of monomer i",
+     "—"
+    ],
+    [
+     "r_ij",
+     "reactivity ratio k_ii / k_ij",
+     "—"
+    ],
+    [
+     "P_ij",
+     "probability that unit j follows unit i",
+     "—"
+    ],
+    [
+     "F_i",
+     "copolymer composition (stationary)",
+     "—"
+    ],
+    [
+     "D_ij",
+     "dyad fraction",
+     "—"
+    ],
+    [
+     "n̄_a",
+     "number-average run length of unit a",
+     "units"
+    ],
+    [
+     "M",
+     "unreacted monomer, fraction of the start (conversion X = 1 − M)",
+     "—"
+    ]
+   ],
+   "when": "SBR and NBR whose composition drifts in emulsion batches, EPDM and other terpolymers, gradient copolymers from living chains, and checking that a built cell holds the sequence statistics the chemistry implies before its properties are computed.",
+   "cites": [
+    "mayo1944",
+    "alfrey1944",
+    "walling1945",
+    "merz1946",
+    "skeist1946"
+   ],
+   "source": "core/src/polystats.cpp (terminal_model, transition_model, penultimate_model, composition_drift, sequence_statistics); polymer.cpp (chain_sequence, sequence_report)",
+   "tested": "Copolymer.TerminalModelIsMayoLewis (composition and run lengths equal Mayo–Lewis to 1e-12 over 48 cases); Copolymer.TernaryIsAlfreyGoldfinger (three units equal the Alfrey–Goldfinger equation to 1e-12); Copolymer.PenultimateComposition (the Merz–Alfrey–Goldfinger composition to 1e-12; equal primed ratios give the terminal triads); Copolymer.DriftIsMeyerLowry (the integrated feed equals the Meyer–Lowry conversion to 1e-8, the cumulative composition closes the mass balance); Copolymer.BuiltChainsFollowTheModel (300 chains of 300 units: composition, dyads, triads and run lengths of terminal, given-matrix and penultimate chains within sampling error; drift along the chain)",
+   "deviation": "the penultimate model and the drift need a feed (not a given matrix); the penultimate model is for two units; the drift assumes long chains formed at once (radical) or chains that live through the batch, not depropagation or a changing radical concentration",
+   "engines": []
+  },
+  {
    "id": "density-fields",
    "group": "Analysis",
    "title": "Density fields: dynamic mean-field theory of Gaussian chains",
