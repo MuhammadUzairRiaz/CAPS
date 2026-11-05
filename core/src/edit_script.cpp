@@ -9,7 +9,9 @@
 
 #include "caps/edit.hpp"
 #include "caps/elements.hpp"
+#include "caps/io.hpp"
 #include "caps/lattice.hpp"
+#include "caps/ring_edit.hpp"
 #include "caps/spacegroup.hpp"
 
 namespace caps {
@@ -144,6 +146,39 @@ std::vector<std::string> edit_script(System& s, const std::string& script) {
         need(3, 3, "attach I SMILES");
         const auto added = attach_fragment(s, atom(s, w[1]), w[2]);
         done = std::to_string(added.size()) + " atoms of " + w[2] + " attached to atom " + w[1];
+      } else if (v == "ring") {
+        need(4, 6, "ring I J N [MEMBERS] [aromatic]");
+        RingSpec sp;
+        sp.size = int(number(w[3], "the ring size"));
+        for (size_t k = 4; k < w.size(); ++k) {
+          if (w[k] == "aromatic") sp.aromatic = true;
+          else sp.members = w[k];
+        }
+        const auto r = fuse_ring(s, atom(s, w[1]), atom(s, w[2]), sp);
+        done = r.notes.front() + " (" + std::to_string(r.added.size()) + " atoms added, cleaned with UFF)";
+      } else if (v == "spiro") {
+        need(3, 4, "spiro I N [MEMBERS]");
+        RingSpec sp;
+        sp.size = int(number(w[2], "the ring size"));
+        if (w.size() > 3) sp.members = w[3];
+        const auto r = spiro_ring(s, atom(s, w[1]), sp);
+        done = r.notes.front() + " (" + std::to_string(r.added.size()) + " atoms added, cleaned with UFF)";
+      } else if (v == "insert") {
+        need(4, 4, "insert I J Sym");
+        const int z = element_from_symbol(w[3]);
+        if (z <= 0) throw std::invalid_argument("unknown element " + w[3]);
+        const auto r = insert_atom(s, atom(s, w[1]), atom(s, w[2]), z, true, true);
+        done = r.notes.front() + " (cleaned with UFF)";
+      } else if (v == "join") {
+        need(3, 5, "join I FILE [J|auto] [torsion°]");
+        const Trajectory t = open_file(w[2]);
+        if (t.frames() == 0) throw std::invalid_argument(w[2] + " holds no structure");
+        const System piece = t.frame(0);
+        const uint32_t lb = w.size() > 3 && w[3] != "auto" ? atom(piece, w[3]) : default_leaving_atom(piece);
+        JoinOptions jo;
+        if (w.size() > 4) jo.torsion = number(w[4], "the torsion");
+        const auto r = join_pieces(s, piece, atom(s, w[1]), lb, jo);
+        done = r.notes.front() + " (" + w[2] + ", its atom " + std::to_string(lb + 1) + " left)";
       } else if (v == "length") {
         need(4, 4, "length I J Å");
         const double r = number(w[3], "the length");

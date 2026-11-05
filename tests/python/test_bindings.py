@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 101, "ABI 101")
+check(caps.abi_version() == 102, "ABI 102")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -862,6 +862,29 @@ _rp = _e1.reaction_path(os.path.join(_d2, "same.xyz"), match=False, method="idpp
 _rr = _rp.path_report
 check(_rp.frames == 7 and _rr["converged"] and _rr["forward"] > 0.5 and abs(_rr["forward"] - _rr["reverse"]) < 0.05, f"reaction path {_rr}")
 print("ok   reaction_path: matching, IDPP, CI-NEB")
+
+# rings, insertions and joins (ABI 102): an epoxide on ethane, a spiro lactam on cyclohexane, one more S in a
+# disulfide, two methanes joined into ethane
+def _formula(d):
+    from collections import Counter
+    c = Counter(d.atom(i)["element"] for i in range(d.atoms))
+    return "".join(e + (str(c[e]) if c[e] > 1 else "") for e in ["C", "H"] + sorted(k for k in c if k not in ("C", "H")) if c[e])
+_ep = caps.build.smiles("CC", seed=1)
+_ep.fuse_ring(0, 1, size=3, members="O")
+check(_formula(_ep) == "C2H4O", f"fuse_ring epoxide {_formula(_ep)}")
+_sp = caps.build.smiles("C1CCCCC1", seed=1)
+_sp.spiro_ring(0, size=5, members="N C=O C C")
+check(_formula(_sp) == "C9H15NO", f"spiro lactam {_formula(_sp)}")
+_ss = caps.build.smiles("CSSC", seed=1)
+_ss.insert_atom(1, 2, "S")
+check(_formula(_ss) == "C2H6S3", f"insert S {_formula(_ss)}")
+_mp = os.path.join(tempfile.mkdtemp(), "methane.xyz")
+with open(_mp, "w") as _f:
+    _f.write("5\nmethane\nC 0 0 0\nH 0.629312 0.629312 0.629312\nH 0.629312 -0.629312 -0.629312\nH -0.629312 0.629312 -0.629312\nH -0.629312 -0.629312 0.629312\n")
+_jn = caps.open(_mp)
+_jr = _jn.join(_mp, at=1)
+check(_formula(_jn) == "C2H6" and len(_jr["added"]) == 4, f"join {_formula(_jn)} {_jr}")
+print("ok   fuse_ring, spiro_ring, insert_atom, join")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))

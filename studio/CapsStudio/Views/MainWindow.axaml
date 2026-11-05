@@ -693,7 +693,40 @@
               </Flyout>
             </Button.Flyout>
           </Button>
-          <Button Classes="tool" Click="OnFuseRing" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Fuse ring: a benzene ring onto the bond between the two picked atoms (⇧ click them first)"><local:Icon Kind="ring" Size="18" /></Button>
+          <Button Classes="tool" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Rings and joins: a ring of 3 to 8 fused onto the picked bond or spiro on the picked atom, an atom put into the picked bond, another file joined at the picked atom"><local:Icon Kind="ring" Size="18" />
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedLeft">
+                <StackPanel Width="330" Spacing="8" Margin="4">
+                  <TextBlock Text="Ring" FontWeight="SemiBold" />
+                  <Grid ColumnDefinitions="Auto,8,*,8,Auto">
+                    <TextBlock Text="Atoms" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+                    <ComboBox Grid.Column="2" ItemsSource="{Binding RingSizes}" SelectedItem="{Binding RingSize}" HorizontalAlignment="Stretch" />
+                    <CheckBox Grid.Column="4" IsChecked="{Binding RingAromatic}" Content="Aromatic" ToolTip.Tip="Fused six-rings: every ring bond aromatic (a pyridine or benzene ring)" />
+                  </Grid>
+                  <TextBox Text="{Binding RingMembers}" Watermark="new atoms, e.g. O · N C=O C C · Si O Si" />
+                  <TextBlock Text="{Binding RingMembersHint}" TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource DimB}" />
+                  <WrapPanel ItemSpacing="6" LineSpacing="6">
+                    <Button Content="Fuse on bond" Click="OnRingFuse" ToolTip.Tip="The ring shares the bond between the two picked atoms; a hydrogen of each makes way" />
+                    <Button Content="Spiro on atom" Click="OnRingSpiro" ToolTip.Tip="The ring shares the one picked atom; two of its hydrogens make way" />
+                    <Button Content="Benzene" Click="OnFuseRing" ToolTip.Tip="A benzene ring onto the picked bond" />
+                  </WrapPanel>
+                  <Separator />
+                  <TextBlock Text="Insert" FontWeight="SemiBold" />
+                  <Button Click="OnInsertAtom" ToolTip.Tip="An atom of the element on the right put into the bond between the two picked atoms; an open chain gives way">
+                    <TextBlock Text="{Binding BuildElement, StringFormat='Put {0} into the picked bond'}" />
+                  </Button>
+                  <Separator />
+                  <TextBlock Text="Join a structure" FontWeight="SemiBold" />
+                  <TextBlock Text="Pick the leaving atom here (a hydrogen, or any atom with one bond); the piece loses its own, turns onto the new bond and about it." TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource DimB}" />
+                  <Grid ColumnDefinitions="*,8,*">
+                    <TextBox Text="{Binding JoinPieceAtom}" Watermark="piece atom (auto)" ToolTip.Tip="The piece's leaving atom, numbered from 1; empty: the first hydrogen of its first heavy atom" />
+                    <TextBox Grid.Column="2" Text="{Binding JoinTorsion}" Watermark="torsion ° (clearest)" ToolTip.Tip="The dihedral about the new bond; empty: the turn that keeps the piece clearest of the structure" />
+                  </Grid>
+                  <Button Content="Choose file and join…" Click="OnJoinFile" />
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
             <Button Height="36" MinHeight="36" Padding="10,0" Margin="4,0,0,0" Click="OnElementPicker" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Element for new atoms (⇧E)">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <Border Width="22" Height="22" CornerRadius="4" Background="{Binding BuildElementColour}"><TextBlock Text="{Binding BuildElement}" FontWeight="Bold" FontSize="12" Foreground="#0F1113" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>

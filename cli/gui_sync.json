@@ -264,7 +264,7 @@
   },
   "edit": {
    "status": "gui",
-   "studio": "Studio › editing tools (build, delete, bond, torsion, supercell …)",
+   "studio": "Studio › editing tools (build, delete, bond, torsion, supercell …; the ring button: fused and spiro rings, insert atom, join a file)",
    "where": "ViewModels/MainViewModel.Edit.cs|Edit(",
    "capi": [
     "caps_edit"

@@ -163,6 +163,8 @@ std::vector<char> select_grow(const System& s, const std::vector<char>& from, in
 //   element SEL Sym · delete SEL · bond I J [order] · unbond I J · addh [SEL] · attach I SMILES · length I J Å ·
 //   angle I J K ° · torsion I J K L ° · invert I · config I R|S · rotate SEL x,y,z ° · mirror SEL nx,ny,nz ·
 //   move SEL dx,dy,dz · clean [SEL] · tacticity iso|syndio
+//   rings and joins (ring_edit.hpp): ring I J N [MEMBERS] [aromatic] · spiro I N [MEMBERS] · insert I J Sym ·
+//   join I FILE [J|auto] [torsion°]   (MEMBERS: the new ring atoms, comma-separated, e.g. O or N,C=O,C,C)
 //   lattice (lattice.hpp): supercell na nb nc · primitive [tol] · niggli · conventional [tol] · redefine m11 … m33 ·
 //   vacuum Å · nanowire u v w radius [repeats] [shape] [vacuum]
 // SEL: "3,5-9", "all", "element:C,N", "smarts:PATTERN", "type:LABEL". Returns one line per edit saying what it did;

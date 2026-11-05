@@ -840,6 +840,28 @@ class Document:
             raise CapsError(r.get("error", "edit failed"))
         return r
 
+    def fuse_ring(self, i: int, j: int, size: int = 6, members: str = "", aromatic: bool = False, clean: bool = True) -> dict:
+        """A ring of 3 to 8 atoms fused onto the bond i–j (0-based): members names the new atoms in order from j round to
+        i ("O" for an epoxide, "C C C N" for a pyridine ring, "C=O" for a carbonyl carbon); aromatic for six-rings."""
+        return self.edit(op="fuse_ring", i=int(i), j=int(j), size=int(size), members=members, aromatic=bool(aromatic), clean=int(clean))
+
+    def spiro_ring(self, atom: int, size: int = 5, members: str = "", clean: bool = True) -> dict:
+        """A ring of 3 to 8 atoms sharing one atom (0-based) with the structure: members from that atom round."""
+        return self.edit(op="spiro_ring", atom=int(atom), size=int(size), members=members, clean=int(clean))
+
+    def insert_atom(self, i: int, j: int, element: str, clean: bool = True) -> dict:
+        """An atom put into the bond i–j (0-based): one more S in a polysulfide bridge, CH2 into a chain."""
+        return self.edit(op="insert_atom", i=int(i), j=int(j), element=element, clean=int(clean))
+
+    def join(self, piece: str, at: int, piece_atom: int = -1, torsion=None, order: int = 1, clean: bool = False) -> dict:
+        """Another structure file bonded on: the leaving atom at (0-based, one bond) here and piece_atom (−1: CAPS picks
+        the first hydrogen of the piece's first heavy atom) go, the piece is turned onto the bond, then about it to the
+        torsion given or to the clearest one."""
+        op = dict(op="join", file=str(piece), at=int(at), piece_atom=int(piece_atom), order=int(order), clean=int(clean))
+        if torsion is not None:
+            op["torsion"] = float(torsion)
+        return self.edit(**op)
+
     def undo(self, redo: bool = False) -> None:
         if library().caps_undo(self._h, int(redo)) != 0:
             raise _error()

@@ -1419,6 +1419,14 @@ public partial class MainWindow : Window
     private void OnAddHydrogens(object? s, RoutedEventArgs e) => _vm.AddHydrogensAll();
     private void OnInvert(object? s, RoutedEventArgs e) => _vm.InvertPicked();
     private void OnFuseRing(object? s, RoutedEventArgs e) => _vm.FuseRingPicked();
+    private void OnRingFuse(object? s, RoutedEventArgs e) => _vm.RingFusePicked();
+    private void OnRingSpiro(object? s, RoutedEventArgs e) => _vm.RingSpiroPicked();
+    private void OnInsertAtom(object? s, RoutedEventArgs e) => _vm.InsertAtomPicked();
+    private async void OnJoinFile(object? s, RoutedEventArgs e)
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions { Title = "Structure to join", AllowMultiple = false });
+        if (files.Count > 0 && Avalonia.Platform.Storage.StorageProviderExtensions.TryGetLocalPath(files[0]) is { } p) _vm.JoinFile(p);
+    }
     private void OnToolLasso(object? s, RoutedEventArgs e) => _vm.EditTool = _vm.EditTool == 4 ? 0 : 4;
     private void OnToolMove(object? s, RoutedEventArgs e) => _vm.EditTool = _vm.EditTool == 5 ? 0 : 5;
     private void OnToolRotate(object? s, RoutedEventArgs e) => _vm.EditTool = _vm.EditTool == 6 ? 0 : 6;

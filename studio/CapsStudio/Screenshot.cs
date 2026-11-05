@@ -250,6 +250,14 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("rpath: " + vm.PathResult + (vm.PathHasError ? " · error " + vm.PathError : ""));
             }
+            if (kv[0] == "ringop")   // ringop=OP|ATOMS|SIZE|MEMBERS (OP fuse, aromatic, spiro, insert, join; ATOMS 0-based "0,1"; join: MEMBERS is the file)
+            {
+                var f = kv[1].Split('|');
+                var atoms = f[1].Split(',').Select(int.Parse).ToArray();
+                w.ViewModel.RingOpForShot(f[0], atoms, f.Length > 2 ? int.Parse(f[2]) : 6, f.Length > 3 ? f[3] : "");
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("ringop: " + w.ViewModel.Status + (w.ViewModel.EditError.Length > 0 ? " · error " + w.ViewModel.EditError : "") + " · atoms " + w.ViewModel.AtomCountForShot());
+            }
             if (kv[0] == "pageview")   // pageview=YAW,PITCH[,ZOOM]: the open page's own structure view turned to that camera
             {
                 var c = kv[1].Split(',').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();

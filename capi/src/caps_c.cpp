@@ -115,6 +115,7 @@
 #include "caps/pores.hpp"
 #include "caps/measured.hpp"
 #include "caps/reaction_path.hpp"
+#include "caps/ring_edit.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
@@ -9219,6 +9220,42 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       const std::string to = j.text("to", "R");
       if (!caps::set_configuration(s, c, to)) throw std::invalid_argument("atom " + std::to_string(c + 1) + " is not a stereocentre");
       what = "Centre " + std::to_string(c + 1) + " made " + to;
+    } else if (op == "fuse_ring" && (j.has("size") || j.has("members"))) {   // v102 {i, j, size, members, aromatic, clean} (ring_edit.hpp)
+      caps::RingSpec sp;
+      sp.size = int(j.num("size", 6)), sp.members = j.text("members"), sp.clean = j.num("clean", 1) != 0;
+      sp.aromatic = j.has("aromatic") && j["aromatic"].kind() == caps::Json::Bool && j["aromatic"].boolean();
+      const auto r = caps::fuse_ring(s, uint32_t(j.num("i", -1)), uint32_t(j.num("j", -1)), sp);
+      for (uint32_t x : r.added) added.push_back(double(x));
+      d->selection.assign(s.atoms.size(), 0);
+      what = r.notes.front();
+    } else if (op == "spiro_ring") {   // v102 {atom, size, members, clean}
+      caps::RingSpec sp;
+      sp.size = int(j.num("size", 5)), sp.members = j.text("members"), sp.clean = j.num("clean", 1) != 0;
+      const auto r = caps::spiro_ring(s, uint32_t(j.num("atom", -1)), sp);
+      for (uint32_t x : r.added) added.push_back(double(x));
+      d->selection.assign(s.atoms.size(), 0);
+      what = r.notes.front();
+    } else if (op == "insert_atom") {   // v102 {i, j, element, clean}
+      const auto r = caps::insert_atom(s, uint32_t(j.num("i", -1)), uint32_t(j.num("j", -1)), element_of(j.text("element", "C")), true, j.num("clean", 1) != 0);
+      for (uint32_t x : r.added) added.push_back(double(x));
+      d->selection.assign(s.atoms.size(), 0);
+      what = r.notes.front();
+    } else if (op == "join") {   // v102 {file, at: the leaving atom here, piece_atom (−1: CAPS picks), torsion, order, clean}
+      const std::string file = j.text("file");
+      if (file.empty()) throw std::invalid_argument("join: name the piece's structure file");
+      const caps::Trajectory t = caps::open_file(file);
+      if (t.frames() == 0) throw std::invalid_argument(file + " holds no structure");
+      const caps::System piece = t.frame(0);
+      const int pa = int(j.num("piece_atom", -1));
+      const uint32_t lb = pa >= 0 ? uint32_t(pa) : caps::default_leaving_atom(piece);
+      caps::JoinOptions jo;
+      jo.order = int(j.num("order", 1)), jo.clean = j.num("clean", 0) != 0;
+      if (j.has("torsion")) jo.torsion = j.num("torsion", 0);
+      const auto r = caps::join_pieces(s, piece, uint32_t(j.num("at", -1)), lb, jo);
+      for (uint32_t x : r.added) added.push_back(double(x));
+      d->selection.assign(s.atoms.size(), 0);
+      what = r.notes.front() + " (" + std::filesystem::path(file).filename().string() + ", its atom " + std::to_string(lb + 1) + " left)";
+      if (r.notes.size() > 1) what += " · " + r.notes.back();
     } else if (op == "fuse_ring") {   // {i, j}: a benzene ring fused onto the bond i–j, cleaned with UFF
       const uint32_t a = uint32_t(j.num("i", -1)), b = uint32_t(j.num("j", -1));
       const auto at = caps::fuse_benzene(s, a, b);
