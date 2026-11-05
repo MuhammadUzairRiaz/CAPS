@@ -685,6 +685,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
       r.push_back(b);
     }
     if (L.coul == "long") r.push_back("kspace_style " + L.kspace + " " + fmt_accuracy(L.kspace_accuracy));
+    if (L.coul == "long" && e.slab > 1) r.push_back("kspace_modify slab " + [&] { char t[32]; std::snprintf(t, sizeof t, "%.6g", e.slab); return std::string(t); }() + "   # Yeh-Berkowitz slab correction (boundary p p f)");
     return r;
   }
   if (L.table_only) {   // an IBI model: the tables, linearly interpolated as CAPS does
@@ -761,6 +762,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
     if (L.native) std::snprintf(b, sizeof b, "kspace_style %s %s", L.kspace.c_str(), fmt_accuracy(L.kspace_accuracy).c_str());
     else std::snprintf(b, sizeof b, "kspace_style ewald %.3g", std::max(1e-12, e.ewald_rtol * 0.01));
     r.push_back(b);
+    if (e.slab > 1) r.push_back("kspace_modify slab " + [&] { char t[32]; std::snprintf(t, sizeof t, "%.6g", e.slab); return std::string(t); }() + "   # Yeh-Berkowitz slab correction (boundary p p f)");
   }
   return r;
 }
@@ -1594,7 +1596,8 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   if (metal)
     out << "# units metal: energies in eV (every parameter of the force field divided by 23.060549, LAMMPS's own factor), time in ps,\n"
            "# pressure in bar" << (ff.manybody.on() ? ", as LAMMPS reads " + ff.manybody.style + "'s file" : std::string()) << "\n";
-  out << (metal ? "units           metal\n" : "units           real\n") << "atom_style      full\nboundary        p p p\n";
+  out << (metal ? "units           metal\n" : "units           real\n") << "atom_style      full\n"
+      << (e0.slab > 1 && s.cell.valid() && e0.coulomb ? "boundary        p p f   # a slab: the k-space sum corrected along z (kspace_modify slab)\n" : "boundary        p p p\n");
   {
     char t[64];   // in fs (ps in metal units), with the other settings at the top, as force-field input files give it
     std::snprintf(t, sizeof t, "timestep        %.6g\n\n", lammps_timestep(run, ff) * tu);
@@ -1688,7 +1691,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
              "#  the atoms of the later parts; the forces are not affected)\n";
   }
   for (const auto& l : styles) {
-    if (l.rfind("kspace_style", 0) == 0) kspace.push_back(l);
+    if (l.rfind("kspace_style", 0) == 0 || l.rfind("kspace_modify", 0) == 0) kspace.push_back(l);   // after read_data, style first
     else out << aligned(l) << "\n";
   }
   out << "\nread_data       " << data_path << "\n";

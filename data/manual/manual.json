@@ -486,6 +486,47 @@
    "tex": "E = E_\\mathrm{real} + E_\\mathrm{rec} + E_\\mathrm{self}, \\qquad E_\\mathrm{self} = -\\frac{\\beta}{\\sqrt{\\pi}}\\sum_i q_i^2"
   },
   {
+   "id": "slab-ewald",
+   "group": "Electrostatics",
+   "title": "PME for slab cells: the vacuum correction",
+   "summary": "A film or surface with vacuum above it, in a periodic cell with c along z, still feels its own images along z through a plain Ewald or PME sum, and the energy then depends on how much vacuum the cell has. With the slab correction on, the reciprocal sum runs on the cell lengthened along z by a factor (3 is usual) and the dipole term of Yeh and Berkowitz is added with its forces. For a slab with a net charge, the terms of Ballenegger, Arnold and Cerdà keep the energy unchanged when the slab moves along z. V′ and L′_z are the volume and height of the lengthened box, the box the Ewald sum runs on, as in LAMMPS's kspace_modify slab. The LAMMPS input gets boundary p p f and kspace_modify slab, the GROMACS parameters ewald-geometry = 3dc (GROMACS lengthens nothing itself, so its cell should hold the vacuum). The correction gives no virial: the pressure along z means nothing for a slab, and x and y keep theirs.",
+   "equation": "E_corr = (2π k / V′) (M_z² − Q Σ_i q_i z_i² − Q² L′_z²/12),  M_z = Σ_i q_i z_i,  F_iz = −(4π k / V′) q_i (M_z − Q z_i)",
+   "equation_note": "k Coulomb's constant (332.06 kcal Å/(mol e²)); Q the net charge; z inside the cell; V′ = factor × V, L′_z = factor × L_z",
+   "symbols": [
+    [
+     "M_z",
+     "dipole moment along z",
+     "e Å"
+    ],
+    [
+     "Q",
+     "net charge",
+     "e"
+    ],
+    [
+     "V′",
+     "volume of the lengthened box",
+     "Å³"
+    ],
+    [
+     "L′_z",
+     "height of the lengthened box",
+     "Å"
+    ]
+   ],
+   "when": "Every film-on-surface or slab cell with vacuum and charges: a polymer film on silica or cellulose, a fibre surface with water, a charged layer, adhesion and wetting cells.",
+   "cites": [
+    "yeh1999",
+    "ballenegger2009",
+    "essmann1995"
+   ],
+   "source": "core/src/field.cpp",
+   "tested": "tests/test_slab_ewald.cpp (a dipolar ion slab: with the correction the energy at 40 and 80 Å cell height differs by under 2 % of what it differs without it, and by under 10⁻³ relative; factor 3 against 5 within 10⁻³; a slab with a net charge moved 3 Å along z keeps its energy to 10⁻⁶; forces equal −∂E/∂z by central differences to 10⁻⁴; against LAMMPS (ewald 1e-10, coul/long, kspace_modify slab 3.0, boundary p p f) 2452.6201 kcal/mol and plain 1914.1118, CAPS within 2·10⁻³ of both); tests/python/test_bindings.py (the LAMMPS and GROMACS exports carry the settings)",
+   "deviation": "c must lie along z and a, b in the xy plane. No virial from the correction. Atoms must stay inside the cell along z (the vacuum keeps them there); one that crosses is wrapped, which a slab should never need.",
+   "engines": "CLI --slab 3 (implies --pme) on every command with electrostatics; Python caps.set_electrostatics(\"pme\", slab=3); Studio Settings › Force fields › Particle-mesh Ewald › Slab cells; C API caps_set_slab",
+   "tex": "E_{\\mathrm{corr}} = \\frac{2\\pi k}{V'}\\left(M_z^2 - Q\\sum_i q_i z_i^2 - \\frac{Q^2 L_z'^2}{12}\\right),\\qquad M_z = \\sum_i q_i z_i,\\qquad F_{iz} = -\\frac{4\\pi k}{V'}\\,q_i\\left(M_z - Q z_i\\right)"
+  },
+  {
    "id": "lbfgs",
    "group": "Minimisers",
    "title": "L-BFGS",

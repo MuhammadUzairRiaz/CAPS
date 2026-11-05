@@ -649,6 +649,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_crystal_find_symmetry")] public static extern int CrystalFindSymmetry([MarshalAs(UnmanagedType.LPUTF8Str)] string? spec, [MarshalAs(UnmanagedType.LPUTF8Str)] string? cif, double tolerance, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_palette")] public static extern void SetPalette(int palette);
     [DllImport(Lib, EntryPoint = "caps_set_threads")] public static extern void SetThreads(int threads);
+    [DllImport(Lib, EntryPoint = "caps_set_slab")] public static extern void SetSlab(double factor);
     [DllImport(Lib, EntryPoint = "caps_set_electrostatics")] public static extern void SetElectrostatics(int mode, double ewaldRtol, double pmeSpacing, int pmeOrder);
     [DllImport(Lib, EntryPoint = "caps_smiles_info")] public static extern int SmilesInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_smiles_depict")] public static extern int SmilesDepict([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);

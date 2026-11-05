@@ -42,6 +42,7 @@ public sealed class AppSettings
     public double EwaldRtol { get; set; } = 1e-5;
     public double PmeSpacing { get; set; } = 1.0;
     public int PmeOrder { get; set; } = 5;
+    public double PmeSlab { get; set; }                   // > 1: the PME slab correction's lengthening along z (films with vacuum)
     public int FigureBackground { get; set; } = 1;        // export figure: 0 dark, 1 white, 2 transparent
     public bool FigurePerProject { get; set; } = true;    // export figure: the background kept with the open project
     public int FigureBits { get; set; } = 8;              // export figure: PNG bit depth (8 or 16)

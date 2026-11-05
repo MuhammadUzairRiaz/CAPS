@@ -340,6 +340,8 @@
                   <TextBlock Grid.Column="4" Text="Order" Classes="label" VerticalAlignment="Center" />
                   <NumericUpDown Grid.Column="5" Value="{Binding SetPmeOrder}" Minimum="3" Maximum="10" Increment="1" FormatString="0" />
                 </Grid>
+                <CheckBox Content="Slab cells: correct for the vacuum along z" IsChecked="{Binding SetPmeSlab}" IsVisible="{Binding PmeOn}"
+                          ToolTip.Tip="For a film or surface with vacuum above it (c along z): the reciprocal sum runs on a cell three times as long and the dipole correction is added (Yeh &amp; Berkowitz 1999), so the film does not feel its own images along z. LAMMPS inputs get kspace_modify slab 3 and boundary p p f." />
                 <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="12"
                            Text="Particle-mesh Ewald sums the electrostatics of periodic cells in full (the reciprocal part runs in Fortran); cells without periodic faces keep the damped shifted force. Relax, Dynamics, Equilibrate, Analyze and the LAMMPS input all follow this choice." />
               </StackPanel>

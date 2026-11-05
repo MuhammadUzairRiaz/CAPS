@@ -338,6 +338,7 @@ struct Elec {
   int mode = 0;   // 0 DSF, 1 PME
   double rtol = 1e-5, spacing = 1.0;
   int order = 5;
+  double slab = 0;   // v110 > 1: the slab correction's lengthening factor
 } g_elec;
 
 caps::EnergyOptions elec(caps::EnergyOptions e = {}) {
@@ -345,6 +346,7 @@ caps::EnergyOptions elec(caps::EnergyOptions e = {}) {
   e.ewald_rtol = g_elec.rtol;
   e.pme_spacing = g_elec.spacing;
   e.pme_order = g_elec.order;
+  e.slab = g_elec.mode == 1 ? g_elec.slab : 0.0;
   return e;
 }
 
@@ -1471,7 +1473,7 @@ int threads_used(int requested) {
 caps::KeyValues energy_approx(double cutoff, bool coulomb, bool tail, int threads, bool mixed = false) {
   caps::KeyValues a;
   a.push_back({"van der Waals", "cut-off " + g6(cutoff) + " Å" + (tail ? " + tail correction" : "")});
-  a.push_back({"Electrostatics", !coulomb ? "off" : g_elec.mode == 1 ? "SPME · relative tolerance " + g6(g_elec.rtol) : "damped shifted force · cut-off " + g6(cutoff) + " Å"});
+  a.push_back({"Electrostatics", !coulomb ? "off" : g_elec.mode == 1 ? "SPME · relative tolerance " + g6(g_elec.rtol) + (g_elec.slab > 1 ? " · slab correction (cell × " + g6(g_elec.slab) + " along z)" : "") : "damped shifted force · cut-off " + g6(cutoff) + " Å"});
   a.push_back({"Constraints", "none"});
   // forces are summed in worker order: the same thread count gives the same trajectory bit for bit
   a.push_back({"Precision", std::string(mixed ? "mixed (12-6 and 9-6 pairs in single precision with SIMD, sums in double)" : "double") +
@@ -1480,6 +1482,7 @@ caps::KeyValues energy_approx(double cutoff, bool coulomb, bool tail, int thread
 }
 void elec_cites(std::vector<std::string>& c, bool coulomb) {
   if (coulomb) c.push_back(g_elec.mode == 1 ? "essmann1995" : "fennell2006");
+  if (coulomb && g_elec.mode == 1 && g_elec.slab > 1) c.push_back("yeh1999"), c.push_back("ballenegger2009");
 }
 
 // A document just read from a file: its manifest from the sidecar, else the file as the first input.
@@ -8190,6 +8193,8 @@ extern "C" int32_t caps_fixed_atoms(const caps_doc* d, int32_t* atoms, int32_t c
   for (int32_t k = 0; k < cap && size_t(k) < d->fixed_atoms.size(); ++k) atoms[k] = int32_t(d->fixed_atoms[size_t(k)]);
   return int32_t(d->fixed_atoms.size());
 }
+
+extern "C" void caps_set_slab(double factor) { g_elec.slab = factor > 1 ? factor : 0.0; }
 
 extern "C" void caps_set_electrostatics(int32_t mode, double ewald_rtol, double pme_spacing, int32_t pme_order) {
   g_elec.mode = mode == 1 ? 1 : 0;

@@ -2421,19 +2421,46 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   if (ff_.swap3.on()) swap_model_terms(ff_, x, cell, f, e);
   if (pme) {
     // reciprocal part (Fortran), self energy −β/√π Σq², and the neutralising background −π Q²/(2Vβ²) for a net charge
-    const PmeGrid grid = pme_grid(cell, beta, opt_.pme_spacing, opt_.pme_order);
+    const bool slab = opt_.slab > 1;
+    Cell kc = cell;   // the cell the reciprocal sum sees: lengthened along z for a slab
+    if (slab) {
+      if (std::fabs(cell.c[0]) > 1e-6 || std::fabs(cell.c[1]) > 1e-6 || std::fabs(cell.a[2]) > 1e-6 || std::fabs(cell.b[2]) > 1e-6)
+        throw FieldError("the slab correction needs a and b in the xy plane and c along z");
+      kc.c = cell.c * opt_.slab;
+    }
+    const PmeGrid grid = pme_grid(kc, beta, opt_.pme_spacing, opt_.pme_order);
     double vk[6];
-    e.coulomb += pme_reciprocal(x, qeff_, cell, grid, f, vk, *pool_);   // its forces added to f
+    e.coulomb += pme_reciprocal(x, qeff_, kc, grid, f, vk, *pool_);   // its forces added to f
+    if (slab) vk[2] = vk[4] = vk[5] = 0;   // xz, yz, zz of a lengthened cell mean nothing
     e.virial += vk[0] + vk[1] + vk[2];
     for (int c = 0; c < 6; ++c) e.w[c] += vk[c];
     double q2 = 0, qt = 0;
     for (double c : qeff_) q2 += c * c, qt += c;
     e.coulomb -= kCoulomb * beta / std::sqrt(kPi) * q2;
     if (std::fabs(qt) > 1e-10) {
-      const double eb = -kCoulomb * kPi * qt * qt / (2 * cell.volume() * beta * beta);
+      const double eb = -kCoulomb * kPi * qt * qt / (2 * kc.volume() * beta * beta);
       e.coulomb += eb;
-      e.virial += 3 * eb;   // E_bg ∝ 1/V ∝ λ⁻³, so −dE/dλ = 3 E_bg
-      for (int c = 0; c < 3; ++c) e.w[c] += eb;
+      if (!slab) {
+        e.virial += 3 * eb;   // E_bg ∝ 1/V ∝ λ⁻³, so −dE/dλ = 3 E_bg
+        for (int c = 0; c < 3; ++c) e.w[c] += eb;
+      }
+    }
+    if (slab) {
+      // E = 2π k / V′ (M_z² − Q Σ q z² − Q² L′_z²/12), V′ and L′_z of the lengthened box, z inside the cell
+      // (Yeh–Berkowitz; Ballenegger et al. for Q ≠ 0)
+      const double Lz = cell.c[2], V = kc.volume(), pre = 2 * kPi * kCoulomb / V;
+      const size_t n = qeff_.size();
+      std::vector<double> z(n);
+      double M = 0, S = 0;
+      for (size_t i = 0; i < n; ++i) {
+        double zi = x[3 * i + 2] - cell.origin[2];
+        zi -= Lz * std::floor(zi / Lz);
+        z[i] = zi;
+        M += qeff_[i] * zi, S += qeff_[i] * zi * zi;
+      }
+      const double Lk = kc.c[2];   // the box the Ewald sum runs on (lengthened), as in Ballenegger et al. and LAMMPS
+      e.coulomb += pre * (M * M - qt * S - qt * qt * Lk * Lk / 12);
+      for (size_t i = 0; i < n; ++i) f[3 * i + 2] -= pre * (2 * qeff_[i] * M - 2 * qt * qeff_[i] * z[i]);
     }
   } else if (rf) {
     // GROMACS's reaction-field self term: −½ c_rf Σ q²

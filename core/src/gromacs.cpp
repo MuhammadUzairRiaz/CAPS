@@ -263,6 +263,7 @@ std::string gromacs_mdp(const System& s, const ForceField& ff, const EnergyOptio
     m << "ewald-rtol               = " << fmt("%.3g", e.ewald_rtol) << "\n";
     m << "fourier-spacing          = " << fmt("%.4g", std::min(e.pme_spacing, 1.2) / 10) << "\n";
     m << "pme-order                = " << std::clamp(e.pme_order, 4, 12) << "\n";
+    if (e.slab > 1) m << "ewald-geometry           = 3dc         ; Yeh-Berkowitz slab correction (the cell's vacuum along z: keep it at least twice the slab)\n";
   } else {
     m << "; no periodic cell in CAPS: the molecule is in a box 2 r_c larger, plain cut-off Coulomb (CAPS: damped shifted force)\n";
     m << "coulombtype              = Reaction-Field\n";

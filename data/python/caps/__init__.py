@@ -28,7 +28,7 @@ if _sys.platform == "win32":
             pass
 
 from . import geometry, pipeline  # noqa: F401,E402
-from .core import (CapsError, Document, copolymer_statistics, cif_disorder, open_cif, dpd, dendrimer, stack, histogram, write_sdf_table, read_data, density_fields, descriptors, qspr_model, cluster_rows, discriminant, index_pattern, solve_structure, Provenance, abi_version, semicrystalline_polymers, build_info, ml_available, forcefield_overlays, bibtex, build, cg, cg_help, dft, dft_help, map_trajectory, label_kinds, protocol_text, water_models, compare_provenance, current, hand_back, import_file, import_preview, library, methods,  # noqa: F401
+from .core import (CapsError, Document, copolymer_statistics, cif_disorder, open_cif, dpd, dendrimer, stack, set_electrostatics, histogram, write_sdf_table, read_data, density_fields, descriptors, qspr_model, cluster_rows, discriminant, index_pattern, solve_structure, Provenance, abi_version, semicrystalline_polymers, build_info, ml_available, forcefield_overlays, bibtex, build, cg, cg_help, dft, dft_help, map_trajectory, label_kinds, protocol_text, water_models, compare_provenance, current, hand_back, import_file, import_preview, library, methods,  # noqa: F401
                    open, pack, blend, polymer, potentials, provenance_file, run, space_groups, chain_lengths, bead_templates, copolymer_model, stereo, blend_phase, solvent_chi, tg_fit, exchange, exchange_library,
                    ewald_params, chi_by_md, chi_by_contacts, reaction_templates, reaction_template, bond_react_template, reaction_library)
 from . import sweep  # noqa: F401,E402
@@ -36,6 +36,6 @@ from .table import Table, table  # noqa: F401,E402
 from .view import View  # noqa: F401,E402
 
 __version__ = "0.1.0"
-__all__ = ["geometry", "copolymer_statistics", "cif_disorder", "open_cif", "dpd", "dendrimer", "stack", "histogram", "write_sdf_table", "read_data", "density_fields", "descriptors", "qspr_model", "cluster_rows", "discriminant", "index_pattern", "solve_structure", "pipeline", "sweep", "label_kinds", "protocol_text", "water_models", "Document", "Provenance", "View", "Table", "open", "pack", "potentials", "current", "hand_back", "import_file", "import_preview", "build", "run", "polymer",
+__all__ = ["geometry", "copolymer_statistics", "cif_disorder", "open_cif", "dpd", "dendrimer", "stack", "set_electrostatics", "histogram", "write_sdf_table", "read_data", "density_fields", "descriptors", "qspr_model", "cluster_rows", "discriminant", "index_pattern", "solve_structure", "pipeline", "sweep", "label_kinds", "protocol_text", "water_models", "Document", "Provenance", "View", "Table", "open", "pack", "potentials", "current", "hand_back", "import_file", "import_preview", "build", "run", "polymer",
            "table", "library", "abi_version", "build_info", "ml_available", "forcefield_overlays", "space_groups", "provenance_file", "compare_provenance", "bibtex", "methods", "CapsError",
            "chain_lengths", "bead_templates", "copolymer_model", "stereo", "blend_phase", "solvent_chi", "tg_fit", "exchange", "exchange_library", "ewald_params", "chi_by_md", "chi_by_contacts", "reaction_templates", "reaction_template", "bond_react_template", "reaction_library"]

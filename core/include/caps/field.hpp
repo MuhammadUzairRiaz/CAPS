@@ -281,6 +281,13 @@ struct EnergyOptions {
   double ewald_rtol = 1e-5;      // PME: erfc(β rc) = ewald_rtol sets the Ewald coefficient β (as GROMACS)
   double pme_spacing = 1.0;      // PME: largest grid spacing, Å
   int pme_order = 5;             // PME: B-spline order (5, as LAMMPS pppm)
+  // PME in a slab cell (a film with vacuum above it, c along z): > 1 the reciprocal sum runs on the cell lengthened along
+  // z by this factor (3 is usual) and the dipole correction E = 2π k/V′ (M_z² − Q Σ q z² − Q² L′_z²/12) (V′, L′_z of the
+  // lengthened box) is added with
+  // its forces (Yeh & Berkowitz, J. Chem. Phys. 111, 3155 (1999); net charge: Ballenegger, Arnold & Cerdà, J. Chem.
+  // Phys. 131, 094107 (2009)), so the film's periodic images along z do not see each other. 0: off. The pressure along
+  // z then means nothing (no virial from the correction; x and y keep theirs).
+  double slab = 0.0;
   double force_cap = 0.0;        // > 0: LJ becomes linear inside the radius where |F| reaches the cap (push-off)
   int threads = 0;               // worker threads for pair terms; 0 = one per hardware thread (at most 16)
   bool tail = true;              // LJ long-range tail corrections to energy and pressure (homogeneous fluid beyond rc)

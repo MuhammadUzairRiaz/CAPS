@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 109, "ABI 109")
+check(caps.abi_version() == 110, "ABI 110")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -945,6 +945,17 @@ _gr = _alp.edit(op="defects", **{"from": "Al", "to": "Au", "grade": "radial", "i
 _els = [_alp.atom(i)["element"] for i in range(_alp.atoms)]
 check(0 < _els.count("Au") < len(_els) and "by thirds" in _gr["what"], f"graded {_gr['what']}")
 print("ok   graded substitution")
+
+# PME slab correction (ABI 110): the LAMMPS input of a charged cell gets kspace_modify slab and boundary p p f
+caps.set_electrostatics("pme", slab=3.0)
+_sl = caps.polymer("[*]CC(O)[*]", dp=3, chains=2, density=0.5, forcefield="oplsaa2024", seed=2)
+_sld = tempfile.mkdtemp()
+_sl.export_engines(_sld, run="none", gromacs=True)
+_slin = open(os.path.join(_sld, "system.in")).read()
+_slmdp = "".join(open(os.path.join(_sld, f)).read() for f in os.listdir(_sld) if f.endswith(".mdp"))
+caps.set_electrostatics("dsf")
+check("kspace_modify   slab 3" in _slin and "boundary        p p f" in _slin and "ewald-geometry           = 3dc" in _slmdp, "slab exports")
+print("ok   set_electrostatics slab: LAMMPS and GROMACS")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))

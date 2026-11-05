@@ -2149,6 +2149,21 @@ def stack(layers, gap: float = 2.0, vacuum: float = 0.0, match: str = "both", ke
     d.stack_report = r
     return d
 
+def set_electrostatics(method: str = "dsf", ewald_rtol: float = 1e-5, pme_spacing: float = 1.0, pme_order: int = 5, slab: float = 0.0) -> None:
+    """The electrostatics every evaluation, run and export uses: "dsf" (damped shifted force) or "pme" (particle-mesh
+    Ewald, periodic cells). slab > 1 (3 is usual, PME only): a film with vacuum along z, the reciprocal cell lengthened by
+    that factor and the Yeh–Berkowitz dipole correction added; LAMMPS inputs get kspace_modify slab and boundary p p f,
+    GROMACS ewald-geometry 3dc."""
+    lib = library()
+    lib.caps_set_electrostatics.argtypes = [C.c_int32, C.c_double, C.c_double, C.c_int32]
+    lib.caps_set_electrostatics.restype = None
+    lib.caps_set_slab.argtypes = [C.c_double]
+    lib.caps_set_slab.restype = None
+    if method not in ("dsf", "pme"):
+        raise CapsError("electrostatics: dsf or pme")
+    lib.caps_set_electrostatics(1 if method == "pme" else 0, float(ewald_rtol), float(pme_spacing), int(pme_order))
+    lib.caps_set_slab(float(slab))
+
 def histogram(values, rule: str = "fd", bins: int = 0) -> dict:
     """Bins of equal width over the values (not-finite ones left out): rule "fd" (Freedman–Diaconis), "scott",
     "sturges" or "bins" with bins. Returns {edges, counts, width, rule, n, left_out}."""

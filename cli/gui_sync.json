@@ -2028,6 +2028,7 @@
   "--resume-at": "cli: caps job resume",
   "--resume-curve": "cli: caps job resume",
   "--resume-points": "cli: caps job resume",
-  "--volume": "cli: caps analyze free-volume output switch"
+  "--volume": "cli: caps analyze free-volume output switch",
+  "--slab": "partial: Settings › Force fields › Particle-mesh Ewald › Slab cells (every run and export follows it)"
  }
 }

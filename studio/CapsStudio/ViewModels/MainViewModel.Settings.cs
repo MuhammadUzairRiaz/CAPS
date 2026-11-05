@@ -215,7 +215,17 @@ public sealed partial class MainViewModel
     }
 
     // ---- electrostatics (Force fields tab): damped shifted force or particle-mesh Ewald
-    private void ApplyElectrostatics() => Native.SetElectrostatics(_settings.Electrostatics, _settings.EwaldRtol, _settings.PmeSpacing, _settings.PmeOrder);
+    private void ApplyElectrostatics()
+    {
+        Native.SetElectrostatics(_settings.Electrostatics, _settings.EwaldRtol, _settings.PmeSpacing, _settings.PmeOrder);
+        Native.SetSlab(_settings.PmeSlab);
+    }
+    /// <summary>PME slab correction (a film with vacuum along z): the reciprocal cell three times as long, the dipole term added.</summary>
+    public bool SetPmeSlab
+    {
+        get => _settings.PmeSlab > 1;
+        set { if (SetPmeSlab == value) return; _settings.PmeSlab = value ? 3.0 : 0.0; ApplyElectrostatics(); Raise(); Changed("PME slab correction"); }
+    }
     public int SetElectrostatics
     {
         get => _settings.Electrostatics;
