@@ -2485,6 +2485,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
       }
     e.vdw += et / vol;
     e.virial += wt / vol;
+    e.tail_energy = et / vol, e.tail_virial = wt / vol;
     for (int c = 0; c < 3; ++c) e.w[c] += wt / vol / 3;   // isotropic
   }
   return e;

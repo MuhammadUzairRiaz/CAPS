@@ -100,6 +100,24 @@
           <Border Classes="pcard">
             <StackPanel Spacing="8">
               <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small" Content="Relax cell" Click="OnRelaxCell" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Relax the cell and the atoms with the ticked parameters kept (undo with ⌘Z)" />
+                <TextBlock Text="Cell with held parameters" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="The six lattice parameters relax with the atoms; a ticked one keeps its value (the chain axis of a polymer crystal, β of a monoclinic cell). The cell keeps its orientation." />
+              <WrapPanel ItemSpacing="10" LineSpacing="4">
+                <CheckBox Content="a" IsChecked="{Binding HoldA}" /><CheckBox Content="b" IsChecked="{Binding HoldB}" /><CheckBox Content="c" IsChecked="{Binding HoldC}" />
+                <CheckBox Content="α" IsChecked="{Binding HoldAlpha}" /><CheckBox Content="β" IsChecked="{Binding HoldBeta}" /><CheckBox Content="γ" IsChecked="{Binding HoldGamma}" />
+              </WrapPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Pressure (atm)" Classes="label" VerticalAlignment="Center" />
+                <NumericUpDown Value="{Binding CellPressure}" Minimum="-100000" Maximum="1000000" Increment="100" FormatString="0" Width="110" />
+              </StackPanel>
+              <TextBlock Text="{Binding CellRelaxText}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding CellRelaxHasText}" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <DockPanel>
                 <Button DockPanel.Dock="Right" Classes="small" Content="Choose end B…" Click="OnChoosePathB" />
                 <TextBlock Text="Reaction path" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
               </DockPanel>

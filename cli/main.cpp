@@ -91,6 +91,7 @@
 #include "caps/ddft.hpp"
 #include "caps/dendrimer.hpp"
 #include "caps/miller.hpp"
+#include "caps/cell_relax.hpp"
 #include "caps/dpd.hpp"
 #include "caps/qeq.hpp"
 #include "caps/pores.hpp"
@@ -375,6 +376,8 @@ int usage() {
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
                "               [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)\n"
+               "  caps cellrelax FILE -o OUT [--hold c,beta] [--pressure 0] [--ftol 0.01] [--steps 3000] [--cutoff 10] [--ff FF.json]\n"
+               "               the cell and atoms relaxed with chosen lattice parameters held (a b c alpha beta gamma)\n"
                "  caps path A B -o PATH.xyz [--no-match] [--method idpp|lst|linear] [--images 7] [--neb [--ff FF.json] [--relax-ends] [--spring 5] [--fmax 0.05] [--no-climb] [--steps 2000]]\n"
                "           atoms of B matched to A, the images between them, and the climbing-image NEB barrier with the force field\n"
                "  caps data FILE [-o OUT.csv|.cube|.vtk|.npy] [--json OUT]   a measured curve (columns, .xrdml, GSAS, .uxd, Rigaku, JCAMP-DX) or a .cube grid\n"
@@ -541,7 +544,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--images", "--neb", "--fmax", "--no-climb", "--relax-ends", "--no-match", "--find", "--clear", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--shift", "--preset", "--unit", "--core", "--end", "--focal", "--generation", "--growth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--images", "--neb", "--fmax", "--no-climb", "--relax-ends", "--no-match", "--find", "--clear", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--shift", "--hold", "--preset", "--unit", "--core", "--end", "--focal", "--generation", "--growth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -4191,6 +4194,49 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps fields: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "cellrelax") {
+    try {
+      if (pos.empty() || !o.count("-o")) return usage();
+      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      System s = t.frames() ? t.frame(t.frames() - 1) : t.topology;
+      CellRelaxOptions co;
+      if (o.count("--hold")) {
+        std::string h = o["--hold"];
+        for (auto& ch : h) if (ch == ',') ch = ' ';
+        std::istringstream in(h);
+        static const char* names[6] = {"a", "b", "c", "alpha", "beta", "gamma"};
+        for (std::string w; in >> w;) {
+          bool found = false;
+          for (int k = 0; k < 6; ++k) if (w == names[k]) co.hold[size_t(k)] = true, found = true;
+          if (!found) throw std::invalid_argument("--hold takes a, b, c, alpha, beta, gamma (comma-separated), not '" + w + "'");
+        }
+      }
+      if (o.count("--pressure")) co.pressure = std::stod(o["--pressure"]);
+      if (o.count("--ftol")) co.ftol = std::stod(o["--ftol"]);
+      if (o.count("--steps")) co.max_steps = std::stoi(o["--steps"]);
+      const bool quiet = o.count("--quiet");
+      EnergyOptions eo;
+      eo.cutoff = o.count("--cutoff") ? std::stod(o["--cutoff"]) : 10.0;
+      electrostatics(eo, o);
+      auto field_for = [&](const System& sup) { System x = sup; return cli_forcefield(x, o, true); };
+      if (!quiet) cli_forcefield(s, o, false);   // says which force field
+      const auto r = relax_cell(s, field_for, eo, co);
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      const char* nm[6] = {"a", "b", "c", "alpha", "beta", "gamma"};
+      std::printf("parameter      before        after   %s\n", "");
+      for (int k = 0; k < 6; ++k)
+        std::printf("%-8s %12.6f %12.6f%s\n", nm[k], r.before[size_t(k)], r.after[size_t(k)], co.hold[size_t(k)] ? "   held" : "");
+      std::printf("volume %.4f → %.4f Å³ · energy %.6f → %.6f kcal/mol · pressure %.2f atm · %d steps%s\n", r.volume_before, r.volume_after,
+                  r.energy_before, r.energy_after, r.pressure_after, r.steps, r.converged ? "" : " (not converged)");
+      std::printf("stress GPa (xx yy zz yz xz xy): %.5f %.5f %.5f %.5f %.5f %.5f\n", r.stress[0], r.stress[1], r.stress[2], r.stress[3], r.stress[4], r.stress[5]);
+      write_structure_file(s, o["-o"]);
+      std::printf("wrote %s\n", o["-o"].c_str());
+      return r.converged ? 0 : 2;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps cellrelax: %s\n", e.what());
       return 1;
     }
   }

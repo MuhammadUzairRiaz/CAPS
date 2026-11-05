@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 104, "ABI 104")
+check(caps.abi_version() == 105, "ABI 105")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -900,6 +900,12 @@ _mq = _cuq.miller(1, 1, 1)
 check(_mq["planes"] == 2 and len(_mq["polygons"][0]) == 3 and abs(_mq["d"] * 3 ** 0.5 - 3.6149) < 1e-6, f"miller {_mq['d']}")
 _cuq.clear_planes()
 print("ok   miller planes")
+
+# cell relaxation with held parameters (ABI 105): monoclinic PE with its chain axis b and β kept
+_pe = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "polymers", "pe-monoclinic.cif"))
+_cr = _pe.relax_cell(hold=["b", "beta"], ftol=0.05)
+check(abs(_cr["after"][1] - _cr["before"][1]) < 1e-9 and abs(_cr["after"][4] - _cr["before"][4]) < 1e-9 and _cr["energy_after"] < _cr["energy_before"], f"relax_cell {_cr}")
+print("ok   relax_cell with held parameters")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))

@@ -3985,6 +3985,46 @@
    "tex": "d_{hkl} = \\frac{1}{\\left|h\\,\\mathbf a^* + k\\,\\mathbf b^* + l\\,\\mathbf c^*\\right|},\\qquad \\mathbf a^* = \\frac{\\mathbf b\\times\\mathbf c}{V},\\quad \\mathbf b^* = \\frac{\\mathbf c\\times\\mathbf a}{V},\\quad \\mathbf c^* = \\frac{\\mathbf a\\times\\mathbf b}{V}"
   },
   {
+   "id": "cell-relax-held",
+   "group": "Minimisers",
+   "title": "Cell relaxation with held lattice parameters",
+   "summary": "The cell and the atoms relax together while chosen lattice parameters keep their values: the chain axis of a polymer crystal, β of a monoclinic cell, or a layer spacing. The variables are the free ones of a, b, c, α, β and γ, and the atoms in fractional coordinates. The cell keeps its orientation: h = R₀ h_std(a, b, c, α, β, γ), with R₀ fixed at the start and h_std putting a along x and b in the xy plane. L-BFGS minimises the enthalpy H = E + PV with its exact gradient. For the atoms that is hᵀ ∂E/∂x. For the cell it is ∂H/∂h = (PV I − W) h⁻ᵀ at fixed fractional coordinates, W being the virial tensor, carried to each lattice parameter through ∂h/∂p. Where the force field has the long-range tail correction, its energy E_t ∝ 1/V enters through its own volume derivative (a virial of E_t on each diagonal component), not the fluid tail pressure, so the gradient is that of the energy minimised. A cell narrower than twice the cut-off is evaluated as copies that move together, so every neighbour within the cut-off is seen.",
+   "equation": "H = E + PV,  ∂H/∂s_i = hᵀ ∂E/∂x_i,  ∂H/∂h = (PV I − W) h⁻ᵀ,  ∂H/∂p = Σ_αβ (∂H/∂h)_αβ ∂h_αβ/∂p,  W = Σ r ⊗ f",
+   "equation_note": "s fractional coordinates, x = h s; p one of a, b, c, α, β, γ; with the tail correction W carries E_t (not P_t V) on its diagonal",
+   "symbols": [
+    [
+     "h",
+     "cell matrix, columns a b c",
+     "Å"
+    ],
+    [
+     "W",
+     "virial tensor",
+     "kcal/mol"
+    ],
+    [
+     "P",
+     "hydrostatic pressure",
+     "atm"
+    ],
+    [
+     "p",
+     "a free lattice parameter",
+     "Å or rad"
+    ]
+   ],
+   "when": "Monoclinic polyethylene and α-iPP relaxed with the chain axis or β kept, a crystal relaxed with a layer spacing fixed to experiment, a filler cell relaxed at a pressure with its angles held.",
+   "cites": [
+    "parrinello1981",
+    "liu1989"
+   ],
+   "source": "core/src/cell_relax.cpp",
+   "tested": "tests/test_cell_relax.cpp (the gradient of all six parameters of a sheared argon cell against central differences of the energy, with and without the tail correction, to 10⁻⁵; fcc argon from a = 5.6 Å reaches the minimum of E(a) found by a golden-section search over the cubic lattice to 10⁻⁴ Å, stays cubic to 10⁻⁶°, with less than 1 atm left; c and β held stay to 10⁻¹² and 10⁻⁹ while the free parameters carry no force and the cell keeps a along x); tests/python/test_bindings.py (monoclinic PE with b and β held)",
+   "deviation": "0 K: no thermal expansion. The stress reported is the energy's own (−(1/V) ∂E/∂ε, the tail as ∂E_t/∂V), not the homogeneous-fluid tail pressure of an MD run. Held parameters are held exactly, not by a restraint; symmetry is not imposed, so a held β with free α and γ can drift off a monoclinic cell unless α and γ are held too.",
+   "engines": "caps cellrelax FILE -o OUT [--hold c,beta] [--pressure] [--ftol] [--steps] [--cutoff] [--ff]; Python Document.relax_cell(hold, pressure, ftol, steps, cutoff); Studio Minimise › Cell with held parameters (undoable)",
+   "tex": "H = E + PV,\\qquad \\frac{\\partial H}{\\partial \\mathbf s_i} = \\mathbf h^{\\mathsf T}\\frac{\\partial E}{\\partial \\mathbf x_i},\\qquad \\frac{\\partial H}{\\partial \\mathbf h} = \\left(PV\\,\\mathbf I - \\mathbf W\\right)\\mathbf h^{-\\mathsf T},\\qquad \\frac{\\partial H}{\\partial p} = \\sum_{\\alpha\\beta}\\left(\\frac{\\partial H}{\\partial \\mathbf h}\\right)_{\\alpha\\beta}\\frac{\\partial h_{\\alpha\\beta}}{\\partial p}"
+  },
+  {
    "id": "reaction-path",
    "group": "Minimisers",
    "title": "Reaction paths and the nudged elastic band",

@@ -117,6 +117,7 @@
 #include "caps/reaction_path.hpp"
 #include "caps/dendrimer.hpp"
 #include "caps/miller.hpp"
+#include "caps/cell_relax.hpp"
 #include "caps/ring_edit.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/nano.hpp"
@@ -9363,6 +9364,33 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       for (const auto& b : m.bonds) s.bonds.push_back({b.i + base, b.j + base, b.order});
       s.has_mol = true;
       what = "Place " + j.text("name", "molecule");
+    } else if (op == "relax_cell") {   // v105 {hold: ["c", "beta", …], pressure (atm), ftol, steps, cutoff} (cell_relax.hpp)
+      caps::CellRelaxOptions co;
+      static const char* names[6] = {"a", "b", "c", "alpha", "beta", "gamma"};
+      if (j.has("hold") && j["hold"].is_array())
+        for (const auto& x : j["hold"].items()) {
+          const std::string n = x.str();
+          bool found = false;
+          for (int k = 0; k < 6; ++k) if (n == names[k]) co.hold[size_t(k)] = true, found = true;
+          if (!found) throw std::invalid_argument("hold: a, b, c, alpha, beta or gamma, not '" + n + "'");
+        }
+      co.pressure = j.num("pressure", 0), co.ftol = j.num("ftol", 0.01), co.max_steps = int(j.num("steps", 3000));
+      caps::EnergyOptions eo = elec();
+      eo.cutoff = j.num("cutoff", 10);
+      const auto rep = caps::relax_cell(s, [&](const caps::System& sup) { return field_for_extended(d, sup); }, eo, co);
+      char b[400];
+      std::snprintf(b, sizeof b, "Relax the cell%s: a b c %.4f %.4f %.4f Å, α β γ %.3f %.3f %.3f°, V %.2f → %.2f Å³, E %.3f → %.3f kcal/mol%s",
+                    std::any_of(co.hold.begin(), co.hold.end(), [](bool x) { return x; }) ? " (some held)" : "", rep.after[0], rep.after[1], rep.after[2],
+                    rep.after[3], rep.after[4], rep.after[5], rep.volume_before, rep.volume_after, rep.energy_before, rep.energy_after,
+                    rep.converged ? "" : " · not converged");
+      what = b;
+      caps::Json cr = caps::Json::object(), bf = caps::Json::array(), af = caps::Json::array(), st = caps::Json::array(), gr = caps::Json::array(), nt = caps::Json::array();
+      for (int k = 0; k < 6; ++k) bf.push_back(rep.before[size_t(k)]), af.push_back(rep.after[size_t(k)]), st.push_back(rep.stress[size_t(k)]), gr.push_back(rep.gradient[size_t(k)]);
+      for (const auto& x : rep.notes) nt.push_back(x);
+      cr["before"] = bf, cr["after"] = af, cr["stress"] = st, cr["gradient"] = gr, cr["notes"] = nt;
+      cr["energy_before"] = rep.energy_before, cr["energy_after"] = rep.energy_after, cr["volume_before"] = rep.volume_before, cr["volume_after"] = rep.volume_after;
+      cr["pressure"] = rep.pressure_after, cr["steps"] = double(rep.steps), cr["converged"] = rep.converged;
+      r["cell_relax"] = cr;
     } else if (op == "clean") {
       const auto at = atoms_of(d, j);
       std::vector<char> m;
@@ -9376,7 +9404,7 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
     {
       // consecutive builder edits are one step listing its operations
       if (d->prov.steps.empty() || d->prov.steps.back().engine != "edit.builder") {
-        prov_step(d, "edit.builder", "", {{"operations", "0"}}, "", op == "clean" ? std::vector<std::string>{"rappe1992"} : std::vector<std::string>{});
+        prov_step(d, "edit.builder", "", {{"operations", "0"}}, "", op == "clean" ? std::vector<std::string>{"rappe1992"} : op == "relax_cell" ? std::vector<std::string>{"parrinello1981", "liu1989"} : std::vector<std::string>{});
       }
       auto& st = d->prov.steps.back();
       const int n = std::stoi(st.params[0].second) + 1;
@@ -9385,6 +9413,8 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       if (st.params.size() > 41) st.params.erase(st.params.begin() + 1);   // the last 40 operations
       st.summary = std::to_string(n) + " edit" + (n == 1 ? "" : "s") + " in the builder";
       if (op == "clean" && std::find(st.cites.begin(), st.cites.end(), "rappe1992") == st.cites.end()) st.cites.push_back("rappe1992");
+      if (op == "relax_cell")
+        for (const char* c : {"parrinello1981", "liu1989"}) if (std::find(st.cites.begin(), st.cites.end(), c) == st.cites.end()) st.cites.push_back(c);
       st.time = caps::now_iso();
     }
     store(d, s);

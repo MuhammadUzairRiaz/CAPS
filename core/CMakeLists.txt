@@ -99,6 +99,7 @@ add_library(caps_core STATIC
   src/ring_edit.cpp
   src/dendrimer.cpp
   src/miller.cpp
+  src/cell_relax.cpp
   src/vasp_out.cpp
   src/dft_analysis.cpp
   src/dft_commands.cpp

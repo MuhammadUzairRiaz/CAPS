@@ -1810,7 +1810,16 @@ def _clear_planes(self) -> None:
     _json_call(f, self._h, _enc(json.dumps({"clear": True})))
 
 
+def _relax_cell(self, hold=(), pressure: float = 0.0, ftol: float = 0.01, steps: int = 3000, cutoff: float = 10.0) -> dict:
+    """Relaxes the cell and the atoms with the lattice parameters named in hold ("a", "b", "c", "alpha", "beta",
+    "gamma") kept as they are, at a hydrostatic pressure (atm), with the force field assigned (else the built-in one).
+    Returns {before, after (a b c α β γ), stress (GPa, Voigt), gradient, energy_before, energy_after, volume_before,
+    volume_after, pressure, steps, converged, notes}; undoable like any edit."""
+    r = self.edit(op="relax_cell", hold=[str(h) for h in hold], pressure=float(pressure), ftol=float(ftol), steps=int(steps), cutoff=float(cutoff))
+    return r["cell_relax"]
+
 Document.miller = _miller
+Document.relax_cell = _relax_cell
 Document.clear_planes = _clear_planes
 
 

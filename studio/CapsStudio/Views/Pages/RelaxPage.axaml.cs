@@ -41,6 +41,7 @@ public partial class RelaxPage : PageBase
     private void OnApplyRunRestraints(object? s, RoutedEventArgs e) => Vm.ApplyRunRestraints();
     private void OnFreeAtoms(object? s, RoutedEventArgs e) => Vm.FreeFixedAtoms();
 
+    private void OnRelaxCell(object? s, Avalonia.Interactivity.RoutedEventArgs e) { if (DataContext is CapsStudio.ViewModels.MainViewModel vm) vm.RunCellRelax(); }
     private async void OnChoosePathB(object? s, Avalonia.Interactivity.RoutedEventArgs e)
     {
         var top = Avalonia.Controls.TopLevel.GetTopLevel(this);

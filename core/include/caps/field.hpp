@@ -305,6 +305,9 @@ struct EnergyTerms {
   double w[6] = {0, 0, 0, 0, 0, 0};   // virial tensor Σ r_a f_b (symmetrised), xx yy zz xy xz yz; trace = virial
   double dudl_lj = 0, dudl_coul = 0;  // ∂U/∂λ of the alchemical pairs (EnergyOptions::alchemical), kcal/mol
   double restraint = 0;          // restraints added by a run (caps/restraints.hpp), kcal/mol
+  // the LJ tail correction inside vdw and virial (0 without it): its energy E_t (∝ 1/V, so ∂E_t/∂V = −E_t/V) and the
+  // homogeneous-fluid virial W_t it adds to the trace (P_t = W_t/3V), which is not −3V ∂E_t/∂V
+  double tail_energy = 0, tail_virial = 0;
   double total() const { return bond + angle + dihedral + improper + vdw + coulomb + restraint; }
 };
 

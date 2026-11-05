@@ -250,6 +250,16 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("rpath: " + vm.PathResult + (vm.PathHasError ? " · error " + vm.PathError : ""));
             }
+            if (kv[0] == "cellrelax")   // cellrelax=b,beta: Minimise page, the cell relaxed with those parameters held
+            {
+                var vm = w.ViewModel;
+                vm.SetModule(2);
+                foreach (var h in kv[1].Split(','))
+                    switch (h) { case "a": vm.HoldA = true; break; case "b": vm.HoldB = true; break; case "c": vm.HoldC = true; break; case "alpha": vm.HoldAlpha = true; break; case "beta": vm.HoldBeta = true; break; case "gamma": vm.HoldGamma = true; break; }
+                vm.RunCellRelax();
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("cellrelax: " + vm.CellRelaxText.Replace("\n", " | "));
+            }
             if (kv[0] == "planes")   // planes=h,k,l[|shift][|view]: the lattice planes drawn (and the view turned onto them)
             {
                 var f = kv[1].Split('|');
