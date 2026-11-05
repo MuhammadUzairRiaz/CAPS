@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 96, "ABI 96")
+check(caps.abi_version() == 97, "ABI 97")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -781,6 +781,17 @@ _dr = [sum((_dp.atom(i)["position"][k] - 5.0) ** 2 for k in range(3)) ** 0.5 for
 check(max(_dr[:100]) <= 3.0 + 1e-9 and min(_dr[2780 - 2500:]) > 3.0, "dpd regions: core inside, solvent outside")
 check(all(abs(_dr[100 + 3 * m] - 3.0) < 1e-9 for m in range(60)), "dpd amphiphile heads on the droplet surface")
 print("ok   dpd: regions compose the start")
+
+# QEq for periodic fillers (ABI 97): Slater + Ewald on quartz is neutral with Si = −2 O; bounds hold O at −0.5 e
+_qz = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "alpha-quartz.cif"))
+_qq = _qz.charges("qeq", kernel="slater", ewald=True)
+_el = [_qz.atom(i)["element"] for i in range(_qz.atoms)]
+_si = [q for q, e in zip(_qq["q"], _el) if e == "Si"]
+_ox = [q for q, e in zip(_qq["q"], _el) if e == "O"]
+check(abs(sum(_qq["q"])) < 1e-8 and abs(_si[0] + 2 * _ox[0]) < 1e-6 and _si[0] > 1.0, f"qeq slater ewald quartz {_si[0]:.4f} {_ox[0]:.4f}")
+_qb = _qz.charges("qeq", kernel="slater", ewald=True, bounds={"O": (-0.5, 0.0)})
+check(all(abs(q - (-0.5 if e == "O" else 1.0)) < 1e-9 for q, e in zip(_qb["q"], _el)), "qeq bounds")
+print("ok   charges: QEq with Slater shielding, Ewald and bounds")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))

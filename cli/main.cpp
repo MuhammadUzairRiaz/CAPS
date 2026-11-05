@@ -90,6 +90,7 @@
 #include "caps/domains.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dpd.hpp"
+#include "caps/qeq.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
 #include <io.h>
@@ -365,6 +366,8 @@ int usage() {
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
                "               [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)\n"
+               "  caps qeq FILE [--kernel ohno|slater|point] [--ewald [--accuracy 1e-7]] [--lambda 0.4913] [--hydrogen] [--bounds 'O:-1.2:0,Si:0:2.4']\n"
+               "           [--cutoff 10] [--total 0] [--chg OUT.chg] [-o OUT.data|mol2|car|pdb]   charge equilibration (Slater shielding, Ewald for periodic cells)\n"
                "  caps dpd --molecules 'AAAABBBB:300@shell:in; C:9000' [--regions 'core droplet r=3 prio=2; shell shell r=5 in=3 prio=1'] [--box 16]\n"
                "           [--chi AB=25] [--density 3] [--steps 2000] [--equilibration 500] [--every 50] [--seed 1] [--spec SPEC.json] [-o OUT.xyz] [--json OUT]\n"
                "           dissipative particle dynamics; regions (droplet, rod, slab, shell, tube; c=fx,fy,fz r= in= t= axis= prio=) compose the start\n"
@@ -519,7 +522,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -552,7 +555,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
          a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
-         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo" || a == "--equivalent" || a == "--no-drift" || a == "--below" || a == "--whole-molecules";
+         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo" || a == "--equivalent" || a == "--no-drift" || a == "--below" || a == "--whole-molecules" || a == "--ewald" || a == "--hydrogen";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -4169,6 +4172,61 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps fields: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "qeq") {
+    try {
+      if (pos.empty()) return usage();
+      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      System s = t.frames() ? t.frame(t.frames() - 1) : t.topology;
+      QEqOptions qo;
+      if (o.count("--kernel")) qo.kernel = o["--kernel"];
+      qo.ewald = o.count("--ewald") > 0;
+      if (o.count("--accuracy")) qo.ewald_accuracy = std::stod(o["--accuracy"]);
+      if (o.count("--lambda")) qo.lambda = std::stod(o["--lambda"]);
+      qo.hydrogen = o.count("--hydrogen") > 0;
+      if (o.count("--bounds")) qo.bounds = qeq_bounds_from_text(o["--bounds"]);
+      if (o.count("--cutoff")) qo.cutoff = std::stod(o["--cutoff"]);
+      if (o.count("--total")) qo.total_charge = std::stod(o["--total"]);
+      QEqReport rep;
+      const auto q = qeq_charges(s, qo, &rep);
+      for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
+      std::printf("equalised electronegativity %.4f eV\n", rep.mu);
+      std::map<int, std::vector<double>> by;
+      for (size_t i = 0; i < q.size(); ++i) by[s.atoms[i].element].push_back(q[i]);
+      std::printf("element  atoms     mean q        min        max\n");
+      for (const auto& [z, v] : by) {
+        double m = 0;
+        for (double x : v) m += x;
+        std::printf("%-7s %6zu  %9.4f  %9.4f  %9.4f\n", element(z).symbol, v.size(), m / double(v.size()), *std::min_element(v.begin(), v.end()),
+                    *std::max_element(v.begin(), v.end()));
+      }
+      if (o.count("--chg")) {
+        std::ofstream f(o["--chg"]);
+        f << "# CAPS QEq charges (e), one per atom in order\n";
+        char b[40];
+        for (double x : q) {
+          std::snprintf(b, sizeof b, "%.6f\n", x);
+          f << b;
+        }
+        std::printf("wrote %s\n", o["--chg"].c_str());
+      }
+      if (o.count("-o")) {
+        for (size_t i = 0; i < q.size(); ++i) s.atoms[i].charge = q[i];
+        s.has_charges = true;
+        const std::string& out = o["-o"];
+        auto ends = [&](const char* x) { const std::string e(x); return out.size() >= e.size() && out.compare(out.size() - e.size(), e.size(), e) == 0; };
+        if (ends(".data")) write_lammps_data(s, out);
+        else if (ends(".mol2")) write_mol2(s, out);
+        else if (ends(".car")) write_car(s, out);
+        else if (ends(".pdb")) write_pdb(s, out);
+        else throw std::invalid_argument("-o takes .data, .mol2, .car or .pdb (the charges alone: --chg)");
+        std::printf("wrote %s\n", out.c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps qeq: %s\n", e.what());
       return 1;
     }
   }

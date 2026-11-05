@@ -924,11 +924,62 @@
    ],
    "source": "core/src/qeq.cpp",
    "tested": "QEq.MoleculesAreNeutralWithSensibleSigns · QEq.PeriodicCrystals",
-   "deviation": "the Ohno–Klopman kernel with a 7th-order taper replaces the paper's Slater-orbital Coulomb integrals; J of hydrogen does not depend on its charge",
+   "deviation": "the default Ohno–Klopman kernel with a 7th-order taper stands in for the paper's Slater-orbital Coulomb integrals (the Slater kernel, Ewald sum and hydrogen correction are options: see QEq for periodic fillers)",
    "engines": [
     "field.assign"
    ],
    "tex": "E(q) = \\sum_i \\chi_i q_i + \\frac{1}{2}\\sum_i J_i q_i^2 + \\sum_{i<j} q_i q_j K(r_{ij}) \\\\ K = \\frac{14.40}{\\sqrt{r^2 + a_{ij}^2}}\\ \\text{eV}, \\qquad a_{ij} = 7.20\\left(\\frac{1}{J_i} + \\frac{1}{J_j}\\right)\\ \\text{Å}"
+  },
+  {
+   "id": "qeq-periodic",
+   "group": "Force fields",
+   "title": "QEq for periodic fillers",
+   "summary": "Options of the charge equilibration for crystals and fillers such as silica, ZnO, clays and CaCO3 when the force field gives no charges. Kernel: the Coulomb integral between the atoms' normalised ns Slater densities, as in the original QEq. Here n is the element's period, ζ = λ(2n+1)/(2R) with R the QEq radius and λ = 0.4913, and the integral is evaluated exactly through incomplete gamma functions and a radial quadrature, then tabulated per element pair. Ewald: the long-range 1/r is summed over every periodic image. The real space erfc(αr)/r runs over explicit images out to the cut-off, so the cell may be narrower than twice the cut-off. The reciprocal space is applied as structure factors and never stored. The kernel's short-range difference from 1/r is added for every image pair within the cut-off. Hydrogen: its hardness follows its charge, solved self-consistently with damped steps. Bounds: per element a lowest and highest charge; atoms that would pass one are held there, the rest are re-equalised, and held atoms are released when the Karush–Kuhn–Tucker conditions no longer keep them.",
+   "equation": "J_ij(R) = ∬ |φ_i(r₁)|² |φ_j(r₂)|² / r₁₂ dr₁ dr₂,  φ ∝ r^{n−1} e^{−ζr},  ζ = λ(2n+1)/(2R_i);  K_Ewald = Σ_n′ erfc(α|r+n|)/|r+n| + (4π/V) Σ_{k≠0} e^{−k²/4α²} cos(k·r)/k² − (2α/√π) δ_ij;  J_H(q) = J_H⁰(1 + q/ζ_H)",
+   "equation_note": "the Slater integral tends to 1/R once the densities part; the Ewald split α = √(−ln ε)/r_c and k_max = 2α√(−ln ε) for the accuracy ε",
+   "symbols": [
+    [
+     "n, ζ",
+     "principal quantum number and Slater exponent",
+     "—, bohr⁻¹"
+    ],
+    [
+     "R_i",
+     "QEq radius",
+     "Å"
+    ],
+    [
+     "λ",
+     "Slater exponent scale",
+     "0.4913"
+    ],
+    [
+     "α",
+     "Ewald splitting parameter",
+     "Å⁻¹"
+    ],
+    [
+     "ε",
+     "Ewald accuracy",
+     "1e-7"
+    ],
+    [
+     "ζ_H",
+     "hydrogen Slater exponent",
+     "bohr⁻¹"
+    ]
+   ],
+   "when": "Charges for oxide, carbonate and clay fillers and for silica surfaces in rubber composites when no force field supplies them; bounds keep strongly ionic crystals at the charges a force field expects.",
+   "cites": [
+    "rappe1991",
+    "wilmer2012",
+    "ewald1921"
+   ],
+   "source": "core/src/qeq.cpp",
+   "tested": "tests/test_qeq_periodic.cpp (1s–1s integrals against Roothaan's closed form to 1e-11; rock salt's Madelung energy 1.747564594633 to 1e-8 eV; water against the equalisation written out by hand, with and without the hydrogen term; quartz charges the same at two cut-offs, neutral, every Si alike and Si = −2 O; a molecule in a 40 Å box as without the box; oxygen held at −0.5 e leaves silicon at +1.0 e); tests/python/test_bindings.py charges",
+   "deviation": "the paper text was not open to us: the exponent rule, λ and the hydrogen hardness follow open implementations and reviews of the method (Chen's 2009 thesis, arXiv:1004.0186). The hydrogen Slater exponent stays fixed while its hardness changes. Silicon's diffuse 3s density still differs from a point charge by 3·10⁻⁶ of 1/r at 10 Å, so charges move by about 3·10⁻⁵ e between 10 and 12 Å cut-offs.",
+   "engines": [],
+   "tex": "J_{ij}(R) = \\iint \\frac{|\\phi_i(\\mathbf r_1)|^2\\,|\\phi_j(\\mathbf r_2)|^2}{r_{12}}\\,d\\mathbf r_1\\,d\\mathbf r_2,\\qquad \\phi \\propto r^{n-1}e^{-\\zeta r},\\quad \\zeta = \\frac{\\lambda(2n+1)}{2R_i} \\\\ K^{\\mathrm{Ewald}}_{ij} = \\sum_{\\mathbf n}{}' \\frac{\\operatorname{erfc}(\\alpha|\\mathbf r_{ij}+\\mathbf n|)}{|\\mathbf r_{ij}+\\mathbf n|} + \\frac{4\\pi}{V}\\sum_{\\mathbf k\\neq 0}\\frac{e^{-k^2/4\\alpha^2}}{k^2}\\cos(\\mathbf k\\cdot\\mathbf r_{ij}) - \\frac{2\\alpha}{\\sqrt\\pi}\\,\\delta_{ij},\\qquad J_H(q) = J_H^0\\left(1 + \\frac{q}{\\zeta_H}\\right)"
   },
   {
    "id": "gaff",

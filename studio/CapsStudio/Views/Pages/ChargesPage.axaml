@@ -72,6 +72,18 @@
               <RadioButton Classes="method" GroupName="chg" IsChecked="{Binding ChargeMethod, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}">
                 <StackPanel><TextBlock Text="QEq" FontWeight="SemiBold" FontSize="12.5" /><TextBlock Text="charge equilibration · every element (Rappé &amp; Goddard 1991)" Classes="dim" /></StackPanel>
               </RadioButton>
+              <StackPanel Spacing="6" Margin="26,2,0,6" IsVisible="{Binding ChargeIsQeq}">
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.QeqKernels}" SelectedIndex="{Binding QeqKernel}" HorizontalAlignment="Stretch"
+                          ToolTip.Tip="How charges on nearby atoms interact: a shielded 1/r, or the Coulomb integral of the atoms' ns Slater densities (ζ = λ(2n+1)/2R, λ = 0.4913)" />
+                <CheckBox Content="Ewald sum over the periodic images" IsChecked="{Binding QeqEwald}"
+                          ToolTip.Tip="For crystals and fillers: the long-range 1/r summed over every image, not cut off. Needs a cell periodic in a, b and c" />
+                <CheckBox Content="Hydrogen hardness follows its charge" IsChecked="{Binding QeqHydrogen}"
+                          ToolTip.Tip="J_H(q) = J_H⁰(1 + q/ζ_H), solved self-consistently" />
+                <Grid ColumnDefinitions="*,90" ColumnSpacing="8">
+                  <TextBox Text="{Binding QeqBounds}" Classes="mono" Watermark="bounds, e.g. O:-1.2:0, Si:0:2.4" ToolTip.Tip="Per element a lowest and highest charge; atoms that would pass one are held there and the rest re-equalised" />
+                  <NumericUpDown Grid.Column="1" Value="{Binding QeqCutoff}" Minimum="3" Maximum="30" Increment="1" FormatString="0 'Å'" ToolTip.Tip="Real-space cut-off" />
+                </Grid>
+              </StackPanel>
               <RadioButton Classes="method" GroupName="chg" IsChecked="{Binding ChargeMethod, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}">
                 <StackPanel><TextBlock Text="From the force field" FontWeight="SemiBold" FontSize="12.5" /><TextBlock Text="the Field assignment's charges (OPLS-AA, CGenFF … library charges)" Classes="dim" TextWrapping="Wrap" /></StackPanel>
               </RadioButton>

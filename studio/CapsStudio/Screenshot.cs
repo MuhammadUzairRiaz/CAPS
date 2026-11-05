@@ -203,6 +203,19 @@ internal static class Screenshot
                 for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("dpdregions: " + vm.Status + (vm.DpdHasError ? " · error " + vm.DpdError : "") + " · " + vm.DpdNote);
             }
+            if (kv[0] == "qeqopts")   // qeqopts=slater|ewald|h|O:-0.5:0: Charges page, QEq with those options (each field may be empty)
+            {
+                var vm = w.ViewModel;
+                var f = kv[1].Split('|');
+                vm.OpenCharges();
+                vm.QeqKernel = f[0] == "slater" ? 1 : 0;
+                vm.QeqEwald = f.Length > 1 && f[1] == "ewald";
+                vm.QeqHydrogen = f.Length > 2 && f[2] == "h";
+                vm.QeqBounds = f.Length > 3 ? f[3] : "";
+                vm.ChargeMethod = 1;
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("qeqopts: " + vm.ChargeStatus + (vm.ChargeHasError ? " · error " + vm.ChargeError : "") + " · " + vm.ChargeNote);
+            }
             if (kv[0] == "pageview")   // pageview=YAW,PITCH[,ZOOM]: the open page's own structure view turned to that camera
             {
                 var c = kv[1].Split(',').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();

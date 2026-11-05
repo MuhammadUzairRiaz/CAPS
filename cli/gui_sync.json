@@ -1828,6 +1828,25 @@
     "--json": "partial: the Studio shows the result on the page",
     "--quiet": "cli: no progress line"
    }
+  },
+  "qeq": {
+   "status": "gui",
+   "studio": "Studio › Charges › QEq",
+   "where": "Views/Pages/ChargesPage.axaml|Ewald sum over the periodic images",
+   "capi": [
+    "caps_charges"
+   ],
+   "options": {
+    "--kernel": "page",
+    "--ewald": "page",
+    "--hydrogen": "page",
+    "--bounds": "page",
+    "--cutoff": "page",
+    "--lambda": "cli: the page uses λ = 0.4913",
+    "--accuracy": "cli: the page uses an Ewald accuracy of 1e-7",
+    "--total": "cli: the page equalises to a neutral total, then Adjust sets the total",
+    "--chg": "partial: the page applies the charges to the structure or exports them as .mol2"
+   }
   }
  },
  "hidden_options": {

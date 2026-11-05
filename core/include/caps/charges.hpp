@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "caps/qeq.hpp"
 #include "caps/system.hpp"
 
 namespace caps {
@@ -26,7 +27,8 @@ struct ChargeReport {
   std::vector<std::string> notes;
 };
 
-ChargeReport compute_charges(const System& s, const std::string& method, const std::string& path = "");
+// qeq: the options of caps/qeq.hpp (kernel, Ewald, hydrogen, bounds)
+ChargeReport compute_charges(const System& s, const std::string& method, const std::string& path = "", const QEqOptions& qeq = {});
 ChargeReport describe_charges(const System& s, const std::vector<double>& q, const std::string& method);
 
 // Adjustments of computed charges, in this order:

@@ -18,7 +18,7 @@ public partial class MainViewModel
     public static readonly string[] ChargeMethods = ["gasteiger", "qeq", "forcefield", "file"];
     private int _chgMethod;
     private string _chgFile = "", _chgNet = "—", _chgMax = "—", _chgStatus = "", _chgNote = "", _chgError = "";
-    public int ChargeMethod { get => _chgMethod; set { if (Set(ref _chgMethod, Math.Clamp(value, 0, 3)) && (value != 3 || _chgFile.Length > 0)) ComputeCharges(); } }
+    public int ChargeMethod { get => _chgMethod; set { if (Set(ref _chgMethod, Math.Clamp(value, 0, 3))) { Raise(nameof(ChargeIsQeq)); if (value != 3 || _chgFile.Length > 0) ComputeCharges(); } } }
     public string ChargeFile { get => _chgFile; private set { if (Set(ref _chgFile, value)) Raise(nameof(HasChargeFile)); } }
     public bool HasChargeFile => _chgFile.Length > 0;
     public string ChargeNet { get => _chgNet; private set => Set(ref _chgNet, value); }
@@ -56,7 +56,7 @@ public partial class MainViewModel
 
     private JsonObject ChargeRequest(bool apply) => new()
     {
-        ["method"] = ChargeMethods[_chgMethod], ["path"] = _chgFile, ["apply"] = apply,
+        ["method"] = ChargeMethods[_chgMethod], ["path"] = _chgFile, ["apply"] = apply, ["qeq"] = _chgMethod == 1 ? QeqJson() : null,
         ["adjust"] = new JsonObject
         {
             ["average"] = _chgAverage, ["scale"] = _chgScale, ["neutralise"] = _chgTotal switch { 1 => "even", 2 => "proportional", _ => "none" },
@@ -84,7 +84,10 @@ public partial class MainViewModel
     {
         if (_doc == null) return;
         var inv = CultureInfo.InvariantCulture;
-        var r = JsonNode.Parse(_doc.Charges(ChargeRequest(false).ToJsonString()))!;
+        JsonObject req;
+        try { req = ChargeRequest(false); }
+        catch (FormatException fe) { ChargeError = fe.Message; return; }
+        var r = JsonNode.Parse(_doc.Charges(req.ToJsonString()))!;
         ChargeGroups.Clear();
         if (r["ok"]?.GetValue<bool>() != true)
         {
@@ -116,13 +119,16 @@ public partial class MainViewModel
         ChargesChanged?.Invoke();
     }
 
-    private static string MethodName(int m) => m switch { 0 => "Gasteiger–Marsili · 6 iterations", 1 => "QEq", 2 => "from the force field", _ => "imported" };
+    private string MethodName(int m) => m switch { 0 => "Gasteiger–Marsili · 6 iterations", 1 => "QEq" + (_qeqKernel == 1 ? " · Slater" : "") + (_qeqEwald ? " · Ewald" : ""), 2 => "from the force field", _ => "imported" };
 
     /// <summary>Sets the charges on the structure (undoable; the Field assignment is cleared).</summary>
     public void ApplyCharges()
     {
         if (_doc == null) return;
-        var r = JsonNode.Parse(_doc.Charges(ChargeRequest(true).ToJsonString()))!;
+        JsonObject req;
+        try { req = ChargeRequest(true); }
+        catch (FormatException fe) { ChargeError = fe.Message; return; }
+        var r = JsonNode.Parse(_doc.Charges(req.ToJsonString()))!;
         if (r["ok"]?.GetValue<bool>() != true) { ChargeError = r["error"]?.GetValue<string>() ?? "cannot apply"; return; }
         _chgPreview = null;
         Raise(nameof(ChargePreviewing));
@@ -135,7 +141,10 @@ public partial class MainViewModel
     public void ExportChargesMol2(string path)
     {
         if (_doc == null) return;
-        var r = JsonNode.Parse(_doc.Charges(ChargeRequest(true).ToJsonString()))!;
+        JsonObject req;
+        try { req = ChargeRequest(true); }
+        catch (FormatException fe) { ChargeError = fe.Message; return; }
+        var r = JsonNode.Parse(_doc.Charges(req.ToJsonString()))!;
         if (r["ok"]?.GetValue<bool>() != true) { ChargeError = r["error"]?.GetValue<string>() ?? "cannot export"; return; }
         try { _doc.Save(path); }
         finally { _doc.Undo(false); }

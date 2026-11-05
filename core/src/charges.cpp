@@ -100,7 +100,7 @@ ChargeReport describe_charges(const System& s, const std::vector<double>& q, con
   return r;
 }
 
-ChargeReport compute_charges(const System& s, const std::string& method, const std::string& path) {
+ChargeReport compute_charges(const System& s, const std::string& method, const std::string& path, const QEqOptions& qeq) {
   std::vector<double> q;
   std::vector<std::string> notes;
   if (method == "gasteiger") {
@@ -111,8 +111,8 @@ ChargeReport compute_charges(const System& s, const std::string& method, const s
     notes.push_back("Gasteiger–Marsili, 6 iterations from the formal charges; the total is the net formal charge");
   } else if (method == "qeq") {
     QEqReport rep;
-    q = qeq_charges(s, QEqOptions{}, &rep);
-    notes.push_back("QEq (Rappé & Goddard 1991), Ohno–Klopman shielding");
+    q = qeq_charges(s, qeq, &rep);
+    notes = rep.notes;
   } else if (method == "file") {
     q = read_charge_file(path, s.atoms.size());
     notes.push_back("from " + path);

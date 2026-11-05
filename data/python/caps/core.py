@@ -1705,6 +1705,33 @@ def _set_pattern(self, smarts: str, bin: float = 0.0) -> int:
 Document.set_pattern = _set_pattern
 
 
+def _charges(self, method: str = "qeq", kernel: str = "ohno", ewald: bool = False, hydrogen: bool = False, bounds=None, cutoff: float = 10.0,
+             total: float = 0.0, lam: float = 0.4913, accuracy: float = 1e-7, path: str = "", apply: bool = False) -> dict:
+    """Partial charges: method "gasteiger", "qeq", "forcefield", "file" (path to a .chg) or "keep". For QEq: kernel "ohno"
+    or "slater" (ns Slater densities, ζ = λ(2n+1)/2R), ewald (periodic cells: the long range summed over all images),
+    hydrogen (charge-dependent hydrogen hardness), bounds {"O": (qmin, qmax)}, cutoff Å, total e. apply=True sets them
+    on the structure. Returns {method, q, net, max_abs, groups, notes}."""
+    o = {"method": method, "path": path, "apply": bool(apply)}
+    if method == "qeq":
+        o["qeq"] = {"kernel": kernel, "ewald": bool(ewald), "hydrogen": bool(hydrogen), "cutoff": float(cutoff), "total": float(total),
+                    "lambda": float(lam), "accuracy": float(accuracy), "bounds": {k: [float(v[0]), float(v[1])] for k, v in (bounds or {}).items()}}
+    f = library().caps_charges
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 16)
+    n = f(self._h, _enc(json.dumps(o)), buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n) + 16)
+        f(self._h, _enc(json.dumps(o)), buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "charges failed"))
+    return r
+
+
+Document.charges = _charges
+
+
 def _domains(self, group: str = "", grid: float = 0.8, sigma: float = 1.5, threshold: float = 0.0, below: bool = False,
              min_voxels: int = 1, slice: Optional[dict] = None, cube: str = "") -> dict:
     """Domains of the current frame's mass-density field of `group` (a selection query; all atoms by default): regions

@@ -10936,7 +10936,7 @@ extern "C" int32_t caps_charges(caps_doc* d, const char* json, char* out, int32_
       rep = caps::describe_charges(s, d->field->ff->charge, "forcefield");
       rep.notes.push_back("from the Field assignment (" + d->field->base.name + ")");
     } else {
-      rep = caps::compute_charges(s, method, j.text("path"));
+      rep = caps::compute_charges(s, method, j.text("path"), j.has("qeq") && j["qeq"].is_object() ? caps::qeq_options_from_json(j["qeq"]) : caps::QEqOptions{});
     }
     if (j.has("adjust") && j["adjust"].is_object()) {   // average equivalent atoms, scale, neutralise
       const auto& a = j["adjust"];
