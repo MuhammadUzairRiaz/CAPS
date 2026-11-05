@@ -1752,6 +1752,25 @@
     "--seed": "page",
     "--json": "partial: the page shows the composition in the status"
    }
+  },
+  "adp": {
+   "status": "gui",
+   "studio": "Analyze › Scattering › Atomic displacement parameters",
+   "where": "Views/Pages/ScatteringPage.axaml|Atomic displacement parameters",
+   "capi": [
+    "caps_adp"
+   ],
+   "options": {
+    "--topology": "page",
+    "--first": "partial: the Calculations panel's first frame applies to the chip; the card uses every frame",
+    "--last": "partial: the card uses every frame",
+    "--stride": "partial: the card uses every frame",
+    "--supercell": "Views/Pages/ScatteringPage.axaml|supercell",
+    "--probability": "cli: the page draws no ellipsoids (50 % in the CIF's numbers)",
+    "--no-drift": "cli: the page always removes the drift",
+    "--csv": "partial: the page lists the sites",
+    "--cif": "Views/Pages/ScatteringPage.axaml|Write CIF with U_ij…"
+   }
   }
  },
  "hidden_options": {

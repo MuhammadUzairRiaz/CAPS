@@ -30,6 +30,15 @@ public partial class ScatteringPage : PageBase
     private async void OnPowder(object? s, RoutedEventArgs e) => await Vm.RunPowder();
     private async void OnRefine(object? s, RoutedEventArgs e) => await Vm.RunRefine();
     private async void OnIndex(object? s, RoutedEventArgs e) => await Vm.RunIndex();
+    private async void OnAdp(object? s, RoutedEventArgs e) => await Vm.RunAdp();
+    private async void OnAdpColour(object? s, RoutedEventArgs e) => await Vm.ColourByMobility();
+    private async void OnAdpCif(object? s, RoutedEventArgs e)
+    {
+        var top = TopLevel.GetTopLevel(this);
+        if (top?.StorageProvider is not { } sp) return;
+        var f = await sp.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions { Title = "CIF with displacement parameters", SuggestedFileName = "adp.cif", DefaultExtension = "cif" });
+        if (f?.TryGetLocalPath() is { } path) await Vm.RunAdp(path);
+    }
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.Analyze.Cancel();
     private void OnClearExperiment(object? s, RoutedEventArgs e) => Vm.ClearExperiment();
 

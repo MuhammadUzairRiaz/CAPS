@@ -594,6 +594,19 @@ internal static class Screenshot
             if (kv[0] == "jobs") w.ViewModel.SetModule(11);
             if (kv[0] == "arch") w.ViewModel.PolyArch = int.Parse(kv[1]);   // arch=0..4 (linear, branched, star, comb, dendrimer), before polymer=
             if (kv[0] == "polydp") w.ViewModel.GrowDpD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+            if (kv[0] == "adp")   // adp=NA,NB,NC: Analyze › Scattering's displacement parameters of the open trajectory, then coloured by U_iso
+            {
+                var vm = w.ViewModel;
+                var n = kv[1].Split(',').Select(decimal.Parse).ToArray();
+                vm.AdpNa = n[0]; vm.AdpNb = n[1]; vm.AdpNc = n[2];
+                var t = vm.ColourByMobility();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                vm.OpenScattering();
+                for (int q = 0; q < 40; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                foreach (var sv in w.GetVisualDescendants().OfType<Avalonia.Controls.ScrollViewer>()) if (sv.IsEffectivelyVisible) sv.ScrollToEnd();
+                for (int q = 0; q < 20; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("adp: " + vm.Status + (vm.AdpHasError ? " · error " + vm.AdpError : "") + "\n" + vm.AdpText);
+            }
             if (kv[0] == "cifdisorder")   // cifdisorder=MODE(0 major, 1 group, 2 random)|NA,NB,NC: Builders › Crystal's CIF disorder card, read again
             {
                 var vm = w.ViewModel;

@@ -726,6 +726,42 @@ System read_cif(const std::string& path, const CifDisorder& o, CifDisorderReport
 
 System read_cif(const std::string& path) { return read_cif(path, CifDisorder{}, nullptr); }
 
+CifDisplacements cif_displacements(const std::string& text) {
+  const CifData d = cif_parse(text);
+  CifDisplacements out;
+  constexpr double k8pi2 = 8 * 3.14159265358979323846 * 3.14159265358979323846;
+  for (const auto& [tags, rows] : d.loops) {
+    auto col = [&](const char* tag) {
+      auto it = std::find(tags.begin(), tags.end(), tag);
+      return it == tags.end() ? -1 : int(it - tags.begin());
+    };
+    const int lab = col("_atom_site_label"), ui = col("_atom_site_u_iso_or_equiv"), bi = col("_atom_site_b_iso_or_equiv");
+    if (lab >= 0 && (ui >= 0 || bi >= 0))
+      for (const auto& r : rows) {
+        const std::string& v = r[size_t(ui >= 0 ? ui : bi)];
+        if (v == "." || v == "?") continue;
+        out.u_iso[r[size_t(lab)]] = ui >= 0 ? cif_number(v) : cif_number(v) / k8pi2;
+      }
+    const int al = col("_atom_site_aniso_label");
+    if (al < 0) continue;
+    const bool isB = col("_atom_site_aniso_b_11") >= 0 && col("_atom_site_aniso_u_11") < 0;
+    const char* names[6] = {"11", "22", "33", "12", "13", "23"};
+    int c[6];
+    bool all = true;
+    for (int k = 0; k < 6; ++k) {
+      c[k] = col((std::string(isB ? "_atom_site_aniso_b_" : "_atom_site_aniso_u_") + names[k]).c_str());
+      all = all && c[k] >= 0;
+    }
+    if (!all) continue;
+    for (const auto& r : rows) {
+      std::array<double, 6> u{};
+      for (int k = 0; k < 6; ++k) u[size_t(k)] = cif_number(r[size_t(c[k])]) / (isB ? k8pi2 : 1.0);
+      out.u_aniso[r[size_t(al)]] = u;
+    }
+  }
+  return out;
+}
+
 std::string formula_of(const System& s, const std::vector<size_t>& atoms) {
   std::map<int, int> count;
   for (size_t i : atoms) count[s.atoms[i].element]++;

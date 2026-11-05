@@ -1670,6 +1670,30 @@ def _graft(self, units, sites, dp: int = 10, equivalent: bool = False, probabili
 Document.graft = _graft
 
 
+def _adp(self, first: int = 0, last: int = -1, stride: int = 1, supercell=(1, 1, 1), probability: float = 0.5,
+         remove_drift: bool = True, cif: str = "") -> dict:
+    """Atomic displacement tensors over the frames: per atom (and per site of the unit cell when the structure is a
+    `supercell` of it) U (xx yy zz xy xz yz, Å²), u_iso, b = 8π² u_iso, ellipsoid semi-axes at `probability`, the
+    anisotropy; cif= writes the mean positions with U_ij on the CIF's axes."""
+    o = {"first": int(first), "last": int(last), "stride": int(stride), "supercell": [int(x) for x in supercell],
+         "probability": float(probability), "remove_drift": bool(remove_drift), "cif": cif}
+    f = library().caps_adp
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 22)
+    n = f(self._h, _enc(json.dumps(o)), buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(self._h, _enc(json.dumps(o)), buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "adp failed"))
+    return r
+
+
+Document.adp = _adp
+
+
 def cif_disorder(path: str) -> dict:
     """What a CIF's disorder holds, read the default way: {assemblies, groups, places (sites with alternatives or a
     vacancy, per cell), expected {element: atoms from the occupancies}, obtained, notes}."""

@@ -50,6 +50,7 @@
 #include "caps/sqs.hpp"
 #include "caps/restraints.hpp"
 #include "caps/graft_chains.hpp"
+#include "caps/adp.hpp"
 #include "caps/zmethod.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dlpoly.hpp"
@@ -11413,6 +11414,60 @@ extern "C" caps_doc* caps_graft_chains(caps_doc* d, const char* json, char* out,
     g_error = e.what();
     json_error(e, out, cap);
     return nullptr;
+  }
+}
+
+// v91 atomic displacement tensors of the open trajectory (adp.hpp): JSON {first, last, stride, supercell [3],
+// probability, remove_drift, cif (a path to write)} → {ok, error, frames, scale, atoms [{U, u_iso, b, axes, anisotropy}],
+// sites [... and atoms], notes, cif}
+extern "C" int32_t caps_adp(caps_doc* d, const char* json, char* out, int32_t cap) {
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    caps::AnalyzeOptions ao;
+    ao.first = long(j.num("first", 0)), ao.last = long(j.num("last", -1)), ao.stride = std::max(1L, long(j.num("stride", 1)));
+    const auto fr = caps::analysis_frames(d->traj, ao);
+    caps::AdpOptions o;
+    if (j.has("supercell") && j["supercell"].is_array() && j["supercell"].size() == 3)
+      for (size_t k = 0; k < 3; ++k) o.supercell[k] = std::max(1, int(j["supercell"][k].number()));
+    o.probability = j.num("probability", 0.5);
+    o.remove_drift = !(j.has("remove_drift") && !j["remove_drift"].boolean());
+    const caps::AdpResult r = caps::displacement_tensors(d->traj, fr, o);
+    auto row = [](const caps::AtomAdp& a) {
+      caps::Json q = caps::Json::object(), u = caps::Json::array(), ax = caps::Json::array(), m = caps::Json::array();
+      for (double x : a.U) u.push_back(x);
+      for (double x : a.axes) ax.push_back(x);
+      for (double x : a.mean) m.push_back(x);
+      q["U"] = u, q["u_iso"] = a.u_iso, q["b"] = a.b, q["axes"] = ax, q["mean"] = m;
+      q["anisotropy"] = std::isfinite(a.anisotropy) ? caps::Json(a.anisotropy) : caps::Json(nullptr);
+      return q;
+    };
+    caps::Json res = caps::Json::object(), at = caps::Json::array(), st = caps::Json::array(), nt = caps::Json::array();
+    for (const auto& a : r.atoms) at.push_back(row(a));
+    for (size_t k = 0; k < r.sites.size(); ++k) {
+      caps::Json q = row(r.sites[k]), mem = caps::Json::array();
+      for (uint32_t i : r.site_atoms[k]) mem.push_back(double(i));
+      q["atoms"] = mem;
+      st.push_back(q);
+    }
+    for (const auto& n : r.notes) nt.push_back(n);
+    res["frames"] = double(r.frames), res["scale"] = r.scale, res["atoms"] = at, res["sites"] = st, res["notes"] = nt;
+    const std::string path = j.text("cif", "");
+    if (!path.empty()) {
+      const auto& rows = r.sites.empty() ? r.atoms : r.sites;
+      std::vector<int> els;
+      for (size_t k = 0; k < rows.size(); ++k) els.push_back(d->traj.topology.atoms[r.sites.empty() ? k : r.site_atoms[k][0]].element);
+      caps::write_cif_adp(els, rows, r.unit_cell, path, d->traj.topology.title.empty() ? "caps" : d->traj.topology.title);
+      res["cif"] = path;
+    }
+    caps::KeyValues pr = {{"frames", std::to_string(r.frames)}, {r.sites.empty() ? "atoms" : "sites", std::to_string(r.sites.empty() ? r.atoms.size() : r.sites.size())}};
+    prov_step(d, "analysis.adp", "Atomic displacement tensors from the trajectory", std::move(pr));
+    res["ok"] = true;
+    return report_out(res.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    caps::Json r = caps::Json::object();
+    r["ok"] = false, r["error"] = std::string(e.what());
+    return report_out(r.dump(0), out, cap);
   }
 }
 

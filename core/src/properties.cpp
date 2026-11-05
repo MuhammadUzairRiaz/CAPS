@@ -1,5 +1,7 @@
 // CAPS Analyze: properties from trajectories (see caps/properties.hpp).
 #include "caps/properties.hpp"
+
+#include "caps/adp.hpp"
 #include "caps/normal_modes.hpp"
 #include "caps/uff.hpp"
 #include "caps/typing.hpp"
@@ -1832,6 +1834,48 @@ double ir_correction(const std::string& kind, double x) {
   return 1.0;
 }
 
+Property adp_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o) {
+  Property p{"adp", "Atomic displacement parameters", "Å²",
+             "U = ⟨Δr Δr^T⟩ about each atom's mean position (the centre's drift removed), U_iso = tr U / 3, B = 8π² U_iso "
+             "(Trueblood et al. 1996); value: the mean U_iso",
+             NaN, NaN, {}, {}, {}};
+  if (fr.size() < 2) { p.notes.push_back("needs two frames or more"); return p; }
+  const AdpResult r = displacement_tensors(t, fr, AdpOptions{});
+  const System& top = t.topology;
+  std::map<int, std::pair<double, int>> per;
+  double sum = 0, aniso = 0;
+  for (size_t i = 0; i < r.atoms.size(); ++i) {
+    sum += r.atoms[i].u_iso;
+    if (std::isfinite(r.atoms[i].anisotropy)) aniso += r.atoms[i].anisotropy;
+    auto& e = per[top.atoms[i].element];
+    e.first += r.atoms[i].b, e.second += 1;
+  }
+  p.value = sum / double(r.atoms.size());
+  p.extra["mean B (Å²)"] = 8 * M_PI * M_PI * p.value;
+  p.extra["mean anisotropy λmax/λmin"] = aniso / double(r.atoms.size());
+  for (const auto& [z, e] : per) p.extra[std::string("B ") + element(z).symbol + " (Å²)"] = e.first / e.second;
+  // U_iso along the axis (an interphase: mobility against the distance from a surface or fibre in the cell)
+  if (top.cell.valid() && o.zbin > 0) {
+    const int ax = std::clamp(o.axis, 0, 2);
+    const Vec3 e = ax == 0 ? top.cell.a : ax == 1 ? top.cell.b : top.cell.c;
+    const double L = norm(e);
+    const int nb = std::max(1, int(std::floor(L / o.zbin)));
+    std::vector<double> s(size_t(nb), 0.0), c(size_t(nb), 0.0);
+    for (const auto& a : r.atoms) {
+      Vec3 f = top.cell.to_fractional(a.mean);
+      double x = f[size_t(ax)] - std::floor(f[size_t(ax)]);
+      const int k = std::min(nb - 1, int(x * nb));
+      s[size_t(k)] += a.u_iso, c[size_t(k)] += 1;
+    }
+    Series sr{"U_iso profile", std::string("position along ") + "abc"[ax] + " (Å)", "U_iso (Å²)", {}, {}};
+    for (int k = 0; k < nb; ++k)
+      if (c[size_t(k)] > 0) sr.x.push_back((k + 0.5) * L / nb), sr.y.push_back(s[size_t(k)] / c[size_t(k)]);
+    p.series.push_back(sr);
+  }
+  for (const auto& n : r.notes) p.notes.push_back(n);
+  return p;
+}
+
 Property ir_prop(const Trajectory& t, const std::vector<size_t>& fr, const std::vector<double>& times, const AnalyzeOptions& o) {
   Property p{"ir", "Infrared spectrum", "cm⁻¹",
              "α(ν̃)n(ν̃) = β/(6cVε₀) · F · ∫ cos(ωt) ⟨Ṁ(0)·Ṁ(t)⟩ dt with Ṁ = Σ q_i v_i (Hann window), the classical correlation corrected "
@@ -2449,7 +2493,7 @@ std::vector<double> frame_times(const Trajectory& t, const AnalyzeOptions& o) {
 std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string>& ids, const AnalyzeOptions& o) {
   static const std::set<std::string> known = {"density", "rdf", "sq", "xray", "electron", "neutron", "rg", "ree", "cn", "persistence", "msd", "diffusion",
                                               "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion", "interaction", "orientation", "crosslinks",
-                                              "entanglements", "conformation", "vacf", "hbonds", "vanhove", "p2r", "dielectric", "fluct", "modes", "ir"};
+                                              "entanglements", "conformation", "vacf", "hbonds", "vanhove", "p2r", "dielectric", "fluct", "modes", "ir", "adp"};
   for (const auto& id : ids)
     if (!known.count(id)) throw std::invalid_argument("unknown property '" + id + "'");
   const auto fr = analysis_frames(t, o);
@@ -2494,6 +2538,7 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
     if (want("hbonds")) out.push_back(hbond_prop(t, fr, times, o));
     if (want("dielectric")) out.push_back(dielectric_prop(t, fr, times, o));
     if (want("ir")) out.push_back(ir_prop(t, fr, times, o));
+    if (want("adp")) out.push_back(adp_prop(t, fr, o));
     if (want("fluct")) out.push_back(fluct_prop(t, fr, times, o));
     if (want("modes")) out.push_back(modes_prop(t, fr, o));
     if (want("ree") || want("cn") || want("persistence") || want("orientation")) {

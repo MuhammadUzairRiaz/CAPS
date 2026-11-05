@@ -60,6 +60,14 @@ struct CifDisorderReport {
 System parse_cif(const std::string& text, const std::string& name, const CifDisorder& o, CifDisorderReport* report = nullptr);
 System read_cif(const std::string& path, const CifDisorder& o, CifDisorderReport* report = nullptr);
 
+// Displacement parameters a CIF gives, by site label: U_iso (Å², from _atom_site_U_iso_or_equiv or B/8π²) and the
+// anisotropic U^ij (_atom_site_aniso_U_11 … _23 or B^ij/8π², on the normalised reciprocal axes: adp.hpp converts them).
+struct CifDisplacements {
+  std::map<std::string, double> u_iso;
+  std::map<std::string, std::array<double, 6>> u_aniso;   // 11 22 33 12 13 23
+};
+CifDisplacements cif_displacements(const std::string& text);
+
 struct Termination {
   double cut = 0;            // cut height within one layer, 0 ≤ cut < d (Å above the lowest plane)
   double gap = 0;            // distance between the planes either side of the cut, Å

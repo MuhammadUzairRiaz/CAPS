@@ -488,6 +488,7 @@ internal static class Native
     }
 
     [DllImport(Lib, EntryPoint = "caps_unit_info")] public static extern int UnitInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_adp")] public static extern int Adp(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_cif_disorder")] public static extern int CifDisorder([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_open_cif")] public static extern IntPtr OpenCif([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_copolymer_model")] public static extern int CopolymerModel([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
@@ -1382,6 +1383,18 @@ public sealed class CapsDocument : IDisposable
     public int SetRestraints(string json) { using (Hold()) { var n = Native.SetRestraints(H, json); if (n < 0) throw new InvalidOperationException(Native.LastError()); return n; } }
     public long HeldMolecule() { using (Hold()) return Native.HeldMolecule(H); }
     /// <summary>Atoms held in place besides the held molecule (frame indices); an empty list clears them.</summary>
+    /// <summary>Atomic displacement tensors of this trajectory (caps_adp), JSON.</summary>
+    public string Adp(string json)
+    {
+        using (Hold(longRun: true))
+        {
+            Alive();
+            var buf = new byte[1 << 22];
+            var n = Native.Adp(H, json, buf, buf.Length);
+            if (n > buf.Length) { buf = new byte[n]; n = Native.Adp(H, json, buf, buf.Length); }
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+        }
+    }
     /// <summary>The copolymer statistics of the chains grown into this document (caps_sequence_report), JSON ("{}" none).</summary>
     public string SequenceReport() { using (Hold()) return JsonCallOnce((b, c) => Native.SequenceReport(H, b, c)); }
     /// <summary>Restraints of every kind in text form (caps_set_restraint_text): the count, or −1 and the reason.</summary>

@@ -86,6 +86,7 @@
 #include "caps/polystats.hpp"
 #include "caps/restraints.hpp"
 #include "caps/graft_chains.hpp"
+#include "caps/adp.hpp"
 #include "caps/ddft.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
@@ -242,6 +243,7 @@ int usage() {
                "               diffusion: [--fit 0.2:0.5] [--viscosity ETA (mPa·s) --temp T (Yeh–Hummer finite-size correction)]\n"
                "               interfaces (zprofile, adhesion, interaction, orientation): [--surface 1-3,7 (molecule ids; 1)] [--axis x|y|z (z)] [--zbin 0.5]\n"
                "               ir (infrared spectrum from the dipole): --temp T [--ir-max-ps 2] [--ir-max-wavenumber 4000]\n"
+               "               adp (displacement parameters U, B; a profile of U_iso along --axis in --zbin bins)\n"
                "  caps elastic FILE [--topology DATA] [--method strain|fluct|fluct-run] [--configs N] [--strain 1e-4] [--temp T] [--ps 100] [--ff FF.json] [--json OUT]\n"
                "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]\n"
                "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]   |   caps tg --fit RUN [RUN ...] [--volume]\n"
@@ -364,6 +366,8 @@ int usage() {
                "             a molecular crystal found by simulated annealing against the pattern (direct space)\n"
                "  caps zmelt CRYSTAL --temps 100,200,300,400 [--ff FF] [--steps 10000] [--dt 1] [--bisect 3] [--cutoff 10] [--sample-every 20]\n"
                "              [--csv OUT] [--json OUT]   melting point by the Z method: NVE runs from the perfect crystal (Belonoshko et al.)\n"
+               "  caps adp TRAJ [--topology DATA] [--first N] [--last N] [--stride N] [--supercell 2,2,2] [--probability 0.5] [--no-drift]\n"
+               "              [--csv OUT] [--cif OUT.cif]   atomic displacement tensors U_ij, U_iso and B per atom (per site of a supercell)\n"
                "  caps cif FILE.cif [--disorder major|group|random] [--group LABEL] [--supercell 4,4,4] [--seed 1] [-o OUT] [--json OUT]\n"
                "              disorder groups, mixed and split sites, vacancies: the major group, a named group, or a supercell filled at random\n"
                "  caps graft FILE --units 'SMILES,…' --sites 12,40 [--equivalent] [--probability 1] [--per-site 1] [--max N] [--min-spacing Å]\n"
@@ -504,7 +508,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -537,7 +541,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
          a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
-         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo" || a == "--equivalent";
+         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo" || a == "--equivalent" || a == "--no-drift";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -4328,6 +4332,53 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps solve: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "adp") {
+    try {
+      if (pos.empty()) return usage();
+      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      AnalyzeOptions ao;
+      if (o.count("--first")) ao.first = std::stol(o["--first"]);
+      if (o.count("--last")) ao.last = std::stol(o["--last"]);
+      if (o.count("--stride")) ao.stride = std::stol(o["--stride"]);
+      const auto fr = analysis_frames(t, ao);
+      AdpOptions po;
+      if (o.count("--supercell")) {
+        std::string v = o["--supercell"];
+        for (auto& c : v) if (c == 'x' || c == 'X') c = ',';
+        if (std::sscanf(v.c_str(), "%d,%d,%d", &po.supercell[0], &po.supercell[1], &po.supercell[2]) != 3) throw std::invalid_argument("--supercell: na,nb,nc");
+      }
+      if (o.count("--probability")) po.probability = std::stod(o["--probability"]);
+      po.remove_drift = !o.count("--no-drift");
+      const AdpResult r = displacement_tensors(t, fr, po);
+      const auto& rows = r.sites.empty() ? r.atoms : r.sites;
+      std::vector<int> els;
+      for (size_t k = 0; k < rows.size(); ++k) els.push_back(t.topology.atoms[r.sites.empty() ? k : r.site_atoms[k][0]].element);
+      std::map<int, std::pair<double, int>> per;
+      for (size_t k = 0; k < rows.size(); ++k) per[els[k]].first += rows[k].b, per[els[k]].second += 1;
+      std::printf("%d frames · %zu %s · ellipsoids at %.0f %% (scale %.4f)\n", r.frames, rows.size(), r.sites.empty() ? "atoms" : "sites", 100 * po.probability, r.scale);
+      for (const auto& [z, e] : per) std::printf("  %-3s mean B %.3f Å² (U_iso %.5f Å²) over %d\n", element(z).symbol, e.first / e.second, e.first / e.second / (8 * M_PI * M_PI), e.second);
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      if (o.count("--csv")) {
+        std::ofstream f(o["--csv"]);
+        f << (r.sites.empty() ? "atom" : "site") << ",element,x,y,z,U11,U22,U33,U12,U13,U23,U_iso,B,axis1,axis2,axis3,anisotropy\n";
+        for (size_t k = 0; k < rows.size(); ++k) {
+          const auto& a = rows[k];
+          f << k + 1 << "," << element(els[k]).symbol << "," << a.mean[0] << "," << a.mean[1] << "," << a.mean[2];
+          for (double u : a.U) f << "," << u;
+          f << "," << a.u_iso << "," << a.b << "," << a.axes[0] << "," << a.axes[1] << "," << a.axes[2] << "," << a.anisotropy << "\n";
+        }
+        std::printf("wrote %s\n", o["--csv"].c_str());
+      }
+      if (o.count("--cif")) {
+        write_cif_adp(els, rows, r.unit_cell, o["--cif"], t.topology.title.empty() ? "caps" : t.topology.title);
+        std::printf("wrote %s (U_ij on the CIF's axes)\n", o["--cif"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps adp: %s\n", e.what());
       return 1;
     }
   }

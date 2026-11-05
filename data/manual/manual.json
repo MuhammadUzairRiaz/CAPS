@@ -3316,6 +3316,53 @@
    "engines": []
   },
   {
+   "id": "displacement-parameters",
+   "group": "Analysis",
+   "title": "Atomic displacement parameters from a trajectory",
+   "summary": "Each atom is followed through the frames, every step taken at its minimum image so that a crossing of the cell edge is not a jump, and the drift of the cell's mass-weighted centre is removed frame by frame. About the atom's mean position the displacement tensor is U = ⟨Δr Δr^T⟩ (Å²); U_iso is a third of its trace and the Debye–Waller B = 8π² U_iso. The eigenvectors of U are the axes of the thermal ellipsoid, its semi-axes c√λ_k with c fixed by the probability p of finding the atom inside, P(χ²₃ ≤ c²) = p (1.5382 for 50 %). When the trajectory's cell is a supercell of a crystal (given as repeats along a, b, c), the atoms whose mean positions fold onto one place of the unit cell form a site and its U is their mean. For a CIF the tensor is expressed on the normalised reciprocal axes, U_cif = N⁻¹ A⁻¹ U A⁻ᵀ N⁻¹ with A the cell vectors as columns and N = diag(a*, b*, c*); U_eq is recovered from U_cif as ⅓ Σ_ij U^ij a*_i a*_j a_i·a_j. As an analysis the mean U_iso, B per element, the mean anisotropy λmax/λmin and a profile of U_iso along an axis are reported.",
+   "equation": "U = ⟨Δr Δr^T⟩;  U_iso = tr U / 3;  B = 8π² U_iso;  P(χ²₃ ≤ c²) = p;  U_cif = N⁻¹ A⁻¹ U A⁻ᵀ N⁻¹",
+   "equation_note": "Trueblood et al. 1996; Grosse-Kunstleve & Adams 2002",
+   "tex": "\\mathbf{U} = \\langle \\Delta\\mathbf{r}\\, \\Delta\\mathbf{r}^{\\mathsf T} \\rangle, \\qquad U_{\\mathrm{iso}} = \\tfrac13 \\operatorname{tr}\\mathbf{U}, \\qquad B = 8\\pi^2 U_{\\mathrm{iso}}, \\qquad P(\\chi^2_3 \\le c^2) = p \\\\ \\mathbf{U}_{\\mathrm{CIF}} = \\mathbf{N}^{-1} \\mathbf{A}^{-1} \\mathbf{U} \\mathbf{A}^{-\\mathsf T} \\mathbf{N}^{-1}, \\qquad U_{\\mathrm{eq}} = \\tfrac13 \\sum_{ij} U^{ij} a^*_i a^*_j\\, \\mathbf{a}_i \\cdot \\mathbf{a}_j",
+   "symbols": [
+    [
+     "U",
+     "displacement tensor (Cartesian)",
+     "Å²"
+    ],
+    [
+     "B",
+     "Debye–Waller factor",
+     "Å²"
+    ],
+    [
+     "c",
+     "ellipsoid scale for probability p",
+     "—"
+    ],
+    [
+     "A",
+     "cell vectors as columns",
+     "Å"
+    ],
+    [
+     "N",
+     "diag(a*, b*, c*)",
+     "1/Å"
+    ]
+   ],
+   "when": "Comparing an MD crystal's thermal motion with diffraction (chain axis against lateral), mapping chain mobility against the distance from a fibre or filler surface, and Debye–Waller factors for computed patterns.",
+   "cites": [
+    "trueblood1996",
+    "grossekunstleve2002"
+   ],
+   "source": "core/src/adp.cpp (displacement_tensors, ellipsoid_scale, u_cif_from_cartesian, write_cif_adp); crystal.cpp (cif_displacements); properties.cpp (adp)",
+   "tested": "Adp.ExactTensorAcrossTheCellEdge (six displacements ±s_k e_k about a rotated frame give U = R diag(s²/3) Rᵀ to 1e-12 across the cell edge, the ellipsoid axes along e_k); Adp.DriftRemoved (a drifting cell gives the same tensors); Adp.CifBasisAndScales (a triclinic round trip to 1e-14, U_eq of an isotropic tensor, orthogonal cells unchanged, c = 1.5382 at 50 % and 3.3682 at 99 %); Adp.SupercellSitesAndCifRoundTrip (a site's U is its atoms' mean; a CIF written with U_ij reads back the tensor)",
+   "deviation": "classical: no zero-point motion (low-temperature U falls short of experiment); no symmetry averaging of equivalent sites beyond the unit cell's own positions; ellipsoids are reported, not drawn in the view",
+   "engines": [
+    "analysis.adp"
+   ]
+  },
+  {
    "id": "phonons",
    "group": "Analysis",
    "title": "Phonons of a crystal with its force field",

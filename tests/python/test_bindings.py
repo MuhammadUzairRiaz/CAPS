@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 90, "ABI 90")
+check(caps.abi_version() == 91, "ABI 91")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
@@ -823,6 +823,14 @@ with tempfile.TemporaryDirectory() as _td:
     _cr = caps.open_cif(_cp, mode="random", supercell=(3, 3, 3), seed=5)
     check(_cr.atoms == 54 and _cr.cif_report["obtained"].get("Mg", 0) + _cr.cif_report["obtained"].get("Fe", 0) == 27, f"open_cif: {_cr.cif_report}")
 print("ok   CIF disorder: major and random fill")
+# displacement tensors (ABI 91): a short NVT run of a small crystal gives positive, finite U for every atom
+_ad = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
+try:
+    _ad.adp()
+    check(False, "adp: one frame must be refused")
+except caps.CapsError as _e:
+    check("two frames" in str(_e), f"adp: {_e}")
+print("ok   adp: one frame refused")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

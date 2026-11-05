@@ -135,6 +135,28 @@
           </Border>
           <Border Classes="pcard">
             <StackPanel Spacing="10">
+              <TextBlock Text="Atomic displacement parameters" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="U_ij, U_iso and B = 8π²U_iso of each atom over the frames of the open trajectory, about its mean position; for a supercell of a crystal, per site of the unit cell. Compare with diffraction, or map mobility near a fibre." />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="supercell" Classes="label" VerticalAlignment="Center" />
+                <NumericUpDown Value="{Binding AdpNa}" Minimum="1" Maximum="20" Increment="1" FormatString="0" Width="54" ShowButtonSpinner="False" />
+                <TextBlock Text="×" VerticalAlignment="Center" />
+                <NumericUpDown Value="{Binding AdpNb}" Minimum="1" Maximum="20" Increment="1" FormatString="0" Width="54" ShowButtonSpinner="False" />
+                <TextBlock Text="×" VerticalAlignment="Center" />
+                <NumericUpDown Value="{Binding AdpNc}" Minimum="1" Maximum="20" Increment="1" FormatString="0" Width="54" ShowButtonSpinner="False"
+                               ToolTip.Tip="Repeats of the unit cell in the trajectory's cell: atoms on the same place of the unit cell form a site" />
+              </StackPanel>
+              <WrapPanel ItemSpacing="8" LineSpacing="8">
+                <Button Click="OnAdp" Content="Compute" IsEnabled="{Binding HasDocument}" />
+                <Button Click="OnAdpColour" Content="Colour by U_iso" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Mobile atoms bright (viridis)" />
+                <Button Click="OnAdpCif" Content="Write CIF with U_ij…" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Mean positions (sites) with their anisotropic U on the CIF's axes" />
+              </WrapPanel>
+              <TextBlock Text="{Binding AdpError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding AdpHasError}" />
+              <TextBlock Text="{Binding AdpText}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding AdpHas}" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="10">
               <TextBlock Text="{Binding BeamLabel}" FontSize="13.5" FontWeight="SemiBold" />
               <StackPanel Spacing="6"><TextBlock Text="Form factors" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.FormFactorModes}" SelectedIndex="{Binding FormFactorMode}" HorizontalAlignment="Stretch"
                 ToolTip.Tip="X-ray: Cromer–Mann form factors of the neutral atoms (every element to Cf except Tm). Electron: Peng et al. 1996 elastic scattering factors, for electron diffraction (SAED) of amorphous and crystalline films" /></StackPanel>
