@@ -1785,6 +1785,31 @@ Document.symmetry = _symmetry
 Document.set_cell = _set_cell
 
 
+def _reaction_path(self, other: str, match: bool = True, method: str = "idpp", images: int = 7, neb: bool = False, relax_ends: bool = False, spring: float = 5.0,
+                   fmax: float = 0.05, steps: int = 2000, climb: bool = True) -> "Document":
+    """A path from this structure (A) to the one in the file `other` (B): B's atoms matched to A's (another order is
+    fine; match=False keeps B's file order, for a path matching would undo such as a methyl turned by 120°), the images
+    by "idpp", "lst" or "linear" interpolation, and with neb=True the climbing-image nudged elastic band
+    with the assigned force field (else UFF). Returns a new Document whose frames are the images, with .path_report
+    {reordered, match_rmsd, energy, arc, climbing, forward, reverse, converged, notes}."""
+    o = {"other": other, "match": bool(match), "method": method, "images": int(images), "neb": bool(neb), "relax_ends": bool(relax_ends), "spring": float(spring),
+         "fmax": float(fmax), "steps": int(steps), "climb": bool(climb)}
+    f = library().caps_reaction_path
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_void_p
+    buf = C.create_string_buffer(1 << 20)
+    h = f(self._h, _enc(json.dumps(o)), buf, len(buf))
+    r = json.loads(buf.value.decode() or "{}")
+    if not h:
+        raise CapsError(r.get("error", "reaction path failed"))
+    d = Document(h)
+    d.path_report = r
+    return d
+
+
+Document.reaction_path = _reaction_path
+
+
 def _domains(self, group: str = "", grid: float = 0.8, sigma: float = 1.5, threshold: float = 0.0, below: bool = False,
              min_voxels: int = 1, slice: Optional[dict] = None, cube: str = "") -> dict:
     """Domains of the current frame's mass-density field of `group` (a selection query; all atoms by default): regions

@@ -547,6 +547,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_exchange_analyze")] public static extern int ExchangeAnalyze([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_thermal")] public static extern int Thermal(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_thermal_lammps")] public static extern int ThermalLammps(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? outText, int cap);
+    [DllImport(Lib, EntryPoint = "caps_reaction_path")] public static extern IntPtr ReactionPath(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_dpd")] public static extern IntPtr Dpd([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_ddft")] public static extern int Ddft([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_zmelt")] public static extern int Zmelt(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
@@ -1277,6 +1278,17 @@ public sealed class CapsDocument : IDisposable
             if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
             return new CapsDocument(h, label);
         }
+    }
+
+    /// <summary>A reaction path from this structure to another file (caps_reaction_path): the images as a new document
+    /// (null on error) and the JSON report.</summary>
+    public (CapsDocument? Doc, string Report) ReactionPath(string json, string label)
+    {
+        var buf = new byte[1 << 20];
+        IntPtr h;
+        using (Hold()) { Alive(); h = Native.ReactionPath(H, json, buf, buf.Length); }
+        var report = System.Text.Encoding.UTF8.GetString(buf).TrimEnd('\0').Trim();
+        return (h == IntPtr.Zero ? null : new CapsDocument(h, label), report);
     }
 
     /// <summary>A DPD run (caps_dpd): the frames as a new document (null on error) and the JSON report.</summary>

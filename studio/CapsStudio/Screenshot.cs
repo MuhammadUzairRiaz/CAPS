@@ -235,6 +235,21 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine($"spacegroup: {vm.SgText} · {vm.SgNote} · γ now {vm.CeGamma} · {vm.CeError}");
             }
+            if (kv[0] == "rpath")   // rpath=B_FILE|nomatch: Relax page, a reaction path from the open structure to B with the NEB (awaited)
+            {
+                var vm = w.ViewModel;
+                var f = kv[1].Split('|');
+                vm.SetModule(2);
+                vm.ChoosePathB(f[0]);
+                vm.PathMatch = !(f.Length > 1 && f[1] == "nomatch");
+                vm.PathImages = 5;
+                vm.PathFmax = 0.02m;
+                var t = vm.RunReactionPath();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                vm.SetModule(2);
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("rpath: " + vm.PathResult + (vm.PathHasError ? " · error " + vm.PathError : ""));
+            }
             if (kv[0] == "pageview")   // pageview=YAW,PITCH[,ZOOM]: the open page's own structure view turned to that camera
             {
                 var c = kv[1].Split(',').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();

@@ -3946,6 +3946,50 @@
    "tex": "\\mathbf G = \\mathbf M^{\\mathsf T}\\mathbf M,\\qquad \\mathbf G \\leftarrow \\frac{1}{|P|}\\sum_{\\mathbf R\\in P}\\mathbf R^{\\mathsf T}\\mathbf G\\,\\mathbf R,\\qquad \\Delta \\leftarrow \\frac{1}{|S|}\\sum_{\\mathbf R\\in S}\\mathbf R\\,\\Delta,\\qquad \\mathbf f_j' = \\mathbf R(\\mathbf f_i + \\Delta) + \\mathbf t + \\mathbf n"
   },
   {
+   "id": "reaction-path",
+   "group": "Minimisers",
+   "title": "Reaction paths and the nudged elastic band",
+   "summary": "A path between two structures of the same atoms. B's atoms are matched to A's when the file lists them in another order. Atoms of one element, and of one bonded environment when both structures have the same environments, are assigned by the Hungarian method to the least summed squared distance. A molecule is first superposed from the four orientations of its principal axes, the assignment and the fit repeated until stable; a periodic cell uses minimum-image distances. A molecule's B is superposed on A, so the path carries no rigid motion. The images come from straight lines, from LST (each image minimises the deviation of its pair distances from distances interpolated between the ends, weighted by 1/d⁴, plus a small pull to the straight-line image), or from IDPP (the same distance objective without the pull, the images optimised together as a band). The climbing-image nudged elastic band then finds the minimum energy path and its saddle with the force field. Each image feels the force perpendicular to the path plus a spring force along the improved tangent, the highest image climbs once the band has settled, and the images move by FIRE.",
+   "equation": "S_κ = Σ_{i<j} (d_ij^κ − d_ij)² / d_ij⁴,  d_ij^κ = d_ij^A + κ (d_ij^B − d_ij^A)/(M+1);  F_i = F_i^⊥ + k(|R_{i+1} − R_i| − |R_i − R_{i−1}|) τ̂_i;  F_climb = F − 2(F·τ̂)τ̂",
+   "equation_note": "LST adds γ Σ |r − r^LI|² with γ = 10⁻⁶ bohr⁻⁴; τ̂ is the tangent to the higher-energy neighbour (energy-weighted at extrema)",
+   "symbols": [
+    [
+     "d_ij^κ",
+     "target pair distance in image κ",
+     "Å"
+    ],
+    [
+     "M",
+     "images between the ends",
+     "—"
+    ],
+    [
+     "k",
+     "spring constant",
+     "kcal/mol/Å²"
+    ],
+    [
+     "τ̂",
+     "unit tangent of the path",
+     "—"
+    ]
+   ],
+   "when": "Barriers of gas hops through rubber, of chain slip in polymer crystals, of bond-exchange steps in vitrimers, and of conformational changes such as methyl rotation.",
+   "cites": [
+    "kuhn1955",
+    "halgren1977",
+    "smidstrup2014",
+    "henkelman2000ci",
+    "henkelman2000tangent",
+    "bitzek2006"
+   ],
+   "source": "core/src/reaction_path.cpp",
+   "tested": "tests/test_reaction_path.cpp (a shuffled, turned and moved molecule and a shuffled crystal with wrapped atoms are matched exactly; a dimer turned by 90° keeps its bond length on every LST and IDPP image while straight lines shorten it to 1.5 cos 45°; the climbing image reaches the saddle of an analytic surface to 10⁻⁵ with the exact barrier; ethane's methyl rotation with UFF climbs to the eclipsed form with equal barriers from both ends); tests/python/test_bindings.py reaction_path",
+   "deviation": "the band uses the force field only (not the MACE potential); LST and IDPP use every atom pair, so up to 3000 atoms; classes of more than 1500 equivalent atoms are matched greedily. A turn that only permutes equivalent atoms (a methyl by 120°) is undone by matching: keep the file order for such paths",
+   "engines": [],
+   "tex": "S_\\kappa = \\sum_{i<j}\\frac{(d^{\\kappa}_{ij} - d_{ij})^2}{d_{ij}^4},\\qquad \\mathbf F_i = \\mathbf F_i^{\\perp} + k\\left(|\\mathbf R_{i+1} - \\mathbf R_i| - |\\mathbf R_i - \\mathbf R_{i-1}|\\right)\\hat{\\boldsymbol\\tau}_i,\\qquad \\mathbf F_{\\mathrm{climb}} = \\mathbf F - 2(\\mathbf F\\cdot\\hat{\\boldsymbol\\tau})\\hat{\\boldsymbol\\tau}"
+  },
+  {
    "id": "copolymer-sequences",
    "group": "Growth",
    "title": "Copolymers of several units: terminal and penultimate models, drift with conversion",

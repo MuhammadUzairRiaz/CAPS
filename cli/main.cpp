@@ -93,6 +93,7 @@
 #include "caps/qeq.hpp"
 #include "caps/pores.hpp"
 #include "caps/measured.hpp"
+#include "caps/reaction_path.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
 #include <io.h>
@@ -368,6 +369,8 @@ int usage() {
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
                "               [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)\n"
+               "  caps path A B -o PATH.xyz [--no-match] [--method idpp|lst|linear] [--images 7] [--neb [--ff FF.json] [--relax-ends] [--spring 5] [--fmax 0.05] [--no-climb] [--steps 2000]]\n"
+               "           atoms of B matched to A, the images between them, and the climbing-image NEB barrier with the force field\n"
                "  caps data FILE [-o OUT.csv|.cube|.vtk|.npy] [--json OUT]   a measured curve (columns, .xrdml, GSAS, .uxd, Rigaku, JCAMP-DX) or a .cube grid\n"
                "  caps symmetry FILE [--find [--tolerance 0.1]] [--clear] [--cell a,b,c,alpha,beta,gamma] [-o OUT.cif]\n"
                "             the space group kept with the structure: found or read, the cell fitted to its crystal system, the CIF as its asymmetric unit\n"
@@ -529,7 +532,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--find", "--clear", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--images", "--neb", "--fmax", "--no-climb", "--relax-ends", "--no-match", "--find", "--clear", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -562,7 +565,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
          a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
-         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo" || a == "--equivalent" || a == "--no-drift" || a == "--below" || a == "--whole-molecules" || a == "--ewald" || a == "--hydrogen" || a == "--find" || a == "--clear";
+         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo" || a == "--equivalent" || a == "--no-drift" || a == "--below" || a == "--whole-molecules" || a == "--ewald" || a == "--hydrogen" || a == "--find" || a == "--clear" || a == "--neb" || a == "--no-climb" || a == "--relax-ends" || a == "--no-match";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -4179,6 +4182,75 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps fields: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "path") {
+    try {
+      if (pos.size() < 2 || !o.count("-o")) return usage();
+      Trajectory ta = open_file(pos[0], o.count("--topology") ? o["--topology"] : ""), tb = open_file(pos[1]);
+      System a = ta.frames() ? ta.frame(ta.frames() - 1) : ta.topology;
+      const System b0 = tb.frames() ? tb.frame(tb.frames() - 1) : tb.topology;
+      AtomMatch m;
+      if (o.count("--no-match")) {   // B's file order kept (a permutation matching would undo, as a methyl turned by 120°)
+        if (b0.atoms.size() != a.atoms.size()) throw std::invalid_argument("A and B have different atom counts");
+        for (size_t i = 0; i < a.atoms.size(); ++i) m.map.push_back(int(i));
+      } else {
+        m = match_atoms(a, b0);
+      }
+      for (const auto& n : m.notes) std::printf("%s\n", n.c_str());
+      System b = reorder_atoms(b0, m.map, a);
+      if (o.count("--relax-ends")) {   // both ends minimised with the force field first
+        auto ffp = std::make_shared<ForceField>(cli_forcefield(a, o, true));
+        RelaxOptions ro;
+        ro.field = ffp, ro.ftol = 0.05, ro.max_iterations = 20000;
+        relax(a, ro);
+        relax(b, ro);
+        std::printf("ends minimised with the force field to 0.05 kcal/mol/Å\n");
+      }
+      PathOptions po;
+      if (o.count("--method")) po.method = o["--method"];
+      if (o.count("--images")) po.images = std::stoi(o["--images"]);
+      PathReport pr;
+      auto path = interpolate_path(a, b, po, &pr);
+      for (const auto& n : pr.notes) std::printf("%s\n", n.c_str());
+      std::vector<double> energy;
+      if (o.count("--neb")) {
+        const bool quiet = o.count("--quiet");
+        const ForceField ff = cli_forcefield(a, o, quiet);
+        EnergyOptions eo;
+        if (o.count("--cutoff")) eo.cutoff = std::stod(o["--cutoff"]);
+        run_cutoff(eo, ff, o, quiet);
+        electrostatics(eo, o);
+        eo.coulomb = !o.count("--no-coulomb");
+        NebOptions no;
+        if (o.count("--spring")) no.spring = std::stod(o["--spring"]);
+        if (o.count("--fmax")) no.fmax = std::stod(o["--fmax"]);
+        if (o.count("--steps")) no.max_steps = std::stoi(o["--steps"]);
+        no.climb = !o.count("--no-climb");
+        const NebResult r = neb_forcefield(a, path, ff, eo, no);
+        for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+        std::printf("image   arc Å     E kcal/mol   ΔE from A\n");
+        for (size_t k = 0; k < r.images.size(); ++k)
+          std::printf("%5zu %8.3f %14.4f %11.4f%s\n", k, r.arc[k], r.energy[k], r.energy[k] - r.energy[0], int(k) == r.climbing ? "   climbing" : "");
+        path = r.images;
+        energy = r.energy;
+      } else {
+        std::printf("image   shortest distance Å\n");
+        for (size_t k = 0; k < pr.min_distance.size(); ++k) std::printf("%5zu %10.4f\n", k, pr.min_distance[k]);
+      }
+      Trajectory out;
+      out.topology = a;
+      for (size_t k = 0; k < path.size(); ++k) {
+        out.positions.push_back(path[k]);
+        out.cells.push_back(a.cell);
+        out.timesteps.push_back(int64_t(k));
+      }
+      write_trajectory(out, o["-o"]);
+      std::printf("wrote %s (%zu images)\n", o["-o"].c_str(), path.size());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps path: %s\n", e.what());
       return 1;
     }
   }

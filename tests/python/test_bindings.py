@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 100, "ABI 100")
+check(caps.abi_version() == 101, "ABI 101")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -828,6 +828,40 @@ with open(os.path.join(_dd, "s.jdx"), "w") as _f:
 _jd = caps.read_data(os.path.join(_dd, "s.jdx"))
 check(_jd["y"] == [10, 11, 12, 13] and _jd["x"] == [10, 11, 12, 13] and not _jd["notes"], f"read_data jcamp {_jd}")
 print("ok   read_data: Rigaku text, JCAMP-DX")
+
+# reaction paths (ABI 101): ethane's methyl turned 120° and the atoms listed in another order; the climbing image is
+# above both ends, which have one energy
+_e1 = caps.build.smiles("CC", seed=1)
+_pth = os.path.join(tempfile.mkdtemp(), "e2.xyz")
+_n = _e1.atoms
+_pos = [_e1.atom(i)["position"] for i in range(_n)]
+_els = [_e1.atom(i)["element"] for i in range(_n)]
+import math as _m
+_c0, _c1 = _pos[0], _pos[1]
+_ax = [_c1[k] - _c0[k] for k in range(3)]
+_al = sum(x * x for x in _ax) ** 0.5
+_ax = [x / _al for x in _ax]
+def _turn(p, t):
+    v = [p[k] - _c0[k] for k in range(3)]
+    cx = [_ax[1] * v[2] - _ax[2] * v[1], _ax[2] * v[0] - _ax[0] * v[2], _ax[0] * v[1] - _ax[1] * v[0]]
+    d = sum(_ax[k] * v[k] for k in range(3))
+    return [v[k] * _m.cos(t) + cx[k] * _m.sin(t) + _ax[k] * d * (1 - _m.cos(t)) + _c0[k] for k in range(3)]
+_h2 = [i for i in range(_n) if _els[i] == "H" and sum((_pos[i][k] - _c1[k]) ** 2 for k in range(3)) < 1.3 ** 2]
+_new = [(_turn(_pos[i], 2 * _m.pi / 3) if i in _h2 else _pos[i]) for i in range(_n)]
+_d2 = tempfile.mkdtemp()
+def _write(path, order):
+    with open(path, "w") as _f:
+        _f.write(f"{_n}\nturned\n" + "".join(f"{_els[i]} {_new[i][0]:.8f} {_new[i][1]:.8f} {_new[i][2]:.8f}\n" for i in order))
+_write(os.path.join(_d2, "rev.xyz"), list(reversed(range(_n))))
+_write(os.path.join(_d2, "same.xyz"), list(range(_n)))
+# matched: the turn is only a permutation of equivalent hydrogens, so the path is the identity
+_rm = _e1.reaction_path(os.path.join(_d2, "rev.xyz"), images=3).path_report
+check(_rm["reordered"] > 0 and _rm["match_rmsd"] < 1e-3, f"reaction path match {_rm}")
+# the file order kept: the methyl turns, through the eclipsed barrier
+_rp = _e1.reaction_path(os.path.join(_d2, "same.xyz"), match=False, method="idpp", images=5, neb=True, relax_ends=True, fmax=0.02)
+_rr = _rp.path_report
+check(_rp.frames == 7 and _rr["converged"] and _rr["forward"] > 0.5 and abs(_rr["forward"] - _rr["reverse"]) < 0.05, f"reaction path {_rr}")
+print("ok   reaction_path: matching, IDPP, CI-NEB")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))

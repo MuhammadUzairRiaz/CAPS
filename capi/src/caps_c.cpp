@@ -114,6 +114,7 @@
 #include "caps/voids.hpp"
 #include "caps/pores.hpp"
 #include "caps/measured.hpp"
+#include "caps/reaction_path.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
@@ -9958,6 +9959,91 @@ extern "C" int32_t caps_provenance_bibtex(const char* manifest_json, char* text,
 // Coherent neutron scattering length (fm) of an element (1001: ²H), NaN when CAPS has none.
 extern "C" double caps_neutron_b(int32_t z) {
   try { return caps::neutron_b(z); } catch (...) { return std::numeric_limits<double>::quiet_NaN(); }
+}
+
+// ---------------------------------------------------------------- reaction paths (v101, reaction_path.hpp)
+extern "C" caps_doc* caps_reaction_path(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const std::string other = j.text("other");
+    if (other.empty()) throw std::invalid_argument("reaction path: name the other end (other: a structure file)");
+    caps::System a = d->traj.frame(d->current);
+    caps::Trajectory tb = caps::open_file(other);
+    const caps::System b0 = tb.frames() ? tb.frame(tb.frames() - 1) : tb.topology;
+    // match: false keeps B's file order (a permutation the matching would undo, as a methyl turned by 120°)
+    const bool match = !(j.has("match") && j["match"].kind() == caps::Json::Bool && !j["match"].boolean());
+    caps::AtomMatch m;
+    if (match) {
+      m = caps::match_atoms(a, b0);
+    } else {
+      if (b0.atoms.size() != a.atoms.size()) throw std::invalid_argument("reaction path: A and B have different atom counts");
+      for (size_t i = 0; i < a.atoms.size(); ++i) m.map.push_back(int(i));
+      m.notes.push_back("atoms taken in the file order (no matching)");
+    }
+    caps::System b = caps::reorder_atoms(b0, m.map, a);
+    const bool neb = j.has("neb") && j["neb"].kind() == caps::Json::Bool && j["neb"].boolean();
+    std::shared_ptr<caps::ForceField> ff;
+    if (neb || (j.has("relax_ends") && j["relax_ends"].kind() == caps::Json::Bool && j["relax_ends"].boolean())) {
+      ff = d->field && d->field->ff ? std::make_shared<caps::ForceField>(*d->field->ff) : std::make_shared<caps::ForceField>(caps::assign_uff(a));
+      if (!(d->field && d->field->ff)) r["forcefield"] = "UFF (no force field assigned)";
+    }
+    if (j.has("relax_ends") && j["relax_ends"].kind() == caps::Json::Bool && j["relax_ends"].boolean()) {
+      caps::RelaxOptions ro;
+      ro.field = ff, ro.ftol = j.num("relax_ftol", 0.05), ro.max_iterations = 20000;
+      caps::relax(a, ro);
+      caps::relax(b, ro);
+    }
+    caps::PathOptions po;
+    po.method = j.text("method", po.method);
+    po.images = int(j.num("images", po.images));
+    caps::PathReport pr;
+    auto path = caps::interpolate_path(a, b, po, &pr);
+    caps::Json notes = caps::Json::array();
+    for (const auto& n : m.notes) notes.push_back(n);
+    for (const auto& n : pr.notes) notes.push_back(n);
+    r["reordered"] = double(m.reordered), r["match_rmsd"] = m.rmsd, r["by_graph"] = m.by_graph;
+    caps::Json en = caps::Json::array(), arc = caps::Json::array(), md = caps::Json::array();
+    for (double x : pr.min_distance) md.push_back(x);
+    r["min_distance"] = md;
+    if (neb) {
+      caps::EnergyOptions eo;
+      eo.cutoff = j.num("cutoff", eo.cutoff);
+      caps::NebOptions no;
+      no.spring = j.num("spring", no.spring), no.fmax = j.num("fmax", no.fmax), no.max_steps = int(j.num("steps", no.max_steps));
+      no.climb = !(j.has("climb") && j["climb"].kind() == caps::Json::Bool && !j["climb"].boolean());
+      const caps::NebResult nr = caps::neb_forcefield(a, path, *ff, eo, no);
+      path = nr.images;
+      for (double x : nr.energy) en.push_back(x);
+      for (double x : nr.arc) arc.push_back(x);
+      r["climbing"] = double(nr.climbing), r["forward"] = nr.forward, r["reverse"] = nr.reverse, r["converged"] = nr.converged;
+      r["fmax"] = nr.fmax, r["steps"] = double(nr.steps);
+      for (const auto& n : nr.notes) notes.push_back(n);
+    }
+    r["energy"] = en, r["arc"] = arc, r["notes"] = notes;
+    auto* nd = new caps_doc;
+    nd->traj.topology = a;
+    for (size_t k = 0; k < path.size(); ++k) {
+      nd->traj.positions.push_back(path[k]);
+      nd->traj.cells.push_back(a.cell);
+      nd->traj.timesteps.push_back(int64_t(k));
+    }
+    nd->current = 0;
+    refresh(nd);
+    caps::KeyValues pv = {{"method", po.method + ", " + std::to_string(po.images) + " images"}, {"matched", std::to_string(m.reordered) + " atoms reordered"}};
+    std::vector<std::string> cites = po.method == "idpp" ? std::vector<std::string>{"smidstrup2014"} : po.method == "lst" ? std::vector<std::string>{"halgren1977"} : std::vector<std::string>{};
+    if (neb) cites.push_back("henkelman2000ci"), cites.push_back("henkelman2000tangent"), pv.push_back({"barrier", g6(r.num("forward", 0)) + " kcal/mol from A"});
+    prov_step(nd, "path.run", "Reaction path (atom matching, interpolation" + std::string(neb ? ", climbing-image NEB)" : ")"), std::move(pv), {}, cites);
+    r["ok"] = true;
+    report_out(r.dump(0), out, cap);
+    return nd;
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+    report_out(r.dump(0), out, cap);
+    return nullptr;
+  }
 }
 
 // ---------------------------------------------------------------- measured data and grids (v100, measured.hpp)

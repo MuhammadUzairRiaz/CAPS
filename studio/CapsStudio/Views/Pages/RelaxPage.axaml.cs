@@ -40,4 +40,13 @@ public partial class RelaxPage : PageBase
     private void OnRestrainForRuns(object? s, RoutedEventArgs e) => Vm.RestrainSelectionForRuns();
     private void OnApplyRunRestraints(object? s, RoutedEventArgs e) => Vm.ApplyRunRestraints();
     private void OnFreeAtoms(object? s, RoutedEventArgs e) => Vm.FreeFixedAtoms();
+
+    private async void OnChoosePathB(object? s, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var top = Avalonia.Controls.TopLevel.GetTopLevel(this);
+        if (top == null) return;
+        var files = await top.StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions { Title = "End B of the path", AllowMultiple = false });
+        if (files.Count > 0 && Avalonia.Platform.Storage.StorageProviderExtensions.TryGetLocalPath(files[0]) is { } p && DataContext is CapsStudio.ViewModels.MainViewModel vm) vm.ChoosePathB(p);
+    }
+    private async void OnRunPath(object? s, Avalonia.Interactivity.RoutedEventArgs e) { if (DataContext is CapsStudio.ViewModels.MainViewModel vm) await vm.RunReactionPath(); }
 }

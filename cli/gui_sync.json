@@ -1889,6 +1889,29 @@
    "options": {
     "--json": "cli: the curve as JSON"
    }
+  },
+  "path": {
+   "status": "gui",
+   "studio": "Minimise › Reaction path",
+   "where": "Views/Pages/RelaxPage.axaml|Reaction path",
+   "capi": [
+    "caps_reaction_path"
+   ],
+   "options": {
+    "--no-match": "page",
+    "--method": "page",
+    "--images": "page",
+    "--neb": "page",
+    "--relax-ends": "page",
+    "--fmax": "page",
+    "--ff": "partial: the Studio uses the force field assigned in Field, else UFF",
+    "--spring": "cli: the page uses 5 kcal/mol/Å²",
+    "--no-climb": "cli: the page always lets the highest image climb",
+    "--steps": "cli: the page allows 2000 steps",
+    "--cutoff": "cli: the page uses 10 Å",
+    "--no-coulomb": "cli: the page follows the force field's charges",
+    "--quiet": "cli: no progress line"
+   }
   }
  },
  "hidden_options": {

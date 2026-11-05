@@ -97,6 +97,30 @@
               </StackPanel>
             </StackPanel>
           </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small" Content="Choose end B…" Click="OnChoosePathB" />
+                <TextBlock Text="Reaction path" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <TextBlock Text="{Binding PathBName}" Classes="dim" TextWrapping="Wrap" />
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.PathMethods}" SelectedIndex="{Binding PathMethod}" HorizontalAlignment="Stretch"
+                        ToolTip.Tip="How the first images are laid between A and B: interpolated pair distances (Smidstrup et al. 2014; Halgren &amp; Lipscomb 1977) or straight lines" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                <TextBlock Text="Images between the ends" Classes="label" /><TextBlock Grid.Column="1" Text="Largest force · kcal/mol/Å" Classes="label" />
+                <NumericUpDown Grid.Row="1" Value="{Binding PathImages}" Minimum="1" Maximum="40" Increment="1" FormatString="0" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding PathFmax}" Minimum="0.001" Maximum="5" Increment="0.01" FormatString="0.###" IsEnabled="{Binding PathNeb}" />
+              </Grid>
+              <CheckBox Content="Match B's atoms to A's (any order in the file)" IsChecked="{Binding PathMatch}"
+                        ToolTip.Tip="By element, bonded environment and position (Hungarian assignment). Off: the file order, for a turn that only swaps equivalent atoms" />
+              <CheckBox Content="Minimise both ends first" IsChecked="{Binding PathRelaxEnds}" />
+              <CheckBox Content="Climbing-image nudged elastic band" IsChecked="{Binding PathNeb}"
+                        ToolTip.Tip="Henkelman, Uberuaga &amp; Jónsson 2000: the highest image climbs to the saddle; the force field assigned in Field, else UFF" />
+              <Button Classes="primary" Content="Find the path" Click="OnRunPath" IsEnabled="{Binding PathHasB}" HorizontalAlignment="Left" />
+              <TextBlock Text="{Binding PathResult}" TextWrapping="Wrap" FontSize="12" />
+              <TextBlock Text="{Binding PathError}" Classes="err" TextWrapping="Wrap" IsVisible="{Binding PathHasError}" />
+            </StackPanel>
+          </Border>
         </StackPanel>
       </ScrollViewer>
 
