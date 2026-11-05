@@ -1880,6 +1880,45 @@ def _enumerate_occupations(self, frm: str, to: str, count: int = 1, directory: s
 Document.sqs = _sqs
 Document.enumerate_occupations = _enumerate_occupations
 
+def dpd(species, regions=None, box: float = 0.0, density: float = 3.0, chi=None, a=None, gamma: float = 4.5, dt: float = 0.04,
+        bond_k: float = 4.0, angle_k: float = 0.0, start: str = "random", start_periods: int = 1, steps: int = 20000, equilibration=None,
+        frame_every=None, rc_angstrom: float = 6.46, seed: int = 1) -> "Document":
+    """Dissipative particle dynamics of beads (reduced units, r_c = 1). species [(sequence, count)] or [(sequence, count,
+    region)] or [(sequence, count, region, "in" | "out")]: a molecule's beads start in the region named (None: outside
+    every region), amphiphiles with the head on the region's surface and the tail along the normal. regions [{name, shape
+    ("droplet", "rod", "slab", "shell", "tube"), centre (box fractions), radius, inner, thickness, axis, priority}]; the
+    higher priority wins where they overlap, and a region no species names starts empty. box in r_c (0: from the density).
+    Returns a new Document of the frames (beads as atoms) with .dpd_report."""
+    sp = []
+    for t in species:
+        t = tuple(t)
+        e = {"name": str(t[0]), "sequence": str(t[0]), "count": int(t[1])}
+        if len(t) > 2 and t[2]:
+            e["region"] = str(t[2])
+        if len(t) > 3 and t[3]:
+            e["orient"] = str(t[3])
+        sp.append(e)
+    o = {"species": sp, "regions": [dict(r) for r in (regions or [])], "box": float(box), "density": float(density),
+         "chi": {k: float(v) for k, v in (chi or {}).items()}, "a": {k: float(v) for k, v in (a or {}).items()}, "gamma": float(gamma), "dt": float(dt),
+         "bond_k": float(bond_k), "angle_k": float(angle_k), "start": start, "start_periods": int(start_periods), "steps": int(steps),
+         "rc_angstrom": float(rc_angstrom), "seed": int(seed)}
+    if equilibration is not None:
+        o["equilibration"] = int(equilibration)
+    if frame_every is not None:
+        o["frame_every"] = int(frame_every)
+    f = library().caps_dpd
+    f.argtypes = [C.c_char_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_void_p
+    buf = C.create_string_buffer(1 << 22)
+    h = f(_enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode() or "{}")
+    if not h:
+        raise CapsError(r.get("error", "DPD failed"))
+    d = Document(h)
+    d.dpd_report = r
+    return d
+
+
 def density_fields(molecules, chi=None, grid=(32, 32, 32), bond: float = 1.1543, kappa: float = 10.0, noise: float = 75.0, dt: float = 0.02,
                    steps: int = 2000, frame_every: int = 100, seed: int = 1) -> dict:
     """Density-field dynamics of Gaussian chains (no structure needed): molecules [(name, sequence such as "A8B8", fraction), …],

@@ -57,8 +57,10 @@ DpdReport run_dpd(const DpdOptions& o) {
   std::vector<std::pair<int, int>> bonds;
   std::vector<std::array<int, 3>> angles;
   std::vector<int> parent;   // the bead each bead is bonded to when placed (−1: a molecule's first)
+  std::vector<int> spec_of, pos_in_mol;   // each bead's species and its index in the molecule
   std::set<char> used;
-  for (const auto& sp : o.species) {
+  for (size_t si = 0; si < o.species.size(); ++si) {
+    const auto& sp = o.species[si];
     if (sp.sequence.empty() || sp.count <= 0) continue;
     // the sequence's beads with their parents: a branch "(…)" hangs off the bead before it
     std::vector<char> beads;
@@ -82,6 +84,7 @@ DpdReport run_dpd(const DpdOptions& o) {
       const int first = int(type.size());
       for (size_t b = 0; b < beads.size(); ++b) {
         type.push_back(beads[b]);
+        spec_of.push_back(int(si)), pos_in_mol.push_back(int(b));
         mol.push_back(rep.molecules);
         used.insert(beads[b]);
         parent.push_back(par[b] < 0 ? -1 : first + par[b]);
@@ -100,7 +103,8 @@ DpdReport run_dpd(const DpdOptions& o) {
   rep.beads = n;
   rep.types.assign(used.begin(), used.end());
   if (!o.chi.empty() && std::fabs(o.density - 3.0) > 1e-9) rep.notes.push_back("χ → a_ij uses Groot & Warren's mapping for ρ = 3; at another density give a_ij");
-  const double L = std::cbrt(n / o.density);
+  const double L = o.box > 0 ? o.box : std::cbrt(n / o.density);
+  if (o.box > 0) rep.notes.push_back("box " + std::to_string(o.box).substr(0, 6) + " r_c given: bead density " + std::to_string(n / (o.box * o.box * o.box)).substr(0, 5));
   rep.box = L;
   if (L < 3) throw std::invalid_argument("DPD: the box is under 3 r_c: add beads");
   // repulsion table
@@ -134,7 +138,87 @@ DpdReport run_dpd(const DpdOptions& o) {
     return dx * dx + dy * dy + dz * dz < R * R;
   };
   auto wants = [&](int i, const Vec3& x) { return !templ || (type[size_t(i)] == first_type) == in_first(x); };
-  for (int i = 0; i < n; ++i) {
+  // regions: which one a point is in (the highest priority), and a surface point with its outward normal
+  const bool regional = !o.regions.empty();
+  std::map<std::string, size_t> region_index;
+  for (size_t k = 0; k < o.regions.size(); ++k) {
+    const auto& g = o.regions[k];
+    if (g.shape != "droplet" && g.shape != "rod" && g.shape != "slab" && g.shape != "shell" && g.shape != "tube")
+      throw std::invalid_argument("DPD: region shape droplet, rod, slab, shell or tube ('" + g.shape + "')");
+    if (g.name.empty() || !region_index.emplace(g.name, k).second) throw std::invalid_argument("DPD: each region needs a name of its own");
+  }
+  for (const auto& sp : o.species)
+    if (!sp.region.empty() && !region_index.count(sp.region)) throw std::invalid_argument("DPD: no region named '" + sp.region + "'");
+  auto rel = [&](const DpdRegion& g, const Vec3& x) {   // x − centre, minimum image
+    Vec3 d{x[0] - g.centre[0] * L, x[1] - g.centre[1] * L, x[2] - g.centre[2] * L};
+    for (auto& q : d) q -= L * std::round(q / L);
+    return d;
+  };
+  auto inside_region = [&](const DpdRegion& g, const Vec3& x) {
+    const Vec3 d = rel(g, x);
+    const int a = std::clamp(g.axis, 0, 2);
+    double rad;
+    if (g.shape == "droplet" || g.shape == "shell") rad = norm(d);
+    else if (g.shape == "slab") return std::fabs(d[size_t(a)]) <= g.thickness / 2;
+    else { Vec3 p = d; p[size_t(a)] = 0; rad = norm(p); }
+    return rad <= g.radius && (g.shape == "droplet" || g.shape == "rod" || rad >= g.inner);
+  };
+  auto region_of = [&](const Vec3& x) -> int {
+    int best = -1;
+    for (size_t k = 0; k < o.regions.size(); ++k)
+      if (inside_region(o.regions[k], x) && (best < 0 || o.regions[k].priority > o.regions[size_t(best)].priority)) best = int(k);
+    return best;
+  };
+  auto target = [&](int i) { const std::string& rg = o.species[size_t(spec_of[size_t(i)])].region; return rg.empty() ? -1 : int(region_index.at(rg)); };
+  auto unit = [&] { const double z = 2 * U(rng) - 1, ph = 2 * kPi * U(rng), s = std::sqrt(1 - z * z); return Vec3{s * std::cos(ph), s * std::sin(ph), z}; };
+  std::vector<std::pair<Vec3, Vec3>> mol_frame(static_cast<size_t>(rep.molecules));   // an oriented molecule's surface point and normal
+  int misplaced = 0;
+  for (int i = 0; i < n && regional; ++i) {
+    const auto& sp = o.species[size_t(spec_of[size_t(i)])];
+    const int want = target(i);
+    if (!sp.orient.empty() && want >= 0) {   // amphiphiles: along the normal from a surface point
+      const DpdRegion& g = o.regions[size_t(want)];
+      if (pos_in_mol[size_t(i)] == 0) {
+        Vec3 pnt, nrm;
+        const Vec3 c{g.centre[0] * L, g.centre[1] * L, g.centre[2] * L};
+        const int a = std::clamp(g.axis, 0, 2);
+        if (g.shape == "slab") {
+          nrm = {0, 0, 0};
+          nrm[size_t(a)] = U(rng) < 0.5 ? -1 : 1;
+          pnt = {L * U(rng), L * U(rng), L * U(rng)};
+          pnt[size_t(a)] = c[size_t(a)] + nrm[size_t(a)] * g.thickness / 2;
+        } else if (g.shape == "droplet" || g.shape == "shell") {
+          nrm = unit();
+          pnt = c + nrm * g.radius;
+        } else {
+          Vec3 u = unit();
+          u[size_t(a)] = 0;
+          nrm = u * (1 / std::max(1e-12, norm(u)));
+          pnt = c + nrm * g.radius;
+          pnt[size_t(a)] = L * U(rng);
+        }
+        mol_frame[size_t(mol[size_t(i)])] = {pnt, nrm};
+      }
+      const auto& [pnt, nrm] = mol_frame[size_t(mol[size_t(i)])];
+      const double sign = sp.orient == "out" ? 1.0 : -1.0;
+      r[size_t(i)] = pnt + nrm * (sign * 0.7 * pos_in_mol[size_t(i)]);
+      v[size_t(i)] = {G(rng), G(rng), G(rng)};
+      continue;
+    }
+    const int pa = parent[size_t(i)];
+    bool ok = false;
+    for (int t = 0; t < (pa >= 0 ? 400 : 20000) && !ok; ++t) {
+      r[size_t(i)] = pa >= 0 ? r[size_t(pa)] + unit() * 0.7 : Vec3{L * U(rng), L * U(rng), L * U(rng)};
+      ok = region_of(r[size_t(i)]) == want;
+    }
+    misplaced += !ok;
+    v[size_t(i)] = {G(rng), G(rng), G(rng)};
+  }
+  if (regional) {
+    rep.notes.push_back("started from " + std::to_string(o.regions.size()) + " region(s)");
+    if (misplaced) rep.notes.push_back(std::to_string(misplaced) + " beads could not be placed in their region (it is too small or full): placed nearby");
+  }
+  for (int i = 0; i < n && !regional; ++i) {
     const int pa = parent[size_t(i)];
     for (int t = 0; t < (templ ? 60 : 1); ++t) {   // the template: tries until the bead lands in its type's region
       if (pa >= 0) {
@@ -404,6 +488,57 @@ DpdReport run_dpd(const DpdOptions& o) {
   rep.notes.push_back("repulsions " + at + " (kT/r_c) · γ " + std::to_string(o.gamma).substr(0, 4) + " · dt " + std::to_string(o.dt).substr(0, 5));
   rep.seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
   return rep;
+}
+
+DpdOptions dpd_options_from_json(const Json& j) {
+  DpdOptions o;
+  if (j.has("regions") && j["regions"].is_array())
+    for (const auto& r : j["regions"].items()) {
+      DpdRegion g;
+      g.name = r.text("name", "region " + std::to_string(o.regions.size() + 1));
+      g.shape = r.text("shape", "droplet");
+      if (g.shape != "droplet" && g.shape != "rod" && g.shape != "slab" && g.shape != "shell" && g.shape != "tube")
+        throw std::invalid_argument("region " + g.name + ": shape droplet, rod, slab, shell or tube, not " + g.shape);
+      if (r.has("centre") && r["centre"].is_array()) {
+        const auto c = r["centre"].items();
+        for (size_t k = 0; k < 3 && k < c.size(); ++k) g.centre[k] = c[k].number();
+      }
+      g.radius = r.num("radius", g.radius), g.inner = r.num("inner", g.inner), g.thickness = r.num("thickness", g.thickness);
+      if (r.has("axis") && r["axis"].is_string()) {
+        const std::string a = r.text("axis");
+        g.axis = a == "x" ? 0 : a == "y" ? 1 : a == "z" ? 2 : -1;
+      } else g.axis = int(r.num("axis", 2));
+      if (g.axis < 0 || g.axis > 2) throw std::invalid_argument("region " + g.name + ": axis x, y or z");
+      g.priority = int(r.num("priority", 0));
+      if ((g.shape == "shell" || g.shape == "tube") && g.inner >= g.radius) throw std::invalid_argument("region " + g.name + ": inner must be below radius");
+      o.regions.push_back(g);
+    }
+  if (j.has("species") && j["species"].is_array())
+    for (const auto& sp : j["species"].items()) {
+      DpdSpecies s{sp.text("name", "molecule"), sp.text("sequence", "A"), int(sp.num("count", 0)), sp.text("region"), sp.text("orient")};
+      if (!s.orient.empty() && s.orient != "in" && s.orient != "out") throw std::invalid_argument(s.name + ": orient in or out");
+      if (!s.region.empty() && std::none_of(o.regions.begin(), o.regions.end(), [&](const DpdRegion& g) { return g.name == s.region; }))
+        throw std::invalid_argument(s.name + ": no region named " + s.region);
+      o.species.push_back(s);
+    }
+  o.box = j.num("box", 0.0);
+  o.density = j.num("density", 3.0);
+  if (j.has("chi") && j["chi"].is_object())
+    for (const auto& [k, v] : j["chi"].members()) o.chi[k] = v.number();
+  if (j.has("a") && j["a"].is_object())
+    for (const auto& [k, v] : j["a"].members()) o.a[k] = v.number();
+  o.gamma = j.num("gamma", 4.5);
+  o.dt = j.num("dt", 0.04);
+  o.bond_k = j.num("bond_k", 4.0);
+  o.angle_k = j.num("angle_k", 0.0);
+  o.start = j.text("start", "random");
+  o.start_periods = int(j.num("start_periods", 1));
+  o.steps = long(j.num("steps", 20000));
+  o.equilibration = long(j.num("equilibration", double(o.steps) / 4));
+  o.frame_every = int(j.num("frame_every", std::max(1.0, double(o.steps) / 40)));
+  o.rc_angstrom = j.num("rc_angstrom", 6.46);
+  o.seed = uint64_t(j.num("seed", 1));
+  return o;
 }
 
 }  // namespace caps

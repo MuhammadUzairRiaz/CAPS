@@ -4045,6 +4045,43 @@
   },
   {
    "group": "Coarse-grained",
+   "source": "core/src/dpd.cpp",
+   "engines": [],
+   "cites": [],
+   "id": "dpd-regions",
+   "title": "DPD starts composed from regions",
+   "summary": "A DPD start built from regions placed in the box: droplets (spheres), rods (cylinders across the box), slabs, shells and tubes, each with a centre given as fractions of the box and sizes in r_c. Each species names the region its molecules start in, or none for the space no region claims. Where regions overlap the one with the higher priority claims the space, and a region that no species names starts empty, which leaves a void or the volume of a filler. Chains grow as random walks of 0.7 r_c steps kept inside their region. Amphiphiles can instead be laid along the region's surface normal: the first bead (the head) on the surface and the others 0.7 r_c apart, into the region or out of it. The box edge can be given, so that the regions sit where they were drawn.",
+   "equation": "droplet |r − c| ≤ R;  shell R_in ≤ |r − c| ≤ R;  rod |r_⊥ − c_⊥| ≤ R;  slab |x_a − c_a| ≤ t/2;  amphiphile bead k at r_s ± 0.7 k n̂",
+   "equation_note": "distances by the minimum image; n̂ the outward surface normal at the head's point r_s, + for out and − for in",
+   "symbols": [
+    [
+     "c",
+     "region centre (box fractions × L)",
+     "r_c"
+    ],
+    [
+     "R, R_in",
+     "outer and inner radius",
+     "r_c"
+    ],
+    [
+     "t",
+     "slab thickness",
+     "r_c"
+    ],
+    [
+     "n̂",
+     "outward surface normal",
+     "—"
+    ]
+   ],
+   "when": "Core–shell rubber droplets in a matrix, an interphase round a filler or fibre (a tube about an empty rod), a compatibiliser or surfactant layer at an interface, and checking whether a designed morphology survives the dynamics.",
+   "tested": "tests/test_dpd_regions.cpp (every bead of a core–shell droplet start lies in its region; a higher-priority droplet keeps a slab's beads out and an unnamed region stays empty; amphiphile heads sit at the droplet radius and each tail bead 0.7 r_c further in); tests/python/test_bindings.py caps.dpd",
+   "deviation": "the start only: the dynamics decides what survives. A molecule that cannot be placed inside its region after many tries is left where its walk ended and counted in the notes",
+   "tex": "\\lvert \\mathbf r - \\mathbf c\\rvert \\le R,\\qquad R_{\\mathrm{in}} \\le \\lvert \\mathbf r - \\mathbf c\\rvert \\le R,\\qquad \\mathbf r_k = \\mathbf r_s \\pm 0.7\\,k\\,\\hat{\\mathbf n}"
+  },
+  {
+   "group": "Coarse-grained",
    "source": "core/src/ibi.cpp",
    "engines": [
     "LAMMPS"

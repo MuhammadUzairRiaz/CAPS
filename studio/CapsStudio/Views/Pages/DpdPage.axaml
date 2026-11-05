@@ -41,15 +41,61 @@
               <ItemsControl ItemsSource="{Binding DpdSpecies}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:DpdSpeciesRow">
-                    <Grid ColumnDefinitions="*,120,80,Auto" ColumnSpacing="8" Margin="0,0,0,6">
+                    <Grid ColumnDefinitions="*,120,80,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" Margin="0,0,0,6">
                       <TextBox Text="{Binding Name}" />
                       <TextBox Grid.Column="1" Text="{Binding Sequence}" Classes="mono" Watermark="A5B5" ToolTip.Tip="One letter per bead type (A–Z); A5B5 = five A then five B; a branch in parentheses hangs off the bead before it: A10(B4)A10 a graft, A(B3)(B3)(B3) a star" />
                       <NumericUpDown Grid.Column="2" Value="{Binding Count}" Minimum="1" FormatString="0" />
                       <Button Grid.Column="3" Classes="small" Content="×" Click="OnRemoveSpecies" />
+                      <Grid Grid.Row="1" Grid.ColumnSpan="4" ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,4,0,0"
+                            IsVisible="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).DpdHasRegions}">
+                        <TextBox Text="{Binding Region}" Classes="mono" Watermark="outside every region" ToolTip.Tip="The region its molecules start in (a name from Regions of the start); empty: the space no region claims" />
+                        <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.DpdOrients}" SelectedIndex="{Binding Orient}" HorizontalAlignment="Stretch"
+                                  ToolTip.Tip="Amphiphiles: the first bead (the head) on the region's surface and the rest along the normal, 0.7 r_c apart, into the region or out of it" />
+                      </Grid>
                     </Grid>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small" Content="Add" Click="OnAddRegion" />
+                <TextBlock Text="Regions of the start" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <ItemsControl ItemsSource="{Binding DpdRegions}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:DpdRegionRow">
+                    <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="0,0,0,8" Margin="0,0,0,8">
+                      <Grid ColumnDefinitions="*,*,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="4">
+                        <TextBox Text="{Binding Name}" Classes="mono" Watermark="name" />
+                        <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:DpdRegionRow.Shapes}" SelectedIndex="{Binding Shape}" HorizontalAlignment="Stretch" />
+                        <TextBox Grid.Column="2" Text="{Binding Centre}" Classes="mono" ToolTip.Tip="The centre as fractions of the box edge: x y z" />
+                        <Button Grid.Column="3" Classes="small" Content="×" Click="OnRemoveRegion" />
+                        <TextBlock Grid.Row="1" Text="Radius · r_c" Classes="label" IsVisible="{Binding !IsSlab}" />
+                        <TextBlock Grid.Row="1" Text="Thickness · r_c" Classes="label" IsVisible="{Binding IsSlab}" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="Inner · r_c" Classes="label" IsVisible="{Binding HasInner}" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="Axis" Classes="label" IsVisible="{Binding !HasInner}" />
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="Priority" Classes="label" />
+                        <NumericUpDown Grid.Row="2" Value="{Binding Radius}" Increment="0.5" FormatString="0.##" IsVisible="{Binding !IsSlab}" />
+                        <NumericUpDown Grid.Row="2" Value="{Binding Thickness}" Increment="0.5" FormatString="0.##" IsVisible="{Binding IsSlab}" />
+                        <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding Inner}" Increment="0.5" FormatString="0.##" IsVisible="{Binding HasInner}" />
+                        <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{x:Static vm:DpdRegionRow.Axes}" SelectedIndex="{Binding Axis}" HorizontalAlignment="Stretch"
+                                  IsVisible="{Binding !HasInner}" IsEnabled="{Binding HasAxis}" ToolTip.Tip="A rod's or tube's direction, a slab's normal" />
+                        <NumericUpDown Grid.Row="2" Grid.Column="2" Value="{Binding Priority}" Increment="1" FormatString="0" ToolTip.Tip="Where regions overlap the higher priority claims the space" />
+                        <ComboBox Grid.Row="3" Grid.ColumnSpan="2" ItemsSource="{x:Static vm:DpdRegionRow.Axes}" SelectedIndex="{Binding Axis}" HorizontalAlignment="Stretch"
+                                  IsVisible="{Binding IsTube}" ToolTip.Tip="The tube's direction" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
+                <TextBlock Text="Box edge · r_c (0: from ρ)" Classes="label" VerticalAlignment="Center" />
+                <NumericUpDown Grid.Column="1" Value="{Binding DpdBox}" Minimum="0" Increment="1" FormatString="0.#" ToolTip.Tip="A box of this edge; with regions it fixes where they sit. 0: the beads and ρ size it" />
+              </Grid>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Droplet, rod (across the box), slab, shell and tube; a species named to a region starts there, a region no species names stays empty (a void, a filler). With regions the start above is not used." />
             </StackPanel>
           </Border>
           <Border Classes="pcard">

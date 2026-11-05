@@ -89,6 +89,7 @@
 #include "caps/adp.hpp"
 #include "caps/domains.hpp"
 #include "caps/ddft.hpp"
+#include "caps/dpd.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
 #include <io.h>
@@ -364,6 +365,9 @@ int usage() {
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
                "               [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)\n"
+               "  caps dpd --molecules 'AAAABBBB:300@shell:in; C:9000' [--regions 'core droplet r=3 prio=2; shell shell r=5 in=3 prio=1'] [--box 16]\n"
+               "           [--chi AB=25] [--density 3] [--steps 2000] [--equilibration 500] [--every 50] [--seed 1] [--spec SPEC.json] [-o OUT.xyz] [--json OUT]\n"
+               "           dissipative particle dynamics; regions (droplet, rod, slab, shell, tube; c=fx,fy,fz r= in= t= axis= prio=) compose the start\n"
                "  caps index DATA.xy [--wavelength 1.54056] [--tolerance 0.03] [--systems cubic,tetragonal,hexagonal,orthorhombic,monoclinic] [--max-length 20]\n"
                "             [--lines 20] [--unindexed 0] [--json OUT]   cells that index the pattern's lines (successive dichotomy), by M20\n"
                "  caps solve DATA.xy MOLECULE --cell a,b,c,al,be,ga --space-group 'P 21/c' [--wavelength Å] [--steps 6000] [--seed 1] -o CRYSTAL.cif\n"
@@ -515,7 +519,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -4165,6 +4169,123 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps fields: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "dpd") {
+    // caps dpd --molecules 'SEQ:COUNT[@REGION[:in|out]]; …' [--regions 'NAME SHAPE c=fx,fy,fz r=R in=R0 t=T axis=z prio=P; …']
+    //          [--box L] [--chi AB=25,…] [--density 3] [--gamma 4.5] [--dt 0.04] [--steps N] [--equilibration N] [--every N]
+    //          [--rc-angstrom 6.46] [--seed 1] [--spec SPEC.json (the C API's JSON; options given here win)] [-o OUT] [--json OUT]
+    try {
+      Json j = Json::object();
+      if (o.count("--spec")) {
+        std::ifstream f(o["--spec"]);
+        if (!f) throw std::invalid_argument("cannot read " + o["--spec"]);
+        std::stringstream b;
+        b << f.rdbuf();
+        j = Json::parse(b.str());
+      }
+      auto trim = [](std::string x) {
+        x.erase(0, x.find_first_not_of(" \t"));
+        x.erase(x.find_last_not_of(" \t") + 1);
+        return x;
+      };
+      if (o.count("--regions")) {
+        Json rs = Json::array();
+        std::stringstream ss(o["--regions"]);
+        for (std::string item; std::getline(ss, item, ';');) {
+          item = trim(item);
+          if (item.empty()) continue;
+          std::stringstream ws(item);
+          std::string name, shape, kv;
+          ws >> name >> shape;
+          if (shape.empty()) throw std::invalid_argument("--regions 'NAME SHAPE key=value …'");
+          Json r = Json::object();
+          r["name"] = name, r["shape"] = shape;
+          while (ws >> kv) {
+            const auto e = kv.find('=');
+            if (e == std::string::npos) throw std::invalid_argument("--regions: " + kv + " is not key=value");
+            const std::string k = kv.substr(0, e), v = kv.substr(e + 1);
+            if (k == "c") {
+              Json c = Json::array();
+              std::stringstream cs(v);
+              for (std::string x; std::getline(cs, x, ',');) c.push_back(std::stod(x));
+              if (c.items().size() != 3) throw std::invalid_argument("--regions: c=fx,fy,fz");
+              r["centre"] = c;
+            } else if (k == "r") r["radius"] = std::stod(v);
+            else if (k == "in") r["inner"] = std::stod(v);
+            else if (k == "t") r["thickness"] = std::stod(v);
+            else if (k == "axis") r["axis"] = v;
+            else if (k == "prio") r["priority"] = std::stod(v);
+            else throw std::invalid_argument("--regions: unknown key " + k + " (c, r, in, t, axis, prio)");
+          }
+          rs.push_back(r);
+        }
+        j["regions"] = rs;
+      }
+      if (o.count("--molecules")) {
+        Json ms = Json::array();
+        std::stringstream ss(o["--molecules"]);
+        for (std::string item; std::getline(ss, item, ';');) {
+          item = trim(item);
+          if (item.empty()) continue;
+          Json m = Json::object();
+          const auto at = item.find('@');
+          std::string head = item.substr(0, at);
+          if (at != std::string::npos) {
+            std::string where = item.substr(at + 1);
+            const auto c = where.find(':');
+            m["region"] = trim(where.substr(0, c));
+            if (c != std::string::npos) m["orient"] = trim(where.substr(c + 1));
+          }
+          const auto c = head.find(':');
+          if (c == std::string::npos) throw std::invalid_argument("--molecules 'SEQUENCE:COUNT[@REGION[:in|out]]; …'");
+          m["name"] = trim(head.substr(0, c)), m["sequence"] = trim(head.substr(0, c)), m["count"] = std::stod(head.substr(c + 1));
+          ms.push_back(m);
+        }
+        j["species"] = ms;
+      }
+      if (o.count("--chi")) {
+        Json chi = Json::object();
+        std::stringstream ss(o["--chi"]);
+        for (std::string item; std::getline(ss, item, ',');) {
+          const auto e = item.find('=');
+          if (e == std::string::npos) throw std::invalid_argument("--chi AB=25,AC=5");
+          chi[trim(item.substr(0, e))] = std::stod(item.substr(e + 1));
+        }
+        j["chi"] = chi;
+      }
+      const std::pair<const char*, const char*> nums[] = {{"--box", "box"}, {"--density", "density"}, {"--gamma", "gamma"}, {"--dt", "dt"}, {"--steps", "steps"},
+                                                          {"--equilibration", "equilibration"}, {"--every", "frame_every"}, {"--rc-angstrom", "rc_angstrom"}, {"--seed", "seed"}};
+      for (const auto& [flag, key] : nums)
+        if (o.count(flag)) j[key] = std::stod(o[flag]);
+      if (!j.has("species")) throw std::invalid_argument("--molecules 'SEQUENCE:COUNT; …' or --spec SPEC.json");
+      DpdOptions d = dpd_options_from_json(j);
+      const bool quiet = o.count("--quiet");
+      if (!quiet) d.progress = [&](long step, double kT) { std::fprintf(stderr, "\rDPD step %ld  kT %.3f   ", step, kT); return true; };
+      const DpdReport r = run_dpd(d);
+      if (!quiet) std::fprintf(stderr, "\r%-40s\r", "");
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      std::printf("%d beads in %d molecules, box %.4g r_c\n", r.beads, r.molecules, r.box);
+      if (d.steps > 0)
+        std::printf("kT %.4f ± %.4f   pressure %.4f ± %.4f   ψ %.4f   spacing %.4g r_c\n", r.kT, r.kT_error, r.pressure, r.pressure_error, r.order, r.spacing);
+      if (o.count("-o")) {
+        write_trajectory(r.frames, o["-o"]);
+        std::printf("wrote %s (%zu frames)\n", o["-o"].c_str(), r.frames.frames());
+      }
+      if (o.count("--json")) {
+        Json out = Json::object();
+        out["beads"] = double(r.beads), out["molecules"] = double(r.molecules), out["box"] = r.box, out["kT"] = r.kT, out["pressure"] = r.pressure;
+        out["order"] = r.order, out["spacing"] = r.spacing, out["q_peak"] = r.q_peak;
+        Json notes = Json::array();
+        for (const auto& n : r.notes) notes.push_back(n);
+        out["notes"] = notes;
+        std::ofstream(o["--json"]) << out.dump();
+        std::printf("wrote %s\n", o["--json"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps dpd: %s\n", e.what());
       return 1;
     }
   }

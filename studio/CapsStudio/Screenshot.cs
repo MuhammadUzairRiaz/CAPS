@@ -172,6 +172,37 @@ internal static class Screenshot
                 for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("dpd: " + vm.Status + (vm.DpdHasError ? " · error " + vm.DpdError : "") + " · " + vm.DpdNote + " · " + vm.DpdDomains);
             }
+            if (kv[0] == "dpdregions")   // dpdregions=BOX|NAME:SHAPE:R:INNER:PRIO[+…]|SEQ*COUNT[@REGION[:in|out]][+…]: a start composed from regions (steps 100, awaited)
+            {
+                var vm = w.ViewModel;
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                var f = kv[1].Split('|');
+                vm.OpenDpd();
+                vm.DpdBox = decimal.Parse(f[0], inv);
+                vm.DpdRegions.Clear();
+                foreach (var rg in f[1].Split('+'))
+                {
+                    var q = rg.Split(':');
+                    vm.DpdRegions.Add(new ViewModels.DpdRegionRow { Name = q[0], Shape = Array.IndexOf(ViewModels.DpdRegionRow.Shapes, q[1]), Radius = decimal.Parse(q[2], inv),
+                                                                     Inner = decimal.Parse(q[3], inv), Priority = decimal.Parse(q[4], inv) });
+                }
+                vm.AddDpdRegion(); vm.RemoveDpdRegion(vm.DpdRegions[^1]);   // raises DpdHasRegions
+                vm.DpdSpecies.Clear();
+                foreach (var sp in f[2].Split('+'))
+                {
+                    var at = sp.Split('@');
+                    var q = at[0].Split('*');
+                    var row = new ViewModels.DpdSpeciesRow { Name = q[0], Sequence = q[0], Count = decimal.Parse(q[1], inv) };
+                    if (at.Length > 1) { var w2 = at[1].Split(':'); row.Region = w2[0]; if (w2.Length > 1) row.Orient = w2[1] == "in" ? 1 : 2; }
+                    vm.DpdSpecies.Add(row);
+                }
+                vm.DpdSteps = 100;
+                var t = vm.RunDpd();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                vm.Frame = 0;
+                for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("dpdregions: " + vm.Status + (vm.DpdHasError ? " · error " + vm.DpdError : "") + " · " + vm.DpdNote);
+            }
             if (kv[0] == "pageview")   // pageview=YAW,PITCH[,ZOOM]: the open page's own structure view turned to that camera
             {
                 var c = kv[1].Split(',').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();

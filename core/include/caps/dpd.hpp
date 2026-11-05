@@ -15,12 +15,14 @@
 // density with its peak q* and domain spacing 2π/q*, and frames for the view (bead types as elements, r_c = rc_angstrom).
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <map>
 #include <string>
 #include <vector>
 
+#include "caps/json.hpp"
 #include "caps/system.hpp"
 
 namespace caps {
@@ -31,6 +33,26 @@ struct DpdSpecies {
   // before it — "AAAA(BBB)AAAA" a graft, "A(B)(B)(B)" a star of three B arms on A
   std::string sequence;
   int count = 0;          // molecules
+  // the region its molecules start in (DpdRegion::name; "": the space outside every region), and amphiphiles laid along
+  // the region's surface normal: "in" the first bead (head) on the surface and the rest inward, "out" outward ("": a
+  // random walk inside the region)
+  std::string region;
+  std::string orient;
+};
+
+// A region of the start (design: core–shell droplets, an interphase round a filler, a compatibiliser at an interface):
+//   droplet  a sphere of `radius` about `centre`
+//   rod      a cylinder of `radius` along `axis` (0 x, 1 y, 2 z) through `centre`, across the box
+//   slab     |x_axis − centre| ≤ thickness / 2 (normal along `axis`)
+//   shell    inner ≤ |r − centre| ≤ radius
+//   tube     inner ≤ distance from the rod's line ≤ radius
+// centre: fractions of the box; lengths in r_c. Where regions overlap the higher `priority` wins (the first listed on a
+// tie). A region no species names stays empty at the start (a void, a filler's volume).
+struct DpdRegion {
+  std::string name, shape = "droplet";
+  std::array<double, 3> centre{0.5, 0.5, 0.5};
+  double radius = 3, inner = 0, thickness = 3;
+  int axis = 2, priority = 0;
 };
 
 struct DpdOptions {
@@ -45,6 +67,8 @@ struct DpdOptions {
   // the first type's volume share setting the slabs' thickness and the cylinders' and spheres' radii
   std::string start = "random";
   int start_periods = 1;
+  std::vector<DpdRegion> regions;                 // with regions the start is composed from them (start ignored)
+  double box = 0;                                 // r_c; 0: from the beads and the density
   double angle_k = 0.0;                           // chain stiffness: k_θ (1 + cos θ), θ at the middle of three bonded beads (kT; straight: θ = 180°, E = 0)
   long steps = 20000, equilibration = 5000;       // the first `equilibration` steps are not sampled
   int frame_every = 500;
@@ -73,6 +97,12 @@ struct DpdReport {
 };
 
 DpdReport run_dpd(const DpdOptions& o);
+
+// Options from JSON: {species: [{name, sequence, count, region, orient}], regions: [{name, shape, centre [fx, fy, fz],
+// radius, inner, thickness, axis (0–2 or "x"/"y"/"z"), priority}], box, density, chi {}, a {}, gamma, dt, bond_k,
+// angle_k, start, start_periods, steps, equilibration, frame_every, rc_angstrom, seed}. Unknown shapes, orientations and
+// region names throw.
+DpdOptions dpd_options_from_json(const Json& j);
 
 // a_ij for types i, j under the options (like beads 75/ρ, unlike from χ at ρ = 3, or given)
 double dpd_repulsion(const DpdOptions& o, char i, char j);

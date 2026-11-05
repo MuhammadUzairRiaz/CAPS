@@ -7393,25 +7393,7 @@ extern "C" caps_doc* caps_frame_copy(caps_doc* d) {
 extern "C" caps_doc* caps_dpd(const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
   try {
     const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
-    caps::DpdOptions o;
-    if (j.has("species") && j["species"].is_array())
-      for (const auto& sp : j["species"].items()) o.species.push_back({sp.text("name", "molecule"), sp.text("sequence", "A"), int(sp.num("count", 0))});
-    o.density = j.num("density", 3.0);
-    if (j.has("chi") && j["chi"].is_object())
-      for (const auto& [k, v] : j["chi"].members()) o.chi[k] = v.number();
-    if (j.has("a") && j["a"].is_object())
-      for (const auto& [k, v] : j["a"].members()) o.a[k] = v.number();
-    o.gamma = j.num("gamma", 4.5);
-    o.dt = j.num("dt", 0.04);
-    o.bond_k = j.num("bond_k", 4.0);
-    o.angle_k = j.num("angle_k", 0.0);   // v62: chain stiffness k_θ (1 + cos θ)
-    o.start = j.text("start", "random");   // v62: random | lamellar | cylinders | spheres
-    o.start_periods = int(j.num("start_periods", 1));
-    o.steps = long(j.num("steps", 20000));
-    o.equilibration = long(j.num("equilibration", double(o.steps) / 4));
-    o.frame_every = int(j.num("frame_every", std::max(1.0, double(o.steps) / 40)));
-    o.rc_angstrom = j.num("rc_angstrom", 6.46);
-    o.seed = uint64_t(j.num("seed", 1));
+    caps::DpdOptions o = caps::dpd_options_from_json(j);   // v96 regions, box, species region / orient
     bool cancelled = false;
     if (progress)
       o.progress = [&](long step, double kT) {

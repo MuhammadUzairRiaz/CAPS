@@ -71,6 +71,8 @@ public partial class DpdPage : PageBase
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelDpd();
     private void OnAddSpecies(object? s, RoutedEventArgs e) => Vm.AddDpdSpecies();
     private void OnAddChi(object? s, RoutedEventArgs e) => Vm.AddDpdChi();
+    private void OnAddRegion(object? s, RoutedEventArgs e) => Vm.AddDpdRegion();
+    private void OnRemoveRegion(object? s, RoutedEventArgs e) { if ((s as Control)?.DataContext is DpdRegionRow r) Vm.RemoveDpdRegion(r); }
     private void OnRemoveSpecies(object? s, RoutedEventArgs e) { if ((s as Control)?.DataContext is DpdSpeciesRow r) Vm.RemoveDpdSpecies(r); }
     private void OnRemoveChi(object? s, RoutedEventArgs e) { if ((s as Control)?.DataContext is DpdChiRow r) Vm.RemoveDpdChi(r); }
     private async void OnFields(object? s, Avalonia.Interactivity.RoutedEventArgs e) => await Vm.RunFields();

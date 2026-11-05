@@ -771,7 +771,16 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 95, "ABI 95")
+check(caps.abi_version() == 96, "ABI 96")
+
+# DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
+_dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
+               box=10.0, steps=0, equilibration=0, rc_angstrom=1.0)
+check(_dp.atoms == 100 + 180 + 2500, f"dpd beads {_dp.atoms}")
+_dr = [sum((_dp.atom(i)["position"][k] - 5.0) ** 2 for k in range(3)) ** 0.5 for i in range(_dp.atoms)]
+check(max(_dr[:100]) <= 3.0 + 1e-9 and min(_dr[2780 - 2500:]) > 3.0, "dpd regions: core inside, solvent outside")
+check(all(abs(_dr[100 + 3 * m] - 3.0) < 1e-9 for m in range(60)), "dpd amphiphile heads on the droplet surface")
+print("ok   dpd: regions compose the start")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))

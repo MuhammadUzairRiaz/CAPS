@@ -1803,6 +1803,31 @@
     "--slice-csv": "cli: the slice's file",
     "--topology": "page"
    }
+  },
+  "dpd": {
+   "status": "gui",
+   "studio": "Polymer cell › Mesoscale (DPD)",
+   "where": "Views/Pages/DpdPage.axaml|Regions of the start",
+   "capi": [
+    "caps_dpd"
+   ],
+   "options": {
+    "--molecules": "page",
+    "--regions": "page",
+    "--box": "page",
+    "--chi": "page",
+    "--density": "page",
+    "--steps": "page",
+    "--gamma": "cli: the page uses γ 4.5",
+    "--dt": "cli: the page steps dt 0.04",
+    "--equilibration": "cli: the page samples after the first quarter",
+    "--every": "cli: the page keeps about 40 frames",
+    "--rc-angstrom": "page",
+    "--seed": "page",
+    "--spec": "cli: the C API's JSON from a file",
+    "--json": "partial: the Studio shows the result on the page",
+    "--quiet": "cli: no progress line"
+   }
   }
  },
  "hidden_options": {

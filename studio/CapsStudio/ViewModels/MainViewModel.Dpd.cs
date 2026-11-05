@@ -14,6 +14,12 @@ public sealed class DpdSpeciesRow : ObservableObject
     public string Name { get => _name; set => Set(ref _name, value ?? ""); }
     public string Sequence { get => _sequence; set => Set(ref _sequence, value ?? ""); }
     public decimal Count { get => _count; set => Set(ref _count, Math.Clamp(value, 1, 1_000_000)); }
+    private string _region = "";
+    private int _orient;
+    /// <summary>The region its molecules start in ("" outside every region) and, for amphiphiles, 1 head on the surface
+    /// with the tail inward, 2 outward (0 a random walk inside).</summary>
+    public string Region { get => _region; set => Set(ref _region, (value ?? "").Trim()); }
+    public int Orient { get => _orient; set => Set(ref _orient, Math.Clamp(value, 0, 2)); }
 }
 
 /// <summary>A χ between two bead types.</summary>
@@ -93,12 +99,15 @@ public sealed partial class MainViewModel
         catch (Exception e) { DpdError = e.Message; return; }
         var chi = new JsonObject();
         foreach (var c in DpdChis.Where(c => c.Pair.Length == 2)) chi[c.Pair] = (double)c.Chi;
-        var json = new JsonObject
+        var jo = new JsonObject
         {
             ["species"] = species, ["chi"] = chi, ["density"] = (double)_dpdDensity, ["steps"] = (long)_dpdSteps,
             ["rc_angstrom"] = (double)_dpdRc, ["seed"] = DpdSeed.Take(), ["angle_k"] = (double)_dpdAngleK,
             ["start"] = DpdStartIds[_dpdStart], ["start_periods"] = (int)_dpdPeriods,
-        }.ToJsonString();
+        };
+        try { AddDpdRegions(jo, species); }
+        catch (Exception e) { DpdError = e.Message; return; }
+        var json = jo.ToJsonString();
         DpdRunning = true;
         DpdError = "";
         _dpdCts = new CancellationTokenSource();
