@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 88, "ABI 88")
+check(caps.abi_version() == 89, "ABI 89")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
@@ -805,6 +805,13 @@ _tp = caps.polymer(["*CC(*)c1ccccc1", "*CC=CC*", "*CC(*)C#N"], dp=20, chains=2, 
 _sr = _tp.sequence_report()
 check(_sr.get("units") == 3 and _sr["built"]["count"] == 40 and len(_sr["model"]["triads"]) == 27, f"sequence_report: {list(_sr)}")
 print("ok   copolymers: n-unit model, sequence report of a grown terpolymer")
+# graft copolymers (ABI 89): grafts on the marked atom while growing; grafts onto an existing chain
+_gp = caps.polymer("[*]CC(C)=[CH:3]C[*]", dp=12, chains=1, density=0.1, graft_units="[*]CC(C)(C(=O)OC)[*]", graft_dp=3, graft_probability=0.3, graft_max=2)
+check(_gp.atoms > 12 * 13, f"graft polymer: {_gp.atoms} atoms")
+_pe = caps.polymer("[*]CC[*]", dp=20, chains=1, density=0.05)
+_pg = _pe.graft("[*]CC(C)(C(=O)OC)[*]", sites=[4], dp=2, equivalent=True, max_grafts=3, min_spacing=4)
+check(_pg.graft_report["grafted"] == 3 and _pg.atoms == _pe.atoms - 3 + 3 * (2 * 15 + 1), f"graft onto: {_pg.graft_report}, {_pg.atoms} atoms")
+print("ok   grafts: grown with the backbone, and onto an existing chain")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

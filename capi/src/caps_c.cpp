@@ -49,6 +49,7 @@
 #include "caps/powder_index.hpp"
 #include "caps/sqs.hpp"
 #include "caps/restraints.hpp"
+#include "caps/graft_chains.hpp"
 #include "caps/zmethod.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dlpoly.hpp"
@@ -6167,6 +6168,7 @@ caps::ChainSpec spec_from(const std::string& text) {
   c.spacing = int(j.num("spacing", 4));
   c.branch_probability = j.num("branch_probability", 0.1);
   c.generations = int(j.num("generations", 2));
+  caps::graft_spec_from_json(c, j);
   c.keep_configuration = j.num("keep_configuration", 0) != 0 || (j.has("keep_configuration") && j["keep_configuration"].kind() == caps::Json::Bool && j["keep_configuration"].boolean());
   c.head_cap = j.text("head_cap", "");   // end groups: a preset or a SMILES with *
   c.tail_cap = j.text("tail_cap", "");
@@ -8938,6 +8940,20 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       g.seed = uint64_t(j.num("seed", 1));
       const auto gr = caps::graft_silanes(s, g);
       what = "Graft " + g.name + " on " + std::to_string(gr.grafted) + " of " + std::to_string(gr.silanols) + " silanols";
+    } else if (op == "graft_chains") {   // v89 chains grown from chosen atoms (graft_chains.hpp): spec, the atoms, equivalent …
+      caps::ChainSpec spec = spec_from(j.has("spec") ? j["spec"].dump() : "{}");
+      if (spec.units.empty()) throw std::invalid_argument("graft_chains: the grafts' repeat units (spec)");
+      caps::ChainGraftOptions o;
+      for (uint32_t a : atoms_of(d, j)) o.sites.push_back(a);
+      o.equivalent = j.has("equivalent") && j["equivalent"].boolean();
+      o.probability = std::clamp(j.num("probability", 1.0), 0.0, 1.0);
+      o.per_site = std::max(1, int(j.num("per_site", 1)));
+      o.max_grafts = std::max(0, int(j.num("max", 0)));
+      o.min_spacing = std::max(0.0, j.num("min_spacing", 0));
+      o.grow.seed = uint64_t(j.num("seed", 1));
+      caps::ChainGraftReport gr;
+      s = caps::graft_chains(s, spec, o, &gr);
+      what = "Graft " + std::to_string(gr.grafted) + " chains of " + std::to_string(spec.dp) + " units on " + std::to_string(gr.candidates) + " candidate sites";
     } else if (op == "functionalize") {   // groups on sidewalls, ends, edges or chosen atoms of a filler (functionalize.hpp)
       caps::FunctionalizeOptions f;
       f.group = j.text("group", "hydroxyl");
@@ -11293,6 +11309,43 @@ extern "C" int32_t caps_chain_lengths(const char* json, char* out, int32_t cap) 
     return report_out(r.dump(0), out, cap);
   } catch (const std::exception& e) {
     return json_error(e, out, cap);
+  }
+}
+
+// v89 chains grafted onto the open structure (graft_chains.hpp): a new document; the report as JSON in out
+extern "C" caps_doc* caps_graft_chains(caps_doc* d, const char* json, char* out, int32_t cap) {
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const caps::System host = d->traj.frames() ? d->traj.frame(d->current) : d->traj.topology;
+    caps::ChainSpec spec = spec_from(j.has("spec") ? j["spec"].dump() : "{}");
+    if (spec.units.empty()) throw std::invalid_argument("spec: the grafts' repeat units");
+    caps::ChainGraftOptions o;
+    if (j.has("sites")) for (const auto& x : j["sites"].items()) o.sites.push_back(uint32_t(x.number()));
+    o.equivalent = j.has("equivalent") && j["equivalent"].boolean();
+    o.probability = std::clamp(j.num("probability", 1.0), 0.0, 1.0);
+    o.per_site = std::max(1, int(j.num("per_site", 1)));
+    o.max_grafts = std::max(0, int(j.num("max", 0)));
+    o.min_spacing = std::max(0.0, j.num("min_spacing", 0));
+    o.padding = std::max(0.0, j.num("padding", 0));
+    o.grow.seed = uint64_t(j.num("seed", 1));
+    o.grow.trials = std::clamp(int(j.num("trials", 120)), 4, 5000);
+    caps::ChainGraftReport rep;
+    caps::System s = caps::graft_chains(host, spec, o, &rep);
+    caps::KeyValues pr = {{"grafts", std::to_string(rep.grafted) + " of " + std::to_string(spec.dp) + " units"},
+                          {"sites", std::to_string(rep.candidates) + " candidates" + (o.equivalent ? " (equivalent atoms)" : "")},
+                          {"probability", g6(o.probability)}};
+    caps_doc* nd = doc_of_system(std::move(s), d, "build.graft", "Chains grafted onto the structure at chosen sites", std::move(pr));
+    caps::Json r = caps::Json::object(), st = caps::Json::array(), nt = caps::Json::array();
+    for (uint32_t a : rep.sites) st.push_back(double(a));
+    for (const auto& n : rep.notes) nt.push_back(n);
+    r["ok"] = true, r["candidates"] = double(rep.candidates), r["grafted"] = double(rep.grafted), r["sites"] = st, r["notes"] = nt;
+    report_out(r.dump(0), out, cap);
+    return nd;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    json_error(e, out, cap);
+    return nullptr;
   }
 }
 

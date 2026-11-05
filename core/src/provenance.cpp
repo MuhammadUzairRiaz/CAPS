@@ -517,6 +517,9 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
       t = "The melting temperature was estimated by the Z method" + cite({"belonoshko2006"}) + ": " + param(s, "runs") + " NVE runs (" + param(s, "steps") +
           ") from the perfect crystal at rising total energy, melting detected by the loss of Bragg order, gave a superheating limit of " + param(s, "T_LS") +
           " and a melting temperature of " + param(s, "T_m") + ".";
+    } else if (e == "build.graft") {
+      t = "Chains were grafted onto the structure (" + param(s, "grafts") + ", " + param(s, "sites") + ", each kept with probability " + param(s, "probability") +
+          "), each grown from a hydrogen it replaced while the structure was held fixed.";
     } else if (e == "build.sqs") {
       t = "Substitutional disorder on the " + param(s, "sublattice") + " sublattice (" + param(s, "substituted") + ") was represented by a special quasirandom structure" +
           cite({"zunger1990"}) + ", its pair correlations over the first " + param(s, "shells") + " shells matched to those of the random alloy by simulated annealing of site swaps" +

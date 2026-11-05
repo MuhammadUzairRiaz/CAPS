@@ -594,6 +594,19 @@ internal static class Screenshot
             if (kv[0] == "jobs") w.ViewModel.SetModule(11);
             if (kv[0] == "arch") w.ViewModel.PolyArch = int.Parse(kv[1]);   // arch=0..4 (linear, branched, star, comb, dendrimer), before polymer=
             if (kv[0] == "polydp") w.ViewModel.GrowDpD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+            if (kv[0] == "graftonto")   // graftonto=ATOM|EQUIVALENT(0/1)|MAX: the Polymer page's units grafted onto that atom (from 0) of the open structure
+            {
+                var vm = w.ViewModel;
+                var f = kv[1].Split('|');
+                vm.SetModule(13);
+                vm.Pick(int.Parse(f[0]));
+                vm.GraftOntoEquivalent = f.Length > 1 && f[1] == "1";
+                if (f.Length > 2) vm.GraftOntoMax = decimal.Parse(f[2], System.Globalization.CultureInfo.InvariantCulture);
+                vm.GrowDpD = 3;
+                vm.GraftOnto();
+                for (int q = 0; q < 30; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("graftonto: " + vm.Status + (vm.EditError.Length > 0 ? " · error " + vm.EditError : ""));
+            }
             if (kv[0] == "polymer")
             {
                 w.ViewModel.SetModule(13);

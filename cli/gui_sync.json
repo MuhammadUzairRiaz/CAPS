@@ -958,7 +958,20 @@
     "--penultimate": "Views/Pages/CopolymerPage.axaml|r₁′ (after M₂M₁)",
     "--drift": "Views/Pages/CopolymerPage.axaml|MODEL AND DRIFT",
     "--conversion": "Views/Pages/CopolymerPage.axaml|Final conversion",
-    "--sequence-report": "partial: the Grow log shows the cell's composition and runs against the model"
+    "--sequence-report": "partial: the Grow log shows the cell's composition and runs against the model",
+    "--architecture": "Views/Pages/PolymerPage.axaml|ARCHITECTURE",
+    "--arms": "Views/Pages/PolymerPage.axaml|Arms on the core",
+    "--arm-dp": "Views/Pages/PolymerPage.axaml|{Binding PolySideLabel}",
+    "--spacing": "Views/Pages/PolymerPage.axaml|Every n-th backbone unit",
+    "--branch-probability": "Views/Pages/PolymerPage.axaml|Branch probability per unit",
+    "--generations": "Views/Pages/PolymerPage.axaml|Generations",
+    "--graft-units": "Views/Pages/PolymerPage.axaml|Graft repeat unit (SMILES with two *)",
+    "--graft-dp": "partial: the page's units per side chain set the graft length",
+    "--graft-probability": "Views/Pages/PolymerPage.axaml|Graft probability per unit",
+    "--graft-max": "Views/Pages/PolymerPage.axaml|At most per chain",
+    "--graft-on": "cli: the page grafts on every backbone unit kind",
+    "--graft-sequence": "cli: the page grafts one repeat unit",
+    "--graft-weights": "cli: the page grafts one repeat unit"
    }
   },
   "field": {
@@ -1698,6 +1711,30 @@
     "--points": "cli: the page uses 21 points",
     "--csv": "cli: the page shows the numbers",
     "--json": "cli: the page shows the numbers"
+   }
+  },
+  "graft": {
+   "status": "gui",
+   "studio": "Builders › Polymer › Graft onto the open structure",
+   "where": "Views/Pages/PolymerPage.axaml|GRAFT ONTO THE OPEN STRUCTURE",
+   "capi": [
+    "caps_edit"
+   ],
+   "options": {
+    "--units": "page",
+    "--sites": "partial: the atoms picked in the view",
+    "--equivalent": "Views/Pages/PolymerPage.axaml|Every equivalent atom",
+    "--probability": "Views/Pages/PolymerPage.axaml|Probability",
+    "--max": "Views/Pages/PolymerPage.axaml|At most",
+    "--min-spacing": "Views/Pages/PolymerPage.axaml|Spacing · Å",
+    "--dp": "page",
+    "--per-site": "cli: the page puts one graft on each picked atom",
+    "--sequence": "page",
+    "--weights": "page",
+    "--padding": "cli: the page grafts onto the open structure as it is",
+    "--seed": "page",
+    "--ff": "page",
+    "--topology": "page"
    }
   }
  },

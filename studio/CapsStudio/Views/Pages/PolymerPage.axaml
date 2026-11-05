@@ -150,6 +150,8 @@
                                 IsChecked="{Binding PolyArch, Mode=OneWay, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=3}" />
                   <ToggleButton Classes="chip" Content="Dendrimer" Tag="4" Click="OnArch" Margin="0,0,6,6" ToolTip.Tip="A star core whose ends split in two, generation after generation"
                                 IsChecked="{Binding PolyArch, Mode=OneWay, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=4}" />
+                  <ToggleButton Classes="chip" Content="Graft" Tag="5" Click="OnArch" Margin="0,0,6,6" ToolTip.Tip="Side chains of another repeat unit on the backbone (NR-g-PMMA, PP-g-MA)"
+                                IsChecked="{Binding PolyArch, Mode=OneWay, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=5}" />
                   <Button Classes="chip" Content="Network →" Click="OnNetwork" Margin="0,0,6,6" ToolTip.Tip="Networks are made by crosslinking a grown cell: React (C–C, sulfur or peroxide cures, epoxy–amine)" />
                 </WrapPanel>
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsVisible="{Binding PolyHasCore}">
@@ -179,8 +181,34 @@
                     <TextBlock Text="Branch probability per unit" Classes="label" />
                     <NumericUpDown Value="{Binding PolyBranchP}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" />
                   </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding PolyIsGraft}">
+                    <TextBlock Text="Graft probability per unit" Classes="label" />
+                    <NumericUpDown Value="{Binding PolyGraftP}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" />
+                  </StackPanel>
                 </Grid>
+                <StackPanel Spacing="6" IsVisible="{Binding PolyIsGraft}">
+                  <TextBlock Text="Graft repeat unit (SMILES with two *)" Classes="label" />
+                  <TextBox Text="{Binding PolyGraftSmiles}" FontFamily="{DynamicResource Mono}" ToolTip.Tip="The grafts' own unit, head first: methyl methacrylate [*]CC(C)(C(=O)OC)[*]" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="At most per chain" Classes="label" VerticalAlignment="Center" />
+                    <NumericUpDown Value="{Binding PolyGraftMax}" Minimum="0" Maximum="1000" Increment="1" FormatString="0" Width="80" ToolTip.Tip="0: no limit" />
+                  </StackPanel>
+                </StackPanel>
                 <TextBlock Classes="dim" TextWrapping="Wrap" Text="{Binding PolyArchNote}" IsVisible="{Binding !PolyIsLinear}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="section" Padding="16,14">
+              <StackPanel Spacing="10">
+                <TextBlock Text="GRAFT ONTO THE OPEN STRUCTURE" Classes="h3" />
+                <TextBlock Classes="dim" TextWrapping="Wrap" Text="Chains of the units above (DP below) grown from the atoms picked in the view of the open structure, which stays where it is; each picked atom gives up a hydrogen. Undo with ⌘Z." />
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                  <StackPanel Spacing="6"><TextBlock Text="Probability" Classes="label" /><NumericUpDown Value="{Binding GraftOntoP}" Minimum="0.01" Maximum="1" Increment="0.05" FormatString="0.00" ToolTip.Tip="Each candidate site is kept with this probability" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="At most" Classes="label" /><NumericUpDown Value="{Binding GraftOntoMax}" Minimum="0" Maximum="1000" Increment="1" FormatString="0" ToolTip.Tip="Grafts in all (0: no limit)" /></StackPanel>
+                  <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Spacing · Å" Classes="label" /><NumericUpDown Value="{Binding GraftOntoSpacing}" Minimum="0" Maximum="50" Increment="0.5" FormatString="0.0" ToolTip.Tip="Graft sites at least this far apart" /></StackPanel>
+                </Grid>
+                <CheckBox Content="Every equivalent atom" IsChecked="{Binding GraftOntoEquivalent}"
+                          ToolTip.Tip="Each picked atom stands for every atom like it (same element, hydrogens, neighbours and residue): pick one methine to graft along the whole chain" />
+                <Button Classes="small" Content="Graft onto picked atoms" Click="OnGraftOnto" IsEnabled="{Binding HasDocument}" HorizontalAlignment="Left" />
               </StackPanel>
             </Border>
             <Border Classes="section" Padding="16,14">

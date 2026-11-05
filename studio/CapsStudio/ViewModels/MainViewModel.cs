@@ -829,6 +829,8 @@ public sealed partial class MainViewModel : ObservableObject
             sb.Append("    architecture: ").Append(arch).Append('\n');
             if (arch == "star") sb.Append(inv, $"    arms: {(int?)j!["arms"] ?? 4}\n");
             else if (arch == "dendrimer") sb.Append(inv, $"    arms: {(int?)j!["arms"] ?? 4}\n    arm_dp: {(int?)j["arm_dp"] ?? 5}\n    generations: {(int?)j["generations"] ?? 2}\n");
+            else if (arch == "graft")
+                sb.Append(inv, $"    graft_units: [\"{(string?)j!["graft_units"]?[0]?["smiles"] ?? ""}\"]\n    graft_dp: {(int?)j["graft_dp"] ?? 10}\n    graft_probability: {((double?)j["graft_probability"] ?? 0.1).ToString(inv)}\n    graft_max: {(int?)j["graft_max"] ?? 0}\n");
             else sb.Append(inv, $"    arm_dp: {(int?)j!["arm_dp"] ?? 5}\n").Append(arch == "comb" ? $"    spacing: {(int?)j["spacing"] ?? 4}\n"
                                                                                                : $"    branch_probability: {((double?)j["branch_probability"] ?? 0.1).ToString(inv)}\n");
         }
@@ -855,6 +857,8 @@ public sealed partial class MainViewModel : ObservableObject
         if ((string?)j?["architecture"] is { } arch and not "linear")
             extra += arch == "star" ? $", architecture=\"star\", arms={(int?)j!["arms"] ?? 4}"
                    : arch == "dendrimer" ? $", architecture=\"dendrimer\", arms={(int?)j!["arms"] ?? 4}, arm_dp={(int?)j["arm_dp"] ?? 5}, generations={(int?)j["generations"] ?? 2}"
+                   : arch == "graft" ? string.Format(inv, ", graft_units=\"{0}\", graft_dp={1}, graft_probability={2}, graft_max={3}", (string?)j!["graft_units"]?[0]?["smiles"] ?? "",
+                                                     (int?)j["graft_dp"] ?? 10, (double?)j["graft_probability"] ?? 0.1, (int?)j["graft_max"] ?? 0)
                    : string.Format(inv, ", architecture=\"{0}\", arm_dp={1}{2}", arch, (int?)j!["arm_dp"] ?? 5,
                                    arch == "comb" ? $", spacing={(int?)j["spacing"] ?? 4}" : string.Format(inv, ", branch_probability={0}", (double?)j["branch_probability"] ?? 0.1));
         if (_growMethod > 0) extra += string.Format(inv, ", method=\"{0}\", method_temperature={1}", GrowMethodIds[_growMethod], _growMethodT);

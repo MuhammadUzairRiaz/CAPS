@@ -3650,6 +3650,35 @@
    "engines": []
   },
   {
+   "id": "graft-copolymers",
+   "group": "Growth",
+   "title": "Graft copolymers: grafts grown with the backbone or onto an existing structure",
+   "summary": "Grafts are side chains of their own repeat units. Grown with the backbone (architecture graft), each backbone unit of the chosen kind carries a graft with a set probability, at most a set number per chain; the graft starts on the unit's atom marked with an atom class of 3 or more in its SMILES ([CH:3], the methine of a natural-rubber unit written [*]CC(C)=[CH:3]C[*]), replacing that atom's hydrogen, or on its head or tail atom when nothing is marked. The grafts have their own sequence kind and length, and grow once their backbone is complete, as comb side chains do. Grafted onto an existing structure (a cell, a chain or a molecule), the sites are atoms picked by number (a hydrogen stands for the atom it sits on), each optionally standing for every atom equivalent to it (same element, hydrogens, heavy neighbours and residue name); each candidate is kept with a probability, at least a set distance from the others, up to a set total. Each site gives up the hydrogen pointing into most room, and a chain grows from there along that hydrogen's direction while the structure is held fixed; a structure without a cell is put in a box with room around it. Molecules are renumbered by connectivity, so a graft belongs to the molecule it hangs on.",
+   "equation": "P(graft on unit u) = p (kind and limit allowed);  site kept with probability p_site, |r_i − r_j| ≥ d_min",
+   "equation_note": "construction rules; no physical model",
+   "tex": "P(\\text{graft on unit } u) = p, \\qquad \\lvert \\mathbf{r}_i - \\mathbf{r}_j \\rvert \\ge d_{\\min} \\ \\text{for kept sites } i, j",
+   "symbols": [
+    [
+     "p",
+     "graft probability per eligible backbone unit (or per candidate site)",
+     "—"
+    ],
+    [
+     "d_min",
+     "smallest distance between graft sites",
+     "Å"
+    ]
+   ],
+   "when": "NR-g-PMMA and PP-g-MA compatibilisers, long-chain branches added to a grown cell, grafting chains onto a filler's or a fibre's chosen atoms, interphases with tethered chains.",
+   "cites": [],
+   "source": "core/src/polymer.cpp (Architecture::Graft in grow_chains), core/src/graft_chains.cpp (graft_chains, equivalent_atoms)",
+   "tested": "Graft.GraftsGrowOnTheMarkedAtom (PMMA grafts on polyisoprene only on the marked methine, which gives up its hydrogen; at most the limit per chain); Graft.EquivalentSites (a CH2 of polyethylene stands for its 58 CH2 carbons); Graft.OntoAnExistingChain (four grafts at least 5 Å apart, the host's atoms unmoved, one hydrogen fewer per graft, one molecule; the same without a cell)",
+   "deviation": "one graft per site atom unless more are asked for and it has the hydrogens; grafts are linear chains; the host is not relaxed while they grow (relax with push-off before dynamics)",
+   "engines": [
+    "build.graft"
+   ]
+  },
+  {
    "id": "density-fields",
    "group": "Analysis",
    "title": "Density fields: dynamic mean-field theory of Gaussian chains",

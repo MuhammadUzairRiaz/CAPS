@@ -51,9 +51,13 @@ const char* to_string(Sequence s);
 //   dendrimer a star core of `arms` arms of dp units; every free end then splits in two segments of arm_dp units, for
 //             `generations` generations (arms · (2^(G+1) − 1) segments in all; both new segments hang on the end unit,
 //             the second on the unit before it when the end has no room)
+//   graft     side chains of their own units (graft_units, graft_sequence, graft_weights, graft_dp) on backbone units of
+//             kind graft_on (any when −1), each such unit carrying one with probability graft_probability, at most
+//             graft_max per chain (0: no limit); the graft starts on the backbone unit's atom marked with an atom class
+//             of 3 or more in its SMILES ([CH:3]), else on its head or tail atom (NR-g-PMMA, PP-g-MA, compatibilisers)
 // A side chain replaces a hydrogen on its unit's head atom (else its tail atom) and repeats the chain's units, sequence
-// kind and tacticity. Arms grow one after another once the chain they hang on is complete, with the same trial placement.
-enum class Architecture { Linear, Star, Comb, Branched, Dendrimer };
+// kind and tacticity (a graft: its own units and sequence). Arms grow one after another once the chain they hang on is complete, with the same trial placement.
+enum class Architecture { Linear, Star, Comb, Branched, Dendrimer, Graft };
 Architecture architecture_from_string(const std::string& s);
 const char* to_string(Architecture a);
 
@@ -90,6 +94,13 @@ struct ChainSpec {
   int generations = 2;             // Dendrimer: generations of branching beyond the core (1 … 6)
   int spacing = 4;                 // Comb: a side chain on every spacing-th backbone unit
   double branch_probability = 0.1; // Branched: chance that a backbone unit carries a side chain
+  std::vector<RepeatUnit> graft_units;   // Graft: the side chains' own units
+  Sequence graft_sequence = Sequence::Homopolymer;
+  std::vector<double> graft_weights;
+  int graft_dp = 10;
+  int graft_on = -1;               // Graft: the backbone unit kind that carries grafts (−1: any)
+  double graft_probability = 0.1;  // Graft: chance per eligible backbone unit
+  int graft_max = 0;               // Graft: per chain (0: no limit)
   // Keep every unit's configuration as written (no mirrored units): chiral units such as nucleotides and sugars, whose
   // stereocentres are fixed (D-ribose), not a tacticity. Tacticity settings are then ignored.
   bool keep_configuration = false;
@@ -138,6 +149,9 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed);
 // triads, run_length} (terminal, markov, penultimate; without drift), drift [{conversion, feed, instantaneous,
 // cumulative}] (with drift), built {count, composition, dyads, triads, run_length}}. Dyads n × n and triads n³ row-major.
 Json sequence_report(const ChainSpec& spec, const std::vector<std::vector<int>>& chains);
+// The graft keys of a chain spec in JSON: graft_units [{name, smiles} | "SMILES"], graft_sequence, graft_weights,
+// graft_dp, graft_on, graft_probability, graft_max (left as they are when absent).
+void graft_spec_from_json(ChainSpec& spec, const Json& j);
 
 // Which positions of an n-unit chain are reversed under spec.linkage (empty for head-to-tail); Random draws from the seed.
 std::vector<char> chain_inversions(const ChainSpec& spec, size_t n, uint64_t seed);

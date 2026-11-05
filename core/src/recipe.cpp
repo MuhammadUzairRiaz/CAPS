@@ -660,6 +660,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           if (P.has("spacing")) spec.spacing = int(P["spacing"].number());
           if (P.has("branch_probability")) spec.branch_probability = P["branch_probability"].number();
           if (P.has("generations")) spec.generations = int(P["generations"].number());
+          graft_spec_from_json(spec, P);   // graft {graft_units, graft_dp, graft_on, graft_probability, graft_max …}
           report(k, st, "DP " + std::to_string(spec.dp) + " × " + std::to_string(chains) + (spec.architecture == Architecture::Linear ? " chains" : std::string(" ") + to_string(spec.architecture) + " molecules") +
                             " · unit " + info.formula + " · " + tac, "done", 1);
         } else if (J.has("pack")) {
@@ -965,6 +966,9 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           gp.push_back({"architecture", "comb, side chains of " + std::to_string(spec.arm_dp) + " units on every " + std::to_string(spec.spacing) + "th unit (or the one beside it with more room)"});
         else if (spec.architecture == Architecture::Branched)
           gp.push_back({"architecture", "branched, side chains of " + std::to_string(spec.arm_dp) + " units with probability " + g6(spec.branch_probability) + " per backbone unit"});
+        else if (spec.architecture == Architecture::Graft)
+          gp.push_back({"architecture", "graft, side chains of " + std::to_string(spec.graft_dp) + " units of their own on backbone units with probability " +
+                                            g6(spec.graft_probability) + (spec.graft_max > 0 ? ", at most " + std::to_string(spec.graft_max) + " per chain" : std::string())});
         else if (spec.architecture == Architecture::Dendrimer)
           gp.push_back({"architecture", "dendrimer, generation " + std::to_string(spec.generations) + ": " + std::to_string(spec.arms) +
                                             " core arms of DP units, each end splitting in two branches of " + std::to_string(spec.arm_dp) + " units"});

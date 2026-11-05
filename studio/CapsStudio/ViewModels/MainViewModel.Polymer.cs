@@ -115,7 +115,7 @@ public sealed partial class MainViewModel
     public bool PolyShowBlocks => _polySeq == 2;
     public bool PolyShowPattern => _polySeq == 5;
     // ---- architecture: linear, branched (random side chains), star, comb, dendrimer
-    private static readonly string[] ArchIds = ["linear", "branched", "star", "comb", "dendrimer"];
+    private static readonly string[] ArchIds = ["linear", "branched", "star", "comb", "dendrimer", "graft"];
     private int _polyArch;
     private decimal _polyArms = 4, _polyArmDp = 5, _polySpacing = 4, _polyBranchP = 0.1m;
     public int PolyArch
@@ -123,7 +123,8 @@ public sealed partial class MainViewModel
         get => _polyArch;
         set
         {
-            if (!Set(ref _polyArch, Math.Clamp(value, 0, 4))) return;
+            if (!Set(ref _polyArch, Math.Clamp(value, 0, 5))) return;
+            Raise(nameof(PolyIsGraft));
             Raise(nameof(PolyIsLinear)); Raise(nameof(PolyIsStar)); Raise(nameof(PolyHasCore)); Raise(nameof(PolyIsDendrimer)); Raise(nameof(PolySideLabel)); Raise(nameof(PolyHasSideChains)); Raise(nameof(PolyIsComb)); Raise(nameof(PolyIsBranched));
             Raise(nameof(PolyArchNote)); Raise(nameof(PolyPreviewCaption));
             PolyChanged();
@@ -135,9 +136,40 @@ public sealed partial class MainViewModel
     public bool PolyIsStar => _polyArch == 2;
     public bool PolyIsComb => _polyArch == 3;
     public bool PolyIsDendrimer => _polyArch == 4;
+    public bool PolyIsGraft => _polyArch == 5;
+    // grafting the page's chains onto picked atoms of the open structure (an edit, with undo)
+    private decimal _graftOntoP = 1, _graftOntoMax = 0, _graftOntoSpacing = 5;
+    private bool _graftOntoEq;
+    public decimal GraftOntoP { get => _graftOntoP; set => Set(ref _graftOntoP, Math.Clamp(value, 0.01m, 1)); }
+    public decimal GraftOntoMax { get => _graftOntoMax; set => Set(ref _graftOntoMax, Math.Clamp(value, 0, 1000)); }
+    public decimal GraftOntoSpacing { get => _graftOntoSpacing; set => Set(ref _graftOntoSpacing, Math.Clamp(value, 0, 50)); }
+    public bool GraftOntoEquivalent { get => _graftOntoEq; set => Set(ref _graftOntoEq, value); }
+    public void GraftOnto()
+    {
+        if (_doc == null) return;
+        var picked = new List<int>(_selection);
+        try
+        {
+            if (System.Text.Json.Nodes.JsonNode.Parse(_doc.SelectionJson())?["indices"] is JsonArray a)
+                foreach (var x in a) { var i = (int)((double?)x ?? -1); if (i >= 0 && !picked.Contains(i)) picked.Add(i); }
+        }
+        catch { }
+        if (picked.Count == 0) { Status = "Pick the atoms to graft on in the view first (a hydrogen stands for its atom)"; return; }
+        var spec = JsonNode.Parse(PolySpecJson((int)GrowDpD))!;
+        spec.AsObject().Remove("architecture");   // the grafts are linear chains of these units
+        if (RunEdit(new { op = "graft_chains", spec, atoms = picked, equivalent = _graftOntoEq, probability = (double)_graftOntoP, max = (int)_graftOntoMax,
+                          min_spacing = (double)_graftOntoSpacing, seed = _growSeed }) is { } r)
+            Status = ((string?)r["what"] ?? "Grafted") + " · relax with push-off before dynamics";
+    }
+    // grafts: their own repeat unit, the chance per backbone unit, a limit per chain
+    private string _polyGraftSmiles = "[*]CC(C)(C(=O)OC)[*]";
+    private decimal _polyGraftP = 0.1m, _polyGraftMax = 0;
+    public string PolyGraftSmiles { get => _polyGraftSmiles; set { if (Set(ref _polyGraftSmiles, value.Trim())) PolyChanged(); } }
+    public decimal PolyGraftP { get => _polyGraftP; set { if (Set(ref _polyGraftP, Math.Clamp(value, 0, 1))) PolyChanged(); } }
+    public decimal PolyGraftMax { get => _polyGraftMax; set { if (Set(ref _polyGraftMax, Math.Clamp(value, 0, 1000))) PolyChanged(); } }
     public bool PolyHasCore => _polyArch is 2 or 4;
-    public bool PolyHasSideChains => _polyArch is 1 or 3 or 4;
-    public string PolySideLabel => _polyArch == 4 ? "Units per branch" : "Units per side chain";
+    public bool PolyHasSideChains => _polyArch is 1 or 3 or 4 or 5;
+    public string PolySideLabel => _polyArch == 4 ? "Units per branch" : _polyArch == 5 ? "Units per graft" : "Units per side chain";
     private decimal _polyGenerations = 2;
     public decimal PolyGenerations { get => _polyGenerations; set { if (Set(ref _polyGenerations, Math.Clamp(value, 1, 6))) { Raise(nameof(PolyArchNote)); PolyChanged(); } } }
     public decimal PolyArms { get => _polyArms; set { if (Set(ref _polyArms, Math.Clamp(value, 3, 4))) { Raise(nameof(PolyArchNote)); PolyChanged(); } } }
@@ -149,6 +181,7 @@ public sealed partial class MainViewModel
         2 => "Arms of DP units on one core carbon, the first arm's head atom (star SBR and BR are coupled on silicon or tin: here the core is carbon). Four arms need a CH₂ or CH₃ head.",
         3 => "A side chain of the chain's own units on every n-th backbone unit, on a hydrogen of its head or tail atom (or of the unit beside it when that has clearly more room).",
         1 => "Long-chain branches: each backbone unit carries a side chain with this probability.",
+        5 => "Grafts of their own repeat unit: each backbone unit carries one with this probability (at most the limit per chain, 0 for none). Mark the atom a graft starts on in the backbone unit's SMILES with an atom class, [CH:3] (natural rubber: [*]CC(C)=[CH:3]C[*]); without a mark it starts on the head or tail atom.",
         4 => string.Format(System.Globalization.CultureInfo.InvariantCulture,
                  "A star core of {0} arms of DP units; every free end splits in two branches, generation after generation: {1} branches, {2} end groups per molecule. Both branches hang on the end unit (the second on the unit before it when the end is crowded).",
                  (int)_polyArms, (int)_polyArms * ((1 << ((int)_polyGenerations + 1)) - 2), (int)_polyArms * (1 << (int)_polyGenerations)),
@@ -376,6 +409,13 @@ public sealed partial class MainViewModel
             o["spacing"] = (int)_polySpacing;
             o["branch_probability"] = (double)_polyBranchP;
             o["generations"] = (int)_polyGenerations;
+            if (_polyArch == 5)
+            {
+                o["graft_units"] = new System.Text.Json.Nodes.JsonArray(new System.Text.Json.Nodes.JsonObject { ["name"] = "graft", ["smiles"] = _polyGraftSmiles });
+                o["graft_dp"] = (int)_polyArmDp;
+                o["graft_probability"] = (double)_polyGraftP;
+                o["graft_max"] = (int)_polyGraftMax;
+            }
         }
         // unit templates cleaned with the default force field when it types them (GAFF2 unless Settings says otherwise)
         if (CleanChoices.FirstOrDefault(c => c.File != null && Path.GetFileNameWithoutExtension(c.File) == _settings.ForceField)?.File is { } clean) o["forcefield"] = clean;

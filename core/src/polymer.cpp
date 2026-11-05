@@ -106,6 +106,7 @@ struct Template {
   // a ring backbone with the configuration of its head and tail written (2,3-exo,exo): never mirrored, the chain is
   // built of the unit as written (its mirror image beside it does not fit next to these rigid units)
   bool keep_configuration = false;
+  int graft_site = -1;                   // the atom marked with an atom class ≥ 3 in the SMILES (a graft starts there)
 };
 
 // orthonormal frame at t from its neighbours a (e1 toward a) and b
@@ -474,6 +475,7 @@ Template make_template_uncached(const std::string& name, const std::string& smil
   for (int k = 0; k < T.n; ++k) {
     const int old = order[size_t(k)];
     T.z.push_back(g.atoms[size_t(old)].element);
+    if (T.graft_site < 0 && g.atoms[size_t(old)].map >= 3) T.graft_site = k;
     bool pi = false;
     for (auto [w, o] : adj[size_t(old)]) pi |= o == 2 || o == 4 || o == 3;
     T.sp2.push_back(pi);
@@ -757,6 +759,7 @@ struct ChainState {
   int mol = 0;                         // molecule, 0-based
   int parent = -1, anchor_unit = 0, after = -1;
   bool core = false;                   // a star arm: on the parent's head atom, the head cap's valence first
+  bool graft = false;                  // a graft: its own units, on the parent unit's marked atom when it has one
   int anchor = -1;                     // the parent's atom the head bonds to (local), resolved when the arm starts
   Vec3 anchor_dir{0, 0, 0};
   bool resolved = false, started = false, cap_taken = false;   // cap_taken: an arm took this chain's head cap valence
@@ -789,6 +792,7 @@ Architecture architecture_from_string(const std::string& s) {
   if (s == "comb") return Architecture::Comb;
   if (s == "branched") return Architecture::Branched;
   if (s == "dendrimer") return Architecture::Dendrimer;
+  if (s == "graft") return Architecture::Graft;
   throw std::invalid_argument("unknown architecture '" + s + "' (linear, star, comb, branched)");
 }
 
@@ -798,6 +802,7 @@ const char* to_string(Architecture a) {
     case Architecture::Comb: return "comb";
     case Architecture::Branched: return "branched";
     case Architecture::Dendrimer: return "dendrimer";
+    case Architecture::Graft: return "graft";
     default: return "linear";
   }
 }
@@ -1086,6 +1091,25 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
   return s;
 }
 
+void graft_spec_from_json(ChainSpec& spec, const Json& j) {
+  if (j.has("graft_units") && j["graft_units"].is_array()) {
+    spec.graft_units.clear();
+    for (const auto& u : j["graft_units"].items()) {
+      if (u.is_string()) spec.graft_units.push_back({u.str(), u.str()});
+      else spec.graft_units.push_back({u.text("name"), u.text("smiles")});
+    }
+  }
+  if (j.has("graft_sequence")) spec.graft_sequence = sequence_from_string(j.text("graft_sequence", "homopolymer"));
+  if (j.has("graft_weights") && j["graft_weights"].is_array()) {
+    spec.graft_weights.clear();
+    for (const auto& w : j["graft_weights"].items()) spec.graft_weights.push_back(w.number());
+  }
+  if (j.has("graft_dp")) spec.graft_dp = std::max(1, int(j["graft_dp"].number()));
+  if (j.has("graft_on")) spec.graft_on = int(j["graft_on"].number());
+  if (j.has("graft_probability")) spec.graft_probability = std::clamp(j["graft_probability"].number(), 0.0, 1.0);
+  if (j.has("graft_max")) spec.graft_max = std::max(0, int(j["graft_max"].number()));
+}
+
 Json sequence_report(const ChainSpec& spec, const std::vector<std::vector<int>>& chains) {
   const int nu = std::max<int>(1, int(spec.units.size()));
   auto arr = [](const std::vector<double>& v) { Json a = Json::array(); for (double x : v) a.push_back(std::isfinite(x) ? Json(x) : Json(nullptr)); return a; };
@@ -1239,6 +1263,22 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       }
     }
   }
+  // graft units: templates gbase + k
+  const int gbase = int(T.size());
+  if (spec.architecture == Architecture::Graft) {
+    if (spec.graft_units.empty()) throw GrowError("a graft copolymer needs the grafts' repeat units");
+    for (size_t k = 0; k < spec.graft_units.size(); ++k) {
+      try {
+        T.push_back(make_template(spec.graft_units[k].name.empty() ? spec.graft_units[k].smiles : spec.graft_units[k].name, spec.graft_units[k].smiles,
+                                  spec.forcefield, o.seed + 1000 + k, rep.notes));
+      } catch (const std::exception& e) {
+        throw GrowError(std::string("graft unit: ") + e.what());
+      }
+    }
+  }
+  ChainSpec gspec;   // the grafts' own spec
+  gspec.units = spec.graft_units, gspec.sequence = spec.graft_sequence, gspec.weights = spec.graft_weights, gspec.dp = std::max(1, spec.graft_dp);
+  gspec.tacticity = spec.tacticity, gspec.pm = spec.pm, gspec.forcefield = spec.forcefield;
   size_t n_inverted = 0, n_linked = 0;
   const int nchains = std::max(1, o.chains);
   std::mt19937_64 rng(o.seed * 0x9E3779B97F4A7C15ull + 7);
@@ -1249,6 +1289,21 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   std::vector<ChainState> C(static_cast<size_t>(nchains));
   double mass = 0;
   auto make_sequence = [&](ChainState& ch, int c, int dp) {
+    if (ch.graft) {   // a graft: its own units, numbered after the backbone's templates
+      ch.seq = chain_sequence(gspec, o.seed + uint64_t(c) * 101);
+      mass += chain_mass(gspec, ch.seq);
+      ch.mirror.resize(ch.seq.size());
+      for (size_t k = 0; k < ch.seq.size(); ++k) {
+        if (T[size_t(gbase + ch.seq[k])].keep_configuration) { ch.mirror[k] = 0; continue; }
+        if (k == 0) ch.mirror[k] = U(rng) < 0.5;
+        else if (spec.tacticity == Tacticity::Isotactic) ch.mirror[k] = ch.mirror[k - 1];
+        else if (spec.tacticity == Tacticity::Syndiotactic) ch.mirror[k] = !ch.mirror[k - 1];
+        else ch.mirror[k] = U(rng) < std::clamp(spec.pm, 0.0, 1.0) ? ch.mirror[k - 1] : !ch.mirror[k - 1];
+      }
+      for (auto& v : ch.seq) v += gbase;
+      n_linked += ch.seq.size();
+      return;
+    }
     if (dp > 0) {   // polydisperse or an arm: this chain's own length
       ChainSpec one = spec;
       one.dp = std::max(1, dp);
@@ -1310,10 +1365,10 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   int n_arms = 0;
   if (arch != Architecture::Linear) {
     std::mt19937_64 brng(o.seed * 0xD1B54A32D192ED03ull + 11);
-    auto add_arm = [&](int parent, int unit, bool core, int dp, int after) {
+    auto add_arm = [&](int parent, int unit, bool core, int dp, int after, bool graft = false) {
       ChainState a;
       a.mol = C[size_t(parent)].mol;
-      a.parent = parent, a.anchor_unit = unit, a.core = core, a.after = after;
+      a.parent = parent, a.anchor_unit = unit, a.core = core, a.after = after, a.graft = graft;
       const int idx = int(C.size());
       make_sequence(a, idx, dp);
       mass -= 2 * element(1).mass;
@@ -1342,9 +1397,21 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         }
       } else if (arch == Architecture::Comb)
         for (int u = std::max(1, spec.spacing) - 1; u < len; u += std::max(1, spec.spacing)) prev = add_arm(m, u, false, std::max(1, spec.arm_dp), prev);
-      else if (arch == Architecture::Branched)
+      else if (arch == Architecture::Branched) {
         for (int u = 1; u + 1 < len; ++u)
           if (caps::UniformReal<double>(0, 1)(brng) < spec.branch_probability) prev = add_arm(m, u, false, std::max(1, spec.arm_dp), prev);
+      } else if (arch == Architecture::Graft) {
+        int placed = 0;
+        for (int u = 0; u < len; ++u) {
+          if (spec.graft_max > 0 && placed >= spec.graft_max) break;
+          int kind = C[size_t(m)].seq[size_t(u)];
+          if (kind >= nU && kind < 2 * nU) kind -= nU;   // a reversed unit is its own kind
+          if (spec.graft_on >= 0 && kind != spec.graft_on) continue;
+          // the end units only when they carry a marked site (their head or tail is the chain's end)
+          if ((u == 0 || u + 1 == len) && T[size_t(kind)].graft_site < 0) continue;
+          if (caps::UniformReal<double>(0, 1)(brng) < spec.graft_probability) prev = add_arm(m, u, false, std::max(1, spec.graft_dp), prev, true), ++placed;
+        }
+      }
     }
   }
   bool ortho = o.cell[0] > 0 && o.cell[1] > 0 && o.cell[2] > 0;
@@ -1533,7 +1600,14 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         if (!ch.core && arch != Architecture::Dendrimer && taken.count(u)) continue;   // a dendrimer's end unit carries both branches
         const int base = par.unit_start[size_t(u)];
         const Template& tp = T[size_t(par.seq[size_t(u)])];
-        for (int cand : ch.core ? std::vector<int>{base} : std::vector<int>{base, base + tp.tail})
+        // a graft goes on its unit's marked atom (only units of the grafted kind), else on its head or tail atom
+        if (ch.graft && spec.graft_on >= 0) {
+          int kind = par.seq[size_t(u)];
+          if (kind >= nU && kind < 2 * nU) kind -= nU;
+          if (kind != spec.graft_on) continue;
+        }
+        const bool marked = ch.graft && tp.graft_site >= 0;
+        for (int cand : ch.core ? std::vector<int>{base} : marked ? std::vector<int>{base + tp.graft_site} : std::vector<int>{base, base + tp.tail})
           for (int w : par.adj[size_t(cand)]) {
             if (w < 3 || par.z[size_t(w)] != 1 || par.dropped.count(w) || ch.tried.count(w)) continue;
             // the unit asked for first: a neighbour must have clearly more room to take its place
@@ -1544,7 +1618,8 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       if (P < 0)
         throw GrowError(ch.core ? "a star of " + std::to_string(spec.arms) + " arms needs " + std::to_string(spec.arms - 2) + " hydrogens on the head atom (" +
                                       element(par.z[size_t(par.unit_start[0])]).symbol + ") of the unit; choose a unit whose head is CH₂ or CH₃, or 3 arms"
-                                : "no room for a side chain near unit " + std::to_string(ch.anchor_unit + 1) + " (no free hydrogen on its head or tail atom)");
+                                : ch.graft ? "no room for a graft near unit " + std::to_string(ch.anchor_unit + 1) + " (no free hydrogen with room on its marked atom, or head or tail atom); lower the graft probability or the density"
+                                           : "no room for a side chain near unit " + std::to_string(ch.anchor_unit + 1) + " (no free hydrogen on its head or tail atom)");
       ch.anchor_unit = best_unit;
       ch.drop_h = h;
       par.dropped.insert(h);
@@ -2614,7 +2689,14 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       if (std::isalnum(static_cast<unsigned char>(ch)) && code.size() < 3) code += char(std::toupper(static_cast<unsigned char>(ch)));
     unit_code.push_back(code.empty() ? std::string("U") + char('A' + int(u % 26)) : code);
   }
-  for (int u = 0; u < nU && T.size() > size_t(nU); ++u) unit_code.push_back(unit_code[size_t(u)]);   // reversed units
+  for (int u = 0; u < nU && T.size() > size_t(nU) && spec.linkage != Linkage::HeadToTail; ++u) unit_code.push_back(unit_code[size_t(u)]);   // reversed units
+  for (size_t u = 0; u < spec.graft_units.size(); ++u) {   // graft units (templates gbase + u)
+    std::string code, nm = spec.graft_units[u].name;
+    if (nm.size() > 5 && (nm.rfind("Poly", 0) == 0 || nm.rfind("poly", 0) == 0)) nm = nm.substr(4);
+    for (char ch : nm)
+      if (std::isalnum(static_cast<unsigned char>(ch)) && code.size() < 3) code += char(std::toupper(static_cast<unsigned char>(ch)));
+    unit_code.push_back(code.empty() ? std::string("G") + char('A' + int(u % 26)) : code);
+  }
   int mol0 = 0;
   if (o.substrate) {
     int64_t top = 0;
@@ -2690,6 +2772,9 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   else if (arch == Architecture::Dendrimer)
     units_text = std::to_string(nchains) + " dendrimers of generation " + std::to_string(spec.generations) + ": " + std::to_string(spec.arms) + " core arms × " +
                  std::to_string(spec.dp) + " units, " + std::to_string(n_arms - nchains * (spec.arms - 1)) + " branches of " + std::to_string(std::max(1, spec.arm_dp)) + " units";
+  else if (arch == Architecture::Graft)
+    units_text = std::to_string(nchains) + " graft copolymers: backbones of " + std::to_string(spec.dp) + " units, " + std::to_string(n_arms) + " grafts of " +
+                 std::to_string(std::max(1, spec.graft_dp)) + " units";
   else if (arch != Architecture::Linear)
     units_text = std::to_string(nchains) + (arch == Architecture::Comb ? " combs" : " branched chains") + ": backbones of " + std::to_string(spec.dp) + " units, " +
                  std::to_string(n_arms) + " side chains of " + std::to_string(std::max(1, spec.arm_dp)) + " units";

@@ -85,6 +85,7 @@
 #include "caps/zmethod.hpp"
 #include "caps/polystats.hpp"
 #include "caps/restraints.hpp"
+#include "caps/graft_chains.hpp"
 #include "caps/ddft.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
@@ -334,6 +335,9 @@ int usage() {
                "               copolymers: --sequence terminal|markov|penultimate --weights FEED [--r1 R --r2 R | --reactivity 'r11,r12;r21,r22'\n"
                "                | --transition 'p11,p12;p21,p22' | --penultimate r1,r1p,r2,r2p] [--drift none|chains|along --conversion 0.8]\n"
                "                [--sequence-report OUT.json]   composition, dyads, triads and run lengths, model against built\n"
+               "               architecture: --architecture linear|star|comb|branched|dendrimer|graft [--arms 4] [--arm-dp 5] [--spacing 4]\n"
+               "                [--branch-probability 0.1] [--generations 2]; graft: --graft-units 'SMILES,…' [--graft-dp 10] [--graft-on K]\n"
+               "                [--graft-probability 0.1] [--graft-max N] [--graft-sequence KIND --graft-weights W]   (graft site: the atom marked [CH:3])\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|shuffled|gradient|pattern\n"
                "                --weights 0.7,0.3 --blocks 20,20 --pattern AAB --ff FF.json --method trials|rosenbluth|rosenbluth_lj\n"
@@ -360,6 +364,8 @@ int usage() {
                "             a molecular crystal found by simulated annealing against the pattern (direct space)\n"
                "  caps zmelt CRYSTAL --temps 100,200,300,400 [--ff FF] [--steps 10000] [--dt 1] [--bisect 3] [--cutoff 10] [--sample-every 20]\n"
                "              [--csv OUT] [--json OUT]   melting point by the Z method: NVE runs from the perfect crystal (Belonoshko et al.)\n"
+               "  caps graft FILE --units 'SMILES,…' --sites 12,40 [--equivalent] [--probability 1] [--per-site 1] [--max N] [--min-spacing Å]\n"
+               "              [--dp 10] [--sequence KIND --weights W] [--padding Å] [--seed 1] -o OUT   chains grown from chosen atoms (from 1)\n"
                "  caps copolymer --feed 0.3,0.3,0.4 (--r1 R --r2 R | --reactivity 'r11,r12,r13;…' | --transition '…' | --penultimate r1,r1p,r2,r2p)\n"
                "               [--conversion 0.9 [--points 21]] [--csv OUT.csv] [--json OUT]   copolymer model: composition, dyads, triads, runs, drift\n"
                "  caps sqs CRYSTAL --from Cu --to Au [--fraction 0.5] [--supercell 2,2,2] [--shells 3] [--steps 20000] [--restarts 4] [--seed 1] -o OUT.cif\n"
@@ -496,7 +502,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -529,7 +535,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
          a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
-         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo";
+         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo" || a == "--equivalent";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -643,6 +649,32 @@ std::vector<double> cli_matrix(const std::string& t, const char* what) {
   if (rows != cols || rows == 0) throw std::invalid_argument(std::string(what) + ": a square matrix, rows split by ';'");
   return v;
 }
+// architecture options (grow): --architecture linear|star|comb|branched|dendrimer|graft, --arms, --arm-dp, --spacing,
+// --branch-probability, --generations; grafts: --graft-units 'SMILES,…' --graft-sequence --graft-weights --graft-dp
+// --graft-on K (backbone unit, from 1) --graft-probability --graft-max
+void architecture_options(ChainSpec& spec, std::map<std::string, std::string>& o) {
+  auto list = [](const std::string& t) {
+    std::vector<std::string> v;
+    std::stringstream ss(t);
+    for (std::string x; std::getline(ss, x, ',');) v.push_back(x);
+    return v;
+  };
+  if (o.count("--architecture")) spec.architecture = architecture_from_string(o["--architecture"]);
+  if (o.count("--arms")) spec.arms = std::stoi(o["--arms"]);
+  if (o.count("--arm-dp")) spec.arm_dp = std::stoi(o["--arm-dp"]);
+  if (o.count("--spacing")) spec.spacing = std::stoi(o["--spacing"]);
+  if (o.count("--branch-probability")) spec.branch_probability = std::stod(o["--branch-probability"]);
+  if (o.count("--generations")) spec.generations = std::stoi(o["--generations"]);
+  if (o.count("--graft-units")) for (const auto& u : list(o["--graft-units"])) spec.graft_units.push_back({u, u});
+  if (o.count("--graft-sequence")) spec.graft_sequence = sequence_from_string(o["--graft-sequence"]);
+  if (o.count("--graft-weights")) for (const auto& w : list(o["--graft-weights"])) spec.graft_weights.push_back(std::stod(w));
+  if (o.count("--graft-dp")) spec.graft_dp = std::stoi(o["--graft-dp"]);
+  if (o.count("--graft-on")) spec.graft_on = std::stoi(o["--graft-on"]) - 1;
+  if (o.count("--graft-probability")) spec.graft_probability = std::stod(o["--graft-probability"]);
+  if (o.count("--graft-max")) spec.graft_max = std::stoi(o["--graft-max"]);
+  if (spec.architecture == Architecture::Graft && spec.graft_units.empty()) throw std::invalid_argument("--architecture graft needs --graft-units");
+}
+
 void copolymer_options(ChainSpec& spec, std::map<std::string, std::string>& o) {
   if (o.count("--r1")) spec.r1 = std::stod(o["--r1"]);
   if (o.count("--r2")) spec.r2 = std::stod(o["--r2"]);
@@ -1861,6 +1893,7 @@ int main(int argc, char** argv) {
         if (o.count("--sequence")) spec.sequence = sequence_from_string(o["--sequence"]);
         if (o.count("--weights")) for (const auto& w : split(o["--weights"])) spec.weights.push_back(std::stod(w));
         copolymer_options(spec, o);
+        architecture_options(spec, o);
         if (o.count("--blocks")) for (const auto& b : split(o["--blocks"])) spec.blocks.push_back(std::stoi(b));
         if (o.count("--pattern")) spec.pattern = o["--pattern"];
         if (o.count("--ff")) spec.forcefield = o["--ff"];
@@ -4293,6 +4326,54 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps solve: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "graft") {
+    try {
+      if (pos.empty() || !o.count("--units") || !o.count("--sites") || !o.count("-o")) return usage();
+      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      const System host = t.frames() ? t.frame(t.frames() - 1) : t.topology;
+      auto list = [](const std::string& x) {
+        std::vector<std::string> v;
+        std::stringstream ss(x);
+        for (std::string y; std::getline(ss, y, ',');) v.push_back(y);
+        return v;
+      };
+      ChainSpec spec;
+      for (const auto& u : list(o["--units"])) spec.units.push_back({u, u});
+      spec.dp = o.count("--dp") ? std::stoi(o["--dp"]) : 10;
+      if (o.count("--sequence")) spec.sequence = sequence_from_string(o["--sequence"]);
+      if (o.count("--weights")) for (const auto& w : list(o["--weights"])) spec.weights.push_back(std::stod(w));
+      if (spec.units.size() > 1 && spec.sequence == Sequence::Homopolymer) spec.sequence = spec.weights.empty() ? Sequence::Alternating : Sequence::Random;
+      if (o.count("--ff")) spec.forcefield = o["--ff"];
+      ChainGraftOptions go;
+      for (const auto& x : list(o["--sites"])) {
+        const long a = std::stol(x);
+        if (a < 1) throw std::invalid_argument("--sites: atoms from 1");
+        go.sites.push_back(uint32_t(a - 1));
+      }
+      go.equivalent = o.count("--equivalent") > 0;
+      if (o.count("--probability")) go.probability = std::stod(o["--probability"]);
+      if (o.count("--per-site")) go.per_site = std::stoi(o["--per-site"]);
+      if (o.count("--max")) go.max_grafts = std::stoi(o["--max"]);
+      if (o.count("--min-spacing")) go.min_spacing = std::stod(o["--min-spacing"]);
+      if (o.count("--padding")) go.padding = std::stod(o["--padding"]);
+      if (o.count("--seed")) go.grow.seed = std::stoull(o["--seed"]);
+      ChainGraftReport rep;
+      const System s = graft_chains(host, spec, go, &rep);
+      if (s.atoms.size() > 15000) throw std::invalid_argument(std::to_string(s.atoms.size()) + " atoms (at most 15000): fewer or shorter grafts");
+      const std::string out = o["-o"];
+      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
+      if (ends(".pdb")) write_pdb(s, out);
+      else if (ends(".xyz")) write_xyz(s, out);
+      else write_lammps_data(s, out);
+      for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
+      std::printf("%d grafts of %d units on %d of %d candidate sites; %zu atoms · wrote %s\n", rep.grafted, spec.dp,
+                  int(std::set<uint32_t>(rep.sites.begin(), rep.sites.end()).size()), rep.candidates, s.atoms.size(), out.c_str());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps graft: %s\n", e.what());
       return 1;
     }
   }

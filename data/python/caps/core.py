@@ -1637,6 +1637,39 @@ def _sequence_report(self) -> dict:
 Document.sequence_report = _sequence_report
 
 
+def _graft(self, units, sites, dp: int = 10, equivalent: bool = False, probability: float = 1.0, per_site: int = 1,
+           max_grafts: int = 0, min_spacing: float = 0.0, sequence: Optional[str] = None, weights: Optional[list] = None,
+           padding: float = 0.0, seed: int = 1) -> "Document":
+    """Chains of `units` (a SMILES with two * points, or a list) grown from atoms of this structure (sites: indices from
+    0; a hydrogen stands for its atom), each site optionally standing for every equivalent atom, kept with
+    `probability`, `per_site` grafts on one atom, at most `max_grafts`, at least `min_spacing` Å apart. The structure is
+    held fixed while they grow. Returns a new Document; .graft_report holds {candidates, grafted, sites, notes}."""
+    us = [units] if isinstance(units, str) else list(units)
+    spec = {"units": [{"name": u, "smiles": u} for u in us], "dp": int(dp)}
+    if sequence:
+        spec["sequence"] = sequence
+    elif len(us) > 1:
+        spec["sequence"] = "random" if weights else "alternating"
+    if weights:
+        spec["weights"] = [float(w) for w in weights]
+    o = {"spec": spec, "sites": [int(i) for i in sites], "equivalent": bool(equivalent), "probability": float(probability),
+         "per_site": int(per_site), "max": int(max_grafts), "min_spacing": float(min_spacing), "padding": float(padding), "seed": int(seed)}
+    f = library().caps_graft_chains
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_void_p
+    buf = C.create_string_buffer(1 << 16)
+    h = f(self._h, _enc(json.dumps(o)), buf, len(buf))
+    r = json.loads(buf.value.decode() or "{}")
+    if not h:
+        raise CapsError(r.get("error", "graft failed"))
+    d = Document(h)
+    d.graft_report = r
+    return d
+
+
+Document.graft = _graft
+
+
 def _set_restraints(self, text: str) -> int:
     """Restraints of every kind for minimise, md, equilibrate and the LAMMPS / GROMACS exports, in text form with atoms
     from 1: "distance 1 2 3.0 20; angle 1 2 3 100:110; torsion 1 2 3 4 180 50; position 1-40 5 axes z radius 0.5"
@@ -2047,7 +2080,9 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
             branch_probability: Optional[float] = None, generations: Optional[int] = None, region: Optional[dict] = None,
             method: str = "trials", method_temperature: float = 450.0, orientation: Optional[dict] = None, lookahead: int = 1,
             head_cap: str = "", tail_cap: str = "", reactivity: Optional[list] = None, transition: Optional[list] = None,
-            penultimate: Optional[list] = None, drift: str = "none", conversion: Optional[float] = None) -> Document:
+            penultimate: Optional[list] = None, drift: str = "none", conversion: Optional[float] = None,
+            graft_units=None, graft_dp: Optional[int] = None, graft_on: Optional[int] = None, graft_probability: Optional[float] = None,
+            graft_max: Optional[int] = None, graft_sequence: Optional[str] = None, graft_weights: Optional[list] = None) -> Document:
     """Chains of a repeat unit (SMILES with two * points, or a list of them for copolymers — sequence alternating, block
     with blocks=[…], random with weights=[…], gradient, pattern="AAB", terminal with r1, r2 and weights=[f1, f2]) grown
     in a periodic cell: one chain in a roomy cell by default (0.1 g/cm³), a melt with chains=… density=…. Atactic
@@ -2066,7 +2101,9 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
     Copolymers of n units: sequence="terminal" with weights (the feed) and reactivity=[[1, r12, …], [r21, 1, …], …],
     sequence="markov" with transition=[[p11, p12, …], …], sequence="penultimate" with penultimate=[r1, r1', r2, r2'];
     drift="chains" or "along" with conversion=X for the feed's drift in a batch. Document.sequence_report() compares
-    the chains built with the model."""
+    the chains built with the model. Graft copolymers: architecture="graft" with graft_units (SMILES or a list),
+    graft_dp, graft_probability per backbone unit, graft_max per chain, graft_on (backbone unit index from 0); a graft
+    starts on the backbone unit's atom marked [CH:3] in its SMILES, else on its head or tail atom."""
     units = [smiles] if isinstance(smiles, str) else list(smiles)
     # the sequence follows from what is given (a pattern, blocks, weights); several units with none of them is a mistake,
     # not a homopolymer of the first
@@ -2107,6 +2144,14 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
     if drift != "none":
         r["build"]["polymer"]["drift"] = drift
         r["build"]["polymer"]["conversion"] = float(conversion if conversion is not None else 0.5)
+    if graft_units is not None:
+        r["build"]["polymer"]["graft_units"] = [graft_units] if isinstance(graft_units, str) else list(graft_units)
+        if architecture == "linear":
+            architecture = "graft"
+    for k, v in (("graft_dp", graft_dp), ("graft_on", graft_on), ("graft_probability", graft_probability), ("graft_max", graft_max),
+                 ("graft_sequence", graft_sequence), ("graft_weights", graft_weights)):
+        if v is not None:
+            r["build"]["polymer"][k] = v
     if architecture != "linear":
         r["build"]["polymer"]["architecture"] = architecture
     if region:
