@@ -102,6 +102,7 @@ add_library(caps_core STATIC
   src/cell_relax.cpp
   src/table_tools.cpp
   src/pointgroup.cpp
+  src/tension.cpp
   src/vasp_out.cpp
   src/dft_analysis.cpp
   src/dft_commands.cpp

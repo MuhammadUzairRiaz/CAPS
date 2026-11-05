@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 110, "ABI 110")
+check(caps.abi_version() == 111, "ABI 111")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -956,6 +956,13 @@ _slmdp = "".join(open(os.path.join(_sld, f)).read() for f in os.listdir(_sld) if
 caps.set_electrostatics("dsf")
 check("kspace_modify   slab 3" in _slin and "boundary        p p f" in _slin and "ewald-geometry           = 3dc" in _slmdp, "slab exports")
 print("ok   set_electrostatics slab: LAMMPS and GROMACS")
+
+# surface tension (ABI 111): a LAMMPS log with P_zz 200, P_xx = P_yy 100 atm and Lz 60 Å gives 30.3975 mN/m
+_tl = os.path.join(tempfile.mkdtemp(), "log.lammps")
+open(_tl, "w").write("Step Temp Pxx Pyy Pzz Lz\n" + "".join(f"{k} 300 100 100 200 60\n" for k in range(10)) + "Loop time of 1 on 1 procs\n")
+_tg = caps.surface_tension(_tl)
+check(abs(_tg["gamma"] - 30.3975) < 1e-9 and _tg["samples"] == 8, f"tension {_tg}")
+print("ok   surface_tension")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))

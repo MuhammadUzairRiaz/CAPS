@@ -2164,6 +2164,19 @@ def set_electrostatics(method: str = "dsf", ewald_rtol: float = 1e-5, pme_spacin
     lib.caps_set_electrostatics(1 if method == "pme" else 0, float(ewald_rtol), float(pme_spacing), int(pme_order))
     lib.caps_set_slab(float(slab))
 
+def surface_tension(file: str, axis: str = "z", interfaces: int = 2, skip: float = 0.2, blocks: int = 5, cell_length: float = 0.0) -> dict:
+    """Surface or interfacial tension (mN/m) of a slab cell from a CAPS thermo CSV (caps md --log) or a LAMMPS log with
+    Pxx Pyy Pzz and Lz: γ = (L_n / interfaces) [P_nn − (P_t1 + P_t2)/2] per sample (Kirkwood–Buff), averaged after the
+    skipped share, the error from block means. Returns {gamma, error, pn, pt, length, samples, blocks, series, notes}."""
+    f = library().caps_tension
+    f.argtypes = [C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    o = {"file": str(file), "axis": axis, "interfaces": int(interfaces), "skip": float(skip), "blocks": int(blocks), "cell_length": float(cell_length)}
+    r = _json_call(f, _enc(json.dumps(o)))
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "surface tension failed"))
+    return r
+
 def histogram(values, rule: str = "fd", bins: int = 0) -> dict:
     """Bins of equal width over the values (not-finite ones left out): rule "fd" (Freedman–Diaconis), "scott",
     "sturges" or "bins" with bins. Returns {edges, counts, width, rule, n, left_out}."""

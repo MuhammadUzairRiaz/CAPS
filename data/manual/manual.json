@@ -5258,6 +5258,40 @@
    "deviation": "The filter hides rows from the sheet and the SD file only; the chart and the statistics use every row. SD data item names lose < and > (the format's delimiters).",
    "engines": "caps table CSV [--sort 'A,-B'] [--hist COLUMN --rule fd|scott|sturges|N] [--sdf OUT.sdf --structure COLUMN]; Python caps.histogram, caps.write_sdf_table; Studio Analyze › Study table",
    "tex": "h_{\\mathrm{FD}} = 2\\,\\mathrm{IQR}\\,n^{-1/3},\\qquad h_{\\mathrm{Scott}} = 3.49\\,s\\,n^{-1/3},\\qquad k_{\\mathrm{Sturges}} = \\lceil \\log_2 n \\rceil + 1,\\qquad k = \\left\\lceil \\frac{x_{\\max} - x_{\\min}}{h} \\right\\rceil"
+  },
+  {
+   "id": "surface-tension",
+   "group": "Analysis",
+   "title": "Surface and interfacial tension from the pressure tensor",
+   "summary": "The tension of planar interfaces in a slab cell, from the run's pressure tensor. For interfaces normal to an axis n, the Kirkwood–Buff integral γ = ½ ∫ [P_N(z) − P_T(z)] dz over the periodic cell equals (L_n / N_int) [P_nn − (P_t1 + P_t2)/2] with the cell's mean pressure components. N_int is the number of interfaces: two for a liquid slab or a film with vacuum, also two for a periodic bilayer of two phases, one for a film on a wall. Every thermo sample gives a γ; the mean is taken after the skipped equilibration share, and its error is the standard error of block means. The samples come from CAPS's thermo CSV (caps md --log writes the tensor and the cell lengths) or a LAMMPS log printing pxx pyy pzz and lz.",
+   "equation": "γ = ½ ∫ [P_N(z) − P_T(z)] dz = (L_n / N_int) [P_nn − (P_t1 + P_t2)/2]",
+   "equation_note": "1 atm·Å = 0.0101325 mN/m; an isotropic tail correction cancels in P_N − P_T",
+   "symbols": [
+    [
+     "L_n",
+     "cell length along the normal",
+     "Å"
+    ],
+    [
+     "N_int",
+     "interfaces in the cell",
+     "—"
+    ],
+    [
+     "P_nn, P_t",
+     "normal and tangential pressure",
+     "atm"
+    ]
+   ],
+   "when": "Surface tension of a polymer melt or rubber film, interfacial tension between two polymers or a polymer and water, and from them the work of adhesion W = γ₁ + γ₂ − γ₁₂ for fibre wetting.",
+   "cites": [
+    "kirkwood1949"
+   ],
+   "source": "core/src/tension.cpp",
+   "tested": "tests/test_tension.cpp (P_zz 200, P_xx = P_yy 100 atm and L_z 60 Å give 30.3975 mN/m exactly, twice that for one interface; block errors zero for alternating samples and positive for a drifting run; the skipped share left out; the normal along x; a LAMMPS log with Zlo/Zhi and CAPS's thermo CSV give the same; a log without the tensor refused); tests/python/test_bindings.py",
+   "deviation": "The global Kirkwood–Buff form gives γ only, not the profiles P_N(z) and P_T(z). The tension changes with a truncated potential's cut-off and no tail correction to γ is applied (Blokhuis et al.'s correction needs the density profile): use a cut-off of 12 Å or more, or compare two. Long runs (nanoseconds) are needed for errors below 1 mN/m.",
+   "engines": "caps tension FILE [--axis] [--interfaces] [--skip] [--blocks] [--cell]; Python caps.surface_tension(file, …); Studio Analyze › Reader › Surface tension",
+   "tex": "\\gamma = \\frac{1}{2}\\int\\left[P_N(z) - P_T(z)\\right]\\mathrm dz = \\frac{L_n}{N_{\\mathrm{int}}}\\left[P_{nn} - \\frac{P_{t_1} + P_{t_2}}{2}\\right]"
   }
  ]
 }

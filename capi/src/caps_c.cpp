@@ -120,6 +120,7 @@
 #include "caps/cell_relax.hpp"
 #include "caps/table_tools.hpp"
 #include "caps/pointgroup.hpp"
+#include "caps/tension.hpp"
 #include "caps/ring_edit.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/nano.hpp"
@@ -10165,6 +10166,28 @@ extern "C" caps_doc* caps_reaction_path(caps_doc* d, const char* json, char* out
     report_out(r.dump(0), out, cap);
     return nullptr;
   }
+}
+
+// ---------------------------------------------------------------- surface tension from the pressure tensor (v111, tension.hpp)
+extern "C" int32_t caps_tension(const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const std::string ax = j.text("axis", "z");
+    const int axis = ax == "x" ? 0 : ax == "y" ? 1 : ax == "z" ? 2 : -1;
+    if (axis < 0) throw std::invalid_argument("axis x, y or z");
+    const auto samples = caps::tension_samples_from_file(j.text("file"), axis, j.num("cell_length", 0));
+    const auto t = caps::surface_tension(samples, int(j.num("interfaces", 2)), j.num("skip", 0.2), int(j.num("blocks", 5)));
+    caps::Json se = caps::Json::array(), nt = caps::Json::array();
+    for (double g : t.series) se.push_back(g);
+    for (const auto& x : t.notes) nt.push_back(x);
+    r["gamma"] = t.gamma, r["error"] = t.error, r["pn"] = t.pn, r["pt"] = t.pt, r["length"] = t.ln;
+    r["samples"] = double(t.samples), r["blocks"] = double(t.blocks), r["series"] = se, r["notes"] = nt, r["ok"] = true;
+  } catch (const std::exception& ex) {
+    r = caps::Json::object();
+    r["ok"] = false, r["error"] = std::string(ex.what());
+  }
+  return report_out(r.dump(0), out, cap);
 }
 
 // ---------------------------------------------------------------- molecular point groups (v107, pointgroup.hpp)

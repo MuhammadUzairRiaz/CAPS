@@ -57,7 +57,9 @@
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Content="Copy as CSV" Click="OnCopyCsv" />
                 <Button Content="Show in the text" Click="OnGoTo" />
+                <Button Content="Surface tension" Click="OnTension" ToolTip.Tip="γ of a slab cell with two interfaces normal to z, from the pressure tensor (Pxx Pyy Pzz and Lz) over the same share of the run" />
               </StackPanel>
+              <TextBlock Text="{Binding ReaderTension}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
               <TextBlock Classes="dim" TextWrapping="Wrap" Text="Found: LAMMPS thermo blocks (one per run), GROMACS xvg columns with their legends, CSV and whitespace columns. The mean is over the rows from that share of the way in, its error from five blocks: an equilibrated tail, not the whole run." />
             </StackPanel>
           </Border>

@@ -50,6 +50,7 @@ public partial class ReaderPage : PageBase
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift)) Vm.ReaderFindPrev(); else Vm.ReaderFindNext();
         e.Handled = true;
     }
+    private void OnTension(object? s, RoutedEventArgs e) => Vm.ReaderSurfaceTension();
     private async void OnCopyCsv(object? s, RoutedEventArgs e)
     {
         var clip = TopLevel.GetTopLevel(this)?.Clipboard;

@@ -548,6 +548,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_thermal")] public static extern int Thermal(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_thermal_lammps")] public static extern int ThermalLammps(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? outText, int cap);
     [DllImport(Lib, EntryPoint = "caps_reaction_path")] public static extern IntPtr ReactionPath(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_tension")] public static extern int Tension([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_histogram")] public static extern int Histogram([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_sort_rows")] public static extern int SortRows([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_sdf_table")] public static extern int SdfTable([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
@@ -997,6 +998,7 @@ public sealed class CapsDocument : IDisposable
     }
 
     /// <summary>A CIF's disorder read the default way (caps_cif_disorder), JSON.</summary>
+    public static string Tension(string json) => JsonCallOnce((b, c) => Native.Tension(json, b, c));
     public static string Histogram(string json) => JsonCallOnce((b, c) => Native.Histogram(json, b, c));
     public static string SortRows(string json) => JsonCallOnce((b, c) => Native.SortRows(json, b, c));
     public static string SdfTable(string json) => JsonCallOnce((b, c) => Native.SdfTable(json, b, c));

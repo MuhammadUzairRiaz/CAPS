@@ -1996,6 +1996,21 @@
     "--tol": "page",
     "--symmetrize": "page"
    }
+  },
+  "tension": {
+   "status": "gui",
+   "studio": "Analyze › Reader › Surface tension",
+   "where": "Views/Pages/ReaderPage.axaml|Surface tension",
+   "capi": [
+    "caps_tension"
+   ],
+   "options": {
+    "--axis": "partial: the page takes z",
+    "--interfaces": "partial: the page takes two",
+    "--skip": "page",
+    "--blocks": "partial: the page uses five",
+    "--cell": "cli: the page needs Lz in the file"
+   }
   }
  },
  "hidden_options": {

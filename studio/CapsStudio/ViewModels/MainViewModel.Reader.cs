@@ -215,4 +215,22 @@ public sealed partial class MainViewModel
         for (var k = 1; k < line && pos >= 0; ++k) { pos = _rdText.IndexOf('\n', pos); if (pos >= 0) ++pos; }
         if (pos >= 0) ReaderSelect?.Invoke(pos, 0);
     }
+
+    // surface or interfacial tension of a slab cell from the file's pressure tensor (core tension.hpp)
+    private string _readerTension = "";
+    public string ReaderTension { get => _readerTension; private set => Set(ref _readerTension, value); }
+    public void ReaderSurfaceTension()
+    {
+        if (_rdPath.Length == 0) return;
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        try
+        {
+            var o = new System.Text.Json.Nodes.JsonObject { ["file"] = _rdPath, ["axis"] = "z", ["interfaces"] = 2, ["skip"] = (double)ReaderFromD / 100, ["blocks"] = 5 };
+            var r = System.Text.Json.Nodes.JsonNode.Parse(Interop.CapsDocument.Tension(o.ToJsonString()))!;
+            if (r["ok"]?.GetValue<bool>() != true) { ReaderTension = (string?)r["error"] ?? "no pressure tensor in this file"; return; }
+            double D(string k) => r[k]!.GetValue<double>();
+            ReaderTension = $"γ = {D("gamma").ToString("0.00", inv)} ± {D("error").ToString("0.00", inv)} mN/m · two interfaces normal to z · {(int)D("samples")} samples from {ReaderFromD:0} % in · ⟨P_N⟩ {D("pn").ToString("0.0", inv)}, ⟨P_T⟩ {D("pt").ToString("0.0", inv)} atm · L {D("length").ToString("0.00", inv)} Å";
+        }
+        catch (Exception e) { ReaderTension = e.Message; }
+    }
 }
