@@ -1847,6 +1847,22 @@
     "--total": "cli: the page equalises to a neutral total, then Adjust sets the total",
     "--chg": "partial: the page applies the charges to the structure or exports them as .mol2"
    }
+  },
+  "pores": {
+   "status": "gui",
+   "studio": "Analyze › Free volume › Pore network",
+   "where": "Views/Pages/FreeVolumePage.axaml|Pore network",
+   "capi": [
+    "caps_pores"
+   ],
+   "options": {
+    "--probe": "page",
+    "--grid": "partial: the page uses its grid, at most 0.25 Å",
+    "--samples": "page",
+    "--radii": "page",
+    "--json": "partial: the Studio shows the result on the page",
+    "--cube": "cli: the distance field as a Gaussian cube"
+   }
   }
  },
  "hidden_options": {

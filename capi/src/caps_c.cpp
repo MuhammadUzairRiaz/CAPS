@@ -112,6 +112,7 @@
 #include "caps/molinfo.hpp"
 #include "caps/yaml.hpp"
 #include "caps/voids.hpp"
+#include "caps/pores.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
@@ -9941,6 +9942,28 @@ extern "C" int32_t caps_provenance_bibtex(const char* manifest_json, char* text,
 // Coherent neutron scattering length (fm) of an element (1001: ²H), NaN when CAPS has none.
 extern "C" double caps_neutron_b(int32_t z) {
   try { return caps::neutron_b(z); } catch (...) { return std::numeric_limits<double>::quiet_NaN(); }
+}
+
+// ---------------------------------------------------------------- pore network (v98, pores.hpp)
+extern "C" int32_t caps_pores(caps_doc* d, const char* options_json, char* out, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const caps::Json o = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    caps::PoreNetworkOptions po;
+    po.probe = o.num("probe", po.probe);
+    po.grid = std::clamp(o.num("grid", po.grid), 0.1, 2.0);
+    po.samples = std::clamp(int(o.num("samples", po.samples)), 50, 100000);
+    if (const std::string rk = o.text("radii", "bondi"); rk != "bondi")
+      po.radii = caps::free_volume_radii(d->frame, rk, d->field && d->field->ff ? d->field->ff.get() : nullptr);
+    const auto r = caps::pore_network(d->frame, po);
+    j = caps::pore_json(r);
+    j["ok"] = true;
+  } catch (const std::exception& e) {
+    j = caps::Json::object();
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), out, cap);
 }
 
 // ---------------------------------------------------------------- voids (design/boards/FreeVolume)

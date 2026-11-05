@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "caps/appearance.hpp"
+#include "caps/pipeline.hpp"
 #include "caps/system.hpp"
 
 namespace caps {
@@ -33,6 +34,9 @@ struct VoidReport {
 };
 
 VoidReport largest_voids(const System& s, const VoidOptions& o = {});
+// The distance field alone: at the centre of every grid cell ((i + ½)/n along each axis) the distance (Å) to the nearest
+// van der Waals surface (negative inside an atom), capped at `reach`; o.grid, o.reach and o.radii are used.
+GridField void_distance_field(const System& s, const VoidOptions& o = {});
 // Icospheres for drawing (subdivision 2: 320 triangles each).
 Mesh void_mesh(const std::vector<VoidSphere>& v, int subdivisions = 2);
 // HETATM records named VOI at the centres, the radius in the B-factor column (Å), the cell in CRYST1.

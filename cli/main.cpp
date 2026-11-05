@@ -91,6 +91,7 @@
 #include "caps/ddft.hpp"
 #include "caps/dpd.hpp"
 #include "caps/qeq.hpp"
+#include "caps/pores.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
 #include <io.h>
@@ -366,6 +367,8 @@ int usage() {
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
                "               [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)\n"
+               "  caps pores FILE [--probe 1.4] [--grid 0.25] [--samples 2000] [--radii bondi|uff] [--json OUT] [--cube FIELD.cube]\n"
+               "             channels and pockets, LCD, PLD per axis, accessible volume and surface (per cell, m²/cm³, m²/g)\n"
                "  caps qeq FILE [--kernel ohno|slater|point] [--ewald [--accuracy 1e-7]] [--lambda 0.4913] [--hydrogen] [--bounds 'O:-1.2:0,Si:0:2.4']\n"
                "           [--cutoff 10] [--total 0] [--chg OUT.chg] [-o OUT.data|mol2|car|pdb]   charge equilibration (Slater shielding, Ewald for periodic cells)\n"
                "  caps dpd --molecules 'AAAABBBB:300@shell:in; C:9000' [--regions 'core droplet r=3 prio=2; shell shell r=5 in=3 prio=1'] [--box 16]\n"
@@ -522,7 +525,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -4172,6 +4175,45 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps fields: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "pores") {
+    try {
+      if (pos.empty()) return usage();
+      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      const System s = t.frames() ? t.frame(t.frames() - 1) : t.topology;
+      PoreNetworkOptions po;
+      if (o.count("--probe")) po.probe = std::stod(o["--probe"]);
+      if (o.count("--grid")) po.grid = std::stod(o["--grid"]);
+      if (o.count("--samples")) po.samples = std::stoi(o["--samples"]);
+      if (o.count("--radii") && o["--radii"] != "bondi") po.radii = free_volume_radii(s, o["--radii"]);
+      const PoreNetworkReport r = pore_network(s, po);
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      std::printf("density %.4f g/cm³\n", r.density);
+      std::printf("LCD %.3f Å   PLD %.3f Å (a %.3f, b %.3f, c %.3f)   Dif %.3f Å\n", r.lcd, r.pld, r.pld_axis[0], r.pld_axis[1], r.pld_axis[2], r.dif);
+      std::printf("probe-centre volume: channels %.4f of the cell (%.4f cm³/g), pockets %.4f (%.4f cm³/g); geometric %.4f\n", r.av_fraction, r.av,
+                  r.nav_fraction, r.nav, r.geometric_fraction);
+      std::printf("surface: accessible %.2f Å² (%.2f m²/cm³, %.2f m²/g), non-accessible %.2f Å² (%.2f m²/cm³, %.2f m²/g)\n", r.asa, r.asa_volume,
+                  r.asa_mass, r.nasa, r.nasa_volume, r.nasa_mass);
+      std::printf("cluster   volume Å³   largest Å   kind      percolates\n");
+      for (size_t k = 0; k < r.clusters.size() && k < 30; ++k) {
+        const auto& c = r.clusters[k];
+        std::printf("%6zu  %10.2f  %9.3f   %-8s  %c%c%c\n", k + 1, c.volume, c.largest, c.channel ? "channel" : "pocket", c.percolates[0] ? 'a' : '-',
+                    c.percolates[1] ? 'b' : '-', c.percolates[2] ? 'c' : '-');
+      }
+      if (r.clusters.size() > 30) std::printf("… %zu more\n", r.clusters.size() - 30);
+      if (o.count("--json")) {
+        std::ofstream(o["--json"]) << pore_json(r).dump();
+        std::printf("wrote %s\n", o["--json"].c_str());
+      }
+      if (o.count("--cube")) {
+        write_grid(r.field, s, o["--cube"]);
+        std::printf("wrote %s\n", o["--cube"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps pores: %s\n", e.what());
       return 1;
     }
   }

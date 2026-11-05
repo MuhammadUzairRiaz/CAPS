@@ -16,14 +16,12 @@ double len(const Vec3& v) { return std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * 
 Vec3 cross3(const Vec3& a, const Vec3& b) { return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]}; }
 }  // namespace
 
-VoidReport largest_voids(const System& s, const VoidOptions& o) {
+GridField void_distance_field(const System& s, const VoidOptions& o) {
   if (!s.cell.valid()) throw std::invalid_argument("voids need a periodic cell");
-  VoidReport rep;
   const Cell& c = s.cell;
   const Vec3 L{len(c.a), len(c.b), len(c.c)};
   int n[3];
   for (int k = 0; k < 3; ++k) n[k] = std::max(4, int(std::ceil(L[k] / std::max(0.1, o.grid))));
-  for (int k = 0; k < 3; ++k) rep.grid[k] = n[k];
   const size_t N = size_t(n[0]) * n[1] * n[2];
   auto index = [&](int i, int j, int k) { return (size_t(i) * n[1] + j) * n[2] + k; };
   auto point = [&](int i, int j, int k) { return c.to_cartesian({(i + 0.5) / n[0], (j + 0.5) / n[1], (k + 0.5) / n[2]}); };
@@ -54,6 +52,24 @@ VoidReport largest_voids(const System& s, const VoidOptions& o) {
           if (dist < fv) fv = float(dist);
         }
   }
+  GridField g;
+  g.name = "distance to the van der Waals surface", g.unit = "Å";
+  g.cell = c;
+  for (int k = 0; k < 3; ++k) g.n[k] = n[k];
+  g.values.assign(field.begin(), field.end());
+  return g;
+}
+
+VoidReport largest_voids(const System& s, const VoidOptions& o) {
+  VoidReport rep;
+  const GridField g = void_distance_field(s, o);
+  const Cell& c = s.cell;
+  const int n[3] = {g.n[0], g.n[1], g.n[2]};
+  for (int k = 0; k < 3; ++k) rep.grid[k] = n[k];
+  const size_t N = size_t(n[0]) * n[1] * n[2];
+  auto index = [&](int i, int j, int k) { return (size_t(i) * n[1] + j) * n[2] + k; };
+  auto point = [&](int i, int j, int k) { return c.to_cartesian({(i + 0.5) / n[0], (j + 0.5) / n[1], (k + 0.5) / n[2]}); };
+  std::vector<float> field(g.values.begin(), g.values.end());
   size_t free0 = 0, freep = 0;
   for (float v : field) { free0 += v > 0; freep += v > o.probe; }
   rep.accessible_point = double(free0) / N;

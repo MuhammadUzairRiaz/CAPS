@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 97, "ABI 97")
+check(caps.abi_version() == 98, "ABI 98")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -792,6 +792,13 @@ check(abs(sum(_qq["q"])) < 1e-8 and abs(_si[0] + 2 * _ox[0]) < 1e-6 and _si[0] >
 _qb = _qz.charges("qeq", kernel="slater", ewald=True, bounds={"O": (-0.5, 0.0)})
 check(all(abs(q - (-0.5 if e == "O" else 1.0)) < 1e-9 for q, e in zip(_qb["q"], _el)), "qeq bounds")
 print("ok   charges: QEq with Slater shielding, Ewald and bounds")
+
+# pore network (ABI 98): LTA's alpha cages form a 3D channel, its sodalite cages a pocket
+_lta = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "zeolite-lta.cif"))
+_pn = _lta.pores(probe=1.2)
+check(_pn["channel_dims"] == 3 and any(not c["channel"] for c in _pn["clusters"]) and _pn["lcd"] > _pn["pld"] > 0, f"pores lta {_pn['lcd']:.2f} {_pn['pld']:.2f}")
+check(_pn["asa"] > 0 and _pn["nasa"] > 0 and abs(_pn["asa_mass"] / _pn["asa_volume"] - 1 / _pn["density"]) < 1e-9, "pores surface: m²/g = m²/cm³ / ρ")
+print("ok   pores: channels, pockets, LCD, PLD, surface")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))

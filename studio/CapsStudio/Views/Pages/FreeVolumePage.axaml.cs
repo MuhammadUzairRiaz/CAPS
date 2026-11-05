@@ -41,6 +41,7 @@ public partial class FreeVolumePage : PageBase
     }
 
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunFreeVolume();
+    private async void OnPores(object? s, RoutedEventArgs e) => await Vm.RunPoreNetwork();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.Analyze.Cancel();
 
     private async void OnExport(object? s, RoutedEventArgs e)

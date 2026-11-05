@@ -2264,6 +2264,45 @@
    ]
   },
   {
+   "id": "pore-network",
+   "group": "Analysis",
+   "title": "Pore network",
+   "summary": "The geometry a spherical probe sees in a periodic cell. On a grid, CAPS computes the distance from every point to the nearest van der Waals surface. The points farther than the probe radius are the space the probe's centre can reach. They are joined into clusters through the grid's faces and across the periodic boundaries. A cluster that reaches its own image percolates along those axes and is a channel; one that does not is a pocket, closed to anything coming from outside. LCD is the largest included sphere. The pore-limiting diameter PLD along each axis is twice the largest radius r for which the points farther than r from every surface still percolate along that axis, found by bisection. Dif is the largest included sphere along that free path. The surface is sampled with an even Fibonacci lattice of points on every atom's sphere of radius R + probe. Points covered by another such sphere are dropped. The rest count as accessible when they open into a channel and as non-accessible when they open into a pocket, per cell, per volume and per mass.",
+   "equation": "PLD_a = 2 max{ r : {x : d(x) > r} percolates along a },  LCD = 2 max_x d(x),  ASA = Σ_i 4π(R_i + r_p)² · (uncovered share of its sphere opening into a channel)",
+   "equation_note": "d(x) the distance to the nearest van der Waals surface; m²/cm³ = 10⁴ ASA/V and m²/g = 10⁴ ASA N_A 10⁻²⁴ / M for ASA in Å², V in Å³, M the cell's mass in g/mol",
+   "symbols": [
+    [
+     "d(x)",
+     "distance to the nearest van der Waals surface",
+     "Å"
+    ],
+    [
+     "r_p",
+     "probe radius",
+     "Å"
+    ],
+    [
+     "R_i",
+     "van der Waals radius of atom i",
+     "Å"
+    ],
+    [
+     "ASA",
+     "accessible surface area",
+     "Å², m²/cm³, m²/g"
+    ]
+   ],
+   "when": "Gas barrier of butyl and halobutyl rubbers (whether the free volume connects into paths a gas can take), porous fillers (zeolites, silica), and the open area a sorbate can reach.",
+   "cites": [
+    "willems2012"
+   ],
+   "source": "core/src/pores.cpp",
+   "tested": "tests/test_pores.cpp (a simple cubic lattice of spheres: LCD 2(√3L/2 − R), PLD 2(L/√2 − R) along every axis, accessible area 4π(R + r)² and its per-volume and per-mass values exactly; spheres that close the windows leave one pocket, no channel, all surface non-accessible; two overlapping spheres give the union's area within 0.2 %); tests/python/test_bindings.py pores (LTA zeolite: a 3D channel and the sodalite pockets)",
+   "deviation": "distances, LCD and PLD are measured at grid points, so they converge with the grid (0.25 Å by default); surface points that land between grid points of no cluster are counted in a note, not in either area",
+   "engines": [],
+   "tex": "\\mathrm{PLD}_a = 2\\max\\{\\, r : \\{\\mathbf x : d(\\mathbf x) > r\\}\\ \\text{percolates along } a \\,\\},\\qquad \\mathrm{LCD} = 2\\max_{\\mathbf x} d(\\mathbf x) \\\\ \\mathrm{ASA} = \\sum_i 4\\pi (R_i + r_p)^2\\, f_i^{\\mathrm{channel}},\\qquad \\frac{\\mathrm{m}^2}{\\mathrm{g}} = \\frac{10^{4}\\,\\mathrm{ASA}\\,N_A\\,10^{-24}}{M}"
+  },
+  {
    "group": "Analysis",
    "source": "core/src/properties.cpp",
    "engines": [],

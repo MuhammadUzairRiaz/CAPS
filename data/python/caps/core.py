@@ -1732,6 +1732,28 @@ def _charges(self, method: str = "qeq", kernel: str = "ohno", ewald: bool = Fals
 Document.charges = _charges
 
 
+def _pores(self, probe: float = 1.4, grid: float = 0.25, samples: int = 2000, radii: str = "bondi") -> dict:
+    """The pore network of the frame for a spherical probe (radius Å): channels and pockets (clusters of probe-centre space,
+    percolating or not), LCD, PLD per axis and Dif (Å), accessible and non-accessible volume (share, cm³/g) and surface
+    (Å², m²/cm³, m²/g). radii "bondi", "uff" or "forcefield"."""
+    o = {"probe": float(probe), "grid": float(grid), "samples": int(samples), "radii": radii}
+    f = library().caps_pores
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 20)
+    n = f(self._h, _enc(json.dumps(o)), buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n) + 16)
+        f(self._h, _enc(json.dumps(o)), buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "pores failed"))
+    return r
+
+
+Document.pores = _pores
+
+
 def _domains(self, group: str = "", grid: float = 0.8, sigma: float = 1.5, threshold: float = 0.0, below: bool = False,
              min_voxels: int = 1, slice: Optional[dict] = None, cube: str = "") -> dict:
     """Domains of the current frame's mass-density field of `group` (a selection query; all atoms by default): regions

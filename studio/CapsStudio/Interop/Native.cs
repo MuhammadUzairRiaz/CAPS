@@ -449,6 +449,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_provenance_bibtex")] public static extern int ProvenanceBibtex([MarshalAs(UnmanagedType.LPUTF8Str)] string manifest, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_neutron_b")] public static extern double NeutronB(int z);
     [DllImport(Lib, EntryPoint = "caps_voids")] public static extern int Voids(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_pores")] public static extern int Pores(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_voids_pdb")] public static extern int VoidsPdb(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
     [DllImport(Lib, EntryPoint = "caps_build_info")] public static extern int BuildInfo(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_job_template")] public static extern int JobTemplate([MarshalAs(UnmanagedType.LPUTF8Str)] string scheduler, byte[]? text, int cap);
@@ -2545,6 +2546,8 @@ public sealed class CapsDocument : IDisposable
     }
     /// <summary>The largest empty spheres of the frame and the accessible shares (caps_voids), JSON; drawn when shown.</summary>
     public string Voids(string options) { using (Hold()) { Alive(); return JsonCallOnce((b, c) => Native.Voids(H, options, b, c)); } }
+    /// <summary>The pore network of the frame (caps_pores): channels, pockets, LCD, PLD, accessible volume and surface, JSON.</summary>
+    public string Pores(string options) { using (Hold()) { Alive(); return JsonCallOnce((b, c) => Native.Pores(H, options, b, c)); } }
     public void VoidsPdb(string path) { using (Hold()) { Alive(); Check(Native.VoidsPdb(H, path)); } }
     /// <summary>Each template's reactive sites and matches within capture on the current frame (caps_template_test).</summary>
     public string TemplateTest(string text) { using (Hold()) { Alive(); return JsonCallOnce((b, c) => Native.TemplateTest(H, text, b, c)); } }

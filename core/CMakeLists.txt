@@ -93,6 +93,7 @@ add_library(caps_core STATIC
   src/adp.cpp
   src/pattern_geometry.cpp
   src/domains.cpp
+  src/pores.cpp
   src/vasp_out.cpp
   src/dft_analysis.cpp
   src/dft_commands.cpp

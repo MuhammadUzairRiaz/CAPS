@@ -216,6 +216,16 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("qeqopts: " + vm.ChargeStatus + (vm.ChargeHasError ? " · error " + vm.ChargeError : "") + " · " + vm.ChargeNote);
             }
+            if (kv[0] == "pores")   // pores=PROBE: Free volume page, pore network of the open frame (awaited)
+            {
+                var vm = w.ViewModel;
+                vm.OpenFreeVolume();
+                vm.FvProbe = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+                var t = vm.RunPoreNetwork();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("pores: " + vm.PnClusters + " · " + vm.PnDiameters + " · " + vm.PnVolume + " · " + vm.PnSurface + " · " + vm.PnNote);
+            }
             if (kv[0] == "pageview")   // pageview=YAW,PITCH[,ZOOM]: the open page's own structure view turned to that camera
             {
                 var c = kv[1].Split(',').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
