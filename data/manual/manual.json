@@ -4300,13 +4300,13 @@
   {
    "group": "Growth",
    "source": "core/src/layers.cpp",
-   "engines": [],
+   "engines": "Python caps.stack(layers, gap, vacuum, match, keep_volume, flips, shifts, names); Studio Surface › Layer stack › Keep each layer's volume",
    "cites": [],
    "id": "stack-ops",
-   "title": "Layer stacks: flip, shift, shared strain",
-   "summary": "Each added layer can be turned upside down (180° about x, so its other face meets the layer below and its handedness is kept) and shifted in the plane to set its registry; the lateral mismatch can be shared by every layer instead of taken by the upper ones alone.",
-   "equation": "(x, y, z) → (x, b − y, −z) (flip),  (x, y) → (x + Δx, y + Δy) (shift),  A = (1/N) Σ_l n_l a_l (shared)",
-   "equation_note": "n_l the repeats that bring layer l nearest the cell; each layer then strained by A/(n_l a_l) − 1 (and the same along b)",
+   "title": "Layer stacks: oblique cells, flip, shift, shared strain, kept volume",
+   "summary": "Each added layer can be turned upside down (180° about x, so its other face meets the layer below and its handedness is kept) and shifted in the plane to set its registry; the lateral mismatch can be shared by every layer instead of taken by the upper ones alone. Cells may be oblique: a and b anywhere in the xy plane, c along z. Each layer is turned about z so its a lies along x, and is then mapped onto the stack's lateral vectors by the in-plane linear map F that carries its repeated vectors (n_a a, n_b b) onto them. The strains along a and b and the change of the angle between them are reported. With the volume kept, a layer's thickness is scaled by 1/det F, so a layer stretched in the plane thins and one compressed thickens.",
+   "equation": "(x, y, z) → (x, b − y, −z) (flip),  (x, y) → (x + Δx, y + Δy) (shift),  A = (1/N) Σ_l n_l a_l (shared);  F = [T_A T_B][n_a a, n_b b]⁻¹ (oblique cells),  t′ = t / det F (kept volume)",
+   "equation_note": "n_l the repeats that bring layer l nearest the cell; each layer then strained by A/(n_l a_l) − 1 (and the same along b); T_A, T_B the stack's lateral vectors, t a layer's thickness",
    "symbols": [
     [
      "a_l",
@@ -4325,9 +4325,9 @@
     ]
    ],
    "when": "A film between two identical fibre or filler surfaces facing it with the same face; two crystals of close spacing (e.g. bilayers of 2D fillers) without putting all the strain on one; stacking registry (AB against AA).",
-   "tested": "tests/test_layers.cpp Layers.AverageFlipAndShift (20 and 21 Å cells meet at 20.5 Å, ±2.5 % each; a flipped layer's top face at its bottom; a 1.5 Å shift exact)",
-   "deviation": "a shared strain strains a crystal too: check its stress after relaxing",
-   "tex": "(x, y, z) \\to (x,\\, b - y,\\, -z),\\qquad A = \\frac{1}{N}\\sum_l n_l a_l"
+   "tested": "tests/test_layers.cpp Layers.AverageFlipAndShift (20 and 21 Å cells meet at 20.5 Å, ±2.5 % each; a flipped layer's top face at its bottom; a 1.5 Å shift exact); Layers.ObliqueAndKeepVolume (hexagonal 2.46 Å and 2.50 Å sheets, the second turned by 30° in its file: a hexagonal stack cell with γ = 120° to 10⁻⁹°, strains 2.46/2.50 − 1 along both axes, no shear, every atom in the cell; with the volume kept the second layer's thickness × (2.46/2.50)² equals its own to 10⁻¹²); tests/python/test_bindings.py",
+   "deviation": "a shared strain strains a crystal too: check its stress after relaxing. Kept volume scales the thickness as an incompressible layer would (Poisson's ratio 1/2 in effect); a crystal's own response differs, so relax at constant pressure along z afterwards.",
+   "tex": "(x, y, z) \\to (x,\\, b - y,\\, -z),\\qquad A = \\frac{1}{N}\\sum_l n_l a_l,\\qquad \\mathbf F = \\left[\\mathbf T_A\\ \\mathbf T_B\\right]\\left[n_a\\mathbf a\\ \\ n_b\\mathbf b\\right]^{-1},\\qquad t' = \\frac{t}{\\det\\mathbf F}"
   },
   {
    "id": "ring-edit",

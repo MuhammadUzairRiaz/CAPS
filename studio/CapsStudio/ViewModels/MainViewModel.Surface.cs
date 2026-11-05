@@ -371,6 +371,9 @@ public sealed partial class MainViewModel
     /// <summary>The lateral cell the mean of the layers' (match "average"), every layer strained a little; else the
     /// first layer's (the slab's) and the others stretched to it.</summary>
     public bool SurfShareStrain { get => _surfShareStrain; set => Set(ref _surfShareStrain, value); }
+    private bool _surfKeepVolume;
+    /// <summary>Each stacked layer's thickness scaled by the inverse of its change of area (keep_volume).</summary>
+    public bool SurfKeepVolume { get => _surfKeepVolume; set => Set(ref _surfKeepVolume, value); }
     private readonly List<ExtraLayer> _surfExtra = new();
     public bool SurfHasExtra => _surfExtra.Count > 0;
     private decimal _surfStackGap = 2.5m;
@@ -434,7 +437,7 @@ public sealed partial class MainViewModel
         var flips = new JsonArray(new[] { (JsonNode)false }.Concat(_surfExtra.Select(e => (JsonNode)e.Ops.Flip)).ToArray());
         var shifts = new JsonArray(new[] { (JsonNode)new JsonArray(0.0, 0.0) }.Concat(_surfExtra.Select(e => { var (x, y) = e.Ops.ShiftXY(); return (JsonNode)new JsonArray(x, y); })).ToArray());
         var opts = new JsonObject { ["names"] = names, ["gap"] = (double)_surfStackGap, ["vacuum"] = (double)(_surfFilm ? _filmVacuum : _surfVacuum),
-                                    ["match"] = _surfShareStrain ? "average" : "both", ["flips"] = flips, ["shifts"] = shifts }.ToJsonString();
+                                    ["match"] = _surfShareStrain ? "average" : "both", ["flips"] = flips, ["shifts"] = shifts, ["keep_volume"] = _surfKeepVolume }.ToJsonString();
         var (doc, rep) = CapsDocument.Stack(docs, opts, title + " stack");
         var r = JsonNode.Parse(rep);
         if (doc == null) throw new InvalidOperationException((string?)r?["error"] ?? "cannot stack the layers");

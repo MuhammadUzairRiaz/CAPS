@@ -2,9 +2,11 @@
 // piled along z into one cell — a crystal slab under a grown polymer cell, a polymer film between two slabs, a bilayer
 // of two polymers, any rectangular cells from files.
 //
-// Every layer needs a rectangular cell (a along x, b along y, c along z; the Surface builder makes its slabs so). The
-// first layer sets the lateral cell: the others are repeated na × nb times to come closest to it and then stretched
-// (x and y scaled, positions affinely) to fit exactly; the strains are reported. With match "both", the first layer is
+// Every layer needs a slab's cell: a and b in the xy plane at any angle (oblique cells, hexagonal sheets), c along z;
+// each is turned about z so its a lies along x. The first layer sets the lateral cell: the others are repeated na × nb
+// times to come closest to it in length and then mapped onto it by the in-plane linear map F that carries (na a, nb b)
+// to the stack's lateral vectors (positions affinely); the strains along a and b and the change of angle are reported.
+// keep_volume scales each layer's thickness by 1 / det F, so a stretched layer thins and keeps its volume. With match "both", the first layer is
 // repeated too (up to max_repeat) where that brings the others' strains lower. Crystals should come first: an amorphous
 // polymer cell takes a few per cent of lateral strain and relaxes it away; a crystal does not. With match "average" the
 // strain is shared (two crystals of similar spacing). A layer can be flipped (180° about x) and shifted in the plane.
@@ -40,12 +42,15 @@ struct StackOptions {
                                    // lateral cell the mean of the layers' (repeated) cells, every layer strained a little
   int max_repeat = 6;              // repeats per direction considered
   double max_cell = 150.0;         // Å, the largest lateral edge considered
+  bool keep_volume = false;        // each layer's thickness scaled by the inverse of its change of area
 };
 
 struct StackLayerReport {
   std::string name;
   int na = 1, nb = 1;              // repeats of the layer's own cell
-  double strain_a = 0, strain_b = 0;   // fractional (x, y), 0 for the first layer
+  double strain_a = 0, strain_b = 0;   // fractional, along the layer's a and b; 0 for the first layer
+  double shear_deg = 0;            // the stack's γ minus the layer's (oblique cells)
+  double thickness_scale = 1;      // keep_volume: the layer's thickness × this (1 / its change of area)
   double z_lo = 0, z_hi = 0;       // Å, where its atoms are in the stack
   size_t atoms = 0;
 };

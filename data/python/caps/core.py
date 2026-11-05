@@ -2122,6 +2122,33 @@ def dendrimer(preset: str = "", generation: int = -1, core: str = "", unit: str 
     d.dendrimer_report = r
     return d
 
+def stack(layers, gap: float = 2.0, vacuum: float = 0.0, match: str = "both", keep_volume: bool = False,
+          max_repeat: int = 6, flips=None, shifts=None, names=None) -> "Document":
+    """Documents piled along z into one cell (layers.hpp): slab cells with a and b in the xy plane at any angle and c
+    along z. match "first", "both" or "average"; keep_volume thins a stretched layer by the inverse of its change of
+    area. flips [bool], shifts [[dx, dy]] (Å) and names per layer. Returns a new Document with .stack_report {a, b, c,
+    layers [{name, na, nb, strain_a, strain_b, shear_deg, thickness_scale, z_lo, z_hi, atoms}], notes}."""
+    docs = list(layers)
+    o = {"gap": float(gap), "vacuum": float(vacuum), "match": match, "keep_volume": bool(keep_volume), "max_repeat": int(max_repeat)}
+    if flips is not None:
+        o["flips"] = [bool(x) for x in flips]
+    if shifts is not None:
+        o["shifts"] = [[float(x), float(y)] for x, y in shifts]
+    if names is not None:
+        o["names"] = [str(x) for x in names]
+    f = library().caps_stack_documents
+    f.argtypes = [C.POINTER(C.c_void_p), C.c_int32, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_void_p
+    arr = (C.c_void_p * len(docs))(*[d._h for d in docs])
+    buf = C.create_string_buffer(1 << 20)
+    h = f(arr, len(docs), _enc(json.dumps(o)), buf, len(buf))
+    r = json.loads(buf.value.decode() or "{}")
+    if not h:
+        raise CapsError(r.get("error", "stack failed"))
+    d = Document(h)
+    d.stack_report = r
+    return d
+
 def histogram(values, rule: str = "fd", bins: int = 0) -> dict:
     """Bins of equal width over the values (not-finite ones left out): rule "fd" (Freedman–Diaconis), "scott",
     "sturges" or "bins" with bins. Returns {edges, counts, width, rule, n, left_out}."""

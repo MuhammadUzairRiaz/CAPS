@@ -7379,6 +7379,7 @@ extern "C" caps_doc* caps_stack_documents(caps_doc* const* docs, int32_t n, cons
     so.vacuum = j.num("vacuum", so.vacuum);
     so.match = j.text("match", so.match);
     so.max_repeat = int(j.num("max_repeat", so.max_repeat));
+    so.keep_volume = j.has("keep_volume") && j["keep_volume"].kind() == caps::Json::Bool && j["keep_volume"].boolean();   // v108
     caps::StackReport rep;
     const caps::System s = caps::stack_layers(in, so, &rep);
     caps_doc* d = doc_of(s);
@@ -7399,6 +7400,7 @@ extern "C" caps_doc* caps_stack_documents(caps_doc* const* docs, int32_t n, cons
       caps::Json o = caps::Json::object();
       o["name"] = l.name, o["na"] = double(l.na), o["nb"] = double(l.nb), o["strain_a"] = l.strain_a, o["strain_b"] = l.strain_b;
       o["z_lo"] = l.z_lo, o["z_hi"] = l.z_hi, o["atoms"] = double(l.atoms);
+      o["shear_deg"] = l.shear_deg, o["thickness_scale"] = l.thickness_scale;
       L.push_back(o);
     }
     for (const auto& x : rep.notes) N.push_back(caps::Json(x));

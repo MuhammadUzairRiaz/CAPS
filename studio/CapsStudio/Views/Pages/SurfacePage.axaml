@@ -186,6 +186,8 @@
                   </Grid>
                   <CheckBox Content="Share the lattice mismatch between the layers" IsChecked="{Binding SurfShareStrain}" IsVisible="{Binding SurfHasExtra}"
                             ToolTip.Tip="The cell the mean of the layers' (two crystals of similar spacing); else the slab's cell, the other layers stretched to it" />
+                  <CheckBox Content="Keep each layer's volume" IsChecked="{Binding SurfKeepVolume}" IsVisible="{Binding SurfHasExtra}"
+                            ToolTip.Tip="A layer stretched in the plane thins (and a compressed one thickens) by the inverse of its change of area" />
                 </StackPanel>
               </Border>
 

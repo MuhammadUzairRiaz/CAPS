@@ -74,10 +74,59 @@ TEST(Layers, StackKeepsChainsWholeAndLayersApart) {
   EXPECT_EQ(rep.layers[1].na, 2);
   EXPECT_EQ(rep.layers[1].nb, 2);
   EXPECT_EQ(t.atoms.size(), base.atoms.size() + 4 * small.atoms.size());
-  // a sheared cell is refused
+  // a cell whose c leans out of z is refused (in-plane obliqueness is fine: see ObliqueAndKeepVolume)
   System bad = film;
-  bad.cell.b = {3, 21, 0};
+  bad.cell.c = {3, 0, 21};
   EXPECT_THROW(stack_layers({{"argon", &base}, {"bad", &bad}}, so), std::invalid_argument);
+}
+
+// Oblique cells: a hexagonal sheet (a = 2.46 Å, γ = 120°) under a 2.50 Å hexagonal sheet turned by 30° in its file: the
+// stack is hexagonal on the first layer's cell (γ 120°, a along x), the second strained by 2.46/2.50 − 1 along both axes,
+// no shear, every atom in the cell; with keep_volume the second layer's thickness grows by 1/(0.984)² so its area ×
+// thickness is kept, while the first (unstrained) keeps its own
+TEST(Layers, ObliqueAndKeepVolume) {
+  auto sheet = [](double a, double turn_deg, int z_layers) {
+    System s;
+    const double t = turn_deg * M_PI / 180;
+    auto rot = [&](Vec3 v) { return Vec3{std::cos(t) * v[0] - std::sin(t) * v[1], std::sin(t) * v[0] + std::cos(t) * v[1], v[2]}; };
+    s.cell.a = rot({a, 0, 0}), s.cell.b = rot({-a / 2, a * std::sqrt(3.0) / 2, 0}), s.cell.c = {0, 0, 20};
+    for (int k = 0; k < z_layers; ++k)
+      for (Vec3 f : {Vec3{0, 0, 0}, Vec3{1.0 / 3, 2.0 / 3, 0}}) {
+        Atom at;
+        at.element = 6;
+        at.pos = s.cell.a * f[0] + s.cell.b * f[1] + Vec3{0, 0, 2.0 + 3.35 * k};
+        s.atoms.push_back(at);
+      }
+    return s;
+  };
+  const System s1 = sheet(2.46, 0, 2), s2 = sheet(2.50, 30, 3);
+  StackOptions so;
+  so.match = "first", so.max_repeat = 1, so.vacuum = 10;
+  StackReport rep;
+  const System t = stack_layers({{"A", &s1}, {"B", &s2}}, so, &rep);
+  EXPECT_NEAR(t.cell.a[0], 2.46, 1e-12);
+  EXPECT_NEAR(t.cell.a[1], 0, 1e-12);
+  EXPECT_NEAR(std::acos(dot(t.cell.a, t.cell.b) / (norm(t.cell.a) * norm(t.cell.b))) * 180 / M_PI, 120, 1e-9);
+  EXPECT_NEAR(rep.layers[1].strain_a, 2.46 / 2.50 - 1, 1e-12);
+  EXPECT_NEAR(rep.layers[1].strain_b, 2.46 / 2.50 - 1, 1e-12);
+  EXPECT_NEAR(rep.layers[1].shear_deg, 0, 1e-9);
+  for (const auto& a : t.atoms) {
+    const double det = t.cell.a[0] * t.cell.b[1] - t.cell.a[1] * t.cell.b[0];
+    const double u = (a.pos[0] * t.cell.b[1] - a.pos[1] * t.cell.b[0]) / det, v = (t.cell.a[0] * a.pos[1] - t.cell.a[1] * a.pos[0]) / det;
+    EXPECT_GE(u, -1e-12);
+    EXPECT_LT(u, 1);
+    EXPECT_GE(v, -1e-12);
+    EXPECT_LT(v, 1);
+  }
+  const double thick = 2 * 3.35;
+  EXPECT_NEAR(rep.layers[1].z_hi - rep.layers[1].z_lo, thick, 1e-12);
+  so.keep_volume = true;
+  const System k = stack_layers({{"A", &s1}, {"B", &s2}}, so, &rep);
+  const double f = 2.46 / 2.50;
+  EXPECT_NEAR(rep.layers[1].z_hi - rep.layers[1].z_lo, thick / (f * f), 1e-12);
+  EXPECT_NEAR((rep.layers[1].z_hi - rep.layers[1].z_lo) * f * f, thick, 1e-12);   // area × thickness kept
+  EXPECT_NEAR(rep.layers[0].z_hi - rep.layers[0].z_lo, 3.35, 1e-12);
+  EXPECT_EQ(k.atoms.size(), 10u);
 }
 
 // Layer operations: the lattice mismatch shared (match "average": 20 and 21 Å cells meet at 20.5, ±2.5 % each), a layer

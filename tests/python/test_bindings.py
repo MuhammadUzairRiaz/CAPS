@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 107, "ABI 107")
+check(caps.abi_version() == 108, "ABI 108")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -921,6 +921,22 @@ _pg = _bz.point_group(0.15)
 _sy = _bz.symmetrize_molecule(0.15)
 check(_pg["group"] == "D6h" and _sy["group"] == "D6h" and _sy["order"] == 24 and _sy["max_deviation"] < 1e-8, f"point group {_pg['group']} {_sy}")
 print("ok   point_group, symmetrize_molecule")
+
+# oblique layer stacks (ABI 108): two hexagonal sheets, the second 1.6 % larger, its thickness kept by volume
+def _sheet(a, n):
+    p = os.path.join(tempfile.mkdtemp(), "sheet.cif")
+    lines = ["data_s", f"_cell_length_a {a}", f"_cell_length_b {a}", "_cell_length_c 20", "_cell_angle_alpha 90", "_cell_angle_beta 90",
+             "_cell_angle_gamma 120", "_symmetry_space_group_name_H-M 'P 1'", "loop_", "_atom_site_label", "_atom_site_type_symbol",
+             "_atom_site_fract_x", "_atom_site_fract_y", "_atom_site_fract_z"]
+    for k in range(n):
+        z = (2.0 + 3.35 * k) / 20
+        lines += [f"C{2*k+1} C 0 0 {z:.6f}", f"C{2*k+2} C 0.333333 0.666667 {z:.6f}"]
+    open(p, "w").write("\n".join(lines) + "\n")
+    return caps.open(p)
+_st = caps.stack([_sheet(2.46, 2), _sheet(2.50, 3)], match="first", max_repeat=1, vacuum=10, keep_volume=True)
+_l2 = _st.stack_report["layers"][1]
+check(abs(_l2["strain_a"] - (2.46 / 2.50 - 1)) < 1e-6 and abs(_l2["thickness_scale"] - (2.50 / 2.46) ** 2) < 1e-5, f"stack {_l2}")
+print("ok   stack: oblique cells, keep_volume")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
