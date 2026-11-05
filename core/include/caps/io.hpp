@@ -54,6 +54,9 @@ System read_mol2(const std::string& path);
 // Materials Studio .car (coordinates, cell, force-field types, charges; molecules) with the bonds of the .mdf beside it
 // (bonds across the cell included). Each atom's name is its force-field type.
 System read_car(const std::string& path);
+// An .arc archive: consecutive .car frames (title, !DATE, PBC, atoms, "end" per molecule and a closing "end"), one
+// trajectory frame each; every frame must have the first one's atoms.
+Trajectory read_arc(const std::string& path);
 // Writes STEM.car and STEM.mdf (path's extension replaced): the cell as Materials Studio orients it, atom names as the
 // potential types, charges, one block and one residue per molecule, made whole across the cell, the bonds in the .mdf
 // by atom name (a cell image only on a bond of a network periodic through the cell). msi2lmp reads the pair.

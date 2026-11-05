@@ -443,6 +443,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_dielectric")] public static extern int Dielectric(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_refine")] public static extern int Refine(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_index")] public static extern int Index([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_read_data")] public static extern int ReadData([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_qspr")] public static extern int Qspr([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_provenance_file")] public static extern int ProvenanceFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_provenance_compare")] public static extern int ProvenanceCompare([MarshalAs(UnmanagedType.LPUTF8Str)] string a, [MarshalAs(UnmanagedType.LPUTF8Str)] string b, byte[]? json, int cap);
@@ -895,6 +896,8 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Powder indexing (caps_index), JSON with ok.</summary>
     public static string Index(string json) => Sized((b, c) => Native.Index(json, null, IntPtr.Zero, b, c));
     public static string Qspr(string json) => Sized((b, c) => Native.Qspr(json, b, c));
+    /// <summary>A measured curve (columns, XRDML, GSAS, UXD, Rigaku, JCAMP-DX) or a .cube grid (caps_read_data), JSON with ok.</summary>
+    public static string ReadData(string path) => Sized((b, c) => Native.ReadData(path, b, c));
     public static string ProvenanceFile(string path) => Sized((b, c) => Native.ProvenanceFile(path, b, c));
     public static string ProvenanceCompare(string a, string b) => Sized((x, c) => Native.ProvenanceCompare(a, b, x, c));
     public static string ProvenanceBibtex(string manifest) => Sized((b, c) => Native.ProvenanceBibtex(manifest, b, c));

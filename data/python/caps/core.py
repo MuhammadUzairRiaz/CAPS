@@ -1999,6 +1999,19 @@ def dpd(species, regions=None, box: float = 0.0, density: float = 3.0, chi=None,
     return d
 
 
+def read_data(path: str) -> dict:
+    """A measured curve (two or three columns, PANalytical .xrdml, GSAS constant-wavelength banks, Bruker .uxd, Rigaku
+    *TYPE text, JCAMP-DX spectra) as {kind: "curve", format, title, xunits, yunits, x, y, sigma, notes}, or a Gaussian
+    .cube grid as {kind: "grid", n, min, max, mean, atoms, volume}."""
+    f = library().caps_read_data
+    f.argtypes = [C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    r = _json_call(f, _enc(path))
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "cannot read " + path))
+    return r
+
+
 def density_fields(molecules, chi=None, grid=(32, 32, 32), bond: float = 1.1543, kappa: float = 10.0, noise: float = 75.0, dt: float = 0.02,
                    steps: int = 2000, frame_every: int = 100, seed: int = 1) -> dict:
     """Density-field dynamics of Gaussian chains (no structure needed): molecules [(name, sequence such as "A8B8", fraction), …],

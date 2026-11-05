@@ -12,7 +12,7 @@
     <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-          <Button Click="OnLoadExperiment" ToolTip.Tip="Two columns: q (Å⁻¹) or 2θ (degrees, with the X-ray source's wavelength) and intensity"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Load experimental curve" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Click="OnLoadExperiment" ToolTip.Tip="Two columns (q in Å⁻¹, or 2θ in degrees with the X-ray source's wavelength, and intensity), or a PANalytical .xrdml, GSAS, Bruker .uxd or Rigaku .asc file"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Load experimental curve" VerticalAlignment="Center" /></StackPanel></Button>
           <Button Classes="primary" Click="OnRun" IsVisible="{Binding Analyze.NotWorking}" IsEnabled="{Binding HasDocument}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Run" VerticalAlignment="Center" /></StackPanel></Button>
           <Button Content="Cancel" Click="OnCancel" IsVisible="{Binding Analyze.Working}" />
         </StackPanel>

@@ -171,7 +171,18 @@ public sealed partial class MainViewModel
         var inv = CultureInfo.InvariantCulture;
         var pts = new List<(double, double)>();
         var twoTheta = false;
-        foreach (var raw in File.ReadLines(path))
+        // instrument files (XRDML, GSAS, UXD, Rigaku, JCAMP-DX) through the core readers; plain columns below
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        if (ext is ".xrdml" or ".uxd" or ".gsa" or ".gss" or ".fxye" or ".asc" or ".raw" or ".xyd" or ".jdx" or ".dx")
+        {
+            var j = System.Text.Json.Nodes.JsonNode.Parse(CapsDocument.ReadData(path))!;
+            if (j["ok"]?.GetValue<bool>() != true) return (string?)j["error"] ?? "cannot read " + Path.GetFileName(path);
+            var xs = ((System.Text.Json.Nodes.JsonArray)j["x"]!).Select(v => v?.GetValue<double>() ?? double.NaN).ToArray();
+            var ys = ((System.Text.Json.Nodes.JsonArray)j["y"]!).Select(v => v?.GetValue<double>() ?? double.NaN).ToArray();
+            for (var k = 0; k < xs.Length; ++k) if (!double.IsNaN(ys[k])) pts.Add((xs[k], ys[k]));
+            twoTheta = ((string?)j["xunits"] ?? "").Contains('2');
+        }
+        else foreach (var raw in File.ReadLines(path))
         {
             var line = raw.Trim();
             if (line.Length == 0) continue;

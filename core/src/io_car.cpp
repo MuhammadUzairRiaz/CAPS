@@ -34,17 +34,15 @@ Cell cell_from(double a, double b, double c, double al, double be, double ga) {
 
 }  // namespace
 
-System read_car(const std::string& path) {
-  std::ifstream in(path);
-  if (!in) throw ReadError("cannot open " + path);
-  System s;
-  s.source_format = "car";
+namespace {
+// The atom records of one .car frame (or the frames of an .arc archive, `frame_end` set: stop after the "end" that closes
+// the frame, i.e. an "end" right after another). Returns false at the end of the input with no atoms read.
+bool car_frame(std::istream& in, System& s, std::vector<std::map<std::string, uint32_t>>& keys, bool& pbc, bool frame_end) {
   std::string line;
-  bool pbc = false;
   int64_t mol = 1;
   int header = 0;
-  // per molecule: "resname_resnum:name" → atom index, for the .mdf's connections
-  std::vector<std::map<std::string, uint32_t>> keys(1);
+  bool last_end = false;
+  keys.assign(1, {});
   auto number = [](const std::string& x) {
     char* e = nullptr;
     std::strtod(x.c_str(), &e);
@@ -64,12 +62,15 @@ System read_car(const std::string& path) {
       continue;
     }
     if (t[0] == "end") {   // the end of a molecule (a second "end" closes the file)
+      if (last_end && frame_end) break;
+      last_end = true;
       if (!keys.back().empty()) {
         ++mol;
         keys.emplace_back();
       }
       continue;
     }
+    last_end = false;
     // an atom: name x y z residue number type element charge
     if (t.size() < 9 || !number(t[1]) || !number(t[2]) || !number(t[3]) || !number(t[8])) {
       if (s.title.empty()) s.title = trim(line);   // the title line after PBC=
@@ -89,6 +90,20 @@ System read_car(const std::string& path) {
     s.atoms.push_back(a);
   }
   (void)header;
+  return !s.atoms.empty();
+}
+}  // namespace
+
+System read_car(const std::string& path) {
+  std::ifstream in(path);
+  if (!in) throw ReadError("cannot open " + path);
+  System s;
+  s.source_format = "car";
+  std::string line;
+  bool pbc = false;
+  // per molecule: "resname_resnum:name" → atom index, for the .mdf's connections
+  std::vector<std::map<std::string, uint32_t>> keys(1);
+  car_frame(in, s, keys, pbc, false);
   if (s.atoms.empty()) throw ReadError(path + ": no atoms (read as a Materials Studio .car file)");
   if (!pbc) s.cell = Cell{};
   s.has_charges = true;
@@ -263,6 +278,36 @@ void write_car(const System& s, const std::string& path) {
   car << "end\n";
   if (pbc) mdf << "#symmetry\n@periodicity 3 xyz\n@group (P1)\n\n";
   mdf << "#end\n";
+}
+
+Trajectory read_arc(const std::string& path) {
+  std::ifstream in(path);
+  if (!in) throw ReadError("cannot open " + path);
+  Trajectory t;
+  bool pbc = false;
+  for (size_t k = 0;; ++k) {
+    System s;
+    std::vector<std::map<std::string, uint32_t>> keys;
+    if (!car_frame(in, s, keys, pbc, true)) break;
+    if (!pbc) s.cell = Cell{};
+    if (k == 0) {
+      t.topology = s;
+      t.topology.source_format = "arc";
+      t.topology.has_charges = true;
+      t.topology.has_mol = true;
+    } else if (s.atoms.size() != t.topology.atoms.size()) {
+      throw ReadError(path + ": frame " + std::to_string(k + 1) + " has " + std::to_string(s.atoms.size()) + " atoms, the first " +
+                      std::to_string(t.topology.atoms.size()));
+    }
+    std::vector<Vec3> p;
+    for (const auto& a : s.atoms) p.push_back(a.pos);
+    t.positions.push_back(std::move(p));
+    t.cells.push_back(s.cell);
+    t.timesteps.push_back(int64_t(k));
+  }
+  if (t.positions.empty()) throw ReadError(path + ": no frames (read as an .arc archive of .car frames)");
+  t.topology.notes.push_back(std::to_string(t.positions.size()) + " frames from the archive; bonds from distances");
+  return t;
 }
 
 }  // namespace caps

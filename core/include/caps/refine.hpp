@@ -28,7 +28,8 @@ namespace caps {
 struct MeasuredPattern {
   std::vector<double> two_theta, y, sigma;   // degrees; counts; sigma empty: √y
 };
-// Two or three columns (2θ, intensity[, σ]); lines starting with # or ! and non-numeric lines are skipped.
+// Two or three columns (2θ, intensity[, σ]; lines starting with # or ! and non-numeric lines skipped), or an XRDML,
+// GSAS, UXD or Rigaku file (caps/measured.hpp).
 MeasuredPattern read_pattern(const std::string& path);
 
 struct RefinePhase {

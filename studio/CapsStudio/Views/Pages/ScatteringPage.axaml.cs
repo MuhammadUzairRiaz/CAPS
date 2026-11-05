@@ -46,7 +46,9 @@ public partial class ScatteringPage : PageBase
     {
         var top = TopLevel.GetTopLevel(this);
         if (top == null) return;
-        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions { Title = "Measured pattern (two columns)", AllowMultiple = false });
+        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions { Title = "Measured pattern", AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType("Powder patterns") { Patterns = ["*.xy", "*.xye", "*.dat", "*.txt", "*.csv", "*.xrdml", "*.uxd", "*.gsa", "*.gss", "*.fxye", "*.asc"] },
+                              new FilePickerFileType("All files") { Patterns = ["*"] }] });
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } p)
         {
             var why = Vm.LoadExperiment(p);

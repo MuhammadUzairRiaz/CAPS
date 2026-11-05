@@ -53,6 +53,7 @@ std::string detect_format(const std::string& path) {
     const std::string e = lower(std::filesystem::path(path).extension().string());
     if (e == ".cif") return "cif";
     if (e == ".car") return "car";
+    if (e == ".arc") return "arc";
   }
   for (const auto* l : {&l1, &l2, &l3})
     if (l->find("@<TRIPOS>") != std::string::npos) return "mol2";
@@ -148,6 +149,7 @@ const char* format_name(const std::string& f) {
   if (f == "mol2") return "Tripos mol2";
   if (f == "cif") return "CIF";
   if (f == "car") return "Materials Studio .car";
+  if (f == "arc") return "BIOSYM .arc archive";
   if (f == "xtc") return "GROMACS .xtc";
   if (f == "trr") return "GROMACS .trr";
   if (f == "dcd") return "DCD";
@@ -282,6 +284,8 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
     tr.positions.push_back(std::move(p));
     tr.cells.push_back(tr.topology.cell);
     tr.timesteps.push_back(0);
+  } else if (fmt == "arc") {
+    tr = read_arc(path);
   } else if (fmt == "cif") {
     tr.topology = read_cif(path);
     std::vector<Vec3> p;

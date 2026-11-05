@@ -92,6 +92,7 @@
 #include "caps/dpd.hpp"
 #include "caps/qeq.hpp"
 #include "caps/pores.hpp"
+#include "caps/measured.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
 #include <io.h>
@@ -367,6 +368,7 @@ int usage() {
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
                "               [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)\n"
+               "  caps data FILE [-o OUT.csv|.cube|.vtk|.npy] [--json OUT]   a measured curve (columns, .xrdml, GSAS, .uxd, Rigaku, JCAMP-DX) or a .cube grid\n"
                "  caps symmetry FILE [--find [--tolerance 0.1]] [--clear] [--cell a,b,c,alpha,beta,gamma] [-o OUT.cif]\n"
                "             the space group kept with the structure: found or read, the cell fitted to its crystal system, the CIF as its asymmetric unit\n"
                "  caps pores FILE [--probe 1.4] [--grid 0.25] [--samples 2000] [--radii bondi|uff] [--json OUT] [--cube FIELD.cube]\n"
@@ -4177,6 +4179,49 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps fields: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "data") {
+    try {
+      if (pos.empty()) return usage();
+      const std::string& in = pos[0];
+      auto ends = [](const std::string& x, const char* e) { const std::string t(e); return x.size() >= t.size() && x.compare(x.size() - t.size(), t.size(), t) == 0; };
+      if (ends(in, ".cube") || ends(in, ".CUBE")) {
+        System atoms;
+        const GridField g = read_cube(in, &atoms);
+        double lo = 1e300, hi = -1e300, sum = 0;
+        for (double v : g.values) lo = std::min(lo, v), hi = std::max(hi, v), sum += v;
+        std::printf("Gaussian cube \"%s\": %d × %d × %d points, %zu atoms, volume %.3f Å³\nvalues %.6g … %.6g, mean %.6g\n", g.name.c_str(), g.n[0], g.n[1], g.n[2],
+                    atoms.atoms.size(), g.cell.volume(), lo, hi, sum / double(g.values.size()));
+        if (o.count("-o")) {
+          write_grid(g, atoms, o["-o"]);
+          std::printf("wrote %s\n", o["-o"].c_str());
+        }
+        return 0;
+      }
+      const MeasuredCurve c = read_measured(in);
+      std::printf("%s%s%s: %zu points, x %.6g … %.6g%s%s, y %s%s\n", c.format.c_str(), c.title.empty() ? "" : " · ", c.title.c_str(), c.x.size(), c.x.front(), c.x.back(),
+                  c.xunits.empty() ? "" : " ", c.xunits.c_str(), c.yunits.empty() ? "as written" : c.yunits.c_str(), c.sigma.empty() ? "" : " with σ");
+      for (const auto& n : c.notes) std::printf("%s\n", n.c_str());
+      if (o.count("-o")) {
+        std::ofstream f(o["-o"]);
+        f << "# " << c.format << (c.title.empty() ? "" : ": " + c.title) << "\n# x" << (c.xunits.empty() ? "" : " (" + c.xunits + ")") << ", y" << (c.sigma.empty() ? "" : ", sigma") << "\n";
+        char b[96];
+        for (size_t k = 0; k < c.x.size(); ++k) {
+          if (c.sigma.empty()) std::snprintf(b, sizeof b, "%.8g,%.8g\n", c.x[k], c.y[k]);
+          else std::snprintf(b, sizeof b, "%.8g,%.8g,%.8g\n", c.x[k], c.y[k], c.sigma[k]);
+          f << b;
+        }
+        std::printf("wrote %s\n", o["-o"].c_str());
+      }
+      if (o.count("--json")) {
+        std::ofstream(o["--json"]) << measured_json(c).dump();
+        std::printf("wrote %s\n", o["--json"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps data: %s\n", e.what());
       return 1;
     }
   }

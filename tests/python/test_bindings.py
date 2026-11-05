@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 99, "ABI 99")
+check(caps.abi_version() == 100, "ABI 100")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -816,6 +816,18 @@ check(caps.open(_cif).symmetry()["operations"] == 6, "the CIF read back keeps th
 _sq.symmetry("clear")
 check(not _sq.symmetry()["kept"], "symmetry cleared")
 print("ok   symmetry: kept, cell by crystal system, mirrored moves, asymmetric CIF")
+
+# readers for measured data (ABI 100): a Rigaku *TYPE file and a JCAMP-DX spectrum in compressed form
+_dd = tempfile.mkdtemp()
+with open(os.path.join(_dd, "a.asc"), "w") as _f:
+    _f.write("*TYPE = Raw\n*BEGIN\n*START = 10.00\n*STOP = 10.04\n*STEP = 0.02\n*COUNT = 3\n 5, 6, 7\n*END\n*EOF\n")
+_rd = caps.read_data(os.path.join(_dd, "a.asc"))
+check(_rd["format"] == "Rigaku" and _rd["y"] == [5, 6, 7] and abs(_rd["x"][2] - 10.04) < 1e-12, f"read_data rigaku {_rd}")
+with open(os.path.join(_dd, "s.jdx"), "w") as _f:
+    _f.write("##TITLE=t\n##JCAMP-DX=4.24\n##XUNITS=1/CM\n##YFACTOR=1\n##FIRSTX=10\n##LASTX=13\n##NPOINTS=4\n##XYDATA=(X++(Y..Y))\n10A0JJ\n12A2J\n13A3\n##END=\n")
+_jd = caps.read_data(os.path.join(_dd, "s.jdx"))
+check(_jd["y"] == [10, 11, 12, 13] and _jd["x"] == [10, 11, 12, 13] and not _jd["notes"], f"read_data jcamp {_jd}")
+print("ok   read_data: Rigaku text, JCAMP-DX")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))

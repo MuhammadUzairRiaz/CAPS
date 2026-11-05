@@ -2303,6 +2303,40 @@
    "tex": "\\mathrm{PLD}_a = 2\\max\\{\\, r : \\{\\mathbf x : d(\\mathbf x) > r\\}\\ \\text{percolates along } a \\,\\},\\qquad \\mathrm{LCD} = 2\\max_{\\mathbf x} d(\\mathbf x) \\\\ \\mathrm{ASA} = \\sum_i 4\\pi (R_i + r_p)^2\\, f_i^{\\mathrm{channel}},\\qquad \\frac{\\mathrm{m}^2}{\\mathrm{g}} = \\frac{10^{4}\\,\\mathrm{ASA}\\,N_A\\,10^{-24}}{M}"
   },
   {
+   "id": "measured-data-readers",
+   "group": "Analysis",
+   "title": "Readers for measured data and grids",
+   "summary": "Curves and grids from instruments and other programs are read into one curve (x, y, σ) or one grid. JCAMP-DX spectra are read from ##XYDATA=(X++(Y..Y)), in plain (AFFN), packed (PAC) or compressed form. The compressed form covers the SQZ, DIF and DUP pseudo-digits, with the check value that repeats each DIF line's last ordinate; a damaged check is reported. ##XYPOINTS pairs are read as well. The abscissae run from FIRSTX to LASTX over the points read, and the ordinates are scaled by YFACTOR. PANalytical XRDML files give the first scan's 2θ positions (start to end, or listed) and its counts or intensities. GSAS files give a constant-wavelength bank in STD (σ = √(Y/NCTR)), ESD, FXY or FXYE form, in centidegrees. Bruker UXD files give the first range's single-column counts from _START by _STEPSIZE, or its two-column data. Rigaku *TYPE text gives the first group's values from *START by *STEP. Gaussian cube grids are read with their atoms; an orbital list is skipped, and Å voxels are taken when the counts are negative. BIOSYM .arc archives open as trajectories, one .car frame each. Refinement and indexing take every curve format.",
+   "equation": "x_k = FIRSTX + k (LASTX − FIRSTX)/(N − 1),  y_k = YFACTOR · Y_k;  2θ_k = (BCOEF1 + k BCOEF2)/100 (GSAS CONS);  2θ_k = start + k (end − start)/(N − 1) (XRDML)",
+   "equation_note": "DELTAX in JCAMP-DX is nominal: the spacing comes from FIRSTX, LASTX and the points read",
+   "symbols": [
+    [
+     "N",
+     "points read",
+     "—"
+    ],
+    [
+     "YFACTOR",
+     "ordinate scale of a JCAMP-DX block",
+     "—"
+    ],
+    [
+     "BCOEF1, BCOEF2",
+     "first point and step of a GSAS bank",
+     "centidegrees"
+    ]
+   ],
+   "when": "Measured powder patterns for refinement and indexing straight from the diffractometer's file, IR spectra to compare with the MD spectrum, and densities or potentials other programs wrote as cube files.",
+   "cites": [
+    "mcdonald1988"
+   ],
+   "source": "core/src/measured.cpp",
+   "tested": "tests/test_measured.cpp (one spectrum in AFFN, PAC and compressed forms decodes to the same ordinates, and a damaged check value is reported; XRDML 1.5 with an Omega axis beside 2θ, and 2.1 with listed positions; GSAS STD with a counter count of 4 and FXYE; UXD with two ranges and two-column data; Rigaku groups; a cube written and read back, and one with an orbital list in Å; a two-frame .arc); tests/python/test_bindings.py read_data",
+   "deviation": "the XRDML layout follows the published schemas (xrdml.com); UXD, Rigaku and .arc have no public specification, so their readers follow the open parsers xylib, rigakuXRD, Open Babel and ASE and read only the documented keywords. Bruker binary .raw and STOE .xyd are refused, because neither has a public description. GSAS ALT records and time-of-flight banks are not read. Only the first scan, range, group or bank is read, with a note when there are more",
+   "engines": [],
+   "tex": "x_k = \\mathrm{FIRSTX} + k\\,\\frac{\\mathrm{LASTX} - \\mathrm{FIRSTX}}{N - 1},\\qquad y_k = \\mathrm{YFACTOR}\\,Y_k,\\qquad 2\\theta_k = \\frac{\\mathrm{BCOEF1} + k\\,\\mathrm{BCOEF2}}{100}"
+  },
+  {
    "group": "Analysis",
    "source": "core/src/properties.cpp",
    "engines": [],

@@ -113,6 +113,7 @@
 #include "caps/yaml.hpp"
 #include "caps/voids.hpp"
 #include "caps/pores.hpp"
+#include "caps/measured.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/nano.hpp"
 #include "caps/json.hpp"
@@ -9957,6 +9958,36 @@ extern "C" int32_t caps_provenance_bibtex(const char* manifest_json, char* text,
 // Coherent neutron scattering length (fm) of an element (1001: ²H), NaN when CAPS has none.
 extern "C" double caps_neutron_b(int32_t z) {
   try { return caps::neutron_b(z); } catch (...) { return std::numeric_limits<double>::quiet_NaN(); }
+}
+
+// ---------------------------------------------------------------- measured data and grids (v100, measured.hpp)
+extern "C" int32_t caps_read_data(const char* path, char* out, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  try {
+    const std::string p = path ? path : "";
+    const bool cube = p.size() > 5 && (p.compare(p.size() - 5, 5, ".cube") == 0 || p.compare(p.size() - 5, 5, ".CUBE") == 0);
+    if (cube) {
+      caps::System atoms;
+      const caps::GridField g = caps::read_cube(p, &atoms);
+      j["kind"] = "grid", j["format"] = "Gaussian cube", j["title"] = g.name;
+      caps::Json n = caps::Json::array();
+      for (int k = 0; k < 3; ++k) n.push_back(double(g.n[k]));
+      j["n"] = n;
+      double lo = 1e300, hi = -1e300, sum = 0;
+      for (double v : g.values) lo = std::min(lo, v), hi = std::max(hi, v), sum += v;
+      j["min"] = lo, j["max"] = hi, j["mean"] = sum / double(g.values.size()), j["atoms"] = double(atoms.atoms.size());
+      j["volume"] = g.cell.volume();
+    } else {
+      j = caps::measured_json(caps::read_measured(p));
+      j["kind"] = "curve";
+    }
+    j["ok"] = true;
+  } catch (const std::exception& e) {
+    j = caps::Json::object();
+    j["ok"] = false;
+    j["error"] = std::string(e.what());
+  }
+  return report_out(j.dump(0), out, cap);
 }
 
 // ---------------------------------------------------------------- pore network (v98, pores.hpp)

@@ -1,6 +1,8 @@
 // CAPS whole-pattern refinement (see refine.hpp).
 #include "caps/refine.hpp"
 
+#include "caps/measured.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <complex>
@@ -294,22 +296,10 @@ std::vector<double> linear_fit(const std::vector<std::vector<double>>& cols, con
 }  // namespace
 
 MeasuredPattern read_pattern(const std::string& path) {
-  std::ifstream in(path);
-  if (!in) throw std::invalid_argument("cannot read " + path);
+  // columns, XRDML, GSAS, UXD, Rigaku or JCAMP-DX (caps/measured.hpp)
+  const MeasuredCurve c = read_measured(path);
   MeasuredPattern p;
-  std::string line;
-  bool sig = true;
-  while (std::getline(in, line)) {
-    if (line.empty() || line[0] == '#' || line[0] == '!') continue;
-    for (char& c : line) if (c == ',' || c == ';' || c == '\t') c = ' ';
-    std::istringstream is(line);
-    double a, b, s;
-    if (!(is >> a >> b)) continue;
-    p.two_theta.push_back(a), p.y.push_back(b);
-    if (is >> s) p.sigma.push_back(s);
-    else sig = false;
-  }
-  if (!sig || p.sigma.size() != p.y.size()) p.sigma.clear();
+  p.two_theta = c.x, p.y = c.y, p.sigma = c.sigma;
   if (p.two_theta.size() < 10) throw std::invalid_argument(path + ": fewer than ten points (2θ intensity [σ])");
   for (size_t i = 1; i < p.two_theta.size(); ++i)
     if (p.two_theta[i] <= p.two_theta[i - 1]) throw std::invalid_argument(path + ": 2θ must increase");

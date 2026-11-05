@@ -1878,6 +1878,17 @@
     "--cell": "page",
     "--tolerance": "cli: the page finds the group within 0.1 Å"
    }
+  },
+  "data": {
+   "status": "gui",
+   "studio": "Analyze › Scattering › Measured pattern",
+   "where": "Views/Pages/ScatteringPage.axaml|Load experimental curve",
+   "capi": [
+    "caps_read_data"
+   ],
+   "options": {
+    "--json": "cli: the curve as JSON"
+   }
   }
  },
  "hidden_options": {
