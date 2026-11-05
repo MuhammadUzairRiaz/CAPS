@@ -250,6 +250,21 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("rpath: " + vm.PathResult + (vm.PathHasError ? " · error " + vm.PathError : ""));
             }
+            if (kv[0] == "dendrimer")   // dendrimer=PRESET|GEN|GROWTH|UNITS: Polymer page, the dendrimer built (awaited)
+            {
+                var vm = w.ViewModel;
+                var f = kv[1].Split('|');
+                vm.SetModule(13);
+                vm.DendPreset = Array.FindIndex(ViewModels.MainViewModel.DendPresets, p => p.Id == f[0]);
+                if (f.Length > 1) vm.DendGeneration = decimal.Parse(f[1], System.Globalization.CultureInfo.InvariantCulture);
+                if (f.Length > 2) vm.DendGrowth = Array.FindIndex(ViewModels.MainViewModel.DendGrowths, p => p.Id == f[2]);
+                if (f.Length > 3) vm.DendUnits = decimal.Parse(f[3], System.Globalization.CultureInfo.InvariantCulture);
+                var t = vm.BuildDendrimer();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                vm.SetModule(13);
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("dendrimer: " + vm.DendResult + (vm.DendHasError ? " · error " + vm.DendError : ""));
+            }
             if (kv[0] == "ringop")   // ringop=OP|ATOMS|SIZE|MEMBERS (OP fuse, aromatic, spiro, insert, join; ATOMS 0-based "0,1"; join: MEMBERS is the file)
             {
                 var f = kv[1].Split('|');

@@ -89,6 +89,7 @@
 #include "caps/adp.hpp"
 #include "caps/domains.hpp"
 #include "caps/ddft.hpp"
+#include "caps/dendrimer.hpp"
 #include "caps/dpd.hpp"
 #include "caps/qeq.hpp"
 #include "caps/pores.hpp"
@@ -380,6 +381,9 @@ int usage() {
                "             channels and pockets, LCD, PLD per axis, accessible volume and surface (per cell, m²/cm³, m²/g)\n"
                "  caps qeq FILE [--kernel ohno|slater|point] [--ewald [--accuracy 1e-7]] [--lambda 0.4913] [--hydrogen] [--bounds 'O:-1.2:0,Si:0:2.4']\n"
                "           [--cutoff 10] [--total 0] [--chg OUT.chg] [-o OUT.data|mol2|car|pdb]   charge equilibration (Slater shielding, Ewald for periodic cells)\n"
+               "  caps dendrimer -o OUT [--preset pamam|ppi|bismpa --generation G] [--core SMILES] [--unit SMILES] [--end SMILES]\n"
+               "               [--focal SMILES] [--shells 2] [--growth perfect|sma|flory --units 30 --seed 1] [--no-relax]\n"
+               "               AB_n units with sites [*:1] (A) and [*:2] (B); prints units per shell and the degree of branching\n"
                "  caps dpd --molecules 'AAAABBBB:300@shell:in; C:9000' [--regions 'core droplet r=3 prio=2; shell shell r=5 in=3 prio=1'] [--box 16]\n"
                "           [--chi AB=25] [--density 3] [--steps 2000] [--equilibration 500] [--every 50] [--seed 1] [--spec SPEC.json] [-o OUT.xyz] [--json OUT]\n"
                "           dissipative particle dynamics; regions (droplet, rod, slab, shell, tube; c=fx,fy,fz r= in= t= axis= prio=) compose the start\n"
@@ -534,7 +538,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--images", "--neb", "--fmax", "--no-climb", "--relax-ends", "--no-match", "--find", "--clear", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--images", "--neb", "--fmax", "--no-climb", "--relax-ends", "--no-match", "--find", "--clear", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--preset", "--unit", "--core", "--end", "--focal", "--generation", "--growth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -4429,6 +4433,41 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps qeq: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "dendrimer") {
+    try {
+      if (!o.count("-o")) return usage();
+      DendrimerSpec sp;
+      if (o.count("--preset")) sp.preset = o["--preset"];
+      if (o.count("--core")) sp.core = o["--core"];
+      if (o.count("--unit")) sp.unit = o["--unit"];
+      if (o.count("--end")) sp.end = o["--end"];
+      if (o.count("--focal")) sp.focal = o["--focal"];
+      if (o.count("--generation")) sp.generation = std::stoi(o["--generation"]);
+      if (o.count("--shells")) sp.shells = std::stoi(o["--shells"]);
+      if (o.count("--growth")) sp.growth = o["--growth"];
+      if (o.count("--units")) sp.units = std::stoi(o["--units"]);
+      if (o.count("--seed")) sp.seed = std::stoull(o["--seed"]);
+      sp.relax = !o.count("--no-relax");
+      DendrimerReport r;
+      const System s = build_dendrimer(sp, &r);
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      std::printf("%d AB%d units in %d shells · %s · %.2f g/mol · %zu atoms%s\n", r.units, r.n, r.shells, r.formula.c_str(), r.mass, s.atoms.size(),
+                  r.ends ? (" · " + std::to_string(r.ends) + " end groups").c_str() : "");
+      std::printf("shell  units\n");
+      for (size_t k = 0; k < r.counts.per_shell.size(); ++k) std::printf("%5zu %6d\n", k + 1, r.counts.per_shell[k]);
+      std::printf("B sites used  units\n");
+      for (size_t k = 0; k < r.counts.by_used.size(); ++k) std::printf("%12zu %6d\n", k, r.counts.by_used[k]);
+      if (r.n == 2)
+        std::printf("D %d · L %d · T %d · DB (Frey 2D/(2D+L)) %.4f · DB (Fréchet (D+T)/(D+T+L)) %.4f · large-N limit of this growth %.4f\n", r.counts.dendritic,
+                    r.counts.linear, r.counts.terminal, r.counts.db_frey, r.counts.db_frechet, r.db_limit);
+      write_structure_file(s, o["-o"]);
+      std::printf("wrote %s\n", o["-o"].c_str());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps dendrimer: %s\n", e.what());
       return 1;
     }
   }

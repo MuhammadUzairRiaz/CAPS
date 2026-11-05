@@ -1912,6 +1912,27 @@
     "--no-coulomb": "cli: the page follows the force field's charges",
     "--quiet": "cli: no progress line"
    }
+  },
+  "dendrimer": {
+   "status": "gui",
+   "studio": "Builders › Polymer › Dendrimers from units",
+   "where": "Views/Pages/PolymerPage.axaml|DENDRIMERS FROM UNITS",
+   "capi": [
+    "caps_dendrimer"
+   ],
+   "options": {
+    "--preset": "page",
+    "--generation": "page",
+    "--core": "page",
+    "--unit": "page",
+    "--end": "page",
+    "--focal": "page",
+    "--shells": "page",
+    "--growth": "page",
+    "--units": "page",
+    "--seed": "page",
+    "--no-relax": "page"
+   }
   }
  },
  "hidden_options": {

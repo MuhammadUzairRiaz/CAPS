@@ -4261,6 +4261,55 @@
    "tex": "R = \\frac{L}{2\\sin(\\pi/n)},\\qquad a = \\frac{L}{2\\tan(\\pi/n)},\\qquad d_{ij} = \\sqrt{r_1^2 + r_2^2 - 2 r_1 r_2 \\cos\\theta_t},\\quad \\cos\\theta_t = -\\tfrac{1}{3},\\qquad r_{AB} = r_A + r_B"
   },
   {
+   "id": "dendrimers",
+   "group": "Growth",
+   "title": "Dendrimers and hyperbranched molecules from AB_n units",
+   "summary": "A branching unit is a SMILES with its A site written [*:1] and its n B sites written [*:2]. A core has B sites only, an end group one A site, and a focal group one B site for the first unit when there is no core. Units are joined site to site in 3D: the two site atoms leave, the new bond is set at the covalent sum, and each unit is turned about it to the clearest position (the join of the ring tools). UFF then relaxes the molecule. A perfect dendrimer fills every B site, shell after shell. Slow monomer addition adds the units one at a time, each onto a B site drawn uniformly from all open ones, on the core too. Flory's statistics of AB_n polycondensation (equal reactivity, no cycles) make a molecule, seen from its focal unit, a Galton–Watson tree in which each B site reacts independently. A molecule of exactly N units is that tree conditioned on its size. It is drawn exactly: the site occupations are redrawn until N − 1 sites are used, and the sequence is rotated by the cycle lemma into a tree. The report gives the units per shell and by the number of B sites used. For AB₂ it also gives Frey's and Fréchet's degrees of branching. Presets: PAMAM on ethylenediamine (generation g has g + 1 shells), PPI on 1,4-diaminobutane (generation g has g shells) and bis-MPA polyester on trimethylolpropane.",
+   "equation": "DB_Frey = 2D / (2D + L),  DB_Fréchet = (D + T) / (D + T + L);  slow addition: T = L = D = N/3 → DB = 2/3;  Flory AB₂: T : L : D = 1 : 2 : 1 → DB = 1/2",
+   "equation_note": "D, L, T: AB₂ units with 2, 1, 0 B sites carrying a unit (end groups do not count); the limits are for large N. In slow addition each new unit turns a T into an L with chance 2T/F or an L into a D with chance L/F (F = 2T + L open sites, growing by one per unit), so the fractions settle at 1/3 each",
+   "symbols": [
+    [
+     "D, L, T",
+     "dendritic, linear and terminal units",
+     "—"
+    ],
+    [
+     "N",
+     "units in the molecule",
+     "—"
+    ],
+    [
+     "F",
+     "open B sites",
+     "—"
+    ],
+    [
+     "n",
+     "B sites per unit",
+     "—"
+    ]
+   ],
+   "when": "Dendrimer and hyperbranched modifiers, curing agents and fillers for rubber and epoxy (PAMAM, PPI, bis-MPA polyesters), and hyperbranched molecules whose degree of branching matters for viscosity and end-group density.",
+   "cites": [
+    "tomalia1985",
+    "debrabander1993",
+    "ihre1996",
+    "flory1952",
+    "hawker1991",
+    "holter1997",
+    "hanselmann1998",
+    "devroye2012",
+    "dvoretzky1947",
+    "cordero2008",
+    "rappe1992"
+   ],
+   "source": "core/src/dendrimer.cpp",
+   "tested": "tests/test_dendrimer.cpp (PAMAM generation 0 is C₂₂H₄₈N₁₀O₄ and generation 1 C₆₂H₁₂₈N₂₆O₁₂ with 4 and 8 units per shell and both DB 1; PPI generation 1 (DAB-Am-4) is C₁₆H₄₀N₆ and generation 2 C₄₀H₉₆N₁₄, relaxed with no two atoms within 0.9 Å; eight acetyl ends make PAMAM G0 C₃₈H₆₄N₁₀O₁₂; Flory AB₂ trees of 4000 units have T = D + 1 and DB 0.5 ± 0.03; slow addition has T = D + 1 and DB 2/3 ± 0.02; 20-unit bis-MPA molecules by either growth are C₁₀₀H₁₆₂O₆₁). The PAMAM masses for generations 0 to 4 come out at 516.7, 1429.9, 3256.2, 6909.0 and 14214.5 g/mol; tests/python/test_bindings.py",
+   "deviation": "Geometry from joining and a UFF relaxation, not a sampled conformation of the molecule in solvent. Flory growth has no core. For n > 2 the report gives the units by B sites used and no degree of branching. Sites are unreactive towards each other: no intramolecular cycles, no back-biting or side reactions. Molecules are limited to 15 000 atoms.",
+   "engines": "caps dendrimer -o OUT [--preset pamam|ppi|bismpa --generation G] [--core] [--unit] [--end] [--focal] [--shells] [--growth perfect|sma|flory --units N --seed S] [--no-relax]; Python caps.dendrimer(); Studio Builders › Polymer › Dendrimers from units",
+   "tex": "\\mathrm{DB}_{\\mathrm{Frey}} = \\frac{2D}{2D + L},\\qquad \\mathrm{DB}_{\\mathrm{Fr\\acute{e}chet}} = \\frac{D + T}{D + T + L},\\qquad \\frac{dT}{dN} = 1 - \\frac{2T}{F},\\quad \\frac{dL}{dN} = \\frac{2T - L}{F},\\quad \\frac{dD}{dN} = \\frac{L}{F}"
+  },
+  {
    "group": "Coarse-grained",
    "source": "core/src/dpd.cpp",
    "engines": [],

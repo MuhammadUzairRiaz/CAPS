@@ -199,6 +199,37 @@
             </Border>
             <Border Classes="section" Padding="16,14">
               <StackPanel Spacing="10">
+                <TextBlock Text="DENDRIMERS FROM UNITS" Classes="h3" />
+                <TextBlock Classes="dim" TextWrapping="Wrap" Text="AB_n branching units joined site to site in 3D: a perfect dendrimer shell by shell, or a hyperbranched molecule by slow monomer addition or by Flory's statistics. The molecule opens as a new structure." />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                  <StackPanel Spacing="6"><TextBlock Text="Family" Classes="label" /><ComboBox ItemsSource="{Binding DendPresetNames}" SelectedIndex="{Binding DendPreset}" HorizontalAlignment="Stretch" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Growth" Classes="label" /><ComboBox ItemsSource="{Binding DendGrowthNames}" SelectedIndex="{Binding DendGrowth}" HorizontalAlignment="Stretch" /></StackPanel>
+                </Grid>
+                <StackPanel Spacing="6" IsVisible="{Binding DendOwnUnits}">
+                  <TextBlock Text="Core (B sites [*:2])" Classes="label" />
+                  <TextBox Text="{Binding DendCore}" FontFamily="{DynamicResource Mono}" ToolTip.Tip="A SMILES whose B sites are written [*:2]: trimethylolpropane CCC(CO[*:2])(CO[*:2])CO[*:2]" />
+                  <TextBlock Text="Unit (A site [*:1], B sites [*:2])" Classes="label" />
+                  <TextBox Text="{Binding DendUnit}" FontFamily="{DynamicResource Mono}" ToolTip.Tip="The branching unit: bis-MPA [*:1]C(=O)C(C)(CO[*:2])CO[*:2]; its A site bonds to a B site of the shell before" />
+                  <TextBlock Text="Focal group (no core: on the first unit's A site, one [*:2])" Classes="label" />
+                  <TextBox Text="{Binding DendFocal}" FontFamily="{DynamicResource Mono}" Watermark="empty: a hydrogen · [*:2]O makes an acid" />
+                </StackPanel>
+                <StackPanel Spacing="6">
+                  <TextBlock Text="End group (one [*:1]; empty: open sites stay H)" Classes="label" />
+                  <TextBox Text="{Binding DendEnd}" FontFamily="{DynamicResource Mono}" Watermark="e.g. [*:1]C(C)=O for acetyl ends" />
+                </StackPanel>
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                  <StackPanel Spacing="6" IsVisible="{Binding !DendHyper}"><TextBlock Text="{Binding DendGenerationLabel}" Classes="label" /><NumericUpDown Value="{Binding DendGeneration}" Minimum="0" Maximum="9" Increment="1" FormatString="0" /></StackPanel>
+                  <StackPanel Spacing="6" IsVisible="{Binding DendHyper}"><TextBlock Text="Units" Classes="label" /><NumericUpDown Value="{Binding DendUnits}" Minimum="1" Maximum="2000" Increment="10" FormatString="0" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding DendHyper}"><TextBlock Text="Seed" Classes="label" /><NumericUpDown Value="{Binding DendSeed}" Minimum="1" Maximum="999999" Increment="1" FormatString="0" /></StackPanel>
+                  <CheckBox Grid.Column="2" IsChecked="{Binding DendRelax}" Content="Relax (UFF)" VerticalAlignment="Bottom" />
+                </Grid>
+                <Button Content="Build dendrimer" Click="OnBuildDendrimer" IsEnabled="{Binding !DendRunning}" HorizontalAlignment="Left" />
+                <TextBlock Text="{Binding DendResult}" TextWrapping="Wrap" Classes="mono" FontSize="11.5" IsVisible="{Binding DendHasResult}" />
+                <TextBlock Text="{Binding DendError}" Classes="err" TextWrapping="Wrap" IsVisible="{Binding DendHasError}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="section" Padding="16,14">
+              <StackPanel Spacing="10">
                 <TextBlock Text="GRAFT ONTO THE OPEN STRUCTURE" Classes="h3" />
                 <TextBlock Classes="dim" TextWrapping="Wrap" Text="Chains of the units above (DP below) grown from the atoms picked in the view of the open structure, which stays where it is; each picked atom gives up a hydrogen. Undo with ⌘Z." />
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">

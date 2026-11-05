@@ -115,6 +115,7 @@
 #include "caps/pores.hpp"
 #include "caps/measured.hpp"
 #include "caps/reaction_path.hpp"
+#include "caps/dendrimer.hpp"
 #include "caps/ring_edit.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/nano.hpp"
@@ -10074,6 +10075,70 @@ extern "C" caps_doc* caps_reaction_path(caps_doc* d, const char* json, char* out
     r["ok"] = true;
     report_out(r.dump(0), out, cap);
     return nd;
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+    report_out(r.dump(0), out, cap);
+    return nullptr;
+  }
+}
+
+// ---------------------------------------------------------------- dendrimers and hyperbranched molecules (v103, dendrimer.hpp)
+static caps::Json dendrimer_report_json(const caps::DendrimerReport& rep, const caps::System& s) {
+  caps::Json r = caps::Json::object();
+  r["units"] = double(rep.units), r["shells"] = double(rep.shells), r["branches"] = double(rep.n), r["core_sites"] = double(rep.core_sites);
+  r["ends"] = double(rep.ends), r["atoms"] = double(s.atoms.size()), r["formula"] = rep.formula, r["mass"] = rep.mass;
+  caps::Json bu = caps::Json::array(), ps = caps::Json::array(), nt = caps::Json::array();
+  for (int x : rep.counts.by_used) bu.push_back(double(x));
+  for (int x : rep.counts.per_shell) ps.push_back(double(x));
+  for (const auto& x : rep.notes) nt.push_back(x);
+  r["by_used"] = bu, r["per_shell"] = ps, r["notes"] = nt;
+  if (rep.n == 2) {
+    r["dendritic"] = double(rep.counts.dendritic), r["linear"] = double(rep.counts.linear), r["terminal"] = double(rep.counts.terminal);
+    r["db_frey"] = rep.counts.db_frey, r["db_frechet"] = rep.counts.db_frechet, r["db_limit"] = rep.db_limit;
+  }
+  return r;
+}
+static caps::DendrimerSpec dendrimer_spec_of(const caps::Json& j) {
+  caps::DendrimerSpec sp;
+  sp.preset = j.text("preset"), sp.core = j.text("core"), sp.unit = j.text("unit"), sp.end = j.text("end"), sp.focal = j.text("focal");
+  sp.generation = int(j.num("generation", -1)), sp.shells = int(j.num("shells", 2)), sp.growth = j.text("growth", "perfect");
+  sp.units = int(j.num("units", 30)), sp.seed = uint64_t(j.num("seed", 1)), sp.relax_steps = int(j.num("relax_steps", 2000));
+  if (j.has("relax") && j["relax"].kind() == caps::Json::Bool) sp.relax = j["relax"].boolean();
+  return sp;
+}
+
+extern "C" caps_doc* caps_dendrimer(const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const caps::DendrimerSpec sp = dendrimer_spec_of(j);
+    caps::DendrimerReport rep;
+    const caps::System s = caps::build_dendrimer(sp, &rep);
+    r = dendrimer_report_json(rep, s);
+    auto* d = new caps_doc;
+    d->traj.topology = s;
+    d->traj.positions.push_back({});
+    for (const auto& a : s.atoms) d->traj.positions.back().push_back(a.pos);
+    d->traj.cells.push_back(s.cell);
+    d->traj.timesteps.push_back(0);
+    refresh(d);
+    std::vector<std::string> cites;
+    if (sp.preset == "pamam") cites.push_back("tomalia1985");
+    if (sp.preset == "ppi") cites.push_back("debrabander1993");
+    if (sp.preset == "bismpa") cites.push_back("ihre1996");
+    if (sp.growth == "sma") cites.push_back("hanselmann1998");
+    if (sp.growth == "flory") cites.push_back("flory1952"), cites.push_back("devroye2012"), cites.push_back("dvoretzky1947");
+    if (rep.n == 2) cites.push_back("holter1997"), cites.push_back("hawker1991");
+    if (sp.relax) cites.push_back("rappe1992");
+    caps::KeyValues pv = {{"growth", sp.growth}, {"units", std::to_string(rep.units) + " AB" + std::to_string(rep.n) + " in " + std::to_string(rep.shells) + " shells"},
+                          {"molecule", rep.formula + ", " + g6(rep.mass) + " g/mol"}};
+    if (rep.n == 2) pv.push_back({"degree of branching", "Frey " + g6(rep.counts.db_frey) + ", Fréchet " + g6(rep.counts.db_frechet)});
+    prov_step(d, "dendrimer.build", "Dendrimer from AB_n units", std::move(pv), sp.growth == "perfect" ? std::string() : seeded(sp.seed), cites);
+    r["ok"] = true;
+    report_out(r.dump(0), out, cap);
+    return d;
   } catch (const std::exception& e) {
     r = caps::Json::object();
     r["ok"] = false;

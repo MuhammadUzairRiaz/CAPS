@@ -2046,6 +2046,30 @@ def dpd(species, regions=None, box: float = 0.0, density: float = 3.0, chi=None,
     return d
 
 
+def dendrimer(preset: str = "", generation: int = -1, core: str = "", unit: str = "", end: str = "", focal: str = "",
+              shells: int = 2, growth: str = "perfect", units: int = 30, seed: int = 1, relax: bool = True,
+              relax_steps: int = 2000) -> "Document":
+    """A dendrimer or hyperbranched molecule from AB_n units: SMILES with the A site [*:1] and the B sites [*:2] (a core
+    has B sites only, an end group one A site, a focal group one [*:2] for the focal unit when there is no core).
+    preset "pamam", "ppi" or "bismpa" with its generation; growth "perfect" (every site, `shells` shells), "sma" (slow
+    monomer addition, `units` units) or "flory" (Flory's AB_n statistics, `units` units, no core). Returns a new Document
+    with .dendrimer_report {units, shells, formula, mass, by_used, per_shell; AB2: dendritic, linear, terminal, db_frey,
+    db_frechet, db_limit}."""
+    o = {"preset": preset, "generation": int(generation), "core": core, "unit": unit, "end": end, "focal": focal,
+         "shells": int(shells), "growth": growth, "units": int(units), "seed": int(seed), "relax": bool(relax),
+         "relax_steps": int(relax_steps)}
+    f = library().caps_dendrimer
+    f.argtypes = [C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_void_p
+    buf = C.create_string_buffer(1 << 20)
+    h = f(_enc(json.dumps(o)), buf, len(buf))
+    r = json.loads(buf.value.decode() or "{}")
+    if not h:
+        raise CapsError(r.get("error", "dendrimer failed"))
+    d = Document(h)
+    d.dendrimer_report = r
+    return d
+
 def read_data(path: str) -> dict:
     """A measured curve (two or three columns, PANalytical .xrdml, GSAS constant-wavelength banks, Bruker .uxd, Rigaku
     *TYPE text, JCAMP-DX spectra) as {kind: "curve", format, title, xunits, yunits, x, y, sigma, notes}, or a Gaussian

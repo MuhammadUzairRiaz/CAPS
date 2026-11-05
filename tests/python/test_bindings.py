@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 102, "ABI 102")
+check(caps.abi_version() == 103, "ABI 103")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -885,6 +885,14 @@ _jn = caps.open(_mp)
 _jr = _jn.join(_mp, at=1)
 check(_formula(_jn) == "C2H6" and len(_jr["added"]) == 4, f"join {_formula(_jn)} {_jr}")
 print("ok   fuse_ring, spiro_ring, insert_atom, join")
+
+# dendrimers (ABI 103): PAMAM generation 1 on ethylenediamine; Flory AB2 statistics keep T = D + 1
+_pm = caps.dendrimer("pamam", generation=1, relax=False)
+check(_pm.dendrimer_report["formula"] == "C62H128N26O12" and _pm.atoms == 228, f"PAMAM G1 {_pm.dendrimer_report}")
+_hb = caps.dendrimer(unit="[*:1]C(=O)C(C)(CO[*:2])CO[*:2]", focal="[*:2]O", growth="flory", units=40, relax=False)
+_hr = _hb.dendrimer_report
+check(_hr["units"] == 40 and _hr["terminal"] == _hr["dendritic"] + 1 and 0 < _hr["db_frey"] <= 1, f"flory {_hr}")
+print("ok   dendrimer: PAMAM, Flory AB2")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
