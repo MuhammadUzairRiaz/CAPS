@@ -65,6 +65,7 @@ public partial class CrystalPage : PageBase
     private async void OnHabit(object? s, RoutedEventArgs e) => await Vm.RunHabit();
     private async void OnHabitParticle(object? s, RoutedEventArgs e) => await Vm.HabitParticle();
     private async void OnSqs(object? s, RoutedEventArgs e) => await Vm.RunSqs();
+    private void OnReadCifAgain(object? s, RoutedEventArgs e) => Vm.ReadCifAgain();
     private async void OnEnumerate(object? s, RoutedEventArgs e) => await Vm.RunEnumerate();
     private async void OnOpenArrangement(object? s, RoutedEventArgs e) => await Vm.OpenArrangement();
 }

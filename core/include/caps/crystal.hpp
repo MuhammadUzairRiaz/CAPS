@@ -17,6 +17,9 @@
 #include <functional>
 #include <stdexcept>
 #include <string>
+#include <array>
+#include <cstdint>
+#include <map>
 #include <vector>
 
 #include "caps/system.hpp"
@@ -29,6 +32,33 @@ struct CrystalError : std::runtime_error {
 
 System parse_cif(const std::string& text, const std::string& name = "");
 System read_cif(const std::string& path);
+
+// Disorder in a CIF (Hall, Allen & Brown, Acta Cryst. A47, 655 (1991); the core dictionary's _atom_site_occupancy,
+// _atom_site_disorder_assembly and _atom_site_disorder_group). Sites of a disorder group ("." and 0: none) belong to
+// an assembly (one unnamed assembly when not given); partially occupied sites without a group that lie within 0.8 Å
+// of each other are alternatives for one place (split positions, mixed elements on one site), the rest of the
+// occupancy a vacancy.
+//   major   each assembly keeps its group of the largest occupancy; each place keeps its occupant of the largest
+//           occupancy when the place's total is at least 0.5 (the default; a lone site below 0.5 is left out)
+//   group   each assembly keeps the named group (its major group when it has none of that name); places as major
+//   random  a supercell filled at random to the occupancies: one group drawn for each copy of an assembly (each
+//           symmetry operation and cell, so a disordered molecule stays whole), one occupant or a vacancy for each
+//           place, from `seed`
+struct CifDisorder {
+  std::string mode = "major";              // major | group | random
+  std::string group;                       // mode group: the group label kept
+  std::array<int, 3> supercell{1, 1, 1};   // mode random
+  uint64_t seed = 1;
+};
+struct CifDisorderReport {
+  int assemblies = 0, groups = 0;          // disorder assemblies and groups in the file
+  int places = 0;                          // places with alternatives or a vacancy (per cell)
+  std::map<int, double> expected;          // element → atoms the occupancies give (whole result)
+  std::map<int, int> obtained;             // element → atoms written
+  std::vector<std::string> notes;
+};
+System parse_cif(const std::string& text, const std::string& name, const CifDisorder& o, CifDisorderReport* report = nullptr);
+System read_cif(const std::string& path, const CifDisorder& o, CifDisorderReport* report = nullptr);
 
 struct Termination {
   double cut = 0;            // cut height within one layer, 0 ≤ cut < d (Å above the lowest plane)

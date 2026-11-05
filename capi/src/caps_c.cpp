@@ -1470,6 +1470,73 @@ extern "C" {
 int32_t caps_abi_version(void) { return CAPS_ABI_VERSION; }
 const char* caps_last_error(void) { return g_error.c_str(); }
 
+namespace {
+int32_t json_error(const std::exception& e, char* out, int32_t cap);   // below
+caps::CifDisorder cif_disorder_from(const caps::Json& j) {
+  caps::CifDisorder o;
+  o.mode = j.text("mode", "major");
+  o.group = j.text("group", "");
+  if (j.has("supercell") && j["supercell"].is_array() && j["supercell"].size() == 3)
+    for (size_t k = 0; k < 3; ++k) o.supercell[k] = std::max(1, int(j["supercell"][k].number()));
+  o.seed = uint64_t(j.num("seed", 1));
+  return o;
+}
+caps::Json cif_disorder_json(const caps::CifDisorderReport& r) {
+  caps::Json j = caps::Json::object(), ex = caps::Json::object(), ob = caps::Json::object(), nt = caps::Json::array();
+  for (const auto& [z, n] : r.expected) ex[caps::element(z).symbol] = n;
+  for (const auto& [z, n] : r.obtained) ob[caps::element(z).symbol] = double(n);
+  for (const auto& n : r.notes) nt.push_back(n);
+  j["assemblies"] = double(r.assemblies), j["groups"] = double(r.groups), j["places"] = double(r.places);
+  j["expected"] = ex, j["obtained"] = ob, j["notes"] = nt;
+  return j;
+}
+}  // namespace
+
+// v90 a CIF's disorder (crystal.hpp CifDisorder): what the file holds, read the default (major) way: {ok, error,
+// assemblies, groups, places, expected, obtained, notes}
+extern "C" int32_t caps_cif_disorder(const char* path, char* out, int32_t cap) {
+  try {
+    caps::CifDisorderReport rep;
+    (void)caps::read_cif(path ? path : "", caps::CifDisorder{}, &rep);
+    caps::Json r = cif_disorder_json(rep);
+    r["ok"] = true;
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
+}
+
+// v90 a CIF read with a disorder choice: JSON {mode major | group | random, group, supercell [3], seed} → the document
+// (NULL on error), the report in out
+extern "C" caps_doc* caps_open_cif(const char* path, const char* json, char* out, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const caps::CifDisorder o = cif_disorder_from(j);
+    caps::CifDisorderReport rep;
+    auto* d = new caps_doc;
+    d->traj.topology = caps::read_cif(path ? path : "", o, &rep);
+    std::vector<caps::Vec3> p;
+    for (const auto& a : d->traj.topology.atoms) p.push_back(a.pos);
+    d->traj.positions.push_back(std::move(p));
+    d->traj.cells.push_back(d->traj.topology.cell);
+    d->traj.timesteps.push_back(0);
+    refresh(d);
+    prov_opened(d, path, "", "io.read");
+    caps::KeyValues pr = {{"mode", o.mode + (o.mode == "group" ? " " + o.group : std::string())}};
+    if (o.mode == "random") pr.push_back({"supercell", std::to_string(o.supercell[0]) + " × " + std::to_string(o.supercell[1]) + " × " + std::to_string(o.supercell[2])}), pr.push_back({"seed", std::to_string(o.seed)});
+    pr.push_back({"assemblies", std::to_string(rep.assemblies)}), pr.push_back({"places", std::to_string(rep.places)});
+    prov_step(d, "build.cif_disorder", "Disorder of the CIF resolved", std::move(pr));
+    caps::Json r = cif_disorder_json(rep);
+    r["ok"] = true;
+    report_out(r.dump(0), out, cap);
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    json_error(e, out, cap);
+    return nullptr;
+  }
+}
+
 caps_doc* caps_open(const char* path, const char* topology_path) {
   try {
     auto* d = new caps_doc;

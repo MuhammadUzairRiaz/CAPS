@@ -1736,6 +1736,22 @@
     "--ff": "page",
     "--topology": "page"
    }
+  },
+  "cif": {
+   "status": "gui",
+   "studio": "Builders › Crystal › CIF disorder",
+   "where": "Views/Pages/CrystalPage.axaml|CIF DISORDER",
+   "capi": [
+    "caps_cif_disorder",
+    "caps_open_cif"
+   ],
+   "options": {
+    "--disorder": "page",
+    "--group": "Views/Pages/CrystalPage.axaml|Group",
+    "--supercell": "page",
+    "--seed": "page",
+    "--json": "partial: the page shows the composition in the status"
+   }
   }
  },
  "hidden_options": {

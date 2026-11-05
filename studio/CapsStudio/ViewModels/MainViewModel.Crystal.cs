@@ -112,6 +112,7 @@ public sealed partial class MainViewModel
         SetModule(29);
         CrystalFilter();
         CrystalPreview();
+        RefreshCifDisorder();
     }
 
     /// <summary>Orthorhombic polyethylene (Bunn 1939): carbon from the paper, the CH₂ hydrogens placed at C–H 1.09 Å, H–C–H 107°.</summary>

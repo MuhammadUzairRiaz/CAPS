@@ -123,6 +123,7 @@ public sealed partial class MainViewModel
         }
         for (int k = 0; k < 3; ++k) SetStage(k, "done", details[k], 1);
         Show(doc0, name);
+        _docPaths.AddOrUpdate(doc0, path);
         if (_doc != doc0) { IsLoading = false; return; }
         _loadDoc = doc0;
         LoadIndexing = true;

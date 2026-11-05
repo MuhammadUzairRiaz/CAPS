@@ -488,6 +488,8 @@ internal static class Native
     }
 
     [DllImport(Lib, EntryPoint = "caps_unit_info")] public static extern int UnitInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_cif_disorder")] public static extern int CifDisorder([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_open_cif")] public static extern IntPtr OpenCif([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_copolymer_model")] public static extern int CopolymerModel([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_sequence_report")] public static extern int SequenceReport(IntPtr doc, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_chain_preview")] public static extern int ChainPreview([MarshalAs(UnmanagedType.LPUTF8Str)] string spec, ulong seed, byte[]? json, int cap);
@@ -976,6 +978,18 @@ public sealed class CapsDocument : IDisposable
         GC.KeepAlive(lv);
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
         return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
+    }
+
+    /// <summary>A CIF's disorder read the default way (caps_cif_disorder), JSON.</summary>
+    public static string CifDisorder(string path) => JsonCallOnce((b, c) => Native.CifDisorder(path, b, c));
+    /// <summary>A CIF read with a disorder choice (caps_open_cif): the document and its report (JSON).</summary>
+    public static (CapsDocument Doc, string Report) OpenCif(string path, string json, string label)
+    {
+        var buf = new byte[1 << 16];
+        var h = Native.OpenCif(path, json, buf, buf.Length);
+        var rep = System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Array.IndexOf(buf, (byte)0)));
+        if (h == IntPtr.Zero) throw new InvalidOperationException((string?)System.Text.Json.Nodes.JsonNode.Parse(rep.Length > 0 ? rep : "{}")?["error"] ?? Native.LastError());
+        return (new CapsDocument(h, label), rep);
     }
 
     /// <summary>The terminations of a (hkl) plane of a CIF crystal (caps_surface_terminations, JSON).</summary>

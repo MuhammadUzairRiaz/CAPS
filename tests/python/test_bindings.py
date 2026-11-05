@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 89, "ABI 89")
+check(caps.abi_version() == 90, "ABI 90")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
@@ -812,6 +812,17 @@ _pe = caps.polymer("[*]CC[*]", dp=20, chains=1, density=0.05)
 _pg = _pe.graft("[*]CC(C)(C(=O)OC)[*]", sites=[4], dp=2, equivalent=True, max_grafts=3, min_spacing=4)
 check(_pg.graft_report["grafted"] == 3 and _pg.atoms == _pe.atoms - 3 + 3 * (2 * 15 + 1), f"graft onto: {_pg.graft_report}, {_pg.atoms} atoms")
 print("ok   grafts: grown with the backbone, and onto an existing chain")
+# CIF disorder (ABI 90): a mixed Mg/Fe site keeps Mg by default; at random every site is filled once
+with tempfile.TemporaryDirectory() as _td:
+    _cp = os.path.join(_td, "mix.cif")
+    open(_cp, "w").write("data_t\n_cell_length_a 10\n_cell_length_b 10\n_cell_length_c 10\n_cell_angle_alpha 90\n_cell_angle_beta 90\n"
+                         "_cell_angle_gamma 90\nloop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n"
+                         "_atom_site_fract_z\n_atom_site_occupancy\nM1 Mg 0 0 0 0.6\nM2 Fe 0 0 0 0.4\nO1 O 0.5 0.5 0.5 1\n")
+    _ci = caps.cif_disorder(_cp)
+    check(_ci["places"] == 1 and _ci["obtained"].get("Fe", 0) == 0, f"cif_disorder: {_ci}")
+    _cr = caps.open_cif(_cp, mode="random", supercell=(3, 3, 3), seed=5)
+    check(_cr.atoms == 54 and _cr.cif_report["obtained"].get("Mg", 0) + _cr.cif_report["obtained"].get("Fe", 0) == 27, f"open_cif: {_cr.cif_report}")
+print("ok   CIF disorder: major and random fill")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

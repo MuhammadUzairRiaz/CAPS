@@ -3592,6 +3592,47 @@
    ]
   },
   {
+   "id": "cif-disorder",
+   "group": "Growth",
+   "title": "Disorder in CIF files: groups, mixed and split sites, vacancies",
+   "summary": "A CIF marks disorder with the site occupancy and, for alternative arrangements of several atoms, a disorder assembly and group per site (_atom_site_occupancy, _atom_site_disorder_assembly, _atom_site_disorder_group; group '.' or 0 is ordered). Every site is generated through the space group's operations; partially occupied sites without a group that fall within 0.8 Å of each other are alternatives for one place (split positions, two elements sharing a site), and what their occupancies leave is a vacancy. By default each assembly keeps its group of the largest occupancy and each place its occupant of the largest occupancy (a lone site below 0.5 is left out), which gives one ordered cell with no overlapping atoms. A named group can be kept instead in every assembly. Or a supercell is filled at random to the occupancies: one group is drawn for each copy of an assembly, a copy being one symmetry operation in one cell, worked out from the unwrapped image so that a disordered molecule cut by the cell edge stays whole, and one occupant or a vacancy is drawn for each place. The composition the occupancies give is reported beside the one written.",
+   "equation": "P(group g in a copy) = occ(g);  P(occupant j at a place) = occ_j, P(vacancy) = 1 − Σ_j occ_j;  copy cell = R − ⌊f⌋",
+   "equation_note": "Hall, Allen & Brown 1991 (the CIF data items)",
+   "tex": "P(g) = \\mathrm{occ}(g), \\qquad P(j) = \\mathrm{occ}_j, \\quad P(\\varnothing) = 1 - \\sum_j \\mathrm{occ}_j, \\qquad \\mathbf{c} = \\mathbf{R} - \\lfloor \\mathbf{f} \\rfloor",
+   "symbols": [
+    [
+     "occ",
+     "site occupancy (a group's: the largest of its sites)",
+     "—"
+    ],
+    [
+     "R",
+     "the supercell's cell an atom is placed in",
+     "—"
+    ],
+    [
+     "f",
+     "the atom's fractional position before wrapping into the cell",
+     "—"
+    ],
+    [
+     "c",
+     "the cell of the copy it belongs to",
+     "—"
+    ]
+   ],
+   "when": "Clays, doped and mixed oxides and polymer or solvate crystals whose CIF carries split or shared sites: an ordered cell for a force field, or a supercell with the disorder statistics of the file.",
+   "cites": [
+    "hall1991"
+   ],
+   "source": "core/src/crystal.cpp (parse_cif with CifDisorder)",
+   "tested": "CifDisorder.GroupsMajorNamedAndRandom (major and named groups; in 1000 cells every copy holds one whole group, group 1 in 694 for 0.7); CifDisorder.CopiesStayWholeAcrossTheCellEdge (a P-1 molecule cut by the cell edge keeps each atom's partner 1.2 Å away in every copy); CifDisorder.MixedSitesVacanciesAndSplitPositions (Mg/Fe 0.6/0.4 keeps Mg, at random 397 Fe in 1000 for 400; a 0.25 site filled 254 times in 1000; a half-and-half split position gives one atom)",
+   "deviation": "no correlation between neighbouring copies (each drawn independently); an assembly's groups are not checked to add up to 1 (what is missing is a vacancy); hydrogens added to a disordered group in a file are kept with their group only if they carry its label",
+   "engines": [
+    "build.cif_disorder"
+   ]
+  },
+  {
    "id": "copolymer-sequences",
    "group": "Growth",
    "title": "Copolymers of several units: terminal and penultimate models, drift with conversion",

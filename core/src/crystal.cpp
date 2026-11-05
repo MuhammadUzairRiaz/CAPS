@@ -10,6 +10,7 @@
 #include <fstream>
 #include <map>
 #include <numeric>
+#include <random>
 #include <set>
 #include <sstream>
 
@@ -477,7 +478,8 @@ std::pair<int, int> passivate_surface(System& s, const System& bulk, const std::
 
 // ---------------------------------------------------------------- CIF
 
-System parse_cif(const std::string& text, const std::string& name) {
+System parse_cif(const std::string& text, const std::string& name, const CifDisorder& o, CifDisorderReport* report) {
+  CifDisorderReport R;
   const CifData d = cif_parse(text);
   auto item = [&](const std::string& k) -> std::string {
     auto it = d.items.find(k);
@@ -518,71 +520,211 @@ System parse_cif(const std::string& text, const std::string& name) {
   };
   const int cx_ = col("_atom_site_fract_x"), cy_ = col("_atom_site_fract_y"), cz_ = col("_atom_site_fract_z");
   const int csym = col("_atom_site_type_symbol"), clab = col("_atom_site_label"), cocc = col("_atom_site_occupancy");
-  int partial = 0;
-  std::vector<Vec3> frac;
-  std::vector<int> zs;
-  std::vector<std::string> labels;
+  const int cass = col("_atom_site_disorder_assembly"), cgrp = col("_atom_site_disorder_group");
+  if (o.mode != "major" && o.mode != "group" && o.mode != "random") throw CrystalError("disorder: major, group or random");
+  // the sites
+  struct Site { std::string label, assembly, group; int z = 0; Vec3 f0{0, 0, 0}; double occ = 1; };
+  std::vector<Site> S;
+  auto blank = [](const std::string& v) { return v.empty() || v == "." || v == "?"; };
   for (const auto& r : sites) {
-    const double occ = cocc >= 0 ? cif_number(r[size_t(cocc)], 1) : 1;
-    if (occ < 0.5) { ++partial; continue; }
-    int z = csym >= 0 ? element_of_site(r[size_t(csym)]) : 0;
-    if (!z && clab >= 0) z = element_of_site(r[size_t(clab)]);
-    if (!z) throw CrystalError("site " + (clab >= 0 ? r[size_t(clab)] : std::string("?")) + ": unknown element");
-    const Vec3 f0{cif_number(r[size_t(cx_)]), cif_number(r[size_t(cy_)]), cif_number(r[size_t(cz_)])};
-    for (const auto& op : ops) {
+    Site st;
+    st.occ = cocc >= 0 ? cif_number(r[size_t(cocc)], 1) : 1;
+    st.z = csym >= 0 ? element_of_site(r[size_t(csym)]) : 0;
+    if (!st.z && clab >= 0) st.z = element_of_site(r[size_t(clab)]);
+    if (!st.z) throw CrystalError("site " + (clab >= 0 ? r[size_t(clab)] : std::string("?")) + ": unknown element");
+    st.label = clab >= 0 ? r[size_t(clab)] : element(st.z).symbol;
+    st.f0 = {cif_number(r[size_t(cx_)]), cif_number(r[size_t(cy_)]), cif_number(r[size_t(cz_)])};
+    if (cgrp >= 0 && !blank(r[size_t(cgrp)]) && r[size_t(cgrp)] != "0") {
+      st.group = r[size_t(cgrp)];
+      st.assembly = cass >= 0 && !blank(r[size_t(cass)]) ? r[size_t(cass)] : "A";
+    }
+    S.push_back(st);
+  }
+  // the assemblies' groups and their occupancies (the largest of each group's sites)
+  std::map<std::string, std::map<std::string, double>> asm_groups;
+  for (const auto& st : S)
+    if (!st.group.empty()) {
+      double& g = asm_groups[st.assembly][st.group];
+      g = std::max(g, st.occ);
+    }
+  R.assemblies = int(asm_groups.size());
+  for (const auto& [a, gs] : asm_groups) R.groups += int(gs.size());
+  std::map<std::string, std::string> chosen;   // major / group modes
+  for (const auto& [a, gs] : asm_groups) {
+    std::string best;
+    double bo = -1;
+    for (const auto& [g, oc] : gs)
+      if (oc > bo + 1e-9) bo = oc, best = g;
+    if (o.mode == "group" && gs.count(o.group)) best = o.group;
+    else if (o.mode == "group") R.notes.push_back("assembly " + a + " has no group " + o.group + ": its major group " + best + " kept");
+    chosen[a] = best;
+  }
+  // every site through every operation: unwrapped (for which copy an atom belongs to), wrapped, one per position
+  struct Ex { size_t site; int op; Vec3 fw; std::array<int, 3> shift; };
+  std::vector<Ex> X;
+  for (size_t si = 0; si < S.size(); ++si) {
+    const size_t first = X.size();
+    for (size_t k = 0; k < ops.size(); ++k) {
       Vec3 f;
-      for (int i = 0; i < 3; ++i) f[i] = op.R[i][0] * f0[0] + op.R[i][1] * f0[1] + op.R[i][2] * f0[2] + op.t[i];
-      f = wrap01(f);
+      for (int i = 0; i < 3; ++i) f[i] = ops[k].R[i][0] * S[si].f0[0] + ops[k].R[i][1] * S[si].f0[1] + ops[k].R[i][2] * S[si].f0[2] + ops[k].t[i];
+      const Vec3 fw = wrap01(f);
       bool dup = false;
-      for (size_t q = 0; q < frac.size() && !dup; ++q) {
-        Vec3 df = f - frac[q];
+      for (size_t q = first; q < X.size() && !dup; ++q) {
+        Vec3 df = fw - X[q].fw;
         for (auto& x : df) x -= std::round(x);
         dup = norm(s.cell.to_cartesian(df) - s.cell.to_cartesian({0, 0, 0})) < 0.05;
       }
       if (dup) continue;
-      frac.push_back(f);
-      zs.push_back(z);
-      labels.push_back(clab >= 0 ? r[size_t(clab)] : element(z).symbol);
+      X.push_back({si, int(k), fw, {int(std::lround(f[0] - fw[0])), int(std::lround(f[1] - fw[1])), int(std::lround(f[2] - fw[2]))}});
     }
   }
-  if (partial) s.notes.push_back(std::to_string(partial) + " sites with occupancy below 0.5 left out");
+  // places: partially occupied atoms without a group within 0.8 Å of each other (and an occupied atom with them)
+  std::vector<int> place(X.size(), -1);
+  int nplaces = 0;
+  auto dist = [&](const Vec3& a, const Vec3& b) {
+    Vec3 df = a - b;
+    for (auto& x : df) x -= std::round(x);
+    return norm(s.cell.to_cartesian(df) - s.cell.to_cartesian({0, 0, 0}));
+  };
+  for (size_t i = 0; i < X.size(); ++i) {
+    const Site& a = S[X[i].site];
+    if (!a.group.empty() || a.occ >= 0.999 || place[i] >= 0) continue;
+    place[i] = nplaces;
+    std::vector<size_t> q{i};
+    for (size_t h = 0; h < q.size(); ++h)
+      for (size_t j = 0; j < X.size(); ++j)
+        if (place[j] < 0 && S[X[j].site].group.empty() && S[X[j].site].occ < 0.999 && dist(X[q[h]].fw, X[j].fw) < 0.8) place[j] = nplaces, q.push_back(j);
+    ++nplaces;
+  }
+  std::vector<std::vector<size_t>> members(static_cast<size_t>(nplaces));
+  for (size_t i = 0; i < X.size(); ++i)
+    if (place[i] >= 0) members[size_t(place[i])].push_back(i);
+  R.places = nplaces;
+  // the major occupant of each place
+  std::vector<long> major_of(static_cast<size_t>(nplaces), -1);
+  int split_kept = 0, mixed = 0;
+  for (int p = 0; p < nplaces; ++p) {
+    const auto& m = members[size_t(p)];
+    double tot = 0, bo = -1;
+    std::set<int> els;
+    for (size_t i : m) {
+      const Site& st = S[X[i].site];
+      tot += st.occ, els.insert(st.z);
+      if (st.occ > bo + 1e-9) bo = st.occ, major_of[size_t(p)] = long(i);
+    }
+    if (tot < 0.5 - 1e-9) major_of[size_t(p)] = -1;
+    if (m.size() > 1) els.size() > 1 ? ++mixed : ++split_kept;
+  }
+  // the cells, the draws
+  const bool random = o.mode == "random";
+  const std::array<int, 3> N = random ? o.supercell : std::array<int, 3>{1, 1, 1};
+  for (int k = 0; k < 3; ++k)
+    if (N[size_t(k)] < 1) throw CrystalError("disorder: a supercell of at least 1 × 1 × 1");
+  std::mt19937_64 rng(o.seed * 0x9E3779B97F4A7C15ull + 17);
+  auto u01 = [&] { return double(rng() >> 11) * (1.0 / 9007199254740992.0); };
+  std::map<std::tuple<std::string, int, int, int, int>, std::string> drawn;   // (assembly, op, copy cell) → group
+  auto draw_group = [&](const std::string& a, int op, int c0, int c1, int c2) {
+    const auto key = std::make_tuple(a, op, c0, c1, c2);
+    auto it = drawn.find(key);
+    if (it != drawn.end()) return it->second;
+    double u = u01(), c = 0;
+    std::string g;   // none: the assembly absent from this copy (occupancies adding up to less than 1)
+    for (const auto& [name, oc] : asm_groups[a])
+      if ((c += oc) > u) { g = name; break; }
+    return drawn[key] = g;
+  };
+  struct Kept { int z; Vec3 f; std::string label; };
+  std::vector<Kept> keep;
+  for (int i0 = 0; i0 < N[0]; ++i0)
+    for (int i1 = 0; i1 < N[1]; ++i1)
+      for (int i2 = 0; i2 < N[2]; ++i2) {
+        // each place's occupant in this cell
+        std::vector<long> occ_of(static_cast<size_t>(nplaces), -1);
+        for (int p = 0; p < nplaces; ++p) {
+          if (!random) { occ_of[size_t(p)] = major_of[size_t(p)]; continue; }
+          double u = u01(), c = 0;
+          for (size_t i : members[size_t(p)])
+            if ((c += S[X[i].site].occ) > u) { occ_of[size_t(p)] = long(i); break; }
+        }
+        for (size_t i = 0; i < X.size(); ++i) {
+          const Site& st = S[X[i].site];
+          bool on;
+          if (!st.group.empty()) {
+            if (!random) on = chosen[st.assembly] == st.group;
+            else {
+              auto m = [&](int k, int n) { return ((k % n) + n) % n; };
+              const int c0 = m(i0 - X[i].shift[0], N[0]), c1 = m(i1 - X[i].shift[1], N[1]), c2 = m(i2 - X[i].shift[2], N[2]);
+              on = draw_group(st.assembly, X[i].op, c0, c1, c2) == st.group;
+            }
+          } else if (place[i] >= 0) {
+            on = occ_of[size_t(place[i])] == long(i);
+          } else {
+            on = true;
+          }
+          for (const auto& [z, e] : std::map<int, double>{{st.z, st.occ}}) R.expected[z] += e;
+          if (on) keep.push_back({st.z, {(X[i].fw[0] + i0) / N[0], (X[i].fw[1] + i1) / N[1], (X[i].fw[2] + i2) / N[2]}, st.label});
+        }
+      }
+  if (random) {
+    s.cell.a = s.cell.a * double(N[0]), s.cell.b = s.cell.b * double(N[1]), s.cell.c = s.cell.c * double(N[2]);
+    R.notes.push_back("disorder filled at random in a " + std::to_string(N[0]) + " × " + std::to_string(N[1]) + " × " + std::to_string(N[2]) + " supercell (seed " +
+                      std::to_string(o.seed) + ")");
+  } else {
+    if (R.assemblies) {
+      std::string t;
+      for (const auto& [a, g] : chosen) t += (t.empty() ? "" : ", ") + std::string("assembly ") + a + " group " + g;
+      R.notes.push_back(std::to_string(R.assemblies) + " disorder assembl" + (R.assemblies == 1 ? "y" : "ies") + ": kept " + t);
+    }
+    int lone = 0;
+    for (int p = 0; p < nplaces; ++p) lone += major_of[size_t(p)] < 0;
+    if (lone) s.notes.push_back(std::to_string(lone) + " sites with occupancy below 0.5 left out");
+    if (mixed) R.notes.push_back(std::to_string(mixed) + " mixed sites: the element of the largest occupancy kept");
+    if (split_kept) R.notes.push_back(std::to_string(split_kept) + " split positions: the one of the largest occupancy kept");
+  }
   std::map<int, int> type_of;
-  for (size_t i = 0; i < frac.size(); ++i) {
+  for (size_t i = 0; i < keep.size(); ++i) {
     Atom a;
     a.id = int64_t(i + 1);
     a.mol = 1;
-    a.element = zs[i];
-    a.name = labels[i];
-    a.pos = s.cell.a * frac[i][0] + s.cell.b * frac[i][1] + s.cell.c * frac[i][2];
-    auto it = type_of.find(zs[i]);
+    a.element = keep[i].z;
+    a.name = keep[i].label;
+    a.pos = s.cell.a * keep[i].f[0] + s.cell.b * keep[i].f[1] + s.cell.c * keep[i].f[2];
+    auto it = type_of.find(keep[i].z);
     if (it == type_of.end()) {
-      it = type_of.emplace(zs[i], int(type_of.size()) + 1).first;
+      it = type_of.emplace(keep[i].z, int(type_of.size()) + 1).first;
       TypeInfo ti;
       ti.type = it->second;
-      ti.mass = element(zs[i]).mass;
-      ti.label = element(zs[i]).symbol;
+      ti.mass = element(keep[i].z).mass;
+      ti.label = element(keep[i].z).symbol;
       s.types.push_back(ti);
     }
     a.type = it->second;
     s.atoms.push_back(a);
+    R.obtained[keep[i].z] += 1;
   }
   s.has_mol = true;
   s.unwrapped = true;   // one periodic network: positions stay as placed (never "made whole")
   s.bonds = crystal_bonds(s);
   std::map<int, int> count;
   for (const auto& a : s.atoms) count[a.element]++;
-  s.notes.insert(s.notes.begin(), std::to_string(ops.size()) + " symmetry operations · " + std::to_string(s.atoms.size()) + " atoms in the cell (" + hill(count) + ") · " +
-                                      std::to_string(s.bonds.size()) + " bonds");
+  s.notes.insert(s.notes.begin(), std::to_string(ops.size()) + " symmetry operations · " + std::to_string(s.atoms.size()) + " atoms in the " +
+                                      (random ? "supercell" : "cell") + " (" + hill(count) + ") · " + std::to_string(s.bonds.size()) + " bonds");
+  for (const auto& n : R.notes) s.notes.push_back(n);
+  if (report) *report = R;
   return s;
 }
 
-System read_cif(const std::string& path) {
+System parse_cif(const std::string& text, const std::string& name) { return parse_cif(text, name, CifDisorder{}, nullptr); }
+
+System read_cif(const std::string& path, const CifDisorder& o, CifDisorderReport* report) {
   std::ifstream in(path);
   if (!in) throw CrystalError("cannot open " + path);
   std::stringstream ss;
   ss << in.rdbuf();
-  return parse_cif(ss.str(), path);
+  return parse_cif(ss.str(), path, o, report);
 }
+
+System read_cif(const std::string& path) { return read_cif(path, CifDisorder{}, nullptr); }
 
 std::string formula_of(const System& s, const std::vector<size_t>& atoms) {
   std::map<int, int> count;

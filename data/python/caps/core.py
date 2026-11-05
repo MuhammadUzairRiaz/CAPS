@@ -1670,6 +1670,39 @@ def _graft(self, units, sites, dp: int = 10, equivalent: bool = False, probabili
 Document.graft = _graft
 
 
+def cif_disorder(path: str) -> dict:
+    """What a CIF's disorder holds, read the default way: {assemblies, groups, places (sites with alternatives or a
+    vacancy, per cell), expected {element: atoms from the occupancies}, obtained, notes}."""
+    f = library().caps_cif_disorder
+    f.argtypes = [C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 16)
+    f(_enc(path), buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "cannot read the CIF"))
+    return r
+
+
+def open_cif(path: str, mode: str = "major", group: str = "", supercell=(1, 1, 1), seed: int = 1) -> "Document":
+    """A CIF with its disorder resolved: mode "major" (each assembly's major group, each mixed or split site its major
+    occupant), "group" (the group named in every assembly), or "random" (a supercell filled at random to the
+    occupancies, each copy of an assembly keeping one whole group). .cif_report holds the composition expected and
+    written."""
+    o = {"mode": mode, "group": str(group), "supercell": [int(x) for x in supercell], "seed": int(seed)}
+    f = library().caps_open_cif
+    f.argtypes = [C.c_char_p, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_void_p
+    buf = C.create_string_buffer(1 << 16)
+    h = f(_enc(path), _enc(json.dumps(o)), buf, len(buf))
+    r = json.loads(buf.value.decode() or "{}")
+    if not h:
+        raise CapsError(r.get("error", "cannot read the CIF"))
+    d = Document(h)
+    d.cif_report = r
+    return d
+
+
 def _set_restraints(self, text: str) -> int:
     """Restraints of every kind for minimise, md, equilibrate and the LAMMPS / GROMACS exports, in text form with atoms
     from 1: "distance 1 2 3.0 20; angle 1 2 3 100:110; torsion 1 2 3 4 180 50; position 1-40 5 axes z radius 0.5"

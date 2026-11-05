@@ -265,6 +265,29 @@
                 </StackPanel>
               </Border>
 
+              <Border Classes="section" Padding="16,14" IsVisible="{Binding CifHasDisorder}">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="CIF DISORDER" Classes="h3" />
+                  <TextBlock Text="{Binding CifInfo}" Classes="dim" TextWrapping="Wrap" />
+                  <ComboBox ItemsSource="{x:Static vm:MainViewModel.CifModes}" SelectedIndex="{Binding CifMode}" HorizontalAlignment="Stretch"
+                            ToolTip.Tip="Major: each disorder assembly's group and each mixed or split site's occupant of the largest occupancy. Random: the occupancies in a supercell, every copy of a disordered group whole" />
+                  <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding CifNamed}">
+                    <TextBlock Text="Group" Classes="label" VerticalAlignment="Center" />
+                    <TextBox Text="{Binding CifGroup}" Width="70" ToolTip.Tip="The disorder group label kept in every assembly (_atom_site_disorder_group)" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding CifRandom}">
+                    <NumericUpDown Value="{Binding CifNa}" Minimum="1" Maximum="20" Increment="1" FormatString="0" Width="56" ShowButtonSpinner="False" />
+                    <TextBlock Text="×" VerticalAlignment="Center" />
+                    <NumericUpDown Value="{Binding CifNb}" Minimum="1" Maximum="20" Increment="1" FormatString="0" Width="56" ShowButtonSpinner="False" />
+                    <TextBlock Text="×" VerticalAlignment="Center" />
+                    <NumericUpDown Value="{Binding CifNc}" Minimum="1" Maximum="20" Increment="1" FormatString="0" Width="56" ShowButtonSpinner="False" />
+                    <NumericUpDown Value="{Binding CifSeed}" Minimum="1" Increment="1" FormatString="seed 0" Width="80" ShowButtonSpinner="False" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding CifError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding CifHasError}" />
+                  <Button Classes="small" Content="Read it again" Click="OnReadCifAgain" HorizontalAlignment="Left" ToolTip.Tip="The file read with this treatment, as a new structure" />
+                </StackPanel>
+              </Border>
+
               <Border Classes="section" Padding="16,14">
                 <StackPanel Spacing="8">
                   <DockPanel>
