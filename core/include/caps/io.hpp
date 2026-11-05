@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <functional>
 #include <iosfwd>
+#include <utility>
+#include <vector>
 #include <stdexcept>
 #include <string>
 
@@ -116,6 +118,8 @@ void write_pdb(const System& s, const std::string& path);
 void write_mol2(const System& s, const std::string& path);
 // MDL SD file (V2000; V3000 above 999 atoms or bonds), the formal charges perceived from the structure
 void write_sdf(const System& s, const std::string& path);
+// One SD-file record onto a stream: the connection table, then the data items >  <name> / value / blank line, then $$$$.
+void write_sdf_record(const System& s, std::ostream& out, const std::vector<std::pair<std::string, std::string>>& data);
 // CIF in P 1: the cell, formula and volume, and every atom's fractional coordinates (throws without a periodic cell)
 void write_cif(const System& s, const std::string& path);
 // VASP POSCAR (VASP 5: species and counts lines, Direct coordinates wrapped into the cell). Atoms are written grouped by

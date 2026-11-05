@@ -5141,6 +5141,48 @@
     "caps job collect-bench"
    ],
    "tex": "S_n = \\frac{r_n}{r_1}, \\qquad E_n = \\frac{S_n}{n / n_1}"
+  },
+  {
+   "id": "study-table-tools",
+   "group": "Analysis",
+   "title": "Study table: order, filter, colour, histogram and SD files",
+   "summary": "Tools for the rows of a study table. Rows are ordered by several columns, ties by the next key, each ascending or descending; a value that is not a number goes last either way, and equal rows keep their order. A filter shows the rows that meet a condition on the columns, written with the formula language plus comparisons and and/or. Cells of one column are coloured by their value on a viridis ramp from the column's smallest to its largest value. The chart can show a histogram of a column: bins of equal width over its range, the width from Freedman and Diaconis (2·IQR·n^(−1/3), quartiles by linear interpolation), Scott (3.49·s·n^(−1/3)) or Sturges (⌈log₂ n⌉ + 1 bins). The number of bins is ⌈range/h⌉, the bins then share the range equally, and the last bin is closed on the right. The rows shown that have a structure file can be written as an SD file, one record per row with every column as a data item (a >  <name> line, the value, a blank line).",
+   "equation": "h_FD = 2 IQR n^(−1/3),  h_Scott = 3.49 s n^(−1/3),  k_Sturges = ⌈log₂ n⌉ + 1;  k = ⌈(x_max − x_min)/h⌉",
+   "equation_note": "IQR the interquartile range, s the sample standard deviation, n the values with a number",
+   "symbols": [
+    [
+     "h",
+     "bin width",
+     "column units"
+    ],
+    [
+     "k",
+     "number of bins",
+     "—"
+    ],
+    [
+     "IQR",
+     "interquartile range",
+     "column units"
+    ],
+    [
+     "s",
+     "sample standard deviation",
+     "column units"
+    ]
+   ],
+   "when": "Screening many structures or runs: the highest-Tg candidates first, only the rows within a density window, a property's spread at a glance, and the chosen structures with their results handed on as one SD file.",
+   "cites": [
+    "freedman1981",
+    "scott1979",
+    "sturges1926",
+    "dalby1992"
+   ],
+   "source": "core/src/table_tools.cpp",
+   "tested": "tests/test_table_tools.cpp (1 … 100 by Freedman–Diaconis: five bins of 19.8 with 20 values each; Sturges gives 8 bins; Scott on 1 … 10 two bins of five; four bins over [0, 1] count 1, 1, 1, 2 with a NaN left out; equal values give one bin; a two-key order with a missing value last and stable ties; an SD file with data items written exactly and read back, a row without a structure left out, a name with < refused); tests/python/test_bindings.py",
+   "deviation": "The filter hides rows from the sheet and the SD file only; the chart and the statistics use every row. SD data item names lose < and > (the format's delimiters).",
+   "engines": "caps table CSV [--sort 'A,-B'] [--hist COLUMN --rule fd|scott|sturges|N] [--sdf OUT.sdf --structure COLUMN]; Python caps.histogram, caps.write_sdf_table; Studio Analyze › Study table",
+   "tex": "h_{\\mathrm{FD}} = 2\\,\\mathrm{IQR}\\,n^{-1/3},\\qquad h_{\\mathrm{Scott}} = 3.49\\,s\\,n^{-1/3},\\qquad k_{\\mathrm{Sturges}} = \\lceil \\log_2 n \\rceil + 1,\\qquad k = \\left\\lceil \\frac{x_{\\max} - x_{\\min}}{h} \\right\\rceil"
   }
  ]
 }

@@ -45,6 +45,9 @@ public sealed class StudyCell : INotifyPropertyChanged
         Number = double.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : double.NaN;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Text)));
     }
+    private Avalonia.Media.IBrush? _fill;
+    /// <summary>The colour-by-value background (null: none).</summary>
+    public Avalonia.Media.IBrush? Fill { get => _fill; set { _fill = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Fill))); } }
     internal void SetComputed(double v)
     {
         Number = v;
@@ -54,8 +57,12 @@ public sealed class StudyCell : INotifyPropertyChanged
 }
 
 /// <summary>A row: its label, the structure file it stands for (opened from the table), and one cell per column.</summary>
-public sealed class StudyRow
+public sealed class StudyRow : INotifyPropertyChanged
 {
+    public event PropertyChangedEventHandler? PropertyChanged;
+    private bool _visible = true;
+    /// <summary>Shown under the filter.</summary>
+    public bool Visible { get => _visible; set { if (_visible == value) return; _visible = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Visible))); } }
     public StudyTableDoc? Table { get; init; }
     public string Label { get; set; } = "";
     public string Path { get; set; } = "";
@@ -288,6 +295,7 @@ public sealed partial class MainViewModel
         _studyX = Math.Max(0, StudyColumnNames.IndexOf(x));
         _studyY = StudyColumnNames.IndexOf(y) is var iy && iy >= 0 ? iy : Math.Min(1, Math.Max(0, StudyColumnNames.Count - 1));
         Raise(nameof(StudyX)); Raise(nameof(StudyY)); Raise(nameof(StudySummary));
+        _studyColour = 0; Raise(nameof(StudyColourNames)); Raise(nameof(StudyColour));
         StudyPlot();
         StudyStatsRun();
     }
@@ -420,6 +428,7 @@ public sealed partial class MainViewModel
                 if (f != null) { StudyFitLine = f.Line; StudyFitText = f.Text; } else StudyFitText = "the fit did not converge on these points";
             }
         }
+        StudyHistCompute();
         Raise(nameof(StudyFitText)); Raise(nameof(StudyXLabel)); Raise(nameof(StudyYLabel));
         StudyChanged?.Invoke();
     }

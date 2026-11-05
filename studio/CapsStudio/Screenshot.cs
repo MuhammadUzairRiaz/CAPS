@@ -250,6 +250,20 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("rpath: " + vm.PathResult + (vm.PathHasError ? " · error " + vm.PathError : ""));
             }
+            if (kv[0] == "study")   // study=CSV|SORT|FILTER|COLOUR_COLUMN|hist: the Study page with a CSV loaded and the extras applied
+            {
+                var vm = w.ViewModel;
+                var f = kv[1].Split('|');
+                vm.SetModule(74);
+                vm.OpenStudy();
+                Console.WriteLine("study: " + vm.StudyImportCsv(f[0]));
+                if (f.Length > 1 && f[1].Length > 0) { vm.StudySort = f[1]; Console.WriteLine("study sort: " + vm.StudyApplySort()); }
+                if (f.Length > 2 && f[2].Length > 0) { vm.StudyFilter = f[2]; Console.WriteLine("study filter: " + vm.StudyApplyFilter()); }
+                if (f.Length > 3 && f[3].Length > 0) vm.StudyColour = Array.IndexOf(vm.StudyColourNames, f[3]);
+                if (f.Length > 4 && f[4] == "hist") vm.StudyHist = true;
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("study: " + vm.StudyFitText + " · rows " + string.Join(",", vm.Study.Rows.Select(r => r.Label + (r.Visible ? "" : "(hidden)"))));
+            }
             if (kv[0] == "cellrelax")   // cellrelax=b,beta: Minimise page, the cell relaxed with those parameters held
             {
                 var vm = w.ViewModel;

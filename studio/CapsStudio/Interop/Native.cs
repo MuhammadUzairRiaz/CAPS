@@ -548,6 +548,9 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_thermal")] public static extern int Thermal(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_thermal_lammps")] public static extern int ThermalLammps(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? outText, int cap);
     [DllImport(Lib, EntryPoint = "caps_reaction_path")] public static extern IntPtr ReactionPath(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_histogram")] public static extern int Histogram([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_sort_rows")] public static extern int SortRows([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_sdf_table")] public static extern int SdfTable([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_miller")] public static extern int Miller(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_dendrimer")] public static extern IntPtr Dendrimer([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_dpd")] public static extern IntPtr Dpd([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
@@ -992,6 +995,9 @@ public sealed class CapsDocument : IDisposable
     }
 
     /// <summary>A CIF's disorder read the default way (caps_cif_disorder), JSON.</summary>
+    public static string Histogram(string json) => JsonCallOnce((b, c) => Native.Histogram(json, b, c));
+    public static string SortRows(string json) => JsonCallOnce((b, c) => Native.SortRows(json, b, c));
+    public static string SdfTable(string json) => JsonCallOnce((b, c) => Native.SdfTable(json, b, c));
     public static string CifDisorder(string path) => JsonCallOnce((b, c) => Native.CifDisorder(path, b, c));
     /// <summary>A CIF read with a disorder choice (caps_open_cif): the document and its report (JSON).</summary>
     public static (CapsDocument Doc, string Report) OpenCif(string path, string json, string label)

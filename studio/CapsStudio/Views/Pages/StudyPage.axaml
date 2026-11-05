@@ -18,6 +18,7 @@
           <Button Content="Open…" Click="OnLoad" />
           <Button Content="Save…" Click="OnSave" />
           <Button Content="Export CSV…" Click="OnExport" />
+          <Button Content="Export SD file…" Click="OnExportSdf" ToolTip.Tip="The rows shown that have a structure, one record each, every column as an SD data item" />
         </StackPanel>
         <StackPanel Spacing="3">
           <TextBlock Text="Study table" FontSize="19" FontWeight="SemiBold" />
@@ -52,7 +53,7 @@
             <ItemsControl ItemsSource="{Binding Study.Rows}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:StudyRow">
-                  <StackPanel Orientation="Horizontal">
+                  <StackPanel Orientation="Horizontal" IsVisible="{Binding Visible}">
                     <Button Content="×" Width="24" Padding="0" FontSize="11" Background="Transparent" Click="OnRemoveRow" ToolTip.Tip="Remove the row" />
                     <Border Width="164" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,1" Padding="6,3">
                       <DockPanel>
@@ -65,7 +66,7 @@
                       <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:StudyCell">
-                          <TextBox Classes="cell mono" Text="{Binding Text, UpdateSourceTrigger=LostFocus}" IsReadOnly="{Binding ReadOnly}" />
+                          <TextBox Classes="cell mono" Text="{Binding Text, UpdateSourceTrigger=LostFocus}" IsReadOnly="{Binding ReadOnly}" Background="{Binding Fill}" />
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -94,6 +95,25 @@
           </Border>
           <Border Classes="pcard">
             <StackPanel Spacing="8">
+              <TextBlock Text="Order, filter, colour" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                <TextBox Text="{Binding StudySort}" Classes="mono" Watermark="order by: Tg, -density" ToolTip.Tip="Columns in priority order; a leading - sorts that column descending; rows without a number go last" />
+                <Button Grid.Column="1" Content="Order" Click="OnSort" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                <TextBox Text="{Binding StudyFilter}" Classes="mono" Watermark="show rows where: Tg > 300 and density &lt; 1.2" ToolTip.Tip="A condition on the columns: &lt; &lt;= &gt; &gt;= == !=, and, or, with the formula functions; empty shows every row" />
+                <Button Grid.Column="1" Content="Filter" Click="OnFilter" />
+              </Grid>
+              <TextBlock Text="{Binding StudyFilterText}" Classes="dim" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Colour cells by" Classes="label" VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{Binding StudyColourNames}" SelectedIndex="{Binding StudyColour}" MinWidth="160" />
+              </StackPanel>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="The filter hides rows from the sheet and from the SD file; the chart and the statistics use every row." />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
               <TextBlock Text="New column" FontSize="13.5" FontWeight="SemiBold" />
               <Grid ColumnDefinitions="*,2*,Auto" ColumnSpacing="6">
                 <TextBox Text="{Binding StudyNewName}" Watermark="name" />
@@ -112,6 +132,11 @@
                 <ComboBox Grid.Row="1" ItemsSource="{Binding StudyColumnNames}" SelectedIndex="{Binding StudyX}" HorizontalAlignment="Stretch" />
                 <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding StudyColumnNames}" SelectedIndex="{Binding StudyY}" HorizontalAlignment="Stretch" />
               </Grid>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <CheckBox Content="Histogram of the x column" IsChecked="{Binding StudyHist}" ToolTip.Tip="Rows counted in bins of equal width over the column's range" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.StudyBinRules}" SelectedIndex="{Binding StudyBinRule}" IsVisible="{Binding StudyHist}"
+                          ToolTip.Tip="The bin width: Freedman–Diaconis 2·IQR·n^(−1/3), Scott 3.49·s·n^(−1/3), or Sturges ⌈log₂ n⌉ + 1 bins" />
+              </StackPanel>
               <v:SciPlot x:Name="Plot" Height="240" />
               <ComboBox ItemsSource="{x:Static vm:CurveFit.Models}" SelectedIndex="{Binding StudyFit}" HorizontalAlignment="Stretch" />
               <TextBlock Text="{Binding StudyFitText}" Classes="mono" FontSize="11" TextWrapping="Wrap" />

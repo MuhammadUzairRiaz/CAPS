@@ -92,6 +92,7 @@
 #include "caps/dendrimer.hpp"
 #include "caps/miller.hpp"
 #include "caps/cell_relax.hpp"
+#include "caps/table_tools.hpp"
 #include "caps/dpd.hpp"
 #include "caps/qeq.hpp"
 #include "caps/pores.hpp"
@@ -273,6 +274,8 @@ int usage() {
                "                 (with the moves and field options of run, or --no-exchange; [-o OUT] [--json OUT] [--csv DIR])\n"
                "  caps frames  FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N]   (read thinned)\n"
                "  caps convert FILE OUT.data|xyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA]   (.car: with its .mdf)\n"
+               "  caps table   CSV [--sort 'A,-B'] [--hist COLUMN [--rule fd|scott|sturges|N]] [--sdf OUT.sdf --structure COLUMN]\n"
+               "               a table's rows ordered by columns (- descending), a histogram of a column, an SD file of the rows\n"
                "  caps planes  FILE --hkl h,k,l [--shift 0.5] [--max N] [--json OUT]   lattice planes (hkl) of the cell: d-spacing,\n"
                "               normal, each plane cut to the cell, and the view angles that look down the normal\n"
                "  caps edit    FILE --ops 'OP ARGS; OP ARGS …' | --ops-file OPS.txt -o OUT   edits in order, atoms numbered from 1:\n"
@@ -544,7 +547,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--images", "--neb", "--fmax", "--no-climb", "--relax-ends", "--no-match", "--find", "--clear", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--shift", "--hold", "--preset", "--unit", "--core", "--end", "--focal", "--generation", "--growth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--images", "--neb", "--fmax", "--no-climb", "--relax-ends", "--no-match", "--find", "--clear", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--shift", "--hold", "--hist", "--rule", "--sort", "--sdf", "--structure", "--preset", "--unit", "--core", "--end", "--focal", "--generation", "--growth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -4194,6 +4197,96 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps fields: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "table") {
+    try {
+      if (pos.empty()) return usage();
+      std::ifstream in(pos[0]);
+      if (!in) throw std::invalid_argument("cannot read " + pos[0]);
+      std::vector<std::vector<std::string>> cells;
+      for (std::string line; std::getline(in, line);) {
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        if (line.empty()) continue;
+        const char sep = line.find('\t') != std::string::npos ? '\t' : ',';
+        std::vector<std::string> f;
+        std::string cur;
+        for (char c : line + sep) {
+          if (c == sep) { const auto a = cur.find_first_not_of(' '), b = cur.find_last_not_of(' '); f.push_back(a == std::string::npos ? "" : cur.substr(a, b - a + 1)); cur.clear(); }
+          else cur += c;
+        }
+        cells.push_back(f);
+      }
+      if (cells.size() < 2) throw std::invalid_argument(pos[0] + ": a header row and at least one row");
+      const auto header = cells[0];
+      cells.erase(cells.begin());
+      auto column = [&](const std::string& name) {
+        for (size_t k = 0; k < header.size(); ++k) if (header[k] == name) return k;
+        throw std::invalid_argument("no column '" + name + "' (" + std::to_string(header.size()) + " columns in " + pos[0] + ")");
+      };
+      auto number = [](const std::string& t) {
+        char* e = nullptr;
+        const double v = std::strtod(t.c_str(), &e);
+        return e && *e == 0 && !t.empty() ? v : NAN;
+      };
+      std::vector<size_t> order(cells.size());
+      for (size_t r = 0; r < order.size(); ++r) order[r] = r;
+      if (o.count("--sort")) {
+        std::vector<std::vector<double>> keys;
+        std::vector<bool> desc;
+        std::string spec = o["--sort"], cur;
+        for (char c : spec + ",") {
+          if (c != ',') { cur += c; continue; }
+          if (cur.empty()) continue;
+          const bool d = cur[0] == '-';
+          const size_t k = column(d ? cur.substr(1) : cur);
+          std::vector<double> v;
+          for (const auto& row : cells) v.push_back(k < row.size() ? number(row[k]) : NAN);
+          keys.push_back(v), desc.push_back(d);
+          cur.clear();
+        }
+        order = sort_rows(keys, desc);
+        for (size_t k = 0; k < header.size(); ++k) std::printf("%s%s", k ? "\t" : "", header[k].c_str());
+        std::printf("\n");
+        for (size_t r : order) {
+          for (size_t k = 0; k < header.size(); ++k) std::printf("%s%s", k ? "\t" : "", k < cells[r].size() ? cells[r][k].c_str() : "");
+          std::printf("\n");
+        }
+      }
+      if (o.count("--hist")) {
+        const size_t k = column(o["--hist"]);
+        std::vector<double> v;
+        for (const auto& row : cells) v.push_back(k < row.size() ? number(row[k]) : NAN);
+        std::string rule = o.count("--rule") ? o["--rule"] : "fd";
+        int bins = 0;
+        if (!rule.empty() && std::isdigit(static_cast<unsigned char>(rule[0]))) bins = std::stoi(rule), rule = "bins";
+        const auto h = histogram(v, rule, bins);
+        std::printf("# %s: %d values (%d left out), %s, width %.6g\n# from        to          count\n", o["--hist"].c_str(), h.n, h.left_out, h.rule.c_str(), h.width);
+        for (size_t b = 0; b < h.counts.size(); ++b) std::printf("%-12.6g %-12.6g %d\n", h.edges[b], h.edges[b + 1], h.counts[b]);
+      }
+      if (o.count("--sdf")) {
+        if (!o.count("--structure")) throw std::invalid_argument("--sdf needs --structure COLUMN (the column of structure files)");
+        const size_t ks = column(o["--structure"]);
+        const auto base = std::filesystem::path(pos[0]).parent_path();
+        std::vector<SdfRow> rows;
+        for (size_t r : order) {
+          SdfRow row;
+          const auto& c = cells[r];
+          std::string f = ks < c.size() ? c[ks] : "";
+          if (!f.empty() && std::filesystem::path(f).is_relative()) f = (base / f).string();
+          row.structure = f, row.title = std::filesystem::path(f).stem().string();
+          for (size_t k = 0; k < header.size(); ++k) if (k != ks) row.data.push_back({header[k], k < c.size() ? c[k] : ""});
+          rows.push_back(row);
+        }
+        std::vector<std::string> notes;
+        const int n = write_sdf_table(rows, o["--sdf"], &notes);
+        for (const auto& x : notes) std::printf("%s\n", x.c_str());
+        std::printf("wrote %s (%d records)\n", o["--sdf"].c_str(), n);
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps table: %s\n", e.what());
       return 1;
     }
   }

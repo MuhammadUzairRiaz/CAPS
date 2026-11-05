@@ -24,7 +24,7 @@ public sealed class Formula
     public static Formula Parse(string text)
     {
         var p = new Parser(text);
-        var f = p.Sum();
+        var f = p.Condition();
         p.Space();
         if (p.I < text.Length) throw new FormatException($"unexpected '{text[p.I]}' at {p.I + 1}");
         return new Formula(text, f, p.Names.Distinct().ToList());
@@ -36,6 +36,45 @@ public sealed class Formula
         public readonly List<string> Names = new();
         public void Space() { while (I < s.Length && char.IsWhiteSpace(s[I])) ++I; }
         private bool Eat(char c) { Space(); if (I < s.Length && s[I] == c) { ++I; return true; } return false; }
+
+        // conditions (the Study filter): a or b, a and b, comparisons < <= > >= == !=; true is 1, false 0
+        public Func<Func<string, double>, double> Condition()
+        {
+            var a = Conjunction();
+            while (Word("or") || Two('|', '|')) { var l = a; var r = Conjunction(); a = v => l(v) != 0 || r(v) != 0 ? 1 : 0; }
+            return a;
+        }
+        private Func<Func<string, double>, double> Conjunction()
+        {
+            var a = Comparison();
+            while (Word("and") || Two('&', '&')) { var l = a; var r = Comparison(); a = v => l(v) != 0 && r(v) != 0 ? 1 : 0; }
+            return a;
+        }
+        private Func<Func<string, double>, double> Comparison()
+        {
+            var a = Sum();
+            Space();
+            if (Two('<', '=')) { var l = a; var r = Sum(); return v => l(v) <= r(v) ? 1 : 0; }
+            if (Two('>', '=')) { var l = a; var r = Sum(); return v => l(v) >= r(v) ? 1 : 0; }
+            if (Two('=', '=')) { var l = a; var r = Sum(); return v => l(v) == r(v) ? 1 : 0; }
+            if (Two('!', '=')) { var l = a; var r = Sum(); return v => l(v) != r(v) ? 1 : 0; }
+            if (Eat('<')) { var l = a; var r = Sum(); return v => l(v) < r(v) ? 1 : 0; }
+            if (Eat('>')) { var l = a; var r = Sum(); return v => l(v) > r(v) ? 1 : 0; }
+            return a;
+        }
+        private bool Two(char a, char b)
+        {
+            Space();
+            if (I + 1 < s.Length && s[I] == a && s[I + 1] == b) { I += 2; return true; }
+            return false;
+        }
+        private bool Word(string w)
+        {
+            Space();
+            if (I + w.Length <= s.Length && string.CompareOrdinal(s, I, w, 0, w.Length) == 0 && (I + w.Length == s.Length || !char.IsLetterOrDigit(s[I + w.Length]))
+                && (I == 0 || !char.IsLetterOrDigit(s[I - 1]))) { I += w.Length; return true; }
+            return false;
+        }
 
         public Func<Func<string, double>, double> Sum()
         {

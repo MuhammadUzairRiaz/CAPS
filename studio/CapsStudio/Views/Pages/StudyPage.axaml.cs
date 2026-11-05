@@ -19,7 +19,9 @@ public partial class StudyPage : PageBase
             _hooked = vm;
             vm.StudyChanged += () =>
             {
-                this.FindControl<SciPlot>("Plot")!.Figure = ViewModels.PageFigures.Columns(vm.StudyXLabel, vm.StudyYLabel, vm.StudyCurve, vm.StudyFitLine, markers: true);
+                this.FindControl<SciPlot>("Plot")!.Figure = vm.StudyHist
+                    ? ViewModels.PageFigures.Histogram(vm.StudyHistBars, vm.StudyXLabel, "rows")
+                    : ViewModels.PageFigures.Columns(vm.StudyXLabel, vm.StudyYLabel, vm.StudyCurve, vm.StudyFitLine, markers: true);
             };
         };
     }
@@ -76,6 +78,15 @@ public partial class StudyPage : PageBase
             FileTypeChoices = [new FilePickerFileType(kind) { Patterns = ["*" + ext] }],
         });
         if (file?.TryGetLocalPath() is { } p) Vm.Status = Vm.StudySave(p);
+    }
+    private void OnSort(object? s, RoutedEventArgs e) => Vm.Status = Vm.StudyApplySort();
+    private void OnFilter(object? s, RoutedEventArgs e) => Vm.Status = Vm.StudyApplyFilter();
+    private async void OnExportSdf(object? s, RoutedEventArgs e)
+    {
+        var top = TopLevel.GetTopLevel(this);
+        if (top == null) return;
+        var f = await top.StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions { Title = "SD file of the rows shown", DefaultExtension = ".sdf", SuggestedFileName = "study.sdf" });
+        if (f != null && Avalonia.Platform.Storage.StorageProviderExtensions.TryGetLocalPath(f) is { } p) Vm.Status = Vm.StudyExportSdf(p);
     }
     private async void OnSave(object? s, RoutedEventArgs e) => await SaveAs("Save the study table", ".capstable", "CAPS study table");
     private async void OnExport(object? s, RoutedEventArgs e) => await SaveAs("Export the table as CSV", ".csv", "CSV");

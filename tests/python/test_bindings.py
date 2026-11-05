@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 105, "ABI 105")
+check(caps.abi_version() == 106, "ABI 106")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -906,6 +906,14 @@ _pe = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "poly
 _cr = _pe.relax_cell(hold=["b", "beta"], ftol=0.05)
 check(abs(_cr["after"][1] - _cr["before"][1]) < 1e-9 and abs(_cr["after"][4] - _cr["before"][4]) < 1e-9 and _cr["energy_after"] < _cr["energy_before"], f"relax_cell {_cr}")
 print("ok   relax_cell with held parameters")
+
+# study-table tools (ABI 106): Freedman–Diaconis on 1 … 100 gives five bins of 20; an SD file of one row with data
+_hg = caps.histogram(range(1, 101))
+check(_hg["counts"] == [20, 20, 20, 20, 20], f"histogram {_hg}")
+_sdfp = os.path.join(tempfile.mkdtemp(), "rows.sdf")
+_ws = caps.write_sdf_table([{"title": "m", "structure": _mp, "data": {"Tg (K)": 350}}, {"title": "none"}], _sdfp)
+check(_ws["records"] == 1 and ">  <Tg (K)>\n350\n" in open(_sdfp).read(), f"sdf table {_ws}")
+print("ok   histogram, write_sdf_table")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))

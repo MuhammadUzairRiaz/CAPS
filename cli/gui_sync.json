@@ -1965,6 +1965,23 @@
     "--topology": "cli: the page relaxes the open structure",
     "--quiet": "cli: no force-field line"
    }
+  },
+  "table": {
+   "status": "gui",
+   "studio": "Analyze › Study table (Order, filter, colour; Histogram of the x column; Export SD file)",
+   "where": "Views/Pages/StudyPage.axaml|Order, filter, colour",
+   "capi": [
+    "caps_histogram",
+    "caps_sort_rows",
+    "caps_sdf_table"
+   ],
+   "options": {
+    "--sort": "page",
+    "--hist": "page",
+    "--rule": "partial: the page offers Freedman–Diaconis, Scott and Sturges; a number of bins is the command line's",
+    "--sdf": "page",
+    "--structure": "partial: the page uses each row's own structure file"
+   }
   }
  },
  "hidden_options": {

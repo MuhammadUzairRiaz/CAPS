@@ -140,6 +140,10 @@ System read_sdf(const std::string& path) {
 void write_sdf(const System& s, const std::string& path) {
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);
+  write_sdf_record(s, out, {});
+}
+
+void write_sdf_record(const System& s, std::ostream& out, const std::vector<std::pair<std::string, std::string>>& data) {
   const size_t na = s.atoms.size(), nb = s.bonds.size();
   // formal charges (MDL keeps formal charges, not partial ones): from the structure's perceived chemistry
   std::vector<int> formal(na, 0);
@@ -189,7 +193,10 @@ void write_sdf(const System& s, const std::string& path) {
     }
     out << "M  V30 END BOND\nM  V30 END CTAB\n";
   }
-  out << "M  END\n$$$$\n";
+  out << "M  END\n";
+  // data items (Dalby et al. 1992): a header line >  <name>, the value, a blank line
+  for (const auto& [name, value] : data) out << ">  <" << name << ">\n" << value << "\n\n";
+  out << "$$$$\n";
 }
 
 // CIF (P 1): the cell, every atom at its fractional coordinates, with its element as type symbol

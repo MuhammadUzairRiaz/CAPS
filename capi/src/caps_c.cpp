@@ -118,6 +118,7 @@
 #include "caps/dendrimer.hpp"
 #include "caps/miller.hpp"
 #include "caps/cell_relax.hpp"
+#include "caps/table_tools.hpp"
 #include "caps/ring_edit.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/nano.hpp"
@@ -10147,6 +10148,82 @@ extern "C" caps_doc* caps_reaction_path(caps_doc* d, const char* json, char* out
   }
 }
 
+// ---------------------------------------------------------------- study-table tools (v106, table_tools.hpp)
+extern "C" int32_t caps_histogram(const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    std::vector<double> v;
+    if (j.has("values") && j["values"].is_array())
+      for (const auto& x : j["values"].items()) v.push_back(x.kind() == caps::Json::Number ? x.number() : NAN);
+    const auto h = caps::histogram(v, j.text("rule", "fd"), int(j.num("bins", 0)));
+    caps::Json e = caps::Json::array(), c = caps::Json::array();
+    for (double x : h.edges) e.push_back(x);
+    for (int x : h.counts) c.push_back(double(x));
+    r["edges"] = e, r["counts"] = c, r["width"] = h.width, r["rule"] = h.rule, r["n"] = double(h.n), r["left_out"] = double(h.left_out);
+    r["ok"] = true;
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& ex) {
+    r = caps::Json::object();
+    r["ok"] = false, r["error"] = std::string(ex.what());
+    return report_out(r.dump(0), out, cap);
+  }
+}
+
+extern "C" int32_t caps_sort_rows(const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    std::vector<std::vector<double>> keys;
+    std::vector<bool> desc;
+    if (j.has("keys") && j["keys"].is_array())
+      for (const auto& k : j["keys"].items()) {
+        std::vector<double> v;
+        for (const auto& x : k.items()) v.push_back(x.kind() == caps::Json::Number ? x.number() : NAN);
+        keys.push_back(std::move(v));
+      }
+    if (j.has("descending") && j["descending"].is_array())
+      for (const auto& x : j["descending"].items()) desc.push_back(x.kind() == caps::Json::Bool && x.boolean());
+    caps::Json o = caps::Json::array();
+    for (size_t i : caps::sort_rows(keys, desc)) o.push_back(double(i));
+    r["order"] = o, r["ok"] = true;
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& ex) {
+    r = caps::Json::object();
+    r["ok"] = false, r["error"] = std::string(ex.what());
+    return report_out(r.dump(0), out, cap);
+  }
+}
+
+extern "C" int32_t caps_sdf_table(const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const std::string path = j.text("path");
+    if (path.empty()) throw std::invalid_argument("name the SD file to write (path)");
+    std::vector<caps::SdfRow> rows;
+    if (j.has("rows") && j["rows"].is_array())
+      for (const auto& x : j["rows"].items()) {
+        caps::SdfRow row;
+        row.title = x.text("title"), row.structure = x.text("structure");
+        if (x.has("data") && x["data"].is_array())
+          for (const auto& kv : x["data"].items())
+            if (kv.is_array() && kv.size() == 2) row.data.push_back({kv[0].str(), kv[1].kind() == caps::Json::String ? kv[1].str() : kv[1].dump(0)});
+        rows.push_back(std::move(row));
+      }
+    std::vector<std::string> notes;
+    const int n = caps::write_sdf_table(rows, path, &notes);
+    caps::Json nt = caps::Json::array();
+    for (const auto& x : notes) nt.push_back(x);
+    r["records"] = double(n), r["notes"] = nt, r["ok"] = true;
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& ex) {
+    r = caps::Json::object();
+    r["ok"] = false, r["error"] = std::string(ex.what());
+    return report_out(r.dump(0), out, cap);
+  }
+}
+
 // ---------------------------------------------------------------- lattice planes in the view (v104, miller.hpp)
 extern "C" int32_t caps_miller(caps_doc* d, const char* json, char* out, int32_t cap) {
   caps::Json r = caps::Json::object();
@@ -10183,8 +10260,7 @@ extern "C" int32_t caps_miller(caps_doc* d, const char* json, char* out, int32_t
     r = caps::Json::object();
     r["ok"] = false;
     r["error"] = std::string(e.what());
-    report_out(r.dump(0), out, cap);
-    return -1;
+    return report_out(r.dump(0), out, cap);
   }
 }
 

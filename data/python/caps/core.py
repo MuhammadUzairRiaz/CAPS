@@ -2103,6 +2103,33 @@ def dendrimer(preset: str = "", generation: int = -1, core: str = "", unit: str 
     d.dendrimer_report = r
     return d
 
+def histogram(values, rule: str = "fd", bins: int = 0) -> dict:
+    """Bins of equal width over the values (not-finite ones left out): rule "fd" (Freedman–Diaconis), "scott",
+    "sturges" or "bins" with bins. Returns {edges, counts, width, rule, n, left_out}."""
+    vals = [float(v) if v is not None else float("nan") for v in values]
+    o = {"values": [v if v == v and abs(v) != float("inf") else None for v in vals], "rule": rule, "bins": int(bins)}
+    f = library().caps_histogram
+    f.argtypes = [C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    r = _json_call(f, _enc(json.dumps(o)))
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "histogram failed"))
+    return r
+
+
+def write_sdf_table(rows, path: str) -> dict:
+    """An SD file of table rows: rows [{"title", "structure" (a file CAPS reads), "data": {name: value}}], each row's
+    data as SD data items; rows without a structure are left out. Returns {records, notes}."""
+    rs = [{"title": str(r.get("title", "")), "structure": str(r.get("structure", "")),
+           "data": [[str(k), str(v)] for k, v in dict(r.get("data", {})).items()]} for r in rows]
+    f = library().caps_sdf_table
+    f.argtypes = [C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    r = _json_call(f, _enc(json.dumps({"path": str(path), "rows": rs})))
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "SD file failed"))
+    return r
+
 def read_data(path: str) -> dict:
     """A measured curve (two or three columns, PANalytical .xrdml, GSAS constant-wavelength banks, Bruker .uxd, Rigaku
     *TYPE text, JCAMP-DX spectra) as {kind: "curve", format, title, xunits, yunits, x, y, sigma, notes}, or a Gaussian
