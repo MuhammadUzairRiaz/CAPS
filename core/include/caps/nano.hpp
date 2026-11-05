@@ -94,6 +94,12 @@ struct ParticleOptions {
   std::string thiolate;
   double thiolate_fraction = 1.0;
   double vacuum = 10.0;
+  // Whole molecules (a molecular crystal: cellulose, S8, a stearate): each molecule kept or left out by where its
+  // centroid falls, so none is cut; a periodic network in the crystal is still cut atom by atom (said in the notes).
+  bool whole_molecules = false;
+  // The shape's base (its z axis) normal to these lattice planes (h k l; 0 0 0: the Cartesian z); the particle is
+  // written with that normal along z.
+  std::array<int, 3> hkl{0, 0, 0};
 };
 System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* rep = nullptr);
 

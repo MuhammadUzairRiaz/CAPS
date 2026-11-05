@@ -859,7 +859,9 @@
     "--units": "page",
     "--chains": "page",
     "--dp": "page",
-    "--density": "page"
+    "--density": "page",
+    "--whole-molecules": "Views/Pages/NanoPage.axaml|Whole molecules (kept by their centres)",
+    "--hkl": "Views/Pages/NanoPage.axaml|Base on planes (h k l)"
    }
   },
   "martini": {

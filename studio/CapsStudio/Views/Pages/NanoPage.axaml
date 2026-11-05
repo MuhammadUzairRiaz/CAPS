@@ -178,6 +178,12 @@
                     <TextBlock Text="Fibre length along z · Å (periodic; the crystal's c axis)" Classes="label" />
                     <NumericUpDown Value="{Binding FibreLength}" Minimum="3" Maximum="500" Increment="1" FormatString="0.0" />
                   </StackPanel>
+                  <CheckBox Classes="toggle" Content="Whole molecules (kept by their centres)" IsChecked="{Binding ParticleWholeMolecules}"
+                            ToolTip.Tip="A molecular crystal (cellulose, S₈, a stearate): each molecule kept or left out by where its centroid falls, so none is cut; a periodic network is still cut atom by atom" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="Base on planes (h k l)" Classes="label" VerticalAlignment="Center" />
+                    <TextBox Text="{Binding ParticleHkl}" Watermark="0 0 1" Width="90" Classes="mono" ToolTip.Tip="The shape's base (its z) normal to these lattice planes; empty: the crystal's own z" />
+                  </StackPanel>
                   <CheckBox Classes="toggle" Content="Passivate the surface (Si–OH, O–H)" IsChecked="{Binding ParticlePassivate}" IsVisible="{Binding !ParticleIsMetal}" />
                   <CheckBox Classes="toggle" Content="Relax the surface with a force field (UFF)" IsChecked="{Binding ParticleRelax}" IsVisible="{Binding !ParticleIsMetal}"
                             ToolTip.Tip="After cutting: atoms within 4 Å of the surface (under-coordinated atoms, H, OH) minimised with UFF, the core held as the crystal made it. Metals are not offered: UFF is no model of a metal surface — relax those with EAM in LAMMPS" />

@@ -2588,7 +2588,9 @@ class build:
     @staticmethod
     def nano(**options) -> Document:
         """kind="tube" (n, m, length, periodic) | "sheet" (lx, ly, layers) | "particle" (crystal CIF, shape, radius; a metal
-        particle takes thiolate="C6" | "C12" | "C18" | "MPA" | "MUA" | "MHA" | "*S…" SMILES and thiolate_fraction)."""
+        particle takes thiolate="C6" | "C12" | "C18" | "MPA" | "MUA" | "MHA" | "*S…" SMILES and thiolate_fraction;
+        whole_molecules=1 keeps a molecular crystal's molecules whole by their centroids, hkl=[h, k, l] puts the shape's
+        base on those lattice planes)."""
         rep = _report()
         d = Document(library().caps_nano_build(_enc(json.dumps(options)), rep, len(rep)), options.get("kind", "nano"))
         d.report = rep.value.decode()

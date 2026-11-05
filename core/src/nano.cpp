@@ -8,6 +8,7 @@
 #include <numeric>
 #include <stdexcept>
 
+#include "caps/analysis.hpp"
 #include "caps/crystal.hpp"
 #include "caps/pack.hpp"
 #include "caps/elements.hpp"
@@ -476,23 +477,140 @@ System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* re
     }
     centre = pick;
   }
-  const double vac = std::max(0.0, o.vacuum), box = 2 * reach + 2 * vac + 4;
+  // the shape's frame: its z along the normal of (hkl) when given
+  double Rm[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+  std::vector<std::string> extra_notes;
+  if (o.hkl[0] || o.hkl[1] || o.hkl[2]) {
+    const Vec3 n0 = cross(c.b, c.c) * (double(o.hkl[0]) / V) + cross(c.c, c.a) * (double(o.hkl[1]) / V) + cross(c.a, c.b) * (double(o.hkl[2]) / V);
+    const Vec3 n = n0 * (1.0 / norm(n0)), z{0, 0, 1};
+    const Vec3 ax = cross(n, z);
+    const double sn = norm(ax), cs = dot(n, z);
+    if (sn < 1e-12) {
+      if (cs < 0) Rm[1][1] = Rm[2][2] = -1;   // a half turn about x
+    } else {
+      const Vec3 k = ax * (1 / sn);
+      const double K[3][3] = {{0, -k[2], k[1]}, {k[2], 0, -k[0]}, {-k[1], k[0], 0}};
+      for (int a = 0; a < 3; ++a)
+        for (int b = 0; b < 3; ++b) {
+          double k2 = 0;
+          for (int q = 0; q < 3; ++q) k2 += K[a][q] * K[q][b];
+          Rm[a][b] = (a == b ? 1.0 : 0.0) + sn * K[a][b] + (1 - cs) * k2;
+        }
+    }
+    extra_notes.push_back("base normal to (" + std::to_string(o.hkl[0]) + " " + std::to_string(o.hkl[1]) + " " + std::to_string(o.hkl[2]) + "), along z");
+  }
+  auto rot = [&](const Vec3& v) { return Vec3{Rm[0][0] * v[0] + Rm[0][1] * v[1] + Rm[0][2] * v[2], Rm[1][0] * v[0] + Rm[1][1] * v[1] + Rm[1][2] * v[2], Rm[2][0] * v[0] + Rm[2][1] * v[1] + Rm[2][2] * v[2]}; };
+  // whole molecules: a molecule's extent can reach past the shape
+  double mol_reach = 0;
+  std::vector<std::vector<uint32_t>> mols;
+  std::vector<Vec3> whole;
+  std::vector<char> network;
+  if (o.whole_molecules) {
+    // molecules from the bonds with every lattice image (a chain along a short axis bonds an atom to two images of
+    // one neighbour): a flood fill that keeps each atom's lattice offset; meeting an atom at another offset marks a
+    // periodic network
+    System sw = bulk;
+    if (sw.bonds.empty()) sw.bonds = crystal_bonds(sw);
+    const size_t N = sw.atoms.size();
+    std::vector<Vec3> f(N);
+    for (size_t i = 0; i < N; ++i) f[i] = c.to_fractional(sw.atoms[i].pos);
+    struct IE { uint32_t j; std::array<int, 3> L; };
+    std::vector<std::vector<IE>> adj(N);
+    for (const auto& bd : sw.bonds) {
+      double l0 = 1e300;
+      for (int x = -2; x <= 2; ++x)
+        for (int y = -2; y <= 2; ++y)
+          for (int z = -2; z <= 2; ++z) {
+            if (bd.i == bd.j && !x && !y && !z) continue;
+            l0 = std::min(l0, norm(c.to_cartesian(f[bd.j] + Vec3{double(x), double(y), double(z)}) - c.to_cartesian(f[bd.i])));
+          }
+      for (int x = -2; x <= 2; ++x)
+        for (int y = -2; y <= 2; ++y)
+          for (int z = -2; z <= 2; ++z) {
+            if (bd.i == bd.j && !x && !y && !z) continue;
+            if (norm(c.to_cartesian(f[bd.j] + Vec3{double(x), double(y), double(z)}) - c.to_cartesian(f[bd.i])) > l0 + 0.05) continue;
+            adj[bd.i].push_back({bd.j, {x, y, z}});
+            adj[bd.j].push_back({bd.i, {-x, -y, -z}});
+          }
+    }
+    std::vector<int> mid0(N, -1);
+    std::vector<std::array<int, 3>> off(N, {0, 0, 0});
+    whole.assign(N, {0, 0, 0});
+    for (uint32_t a = 0; a < N; ++a) {
+      if (mid0[a] >= 0) continue;
+      const int m = int(mols.size());
+      mols.push_back({});
+      network.push_back(0);
+      std::vector<uint32_t> st{a};
+      mid0[a] = m;
+      while (!st.empty()) {
+        const uint32_t i = st.back();
+        st.pop_back();
+        mols[size_t(m)].push_back(i);
+        for (const auto& e : adj[i]) {
+          const std::array<int, 3> want{off[i][0] + e.L[0], off[i][1] + e.L[1], off[i][2] + e.L[2]};
+          if (mid0[e.j] < 0) {
+            mid0[e.j] = m, off[e.j] = want;
+            st.push_back(e.j);
+          } else if (off[e.j] != want) {
+            network[size_t(m)] = 1;
+          }
+        }
+      }
+    }
+    for (size_t i = 0; i < N; ++i)
+      whole[i] = c.to_cartesian(f[i] + Vec3{double(off[i][0]), double(off[i][1]), double(off[i][2])});
+    for (size_t m = 0; m < mols.size(); ++m) {
+      if (network[m]) continue;
+      Vec3 cen{0, 0, 0};
+      for (uint32_t i : mols[m]) cen = cen + whole[i];
+      cen = cen * (1.0 / double(mols[m].size()));
+      for (uint32_t i : mols[m]) mol_reach = std::max(mol_reach, norm(whole[i] - cen));
+    }
+    if (std::any_of(network.begin(), network.end(), [](char x) { return x != 0; })) extra_notes.push_back("a periodic network in the crystal is cut atom by atom; its molecules are kept whole");
+  }
+  const double vac = std::max(0.0, o.vacuum), box = 2 * (reach + mol_reach) + 2 * vac + 4;
+  for (int k = 0; k < 3; ++k) nrep[k] = int(std::ceil((reach + mol_reach + 3) / w[k])) + 1;
   System s;
   s.cell.a = {box, 0, 0};
   s.cell.b = {0, box, 0};
   s.cell.c = {0, 0, box};
   const Vec3 mid{box / 2, box / 2, box / 2};
+  size_t kept_mols = 0;
+  int64_t molid = 0;
   for (int i = -nrep[0]; i <= nrep[0]; ++i)
     for (int j = -nrep[1]; j <= nrep[1]; ++j)
-      for (int k = -nrep[2]; k <= nrep[2]; ++k)
+      for (int k = -nrep[2]; k <= nrep[2]; ++k) {
+        const Vec3 T = c.a * i + c.b * j + c.c * k;
+        if (o.whole_molecules) {
+          for (size_t m = 0; m < mols.size(); ++m) {
+            if (network[m]) {
+              for (uint32_t a : mols[m]) {
+                const Vec3 r = rot(bulk.atoms[a].pos + T - centre);
+                if (inside(o.shape, r, o.radius, o.height, o.top_ratio)) add(s, bulk.atoms[a].element, mid + r, ++molid);
+              }
+              continue;
+            }
+            Vec3 cen{0, 0, 0};
+            for (uint32_t a : mols[m]) cen = cen + whole[a];
+            cen = cen * (1.0 / double(mols[m].size()));
+            if (!inside(o.shape, rot(cen + T - centre), o.radius, o.height, o.top_ratio)) continue;
+            ++molid, ++kept_mols;
+            for (uint32_t a : mols[m]) add(s, bulk.atoms[a].element, mid + rot(whole[a] + T - centre), molid);
+          }
+          continue;
+        }
         for (const auto& at : bulk.atoms) {
-          const Vec3 r = at.pos + c.a * i + c.b * j + c.c * k - centre;
+          const Vec3 r = rot(at.pos + T - centre);
           if (inside(o.shape, r, o.radius, o.height, o.top_ratio)) add(s, at.element, mid + r);
         }
+      }
   if (s.atoms.empty()) throw std::invalid_argument("no atom inside the particle: make it larger");
+  if (o.whole_molecules) extra_notes.push_back(std::to_string(kept_mols) + " whole molecules, kept by their centroids");
   s.bonds = crystal_bonds(s);
   // atoms left without a bonded partner (a lone O at the surface of an oxide) are dropped, unless the crystal is a metal
-  {
+  // or the molecules are kept whole (a lone ion or water is a molecule of its own)
+  if (!o.whole_molecules) {
     std::vector<int> deg(s.atoms.size(), 0);
     for (const auto& b : s.bonds) ++deg[b.i], ++deg[b.j];
     const bool any_bond = std::any_of(deg.begin(), deg.end(), [](int d) { return d > 0; });
@@ -545,6 +663,7 @@ System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* re
                 s.atoms.size(), formula_of(s, all).c_str(), r.diameter);
   r.notes.push_back(b);
   if (r.added_h || r.added_oh) r.notes.push_back("passivated: " + std::to_string(r.added_oh) + " OH, " + std::to_string(r.added_h) + " H");
+  for (const auto& n : extra_notes) r.notes.push_back(n);
   s.notes = r.notes;
   if (rep) *rep = r;
   return s;

@@ -7140,6 +7140,9 @@ caps::System nano_from(const caps::Json& j, std::array<bool, 3>& keep, std::stri
     po.length = j.num("length", 20);
     po.height = j.num("height", 0);
     po.top_ratio = j.num("top_ratio", 0.5);
+    po.whole_molecules = j.num("whole_molecules", 0) != 0;   // v95
+    if (j.has("hkl") && j["hkl"].is_array() && j["hkl"].size() == 3)
+      for (size_t k = 0; k < 3; ++k) po.hkl[k] = int(j["hkl"][k].number());
     f = caps::nanoparticle(caps::read_cif(j.text("crystal")), po, &r);
     keep = {false, false, po.shape == caps::ParticleShape::Fibre};
     // the cut surface relaxed with UFF (design/boards/Nanoparticle): the surface layer (atoms within 4 Å of a hydrogen,

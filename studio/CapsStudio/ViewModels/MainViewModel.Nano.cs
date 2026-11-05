@@ -240,6 +240,11 @@ public sealed partial class MainViewModel
     public decimal ParticleRadius { get => _particleRadius; set { if (Set(ref _particleRadius, Math.Clamp(value, 3, 60))) NanoPreview(); } }
     public int ParticleCentre { get => _particleOnAtom ? 0 : 1; set { _particleOnAtom = value == 0; Raise(); NanoPreview(); } }
     public bool ParticlePassivate { get => _particlePassivate; set { if (Set(ref _particlePassivate, value)) NanoPreview(); } }
+    // a molecular crystal: whole molecules by their centroids; the shape's base on lattice planes
+    private bool _particleWhole;
+    private string _particleHkl = "";
+    public bool ParticleWholeMolecules { get => _particleWhole; set { if (Set(ref _particleWhole, value)) NanoPreview(); } }
+    public string ParticleHkl { get => _particleHkl; set { if (Set(ref _particleHkl, value ?? "")) NanoPreview(); } }
     // a metal particle (gold, silver, copper, platinum, palladium): thiolate ligands instead of H/OH passivation
     private static readonly string[] MetalCrystals = ["gold", "silver", "copper", "platinum", "palladium"];
     public bool ParticleIsMetal => _particleCrystal < Crystals.Count && MetalCrystals.Contains(Crystals[_particleCrystal].Id);
@@ -318,6 +323,11 @@ public sealed partial class MainViewModel
                 o["length"] = (double)_fibreLength;
                 if (ParticleHasHeight) o["height"] = (double)_particleHeight;
                 if (ParticleIsFrustum) o["top_ratio"] = (double)_particleTop;
+                if (_particleWhole) o["whole_molecules"] = 1;
+                {
+                    var hk = _particleHkl.Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries).Select(x => int.TryParse(x, out var v) ? v : 0).ToArray();
+                    if (hk.Length == 3 && hk.Any(v => v != 0)) o["hkl"] = new JsonArray(hk[0], hk[1], hk[2]);
+                }
                 break;
         }
         return o.ToJsonString();

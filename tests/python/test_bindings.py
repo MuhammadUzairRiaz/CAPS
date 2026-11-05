@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 94, "ABI 94")
+check(caps.abi_version() == 95, "ABI 95")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
@@ -852,6 +852,11 @@ print("ok   set_pattern")
 _dm = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif")).domains(grid=0.3, sigma=0.5, slice={"nx": 4, "ny": 3, "width": 2, "height": 2})
 check(len(_dm["domains"]) == 4 and all(d["enclosed"] for d in _dm["domains"]) and len(_dm["slice"]) == 12, f"domains: {len(_dm['domains'])}")
 print("ok   domains")
+# shaped cuts (ABI 95): a copper cube on (111) with whole "molecules" (single atoms) gives a particle
+_np = caps.build.nano(kind="particle", crystal=os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"), shape="cube", radius=8,
+                      whole_molecules=1, hkl=[1, 1, 1])
+check(_np.atoms > 20, f"nano particle on (111): {_np.atoms}")
+print("ok   whole-molecule cut on (111)")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

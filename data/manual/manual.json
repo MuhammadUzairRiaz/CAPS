@@ -3748,6 +3748,43 @@
    ]
   },
   {
+   "id": "molecular-crystal-cuts",
+   "group": "Growth",
+   "title": "Shaped crystal cuts that keep whole molecules",
+   "summary": "A particle of a given shape (sphere, cube, octahedron, rod, cone and the rest of the particle builder's shapes) is cut from a crystal by copying the cell along its lattice vectors. Atom by atom, each copied atom is kept when it lies inside the shape. For a molecular crystal the molecules are found first from the bonds with every lattice image (a chain along a short axis bonds an atom to two images of one neighbour), by a flood fill that keeps each atom's lattice offset; each molecule is made whole that way, and every copy of it is kept or left out as a whole by where its centroid falls, so no molecule is cut. A component that meets one of its own atoms at another lattice offset is a periodic network (a polymer chain, a covalent framework) and is still cut atom by atom, with a note. The shape's base can be put on a family of lattice planes: the shape is turned so that its z axis lies along the plane normal h a* + k b* + l c*, and the particle is written with that normal along z.",
+   "equation": "kept ⇔ R(c_m + T − c₀) ∈ shape;  n = h a* + k b* + l c*,  R n̂ = ẑ",
+   "equation_note": "c_m: a molecule's centroid; T: a lattice translation; c₀: the cut's centre; R: the rotation taking the plane normal to z",
+   "tex": "\\text{kept} \\iff \\mathsf{R}\\,(\\mathbf{c}_m + \\mathbf{T} - \\mathbf{c}_0) \\in \\text{shape}, \\qquad \\mathbf{n} = h\\,\\mathbf{a}^* + k\\,\\mathbf{b}^* + l\\,\\mathbf{c}^*, \\quad \\mathsf{R}\\,\\hat{\\mathbf{n}} = \\hat{\\mathbf{z}}",
+   "symbols": [
+    [
+     "c_m",
+     "centroid of molecule m (made whole)",
+     "Å"
+    ],
+    [
+     "T",
+     "lattice translation",
+     "Å"
+    ],
+    [
+     "c₀",
+     "centre of the cut",
+     "Å"
+    ],
+    [
+     "R",
+     "rotation taking the (hkl) normal to z",
+     "—"
+    ]
+   ],
+   "when": "Cellulose Iβ nanocrystals, S₈ or zinc stearate particles, fibrils of molecular crystals: particles whose surface molecules are whole, ready to embed in a rubber matrix.",
+   "cites": [],
+   "source": "core/src/nano.cpp (nanoparticle: whole_molecules, hkl)",
+   "tested": "MolecularCuts.SphereKeepsWholeDimers (every dimer of a sphere cut is complete, and exactly those whose centres lie within the radius are kept, though the cell's edge cuts each dimer); MolecularCuts.BaseNormalToPlanes (with (100) as the base, dimers along a lie along z); MolecularCuts.NetworksAreCutAtomByAtom (polyethylene's chains are found as periodic networks and cut atom by atom, with the note)",
+   "deviation": "periodic networks are not kept whole (no finite molecule exists); the fibre shape keeps its own periodic cut",
+   "engines": []
+  },
+  {
    "id": "copolymer-sequences",
    "group": "Growth",
    "title": "Copolymers of several units: terminal and penultimate models, drift with conversion",
