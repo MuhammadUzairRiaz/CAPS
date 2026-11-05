@@ -91,6 +91,7 @@ add_library(caps_core STATIC
   src/restraints.cpp
   src/graft_chains.cpp
   src/adp.cpp
+  src/pattern_geometry.cpp
   src/vasp_out.cpp
   src/dft_analysis.cpp
   src/dft_commands.cpp

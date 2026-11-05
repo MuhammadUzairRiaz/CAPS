@@ -2147,6 +2147,33 @@
    "tex": "r_{\\mathrm{D\\cdots A}} \\le 3.5\\ \\text{Å},\\ \\angle(\\mathrm{H{-}D\\cdots A}) \\le 30^\\circ \\quad\\text{or}\\quad r_{\\mathrm{H\\cdots A}} < r^{\\mathrm{vdW}}_{\\mathrm{H}} + r^{\\mathrm{vdW}}_{\\mathrm{A}},\\ \\angle(\\mathrm{D{-}H\\cdots A}) \\ge 110^\\circ \\\\ C(t) = \\frac{\\langle h(0)\\,h(t)\\rangle}{\\langle h\\rangle},\\quad \\tau = \\int_0^\\infty C(t)\\,dt"
   },
   {
+   "id": "pattern-geometry",
+   "group": "Analysis",
+   "title": "Geometry at every match of a SMARTS pattern",
+   "summary": "A SMARTS pattern marks the points to measure with atom-map numbers: [#6][S:1][S:2][#6] marks the two sulfurs of a C–S–S–C bridge. Atoms sharing a number are one point at their centroid, so a ring's centre is written by giving all its atoms the same number. Two points give a distance, three the angle at the middle one, four the torsion about the middle pair with the IUPAC sign. Every embedding of the pattern in the structure is found once; two that measure the same points in reverse order (an S–S bond read either way, a torsion from either end) count once. Each point is made whole by minimum images from the first atom of the first point, so a match across the cell edge measures correctly. Over the frames the mean, the spread, a histogram and the mean per frame are reported. An unwritten bond in the pattern means a single bond; write ~ for any bond or : for an aromatic one.",
+   "equation": "d = |x₂ − x₁|;  θ = ∠(x₁ − x₂, x₃ − x₂);  φ = atan2(|b₂| b₁·(b₂×b₃), (b₁×b₂)·(b₂×b₃));  x_k = centroid of the atoms marked k",
+   "equation_note": "points from atom-map numbers; the torsion with the IUPAC sign",
+   "tex": "d = \\lvert \\mathbf{x}_2 - \\mathbf{x}_1 \\rvert, \\qquad \\theta = \\angle(\\mathbf{x}_1 - \\mathbf{x}_2,\\ \\mathbf{x}_3 - \\mathbf{x}_2), \\qquad \\varphi = \\operatorname{atan2}\\!\\left(\\lvert \\mathbf{b}_2 \\rvert\\, \\mathbf{b}_1 \\cdot (\\mathbf{b}_2 \\times \\mathbf{b}_3),\\ (\\mathbf{b}_1 \\times \\mathbf{b}_2) \\cdot (\\mathbf{b}_2 \\times \\mathbf{b}_3)\\right)",
+   "symbols": [
+    [
+     "x_k",
+     "point k: the centroid of the atoms marked k",
+     "Å"
+    ],
+    [
+     "b_i",
+     "x_{i+1} − x_i",
+     "Å"
+    ]
+   ],
+   "when": "C–Sx–C bridge lengths and S–S torsions in vulcanisates, Si–O–Si angles at silica, amide geometry in fibres, ring-to-group distances.",
+   "cites": [],
+   "source": "core/src/pattern_geometry.cpp (pattern_geometry, smarts_map_numbers); properties.cpp (pattern)",
+   "tested": "PatternGeometry.MapNumbers; PatternGeometry.DisulfideBridge (S–S 2.05 Å once, both C–S–S 104°, the torsion 90° once, the same in a frame shifted across the cell edge, through the analysis); PatternGeometry.RingCentroid (a ring's centre to a substituent oxygen 2.76 Å, one match however the ring is walked)",
+   "deviation": "one pattern per analysis; points are atoms or centroids (no planes or axes)",
+   "engines": []
+  },
+  {
    "group": "Analysis",
    "source": "core/src/properties.cpp",
    "engines": [],

@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 92, "ABI 92")
+check(caps.abi_version() == 93, "ABI 93")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
@@ -839,6 +839,15 @@ except caps.CapsError as _e:
     check("criterion" in str(_e), f"set_hbonds: {_e}")
 _ad.set_hbonds(donors="C N O", acceptors="O S", criterion="ha", between=("molecule 1", "molecule 2"))
 print("ok   set_hbonds")
+# pattern geometry (ABI 93): Cu–Cu nearest neighbours in copper match; an unmarked pattern is refused
+_pc = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
+try:
+    _pc.set_pattern("[Cu][Cu]")
+    check(False, "set_pattern: no marked points must be refused")
+except caps.CapsError as _e:
+    check("mark 2, 3 or 4" in str(_e), f"set_pattern: {_e}")
+check(_pc.set_pattern("[Cu:1]~[Cu:2]") > 0, "set_pattern: Cu–Cu matches")
+print("ok   set_pattern")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

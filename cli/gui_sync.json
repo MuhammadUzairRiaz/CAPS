@@ -101,7 +101,9 @@
     "--hb-between": "Views/AnalyzeSide.axaml|between: molecule 1",
     "--hb-da": "cli: the page uses 3.5 Å",
     "--hb-ha": "cli: the page uses the van der Waals sum",
-    "--hb-angle": "cli: the page uses 30° (D···A) or 110° (H···A)"
+    "--hb-angle": "cli: the page uses 30° (D···A) or 110° (H···A)",
+    "--pattern": "Views/AnalyzeSide.axaml|Pattern geometry",
+    "--pattern-bin": "cli: the page bins by 0.01 Å or 1°"
    }
   },
   "elastic": {

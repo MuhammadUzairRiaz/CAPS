@@ -93,6 +93,10 @@ struct AnalyzeOptions {
   std::string hb_criterion = "da";
   double hb_da = 3.5, hb_hda = 30, hb_ha = 0, hb_dha = 110;
   std::string hb_group_a, hb_group_b;
+  // geometry at every match of a SMARTS pattern (pattern): points marked by atom-map numbers (pattern_geometry.hpp);
+  // the histogram's bin (0: 0.01 Å or 1°)
+  std::string pattern;
+  double pattern_bin = 0;
   int64_t exclude_mol = 0;
   // interfaces and orientation: the direction profiles, adhesion and Herman's f run along — the normal of the cell face
   // spanned by the other two axes (0 = a: x in an orthogonal cell, 1 = b: y, 2 = c: z)

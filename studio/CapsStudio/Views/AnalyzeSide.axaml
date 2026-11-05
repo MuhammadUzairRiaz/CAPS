@@ -32,6 +32,11 @@
           <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.GroupChoices}" SelectedIndex="{Binding Analyze.GroupIndex}" HorizontalAlignment="Stretch"
                     ToolTip.Tip="The atoms the properties see: a component of a blend, the chains without a filler, the atoms you selected. Mechanics and Tg use the whole cell" />
           <TextBox Text="{Binding Analyze.GroupMolecules}" Watermark="molecule ids: 1-4, 7" Classes="mono" FontSize="11.5" IsVisible="{Binding Analyze.GroupIsMolecules}" />
+          <Expander Header="Pattern geometry" Padding="0,6,0,0" HorizontalAlignment="Stretch"
+                    ToolTip.Tip="For the Pattern geometry calculation: a SMARTS whose atom-map numbers mark 2, 3 or 4 points">
+            <TextBox Text="{Binding Analyze.PatternSmarts}" Watermark="[#6][S:1][S:2][#6]" Classes="mono" FontSize="11.5"
+                     ToolTip.Tip="[S:1][S:2]: a distance · [C:1][S:2][S:3]: an angle · [C:1][S:2][S:3][C:4]: a torsion · atoms sharing a number: their centroid" />
+          </Expander>
           <Expander Header="H-bond definition" Padding="0,6,0,0" HorizontalAlignment="Stretch"
                     ToolTip.Tip="For the H-bonds calculation: which elements donate and accept, the geometric criterion, and counting between two groups">
             <StackPanel Spacing="6">

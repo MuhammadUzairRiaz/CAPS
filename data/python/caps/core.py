@@ -1689,6 +1689,22 @@ def _set_hbonds(self, donors: str = "N O F", acceptors: str = "N O F", criterion
 Document.set_hbonds = _set_hbonds
 
 
+def _set_pattern(self, smarts: str, bin: float = 0.0) -> int:
+    """The pattern of the analysis id "pattern": a SMARTS whose atom-map numbers mark 2, 3 or 4 points (atoms sharing a
+    number at their centroid): the distance, angle or torsion between them at every match and frame, e.g.
+    "[#6][S:1][S:2][#6]" for S–S bridge lengths. Returns the matches in the current frame."""
+    f = library().caps_set_pattern_geometry
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_double]
+    f.restype = C.c_int32
+    n = f(self._h, _enc(smarts or ""), float(bin))
+    if n < 0:
+        raise _error()
+    return int(n)
+
+
+Document.set_pattern = _set_pattern
+
+
 def _adp(self, first: int = 0, last: int = -1, stride: int = 1, supercell=(1, 1, 1), probability: float = 0.5,
          remove_drift: bool = True, cif: str = "") -> dict:
     """Atomic displacement tensors over the frames: per atom (and per site of the unit cell when the structure is a

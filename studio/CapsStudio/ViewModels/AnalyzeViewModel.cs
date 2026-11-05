@@ -136,7 +136,7 @@ public sealed class AnalyzeViewModel : ObservableObject
                 Chip("entanglements", "Entanglements"), Chip("conformation", "Torsions"), Chip("p2r", "P₂(r)")]),
             new("Thermo", [Chip("ced", "CED"), Chip("delta", "δ"), Chip("dielectric", "ε dielectric"), Chip("fluct", "Cp·κT·α"), Chip("modes", "Normal modes"), ConfChip, SolvChip, TgChip]),
             new("Mechanics", [StrainChip, FluctChip, TensileChip, CreepChip]),
-            new("Dynamics", [Chip("msd", "MSD"), Chip("diffusion", "D"), Chip("relaxation", "Relaxation"), Chip("vacf", "VACF · VDOS"), Chip("ir", "IR spectrum"), Chip("adp", "ADP · B"), Chip("vanhove", "van Hove · α₂"), ViscChip, NemdChip]),
+            new("Dynamics", [Chip("msd", "MSD"), Chip("diffusion", "D"), Chip("relaxation", "Relaxation"), Chip("vacf", "VACF · VDOS"), Chip("ir", "IR spectrum"), Chip("adp", "ADP · B"), Chip("pattern", "Pattern geometry"), Chip("vanhove", "van Hove · α₂"), ViscChip, NemdChip]),
             new("Free volume", [Chip("ffv", "Probe insertion"), Chip("psd", "Pore size")]),
             new("Interface", [Chip("zprofile", "z profile"), Chip("adhesion", "Adhesion"), Chip("interaction", "Filler–matrix"), PullShearChip, PullNormalChip, FrictionChip]),
             new("Rubber network", [Chip("crosslinks", "Crosslink density"), Chip("hbonds", "H-bonds")]),
@@ -262,6 +262,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         ["vacf"] = "Velocity autocorrelation (all time origins), Green–Kubo D, and the vibrational density of states (needs velocities in the frames)",
         ["modes"] = "Harmonic vibrations of the last chosen frame (minimise it tightly first; at most 600 atoms, or a group): wavenumbers, the IR spectrum of the fixed charges, the vibrational density of states, ZPE, S and Cv; play a mode from its card",
         ["fluct"] = "Heat capacity, isothermal compressibility, bulk modulus and thermal expansion from the fluctuations of an equilibrium run (NPT: Cp, κT, B, α; NVT: Cv). Needs the force field and the run's temperature; hundreds of well-spaced frames",
+        ["pattern"] = "The distance, angle or torsion between the points a SMARTS marks with atom-map numbers ([#6][S:1][S:2][#6]: S–S bridge lengths; atoms sharing a number at their centroid), at every match and frame: the mean, spread, distribution and mean per frame. Write the pattern under Pattern geometry below the sources",
         ["adp"] = "Atomic displacement parameters U = ⟨Δr Δr^T⟩ about each atom's mean position over the frames (the cell's drift removed), U_iso and B = 8π²U_iso per element, the mean anisotropy and a U_iso profile along the chosen axis (Trueblood et al. 1996); per site, ellipsoids and a CIF on Analyze › Scattering",
         ["ir"] = "Infrared spectrum α(ν̃)n(ν̃) from the cell dipole's time derivative (charges from the force field, the run's temperature; frames ≤ 5 fs apart, velocities used when stored), with the harmonic, standard and Schofield quantum corrections",
         ["dielectric"] = "Static dielectric constant from the fluctuations of the cell's total dipole (needs charges, the run's temperature and a long equilibrium trajectory), with the dipole autocorrelation",
@@ -555,6 +556,8 @@ public sealed class AnalyzeViewModel : ObservableObject
     public int HbCriterion { get => _hbCrit; set => Set(ref _hbCrit, Math.Clamp(value, 0, 1)); }
     public string HbGroupA { get => _hbA; set => Set(ref _hbA, value ?? ""); }
     public string HbGroupB { get => _hbB; set => Set(ref _hbB, value ?? ""); }
+    private string _pattern = "[#6][S:1][S:2][#6]";
+    public string PatternSmarts { get => _pattern; set => Set(ref _pattern, value ?? ""); }
     private string HbJson() => new System.Text.Json.Nodes.JsonObject
     {
         ["donors"] = _hbDonors.Trim().Length > 0 ? _hbDonors.Trim() : "N O F", ["acceptors"] = _hbAcceptors.Trim().Length > 0 ? _hbAcceptors.Trim() : "N O F",
@@ -587,6 +590,15 @@ public sealed class AnalyzeViewModel : ObservableObject
         var doc = _doc();
         if (doc == null || Working) return;
         var ids = SelectedIds;
+        if (ids.Contains("pattern"))
+        {
+            try
+            {
+                var n = doc.SetPatternGeometry(_pattern.Trim());
+                if (n == 0) { Log = "Pattern geometry: the pattern matches nothing (an unwritten bond means single: write ~ for any bond)"; return; }
+            }
+            catch (Exception e) { Log = "Pattern geometry: " + e.Message; return; }
+        }
         if (ids.Contains("hbonds"))
         {
             try { doc.SetHbondOptions(HbJson()); }

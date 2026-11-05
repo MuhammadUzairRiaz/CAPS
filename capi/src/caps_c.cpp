@@ -51,6 +51,7 @@
 #include "caps/restraints.hpp"
 #include "caps/graft_chains.hpp"
 #include "caps/adp.hpp"
+#include "caps/pattern_geometry.hpp"
 #include "caps/zmethod.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dlpoly.hpp"
@@ -225,6 +226,8 @@ struct caps_doc {
   std::vector<caps::Restraint> restraint_set;   // v87: restraints of every kind for minimisation, MD and the exports
   std::string sequence_report;          // v88: the copolymer statistics of the chains grown into it (JSON), "" none
   std::string hbond_json;               // v92: the hydrogen-bond definition analyses use (JSON), "" the default
+  std::string pattern_smarts;           // v93: the SMARTS of the pattern-geometry analysis
+  double pattern_bin = 0;
   std::unique_ptr<caps::Pipeline> pipeline;        // caps_pipeline_set: steps run on every shown frame
   std::unique_ptr<caps::PipelineState> pstate;     // its result for the current frame
   // results cached per frame (design/boards/PipelineSteps "results cached per frame"): kept while the pipeline and the
@@ -5437,6 +5440,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
       o.hb_da = h.num("da", o.hb_da), o.hb_hda = h.num("hda", o.hb_hda), o.hb_ha = h.num("ha", o.hb_ha), o.hb_dha = h.num("dha", o.hb_dha);
       o.hb_group_a = h.text("group_a", ""), o.hb_group_b = h.text("group_b", "");
     }
+    o.pattern = d->pattern_smarts, o.pattern_bin = d->pattern_bin;   // v93
     if (p) {
       o.first = std::max<int64_t>(0, p->first);
       o.last = p->last > 0 ? p->last : -1;
@@ -11423,6 +11427,23 @@ extern "C" caps_doc* caps_graft_chains(caps_doc* d, const char* json, char* out,
     json_error(e, out, cap);
     return nullptr;
   }
+}
+
+// v93 the SMARTS pattern (points marked by atom-map numbers) and histogram bin of the analysis id "pattern"; checked
+// against the structure: returns the matches (0 when none), −1 with g_error for a pattern that cannot be read
+extern "C" int32_t caps_set_pattern_geometry(caps_doc* d, const char* smarts, double bin) {
+  return guard([&] {
+    const std::string t = smarts ? smarts : "";
+    d->pattern_smarts = t, d->pattern_bin = std::max(0.0, bin);
+    if (t.empty()) return 0;
+    caps::Trajectory one;
+    one.topology = d->frame;
+    one.positions.push_back({});
+    for (const auto& a : d->frame.atoms) one.positions.back().push_back(a.pos);
+    one.cells.push_back(d->frame.cell);
+    one.timesteps.push_back(0);
+    return int32_t(caps::pattern_geometry(one, {0}, t, bin).matches.size());
+  });
 }
 
 // v92 the hydrogen-bond definition for this document's analyses (properties.hpp hb_*): JSON {donors, acceptors,

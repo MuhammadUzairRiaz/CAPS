@@ -2,6 +2,7 @@
 #include "caps/properties.hpp"
 
 #include "caps/adp.hpp"
+#include "caps/pattern_geometry.hpp"
 #include "caps/query.hpp"
 #include "caps/normal_modes.hpp"
 #include "caps/uff.hpp"
@@ -1836,6 +1837,29 @@ double ir_correction(const std::string& kind, double x) {
   return 1.0;
 }
 
+Property pattern_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o) {
+  Property p{"pattern", "Geometry at a pattern", "",
+             "the distance, angle or torsion between the points a SMARTS pattern marks with atom-map numbers (atoms sharing a "
+             "number at their centroid), at every match and frame; value: the mean",
+             NaN, NaN, {}, {}, {}};
+  if (o.pattern.empty()) { p.notes.push_back("give a SMARTS pattern with 2, 3 or 4 points marked ([S:1][S:2])"); return p; }
+  const PatternGeometry g = pattern_geometry(t, fr, o.pattern, o.pattern_bin);
+  p.notes = g.notes;
+  if (g.values.empty()) return p;
+  p.unit = g.unit;
+  p.name = "Geometry at " + o.pattern + " (" + g.kind + ")";
+  p.value = g.mean;
+  p.extra[std::string("standard deviation (") + g.unit + ")"] = g.sd;
+  p.extra[std::string("smallest (") + g.unit + ")"] = g.min;
+  p.extra[std::string("largest (") + g.unit + ")"] = g.max;
+  p.extra["matches"] = double(g.matches.size());
+  p.series.push_back(Series{"distribution", g.kind + " (" + g.unit + ")", "fraction per unit", g.hist_x, g.hist_y});
+  Series fm{"mean per frame", "frame", g.kind + " (" + g.unit + ")", {}, g.frame_mean};
+  for (size_t k = 0; k < g.frame_mean.size(); ++k) fm.x.push_back(double(k));
+  p.series.push_back(fm);
+  return p;
+}
+
 Property adp_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o) {
   Property p{"adp", "Atomic displacement parameters", "Å²",
              "U = ⟨Δr Δr^T⟩ about each atom's mean position (the centre's drift removed), U_iso = tr U / 3, B = 8π² U_iso "
@@ -2546,7 +2570,7 @@ std::vector<double> frame_times(const Trajectory& t, const AnalyzeOptions& o) {
 std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string>& ids, const AnalyzeOptions& o) {
   static const std::set<std::string> known = {"density", "rdf", "sq", "xray", "electron", "neutron", "rg", "ree", "cn", "persistence", "msd", "diffusion",
                                               "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion", "interaction", "orientation", "crosslinks",
-                                              "entanglements", "conformation", "vacf", "hbonds", "vanhove", "p2r", "dielectric", "fluct", "modes", "ir", "adp"};
+                                              "entanglements", "conformation", "vacf", "hbonds", "vanhove", "p2r", "dielectric", "fluct", "modes", "ir", "adp", "pattern"};
   for (const auto& id : ids)
     if (!known.count(id)) throw std::invalid_argument("unknown property '" + id + "'");
   const auto fr = analysis_frames(t, o);
@@ -2592,6 +2616,7 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
     if (want("dielectric")) out.push_back(dielectric_prop(t, fr, times, o));
     if (want("ir")) out.push_back(ir_prop(t, fr, times, o));
     if (want("adp")) out.push_back(adp_prop(t, fr, o));
+    if (want("pattern")) out.push_back(pattern_prop(t, fr, o));
     if (want("fluct")) out.push_back(fluct_prop(t, fr, times, o));
     if (want("modes")) out.push_back(modes_prop(t, fr, o));
     if (want("ree") || want("cn") || want("persistence") || want("orientation")) {
