@@ -1670,6 +1670,25 @@ def _graft(self, units, sites, dp: int = 10, equivalent: bool = False, probabili
 Document.graft = _graft
 
 
+def _set_hbonds(self, donors: str = "N O F", acceptors: str = "N O F", criterion: str = "da", da: float = 3.5, hda: float = 30.0,
+                ha: float = 0.0, dha: float = 110.0, between=None) -> None:
+    """The hydrogen-bond definition this document's analyses use (analysis id "hbonds"): donor and acceptor elements
+    ("C N O" adds weak C–H···O donors, "S" sulfur acceptors), criterion "da" (Luzar & Chandler: D···A ≤ da Å, H–D···A
+    ≤ hda°) or "ha" (IUPAC 2011: H···A below ha Å, 0 the sum of the van der Waals radii, D–H···A ≥ dha°); between=
+    ("molecule 1", "molecule 2") counts only bonds between two selection queries. Called with no arguments: the default."""
+    o = {"donors": donors, "acceptors": acceptors, "criterion": criterion, "da": float(da), "hda": float(hda), "ha": float(ha), "dha": float(dha)}
+    if between:
+        o["group_a"], o["group_b"] = between[0], between[1]
+    f = library().caps_set_hbond_options
+    f.argtypes = [C.c_void_p, C.c_char_p]
+    f.restype = C.c_int32
+    if f(self._h, _enc(json.dumps(o))) != 0:
+        raise _error()
+
+
+Document.set_hbonds = _set_hbonds
+
+
 def _adp(self, first: int = 0, last: int = -1, stride: int = 1, supercell=(1, 1, 1), probability: float = 0.5,
          remove_drift: bool = True, cif: str = "") -> dict:
     """Atomic displacement tensors over the frames: per atom (and per site of the unit cell when the structure is a

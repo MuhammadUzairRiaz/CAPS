@@ -2121,9 +2121,9 @@
    "engines": [],
    "id": "hydrogen-bonds",
    "title": "Hydrogen bonds",
-   "summary": "Donor–hydrogen···acceptor contacts between N, O and F by distance and angle, counted per frame; the lifetime from the intermittent correlation of each bond's existence.",
-   "equation": "r(D···A) ≤ 3.5 Å and ∠(H–D···A) ≤ 30°;  C(t) = ⟨h(0)h(t)⟩/⟨h⟩,  τ = ∫ C(t) dt",
-   "equation_note": "Luzar & Chandler 1996",
+   "summary": "Donor–hydrogen···acceptor contacts counted per frame. The donors are the hydrogens bonded to the chosen donor elements (N, O and F by default; C adds weak C–H···O donors) and the acceptors the chosen acceptor elements (S and Cl for sulfur chemistries and halides). Two criteria: the D···A form of Luzar and Chandler, r(D···A) ≤ 3.5 Å with the H–D···A angle at most 30°, and the IUPAC form, the H···A distance below the sum of the two atoms' van der Waals radii (Bondi) with the D–H···A angle at least 110°, both limits adjustable. With two selection queries given, only bonds with the donor in one and the acceptor in the other are counted (a fibre and its matrix, a silane layer and the rubber). The lifetime comes from the intermittent correlation of each bond's existence.",
+   "equation": "D···A: r(D···A) ≤ 3.5 Å, ∠(H–D···A) ≤ 30°;  H···A: r(H···A) < r_vdW(H) + r_vdW(A), ∠(D–H···A) ≥ 110°;  C(t) = ⟨h(0)h(t)⟩/⟨h⟩,  τ = ∫ C(t) dt",
+   "equation_note": "Luzar & Chandler 1996; Arunan et al. (IUPAC) 2011, footnotes F4 (angle above 110°) and F5 (H···Y below the sum of the van der Waals radii); Steiner 2002 (weak C–H···O bonds)",
    "symbols": [
     [
      "h(t)",
@@ -2138,11 +2138,13 @@
    ],
    "when": "Epoxidised and hydroxylated rubbers, maleic acid and PBS ends, water: how many hydrogen bonds hold the network and how long they last.",
    "cites": [
-    "luzar1996"
+    "luzar1996",
+    "arunan2011",
+    "steiner2002"
    ],
-   "tested": "tests/test_core.cpp Analyze.HydrogenBonds (two waters, one bond; turned away, none)",
+   "tested": "tests/test_core.cpp Analyze.HydrogenBonds (two waters, one bond; turned away, none); HBonds.IupacCriterion (the H···A form counts at 180° and 120°, not at 100°, and not with a 1.8 Å limit for a 1.84 Å contact; the D···A form at 160° and not at 120°); HBonds.WeakCHDonors (a C–H···O contact counts only with carbon among the donors); HBonds.BetweenTwoGroups (two bonds, one between molecules 1 and 2 either way round)",
    "deviation": "the lifetime is a lower bound when C(t) has not decayed over the trajectory",
-   "tex": "r_{\\mathrm{D\\cdots A}} \\le 3.5\\ \\text{Å},\\ \\angle(\\mathrm{H{-}D\\cdots A}) \\le 30^\\circ;\\qquad C(t) = \\frac{\\langle h(0)\\,h(t)\\rangle}{\\langle h\\rangle},\\quad \\tau = \\int_0^\\infty C(t)\\,dt"
+   "tex": "r_{\\mathrm{D\\cdots A}} \\le 3.5\\ \\text{Å},\\ \\angle(\\mathrm{H{-}D\\cdots A}) \\le 30^\\circ \\quad\\text{or}\\quad r_{\\mathrm{H\\cdots A}} < r^{\\mathrm{vdW}}_{\\mathrm{H}} + r^{\\mathrm{vdW}}_{\\mathrm{A}},\\ \\angle(\\mathrm{D{-}H\\cdots A}) \\ge 110^\\circ \\\\ C(t) = \\frac{\\langle h(0)\\,h(t)\\rangle}{\\langle h\\rangle},\\quad \\tau = \\int_0^\\infty C(t)\\,dt"
   },
   {
    "group": "Analysis",

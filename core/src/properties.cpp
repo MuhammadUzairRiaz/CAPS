@@ -2,6 +2,7 @@
 #include "caps/properties.hpp"
 
 #include "caps/adp.hpp"
+#include "caps/query.hpp"
 #include "caps/normal_modes.hpp"
 #include "caps/uff.hpp"
 #include "caps/typing.hpp"
@@ -11,6 +12,7 @@
 #include <complex>
 #include <cstdio>
 #include <cmath>
+#include <sstream>
 #include <memory>
 #include <tuple>
 #include <numeric>
@@ -1985,21 +1987,61 @@ Property ir_prop(const Trajectory& t, const std::vector<size_t>& fr, const std::
 // ---------------------------------------------------------------- hydrogen bonds
 
 Property hbond_prop(const Trajectory& t, const std::vector<size_t>& fr, const std::vector<double>& times, const AnalyzeOptions& o) {
+  const bool ha = o.hb_criterion == "ha";
+  if (!ha && o.hb_criterion != "da") throw std::invalid_argument("hbonds: criterion da or ha");
+  char crit[200];
+  if (ha) {
+    if (o.hb_ha > 0) std::snprintf(crit, sizeof crit, "r(H···A) ≤ %.2f Å and ∠(D–H···A) ≥ %.0f° (Arunan et al. 2011)", o.hb_ha, o.hb_dha);
+    else std::snprintf(crit, sizeof crit, "r(H···A) below the sum of the van der Waals radii and ∠(D–H···A) ≥ %.0f° (Arunan et al. 2011)", o.hb_dha);
+  } else {
+    std::snprintf(crit, sizeof crit, "r(D···A) ≤ %.2f Å and ∠(H–D···A) ≤ %.0f° (Luzar & Chandler 1996)", o.hb_da, o.hb_hda);
+  }
   Property p{"hbonds", "Hydrogen bonds", "per frame",
-             "D–H···A with D, A ∈ {N, O, F}, r(D···A) ≤ 3.5 Å and ∠(H–D···A) ≤ 30° (Luzar & Chandler 1996); lifetime from the "
-             "intermittent correlation C(t) = ⟨h(0)h(t)⟩/⟨h⟩, τ = ∫C dt",
+             "D–H···A with D ∈ {" + o.hb_donors + "}, A ∈ {" + o.hb_acceptors + "}, " + crit + "; lifetime from the intermittent correlation C(t) = ⟨h(0)h(t)⟩/⟨h⟩, τ = ∫C dt",
              NaN, NaN, {}, {}, {}};
   const System& s0 = t.topology;
   const size_t n = s0.atoms.size();
-  auto polar = [&](size_t i) { const int z = s0.atoms[i].element; return z == 7 || z == 8 || z == 9; };
+  auto elements = [](const std::string& list) {
+    std::set<int> z;
+    std::string w;
+    std::stringstream ss(list);
+    while (ss >> w) {
+      for (std::string part; !w.empty();) {
+        const auto c = w.find(',');
+        part = w.substr(0, c);
+        w = c == std::string::npos ? "" : w.substr(c + 1);
+        if (part.empty()) continue;
+        const int e = element_from_symbol(part);
+        if (!e) throw std::invalid_argument("hbonds: unknown element '" + part + "'");
+        z.insert(e);
+      }
+    }
+    return z;
+  };
+  const std::set<int> dz = elements(o.hb_donors), az = elements(o.hb_acceptors);
+  std::vector<char> ga, gb;
+  const bool groups = !o.hb_group_a.empty() && !o.hb_group_b.empty();
+  if (groups) {
+    ga = select_query(s0, o.hb_group_a).atoms, gb = select_query(s0, o.hb_group_b).atoms;
+    p.notes.push_back("counted between \"" + o.hb_group_a + "\" and \"" + o.hb_group_b + "\" only");
+  }
   std::vector<std::pair<uint32_t, uint32_t>> dh;   // donor, its hydrogen
   for (const auto& b : s0.bonds) {
-    if (s0.atoms[b.i].element == 1 && polar(b.j)) dh.push_back({b.j, b.i});
-    if (s0.atoms[b.j].element == 1 && polar(b.i)) dh.push_back({b.i, b.j});
+    if (s0.atoms[b.i].element == 1 && dz.count(s0.atoms[b.j].element)) dh.push_back({b.j, b.i});
+    if (s0.atoms[b.j].element == 1 && dz.count(s0.atoms[b.i].element)) dh.push_back({b.i, b.j});
   }
   std::vector<uint32_t> acc;
-  for (size_t i = 0; i < n; ++i) if (polar(i)) acc.push_back(uint32_t(i));
-  if (dh.empty() || acc.empty()) { p.notes.push_back("no N–H, O–H or F–H donors (or no N, O, F acceptors) in the structure"); return p; }
+  for (size_t i = 0; i < n; ++i) if (az.count(s0.atoms[i].element)) acc.push_back(uint32_t(i));
+  if (dh.empty() || acc.empty()) { p.notes.push_back("no donor hydrogens on " + o.hb_donors + " (or no " + o.hb_acceptors + " acceptors) in the structure"); return p; }
+  const double rh = element(1).vdw;
+  const double cos_hda = std::cos(o.hb_hda * kPi / 180.0), cos_dha = std::cos(o.hb_dha * kPi / 180.0);
+  // the farthest an acceptor can be from the donor and still count: a quick reject before the angles
+  double reach = o.hb_da;
+  if (ha) {
+    double rmax = 0;
+    for (int z : az) rmax = std::max(rmax, o.hb_ha > 0 ? o.hb_ha : rh + element(z).vdw);
+    reach = rmax + 1.2;   // H···A plus D–H
+  }
   std::map<std::pair<uint32_t, uint32_t>, std::vector<char>> exists;   // (donor H index in dh, acceptor) → per frame
   std::vector<double> count;
   for (size_t q = 0; q < fr.size(); ++q) {
@@ -2009,12 +2051,23 @@ Property hbond_prop(const Trajectory& t, const std::vector<size_t>& fr, const st
       const auto [D, H] = dh[d];
       const Vec3 dhv = s.cell.valid() ? s.cell.minimum_image(s.atoms[H].pos - s.atoms[D].pos) : s.atoms[H].pos - s.atoms[D].pos;
       for (uint32_t A : acc) {
-        if (A == D) continue;
+        if (A == D || A == H) continue;
+        if (groups && !((ga[D] && gb[A]) || (gb[D] && ga[A]))) continue;
         const Vec3 da = s.cell.valid() ? s.cell.minimum_image(s.atoms[A].pos - s.atoms[D].pos) : s.atoms[A].pos - s.atoms[D].pos;
         const double r = norm(da);
-        if (r > 3.5 || r < 1e-6) continue;
-        const double cosang = dot(dhv, da) / std::max(norm(dhv) * r, 1e-12);
-        if (cosang < std::cos(30.0 * kPi / 180.0)) continue;
+        if (r > reach || r < 1e-6) continue;
+        if (ha) {
+          const Vec3 hav = da - dhv;   // H → A
+          const double rha = norm(hav);
+          const double lim = o.hb_ha > 0 ? o.hb_ha : rh + element(s0.atoms[A].element).vdw;
+          if (rha >= lim || rha < 1e-6) continue;
+          // the angle at H between H→D and H→A
+          const double cosang = dot(dhv * -1.0, hav) / std::max(norm(dhv) * rha, 1e-12);
+          if (cosang > cos_dha) continue;
+        } else {
+          const double cosang = dot(dhv, da) / std::max(norm(dhv) * r, 1e-12);
+          if (cosang < cos_hda) continue;
+        }
         auto& e = exists[{uint32_t(d), A}];
         e.resize(fr.size(), 0);
         e[q] = 1;

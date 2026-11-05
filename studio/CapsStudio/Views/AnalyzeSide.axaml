@@ -32,6 +32,18 @@
           <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.GroupChoices}" SelectedIndex="{Binding Analyze.GroupIndex}" HorizontalAlignment="Stretch"
                     ToolTip.Tip="The atoms the properties see: a component of a blend, the chains without a filler, the atoms you selected. Mechanics and Tg use the whole cell" />
           <TextBox Text="{Binding Analyze.GroupMolecules}" Watermark="molecule ids: 1-4, 7" Classes="mono" FontSize="11.5" IsVisible="{Binding Analyze.GroupIsMolecules}" />
+          <Expander Header="H-bond definition" Padding="0,6,0,0" HorizontalAlignment="Stretch"
+                    ToolTip.Tip="For the H-bonds calculation: which elements donate and accept, the geometric criterion, and counting between two groups">
+            <StackPanel Spacing="6">
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+                <TextBox Text="{Binding Analyze.HbDonors}" Watermark="donors N O F" Classes="mono" FontSize="11.5" ToolTip.Tip="Elements whose bonded hydrogens donate; add C for weak C–H···O" />
+                <TextBox Grid.Column="1" Text="{Binding Analyze.HbAcceptors}" Watermark="acceptors N O F" Classes="mono" FontSize="11.5" ToolTip.Tip="Acceptor elements; add S or Cl for sulfur chemistries and halides" />
+              </Grid>
+              <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.HbCriteria}" SelectedIndex="{Binding Analyze.HbCriterion}" HorizontalAlignment="Stretch" />
+              <TextBox Text="{Binding Analyze.HbGroupA}" Watermark="between: molecule 1" Classes="mono" FontSize="11.5" ToolTip.Tip="A selection query; with the one below, only bonds between the two are counted" />
+              <TextBox Text="{Binding Analyze.HbGroupB}" Watermark="and: molecule 2-40" Classes="mono" FontSize="11.5" />
+            </StackPanel>
+          </Expander>
         </StackPanel>
       </Border>
       <ScrollViewer>

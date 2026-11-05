@@ -85,6 +85,14 @@ struct AnalyzeOptions {
   double pressure = 1.0;        // atm
   // interfaces: bin width of the density profile along z (Å); a molecule left out of the chain analyses (the substrate)
   double zbin = 0.5;
+  // hydrogen bonds (hbonds): donors D (elements whose bonded hydrogens donate) and acceptors A; the criterion "da"
+  // (Luzar & Chandler 1996: r(D···A) ≤ hb_da and ∠(H–D···A) ≤ hb_hda) or "ha" (Arunan et al., IUPAC 2011: r(H···A) less than
+  // hb_ha, 0 meaning the sum of the two van der Waals radii, and ∠(D–H···A) ≥ hb_dha); counting only between two
+  // selection queries (query.hpp) when both are given (a donor in one, its acceptor in the other)
+  std::string hb_donors = "N O F", hb_acceptors = "N O F";
+  std::string hb_criterion = "da";
+  double hb_da = 3.5, hb_hda = 30, hb_ha = 0, hb_dha = 110;
+  std::string hb_group_a, hb_group_b;
   int64_t exclude_mol = 0;
   // interfaces and orientation: the direction profiles, adhesion and Herman's f run along — the normal of the cell face
   // spanned by the other two axes (0 = a: x in an orthogonal cell, 1 = b: y, 2 = c: z)

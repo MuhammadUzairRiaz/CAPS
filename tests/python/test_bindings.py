@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 91, "ABI 91")
+check(caps.abi_version() == 92, "ABI 92")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
@@ -831,6 +831,14 @@ try:
 except caps.CapsError as _e:
     check("two frames" in str(_e), f"adp: {_e}")
 print("ok   adp: one frame refused")
+# hydrogen-bond definitions (ABI 92): a bad criterion is refused, a good one set
+try:
+    _ad.set_hbonds(criterion="xx")
+    check(False, "set_hbonds: criterion xx must be refused")
+except caps.CapsError as _e:
+    check("criterion" in str(_e), f"set_hbonds: {_e}")
+_ad.set_hbonds(donors="C N O", acceptors="O S", criterion="ha", between=("molecule 1", "molecule 2"))
+print("ok   set_hbonds")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

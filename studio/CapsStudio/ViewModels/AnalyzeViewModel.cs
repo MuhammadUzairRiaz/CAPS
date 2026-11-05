@@ -546,6 +546,22 @@ public sealed class AnalyzeViewModel : ObservableObject
     /// <summary>The surface or filler: molecule ids such as "1" or "1-3,7" (empty: molecule 1).</summary>
     public string SurfaceMolecules { get => _surfaceMolecules; set => Set(ref _surfaceMolecules, value ?? ""); }
 
+    // the hydrogen-bond definition (the hbonds chip): elements, the D···A or IUPAC H···A criterion, two queries
+    public static string[] HbCriteria { get; } = ["D···A ≤ 3.5 Å, ∠H–D···A ≤ 30° (Luzar–Chandler)", "H···A < vdW sum, ∠D–H···A ≥ 110° (IUPAC 2011)"];
+    private string _hbDonors = "N O F", _hbAcceptors = "N O F", _hbA = "", _hbB = "";
+    private int _hbCrit;
+    public string HbDonors { get => _hbDonors; set => Set(ref _hbDonors, value ?? ""); }
+    public string HbAcceptors { get => _hbAcceptors; set => Set(ref _hbAcceptors, value ?? ""); }
+    public int HbCriterion { get => _hbCrit; set => Set(ref _hbCrit, Math.Clamp(value, 0, 1)); }
+    public string HbGroupA { get => _hbA; set => Set(ref _hbA, value ?? ""); }
+    public string HbGroupB { get => _hbB; set => Set(ref _hbB, value ?? ""); }
+    private string HbJson() => new System.Text.Json.Nodes.JsonObject
+    {
+        ["donors"] = _hbDonors.Trim().Length > 0 ? _hbDonors.Trim() : "N O F", ["acceptors"] = _hbAcceptors.Trim().Length > 0 ? _hbAcceptors.Trim() : "N O F",
+        ["criterion"] = _hbCrit == 1 ? "ha" : "da", ["group_a"] = _hbA.Trim().Length > 0 && _hbB.Trim().Length > 0 ? _hbA.Trim() : "",
+        ["group_b"] = _hbA.Trim().Length > 0 && _hbB.Trim().Length > 0 ? _hbB.Trim() : "",
+    }.ToJsonString();
+
     public CapsAnalyzeOpts Options()
     {
         var (a, b) = PairElements[Math.Clamp(_pair, 0, PairElements.Length - 1)];
@@ -571,6 +587,11 @@ public sealed class AnalyzeViewModel : ObservableObject
         var doc = _doc();
         if (doc == null || Working) return;
         var ids = SelectedIds;
+        if (ids.Contains("hbonds"))
+        {
+            try { doc.SetHbondOptions(HbJson()); }
+            catch (Exception e) { Log = "H-bond definition: " + e.Message; return; }
+        }
         if (ids.Length == 0) { Log = "Switch on at least one calculation."; return; }
         Working = true;
         Progress = 0;

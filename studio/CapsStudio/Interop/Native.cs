@@ -488,6 +488,7 @@ internal static class Native
     }
 
     [DllImport(Lib, EntryPoint = "caps_unit_info")] public static extern int UnitInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_set_hbond_options")] public static extern int SetHbondOptions(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_adp")] public static extern int Adp(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_cif_disorder")] public static extern int CifDisorder([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_open_cif")] public static extern IntPtr OpenCif([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
@@ -1383,6 +1384,8 @@ public sealed class CapsDocument : IDisposable
     public int SetRestraints(string json) { using (Hold()) { var n = Native.SetRestraints(H, json); if (n < 0) throw new InvalidOperationException(Native.LastError()); return n; } }
     public long HeldMolecule() { using (Hold()) return Native.HeldMolecule(H); }
     /// <summary>Atoms held in place besides the held molecule (frame indices); an empty list clears them.</summary>
+    /// <summary>The hydrogen-bond definition this document's analyses use (caps_set_hbond_options).</summary>
+    public void SetHbondOptions(string json) { using (Hold()) { Alive(); if (Native.SetHbondOptions(H, json) != 0) throw new InvalidOperationException(Native.LastError()); } }
     /// <summary>Atomic displacement tensors of this trajectory (caps_adp), JSON.</summary>
     public string Adp(string json)
     {

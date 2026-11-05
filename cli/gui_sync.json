@@ -94,7 +94,14 @@
     "--axis": "page",
     "--zbin": "page",
     "--ir-max-ps": "cli: the Studio correlates over 2 ps (or half the frames' span)",
-    "--ir-max-wavenumber": "cli: the Studio shows up to 4000 cm⁻¹"
+    "--ir-max-wavenumber": "cli: the Studio shows up to 4000 cm⁻¹",
+    "--hb-donors": "Views/AnalyzeSide.axaml|donors N O F",
+    "--hb-acceptors": "Views/AnalyzeSide.axaml|acceptors N O F",
+    "--hb-criterion": "Views/AnalyzeSide.axaml|H-bond definition",
+    "--hb-between": "Views/AnalyzeSide.axaml|between: molecule 1",
+    "--hb-da": "cli: the page uses 3.5 Å",
+    "--hb-ha": "cli: the page uses the van der Waals sum",
+    "--hb-angle": "cli: the page uses 30° (D···A) or 110° (H···A)"
    }
   },
   "elastic": {

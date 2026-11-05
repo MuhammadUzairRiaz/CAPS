@@ -224,6 +224,7 @@ struct caps_doc {
   std::vector<caps::RelaxOptions::DihedralRestraint> dihedral_restraints;   // and dihedral ones
   std::vector<caps::Restraint> restraint_set;   // v87: restraints of every kind for minimisation, MD and the exports
   std::string sequence_report;          // v88: the copolymer statistics of the chains grown into it (JSON), "" none
+  std::string hbond_json;               // v92: the hydrogen-bond definition analyses use (JSON), "" the default
   std::unique_ptr<caps::Pipeline> pipeline;        // caps_pipeline_set: steps run on every shown frame
   std::unique_ptr<caps::PipelineState> pstate;     // its result for the current frame
   // results cached per frame (design/boards/PipelineSteps "results cached per frame"): kept while the pipeline and the
@@ -5429,6 +5430,13 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
     if (ids.empty() && protocols.empty()) throw std::invalid_argument("no properties requested");
     caps::AnalyzeOptions o;
     o.exclude_mol = d->held_mol;   // a held surface is not a chain
+    if (!d->hbond_json.empty()) {   // v92 the hydrogen-bond definition set for this document
+      const caps::Json h = caps::Json::parse(d->hbond_json);
+      o.hb_donors = h.text("donors", o.hb_donors), o.hb_acceptors = h.text("acceptors", o.hb_acceptors);
+      o.hb_criterion = h.text("criterion", o.hb_criterion);
+      o.hb_da = h.num("da", o.hb_da), o.hb_hda = h.num("hda", o.hb_hda), o.hb_ha = h.num("ha", o.hb_ha), o.hb_dha = h.num("dha", o.hb_dha);
+      o.hb_group_a = h.text("group_a", ""), o.hb_group_b = h.text("group_b", "");
+    }
     if (p) {
       o.first = std::max<int64_t>(0, p->first);
       o.last = p->last > 0 ? p->last : -1;
@@ -11415,6 +11423,21 @@ extern "C" caps_doc* caps_graft_chains(caps_doc* d, const char* json, char* out,
     json_error(e, out, cap);
     return nullptr;
   }
+}
+
+// v92 the hydrogen-bond definition for this document's analyses (properties.hpp hb_*): JSON {donors, acceptors,
+// criterion da | ha, da, hda, ha, dha, group_a, group_b}; "" back to the default. Returns 0, or −1 with g_error set.
+extern "C" int32_t caps_set_hbond_options(caps_doc* d, const char* json) {
+  return guard([&] {
+    const std::string t = json ? json : "";
+    if (!t.empty()) {
+      const caps::Json h = caps::Json::parse(t);
+      const std::string c = h.text("criterion", "da");
+      if (c != "da" && c != "ha") throw std::invalid_argument("criterion: da or ha");
+    }
+    d->hbond_json = t;
+    return 0;
+  });
 }
 
 // v91 atomic displacement tensors of the open trajectory (adp.hpp): JSON {first, last, stride, supercell [3],
