@@ -9134,7 +9134,7 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       char b[128];
       std::snprintf(b, sizeof b, "Vacuum slab: %.2f Å slab, %.2f Å vacuum", r.thickness, r.vacuum);
       what = b;
-    } else if (op == "defects") {   // {from, to ("" vacancies), fraction | count, min_spacing, seed, atoms (the region)}
+    } else if (op == "defects") {   // {from, to ("" vacancies), fraction | count, min_spacing, seed, atoms (the region), grade, inner, outer, axis}
       caps::DefectOptions o;
       o.from = element_of(j.text("from", "C"));
       const std::string to = j.text("to", "");
@@ -9143,6 +9143,9 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       o.count = int(j.num("count", 0));
       o.min_spacing = j.num("min_spacing", 0);
       o.seed = uint64_t(j.num("seed", 1));
+      o.grade = j.text("grade", "");   // v109 graded: radial | axial, inner, outer (chances), axis [x, y, z]
+      o.inner = j.num("inner", 0), o.outer = j.num("outer", 0);
+      if (j.has("axis") && j["axis"].is_array() && j["axis"].size() == 3) o.axis = {j["axis"][0].number(), j["axis"][1].number(), j["axis"][2].number()};
       if (j.has("atoms")) {
         o.region.assign(s.atoms.size(), 0);
         for (uint32_t a : atoms_of(d, j)) o.region[a] = 1;

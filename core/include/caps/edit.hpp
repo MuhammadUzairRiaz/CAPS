@@ -40,7 +40,10 @@ void delete_atoms(System& s, const std::vector<char>& remove);
 
 // Point defects (nanoclusters, crystals, fillers): atoms of element `from` (among `region` when given) picked at random —
 // count of them, else a fraction — either removed (vacancies, to == 0) or turned into element `to` (substitutional
-// doping), at least min_spacing Å apart (minimum image). Returns how many; notes says what changed and the charge left.
+// doping), at least min_spacing Å apart (minimum image). Graded: each site's chance runs linearly from `inner` to
+// `outer` with its distance from the candidates' centroid (radial) or its place along an axis (axial); the notes give
+// the count expected (the sum of the chances) and the fraction in each third. Returns how many; notes says what changed
+// and the charge left.
 struct DefectOptions {
   int from = 0, to = 0;           // to 0: vacancies
   double fraction = 0.05;
@@ -48,6 +51,12 @@ struct DefectOptions {
   double min_spacing = 0.0;       // Å between the picked sites
   uint64_t seed = 1;
   std::vector<char> region;       // per atom: may be picked (empty: every atom)
+  // graded (core–shell clusters, gradient alloys): "radial" or "axial"; each site picked with its own chance, linear
+  // from inner (the centroid of the candidates, or their low end along axis) to outer (the farthest, or the high end);
+  // fraction and count are then not used
+  std::string grade;
+  double inner = 0.0, outer = 0.0;
+  Vec3 axis{0, 0, 1};
 };
 int point_defects(System& s, const DefectOptions& o, std::vector<std::string>* notes = nullptr);
 // Adds the hydrogens the flagged atoms (empty: all) lack; returns how many.

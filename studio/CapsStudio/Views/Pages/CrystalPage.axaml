@@ -251,6 +251,14 @@
                     <NumericUpDown Grid.Column="3" Value="{Binding DefectSpacing}" Minimum="0" Maximum="50" Increment="0.5" FormatString="≥ 0.# Å" ShowButtonSpinner="False" ToolTip.Tip="Least distance between two picked sites" />
                     <Button Grid.Column="4" Classes="small" Content="Make defects" Click="OnDefects" HorizontalAlignment="Stretch" />
                   </Grid>
+                  <ComboBox ItemsSource="{x:Static vm:MainViewModel.DefectGrades}" SelectedIndex="{Binding DefectGrade}" HorizontalAlignment="Stretch"
+                            ToolTip.Tip="Graded: each site's chance runs linearly from the centre (or the low end along an axis) to the surface (or the high end): core–shell particles, gradient alloys" />
+                  <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding DefectGraded}">
+                    <TextBlock Text="Centre / low end" Classes="label" VerticalAlignment="Center" />
+                    <NumericUpDown Value="{Binding DefectInner}" Minimum="0" Maximum="100" Increment="5" FormatString="0 '%'" Width="84" ShowButtonSpinner="False" />
+                    <TextBlock Text="Surface / high end" Classes="label" VerticalAlignment="Center" />
+                    <NumericUpDown Value="{Binding DefectOuter}" Minimum="0" Maximum="100" Increment="5" FormatString="0 '%'" Width="84" ShowButtonSpinner="False" />
+                  </StackPanel>
                   <CheckBox Content="Only among the selected atoms" IsChecked="{Binding DefectInSelection}" />
                   <TextBlock Text="Nanowire · cut along a lattice direction [uvw], periodic along it" Classes="label" />
                   <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto" RowSpacing="6">

@@ -3156,12 +3156,12 @@
   {
    "group": "Growth",
    "source": "core/src/edit.cpp",
-   "engines": [],
+   "engines": "C API caps_edit defects {grade radial | axial, inner, outer, axis}; Studio Crystal › Point defects › Graded",
    "cites": [],
    "id": "point-defects",
-   "title": "Point defects: vacancies and doping",
-   "summary": "A share (or a count) of one element's sites — in the whole structure or the selection — picked at random, at least a spacing apart, and either emptied (vacancies) or given another element (substitutional doping). The charge the removed atoms carried is reported.",
-   "equation": "N = round(f N_X)  (or the count),  |r_i − r_j| ≥ d_min for picked i ≠ j",
+   "title": "Point defects: vacancies and doping, graded",
+   "summary": "A share (or a count) of one element's sites — in the whole structure or the selection — picked at random, at least a spacing apart, and either emptied (vacancies) or given another element (substitutional doping). The charge the removed atoms carried is reported. Graded substitution (core–shell particles, gradient alloys) gives each candidate site its own chance, linear from the inner value at the candidates' centroid to the outer value at the farthest of them (radial), or from the low end to the high end along an axis (axial). Every site is drawn once; the notes give the count expected (the sum of the chances) and the fraction reached in each third, centre to surface, against the expected one.",
+   "equation": "N = round(f N_X)  (or the count),  |r_i − r_j| ≥ d_min for picked i ≠ j;  p_i = p_in + (p_out − p_in) t_i,  t_i = |r_i − r̄| / max_j |r_j − r̄| (radial) or (r_i·û − min)/(max − min) (axial)",
    "equation_note": "distances by the minimum image in a periodic cell; picked in a random order (seeded), skipped when too close to one already picked",
    "symbols": [
     [
@@ -3181,9 +3181,9 @@
     ]
    ],
    "when": "Defective fillers (oxygen vacancies in silica or titania, missing atoms in a metal nanoparticle), doped particles (Cu in Al, Zn in a sulphide), a carbon lattice with nitrogen in it.",
-   "tested": "tests/test_nano.cpp Nano.VacanciesAndDoping (an Al particle: 10 % vacancies exactly; Cu on five sites at least 5 Å apart)",
+   "tested": "tests/test_nano.cpp Nano.VacanciesAndDoping (an Al particle: 10 % vacancies exactly; Cu on five sites at least 5 Å apart); tests/test_nano.cpp Nano.GradedSubstitution (an aluminium particle, gold from chance 1 at the centre to 0 at the surface: the centre-most site always taken, the outermost never, the count within four standard deviations of the sum of the chances, the inner third above 60 % and the outer below 30 %; axial along x the same the other way; a chance above 1 refused); tests/python/test_bindings.py",
    "deviation": "no relaxation and no charge compensation: minimise afterwards and assign the charges again",
-   "tex": "N = \\operatorname{round}(f\\,N_X),\\qquad |\\mathbf r_i - \\mathbf r_j| \\ge d_{\\min}"
+   "tex": "N = \\operatorname{round}(f\\,N_X),\\qquad |\\mathbf r_i - \\mathbf r_j| \\ge d_{\\min},\\qquad p_i = p_{\\mathrm{in}} + \\left(p_{\\mathrm{out}} - p_{\\mathrm{in}}\\right) t_i,\\qquad t_i = \\frac{|\\mathbf r_i - \\bar{\\mathbf r}|}{\\max_j |\\mathbf r_j - \\bar{\\mathbf r}|}"
   },
   {
    "group": "Growth",

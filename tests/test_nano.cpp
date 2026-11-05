@@ -433,3 +433,63 @@ TEST(Nano, VacanciesAndDoping) {
   d.from = 13;
   EXPECT_THROW(point_defects(p, d), std::invalid_argument);
 }
+
+// Graded substitution: gold on the copper sites of an aluminium particle swapped to copper first, all at the centre
+// (chance 1) and none at the surface (chance 0), linear between: the centre-most site always taken, the outermost never;
+// the count within four standard deviations of the sum of the chances; the inner third far richer than the outer.
+// Axial: from 0 at the low end of x to 1 at the high end, the high third far richer.
+TEST(Nano, GradedSubstitution) {
+  const System al = read_cif(std::string(CAPS_SOURCE_DIR) + "/data/crystals/aluminium.cif");
+  ParticleOptions po;
+  po.radius = 16;
+  const System p0 = nanoparticle(al, po);
+  Vec3 c{0, 0, 0};
+  for (const auto& a : p0.atoms) c = c + a.pos;
+  c = c * (1.0 / double(p0.atoms.size()));
+  double rmax = 0;
+  size_t inner = 0, outer = 0;
+  double expect = 0, var = 0;
+  for (size_t i = 0; i < p0.atoms.size(); ++i) {
+    const double r = norm(p0.atoms[i].pos - c);
+    if (r > rmax) rmax = r, outer = i;
+    if (r < norm(p0.atoms[inner].pos - c)) inner = i;
+  }
+  for (const auto& a : p0.atoms) {
+    const double pch = 1 - norm(a.pos - c) / rmax;
+    expect += pch, var += pch * (1 - pch);
+  }
+  System p = p0;
+  DefectOptions d;
+  d.from = 13, d.to = 79, d.grade = "radial", d.inner = 1, d.outer = 0, d.seed = 7;
+  std::vector<std::string> notes;
+  const int n = point_defects(p, d, &notes);
+  EXPECT_LT(std::fabs(n - expect), 4 * std::sqrt(var)) << n << " vs " << expect;
+  EXPECT_EQ(p.atoms[inner].element, 79);
+  EXPECT_EQ(p.atoms[outer].element, 13);
+  int in_au = 0, in_n = 0, out_au = 0, out_n = 0;
+  for (const auto& a : p.atoms) {
+    const double t = norm(a.pos - c) / rmax;
+    if (t < 1.0 / 3) ++in_n, in_au += a.element == 79;
+    if (t >= 2.0 / 3) ++out_n, out_au += a.element == 79;
+  }
+  EXPECT_GT(double(in_au) / in_n, 0.6);
+  EXPECT_LT(double(out_au) / out_n, 0.3);
+  ASSERT_GE(notes.size(), 2u);
+  System q = p0;
+  d.grade = "axial", d.axis = {1, 0, 0}, d.inner = 0, d.outer = 1;
+  point_defects(q, d);
+  double lo = 1e300, hi = -1e300;
+  for (const auto& a : q.atoms) lo = std::min(lo, a.pos[0]), hi = std::max(hi, a.pos[0]);
+  int low_au = 0, low_n = 0, high_au = 0, high_n = 0;
+  for (const auto& a : q.atoms) {
+    const double t = (a.pos[0] - lo) / (hi - lo);
+    if (t < 1.0 / 3) ++low_n, low_au += a.element == 79;
+    if (t >= 2.0 / 3) ++high_n, high_au += a.element == 79;
+    if (t == 0) EXPECT_EQ(a.element, 13);
+    if (t == 1) EXPECT_EQ(a.element, 79);
+  }
+  EXPECT_GT(double(high_au) / high_n, 0.6);
+  EXPECT_LT(double(low_au) / low_n, 0.3);
+  d.inner = 1.5;
+  EXPECT_THROW(point_defects(q, d), std::invalid_argument);
+}

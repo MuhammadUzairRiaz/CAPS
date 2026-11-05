@@ -1200,18 +1200,66 @@ int point_defects(System& s, const DefectOptions& o, std::vector<std::string>* n
   for (uint32_t i = 0; i < s.atoms.size(); ++i)
     if (s.atoms[i].element == o.from && (o.region.empty() || (i < o.region.size() && o.region[i]))) cand.push_back(i);
   if (cand.empty()) throw std::invalid_argument(std::string("no ") + element(o.from).symbol + " atoms to pick");
-  const size_t want = o.count > 0 ? size_t(o.count) : size_t(std::lround(o.fraction * double(cand.size())));
+  size_t want = o.count > 0 ? size_t(o.count) : size_t(std::lround(o.fraction * double(cand.size())));
   std::mt19937_64 rng(o.seed);
+  // graded: each candidate's own chance p = inner + (outer − inner) t, t ∈ [0, 1] its place from centre to surface
+  std::vector<double> chance, tpos;
+  double third_n[3] = {0, 0, 0}, third_e[3] = {0, 0, 0};
+  if (!o.grade.empty()) {
+    if (o.grade != "radial" && o.grade != "axial") throw std::invalid_argument("grade radial or axial");
+    if (o.inner < 0 || o.inner > 1 || o.outer < 0 || o.outer > 1) throw std::invalid_argument("graded fractions are between 0 and 1");
+    std::vector<double> t(s.atoms.size(), 0);
+    if (o.grade == "radial") {
+      Vec3 c{0, 0, 0};
+      for (uint32_t i : cand) c = c + s.atoms[i].pos;
+      c = c * (1.0 / double(cand.size()));
+      double rmax = 0;
+      for (uint32_t i : cand) t[i] = norm(s.atoms[i].pos - c), rmax = std::max(rmax, t[i]);
+      for (uint32_t i : cand) t[i] = rmax > 0 ? t[i] / rmax : 0;
+    } else {
+      const double L = norm(o.axis);
+      if (L < 1e-12) throw std::invalid_argument("give the axis of the grade");
+      const Vec3 u = o.axis * (1 / L);
+      double lo = 1e300, hi = -1e300;
+      for (uint32_t i : cand) t[i] = dot(s.atoms[i].pos, u), lo = std::min(lo, t[i]), hi = std::max(hi, t[i]);
+      for (uint32_t i : cand) t[i] = hi > lo ? (t[i] - lo) / (hi - lo) : 0;
+    }
+    chance.assign(s.atoms.size(), 0);
+    tpos = t;
+    double expect = 0;
+    for (uint32_t i : cand) {
+      chance[i] = o.inner + (o.outer - o.inner) * t[i];
+      expect += chance[i];
+      const int k = std::min(2, int(t[i] * 3));
+      third_n[k] += 1, third_e[k] += chance[i];
+    }
+    want = cand.size();   // every candidate is drawn
+    if (notes) {
+      char b[200];
+      std::snprintf(b, sizeof b, "graded %s from %.0f %% to %.0f %%: %.1f expected", o.grade.c_str(), 100 * o.inner, 100 * o.outer, expect);
+      notes->push_back(b);
+    }
+  }
   caps::shuffle(cand.begin(), cand.end(), rng);
   std::vector<uint32_t> pick;
   for (uint32_t i : cand) {
     if (pick.size() >= want) break;
+    if (!chance.empty() && caps::uniform01(rng) >= chance[i]) continue;
     bool ok = true;
     for (uint32_t p : pick) {
       const Vec3 d = s.cell.valid() ? s.cell.minimum_image(s.atoms[i].pos - s.atoms[p].pos) : s.atoms[i].pos - s.atoms[p].pos;
       if (norm(d) < o.min_spacing) { ok = false; break; }
     }
     if (ok) pick.push_back(i);
+  }
+  if (!chance.empty() && notes) {   // the fraction reached in each third, centre to surface, against the chances
+    double got[3] = {0, 0, 0};
+    for (uint32_t i : pick) got[std::min(2, int(tpos[i] * 3))] += 1;
+    char b[240];
+    std::snprintf(b, sizeof b, "by thirds from the centre: %.0f %%, %.0f %%, %.0f %% (expected %.0f %%, %.0f %%, %.0f %%)",
+                  third_n[0] ? 100 * got[0] / third_n[0] : 0, third_n[1] ? 100 * got[1] / third_n[1] : 0, third_n[2] ? 100 * got[2] / third_n[2] : 0,
+                  third_n[0] ? 100 * third_e[0] / third_n[0] : 0, third_n[1] ? 100 * third_e[1] / third_n[1] : 0, third_n[2] ? 100 * third_e[2] / third_n[2] : 0);
+    notes->push_back(b);
   }
   double q = 0;
   for (uint32_t i : pick) q += s.atoms[i].charge;
@@ -1232,7 +1280,7 @@ int point_defects(System& s, const DefectOptions& o, std::vector<std::string>* n
     if (notes) notes->push_back(std::to_string(pick.size()) + " " + sym + " → " + element(o.to).symbol + " (of " + std::to_string(cand.size()) + " " + sym +
                                 "); types and charges to be assigned again");
   }
-  if (pick.size() < want && notes) notes->push_back("only " + std::to_string(pick.size()) + " of " + std::to_string(want) + " sites at " + std::to_string(o.min_spacing).substr(0, 4) + " Å spacing");
+  if (chance.empty() && pick.size() < want && notes) notes->push_back("only " + std::to_string(pick.size()) + " of " + std::to_string(want) + " sites at " + std::to_string(o.min_spacing).substr(0, 4) + " Å spacing");
   return int(pick.size());
 }
 

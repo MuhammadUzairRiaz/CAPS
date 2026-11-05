@@ -79,10 +79,30 @@ public sealed partial class MainViewModel
     public decimal? DefectPercent { get => _defPct; set { if (value != null) Set(ref _defPct, Math.Clamp(value.Value, 0.1m, 100m)); } }
     public decimal? DefectSpacing { get => _defSpacing; set { if (value != null) Set(ref _defSpacing, Math.Clamp(value.Value, 0m, 50m)); } }
     public bool DefectInSelection { get => _defSel; set => Set(ref _defSel, value); }
+    // graded (core–shell clusters, gradient alloys): the share runs linearly from the centre (or the low end along an axis)
+    // to the surface (or the high end)
+    public static readonly string[] DefectGrades = ["Uniform share", "Graded from the centre", "Graded along x", "Graded along y", "Graded along z"];
+    private int _defGrade;
+    private decimal _defInner = 100, _defOuter = 0;
+    public int DefectGrade { get => _defGrade; set { if (Set(ref _defGrade, Math.Clamp(value, 0, 4))) Raise(nameof(DefectGraded)); } }
+    public bool DefectGraded => _defGrade > 0;
+    public decimal? DefectInner { get => _defInner; set { if (value != null) Set(ref _defInner, Math.Clamp(value.Value, 0m, 100m)); } }
+    public decimal? DefectOuter { get => _defOuter; set { if (value != null) Set(ref _defOuter, Math.Clamp(value.Value, 0m, 100m)); } }
     public void MakeDefects()
     {
-        if (_defSel) CellEdit(new { op = "defects", from = _defFrom, to = _defTo, fraction = (double)_defPct / 100, min_spacing = (double)_defSpacing, atoms = SelectionAtoms() });
-        else CellEdit(new { op = "defects", from = _defFrom, to = _defTo, fraction = (double)_defPct / 100, min_spacing = (double)_defSpacing });
+        var o = new System.Text.Json.Nodes.JsonObject
+        {
+            ["op"] = "defects", ["from"] = _defFrom, ["to"] = _defTo, ["fraction"] = (double)_defPct / 100, ["min_spacing"] = (double)_defSpacing,
+        };
+        if (_defGrade > 0)
+        {
+            o["grade"] = _defGrade == 1 ? "radial" : "axial";
+            o["inner"] = (double)_defInner / 100;
+            o["outer"] = (double)_defOuter / 100;
+            o["axis"] = new System.Text.Json.Nodes.JsonArray(_defGrade == 2 ? 1.0 : 0.0, _defGrade == 3 ? 1.0 : 0.0, _defGrade == 4 ? 1.0 : 0.0);
+        }
+        if (_defSel) o["atoms"] = new System.Text.Json.Nodes.JsonArray(SelectionAtoms().Select(x => (System.Text.Json.Nodes.JsonNode?)x).ToArray());
+        CellEdit(o);
     }
 
     // a cluster from the periodic structure (core lattice.hpp cut_cluster): whole molecules about a centre, no cell

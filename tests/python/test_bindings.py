@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 108, "ABI 108")
+check(caps.abi_version() == 109, "ABI 109")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -937,6 +937,14 @@ _st = caps.stack([_sheet(2.46, 2), _sheet(2.50, 3)], match="first", max_repeat=1
 _l2 = _st.stack_report["layers"][1]
 check(abs(_l2["strain_a"] - (2.46 / 2.50 - 1)) < 1e-6 and abs(_l2["thickness_scale"] - (2.50 / 2.46) ** 2) < 1e-5, f"stack {_l2}")
 print("ok   stack: oblique cells, keep_volume")
+
+# graded substitution (ABI 109): an aluminium particle, gold at its centre falling to none at its surface
+_alp = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "aluminium.cif"))
+_alp.edit(op="supercell", n=[4, 4, 4])
+_gr = _alp.edit(op="defects", **{"from": "Al", "to": "Au", "grade": "radial", "inner": 1.0, "outer": 0.0, "seed": 3})
+_els = [_alp.atom(i)["element"] for i in range(_alp.atoms)]
+check(0 < _els.count("Au") < len(_els) and "by thirds" in _gr["what"], f"graded {_gr['what']}")
+print("ok   graded substitution")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
