@@ -87,6 +87,7 @@
 #include "caps/restraints.hpp"
 #include "caps/graft_chains.hpp"
 #include "caps/adp.hpp"
+#include "caps/domains.hpp"
 #include "caps/ddft.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
@@ -369,6 +370,9 @@ int usage() {
                "             a molecular crystal found by simulated annealing against the pattern (direct space)\n"
                "  caps zmelt CRYSTAL --temps 100,200,300,400 [--ff FF] [--steps 10000] [--dt 1] [--bisect 3] [--cutoff 10] [--sample-every 20]\n"
                "              [--csv OUT] [--json OUT]   melting point by the Z method: NVE runs from the perfect crystal (Belonoshko et al.)\n"
+               "  caps domains FILE [--group QUERY] [--grid 0.8] [--sigma 1.5] [--threshold ρ | the mean] [--below] [--min-voxels 1]\n"
+               "              [--csv OUT] [--cube OUT.cube] [--slice 'px,py,pz; ux,uy,uz; vx,vy,vz; w,h; nx,ny' [--slice-csv OUT]]\n"
+               "              domains of a group's density field: volumes, radii, ellipsoid axes, percolation, spacing; slices on any plane\n"
                "  caps adp TRAJ [--topology DATA] [--first N] [--last N] [--stride N] [--supercell 2,2,2] [--probability 0.5] [--no-drift]\n"
                "              [--csv OUT] [--cif OUT.cif]   atomic displacement tensors U_ij, U_iso and B per atom (per site of a supercell)\n"
                "  caps cif FILE.cif [--disorder major|group|random] [--group LABEL] [--supercell 4,4,4] [--seed 1] [-o OUT] [--json OUT]\n"
@@ -511,7 +515,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -544,7 +548,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
          a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
-         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo" || a == "--equivalent" || a == "--no-drift";
+         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo" || a == "--equivalent" || a == "--no-drift" || a == "--below";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -4335,6 +4339,70 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps solve: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "domains") {
+    try {
+      if (pos.empty()) return usage();
+      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      const System s = t.frames() ? t.frame(t.frames() - 1) : t.topology;
+      DomainOptions dop;
+      if (o.count("--group")) dop.group = o["--group"];
+      if (o.count("--grid")) dop.grid = std::stod(o["--grid"]);
+      if (o.count("--sigma")) dop.sigma = std::stod(o["--sigma"]);
+      if (o.count("--threshold")) dop.threshold = std::stod(o["--threshold"]);
+      dop.above = !o.count("--below");
+      if (o.count("--min-voxels")) dop.min_voxels = std::stoi(o["--min-voxels"]);
+      const DomainResult r = density_domains(s, dop);
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      std::printf("grid %d × %d × %d, level %.4g %s\n", r.field.n[0], r.field.n[1], r.field.n[2], r.threshold, r.field.unit.c_str());
+      std::printf("domain      volume Å³   R_eq Å   axes Å                    percolates  nearest Å\n");
+      for (size_t k = 0; k < r.domains.size() && k < 40; ++k) {
+        const auto& d = r.domains[k];
+        std::printf("%6zu  %12.1f  %7.2f   %6.2f %6.2f %6.2f      %c%c%c        %8.2f\n", k + 1, d.volume, d.equivalent_radius, d.axes[0], d.axes[1], d.axes[2],
+                    d.percolates[0] ? 'a' : '-', d.percolates[1] ? 'b' : '-', d.percolates[2] ? 'c' : '-', d.nearest);
+      }
+      if (r.domains.size() > 40) std::printf("… %zu more\n", r.domains.size() - 40);
+      if (o.count("--csv")) {
+        std::ofstream f(o["--csv"]);
+        f << "domain,voxels,volume_A3,equivalent_radius_A,axis1_A,axis2_A,axis3_A,cx,cy,cz,percolates_a,percolates_b,percolates_c,nearest_A\n";
+        for (size_t k = 0; k < r.domains.size(); ++k) {
+          const auto& d = r.domains[k];
+          f << k + 1 << "," << d.voxels << "," << d.volume << "," << d.equivalent_radius << "," << d.axes[0] << "," << d.axes[1] << "," << d.axes[2] << "," << d.centroid[0] << ","
+            << d.centroid[1] << "," << d.centroid[2] << "," << d.percolates[0] << "," << d.percolates[1] << "," << d.percolates[2] << "," << d.nearest << "\n";
+        }
+        std::printf("wrote %s\n", o["--csv"].c_str());
+      }
+      if (o.count("--cube")) {
+        write_grid(r.field, s, o["--cube"]);
+        std::printf("wrote %s\n", o["--cube"].c_str());
+      }
+      if (o.count("--slice")) {   // 'px,py,pz; ux,uy,uz; vx,vy,vz; width,height; nx,ny' → CSV of x, y, value
+        std::vector<std::vector<double>> parts;
+        std::stringstream ss(o["--slice"]);
+        for (std::string part; std::getline(ss, part, ';');) {
+          std::vector<double> v;
+          std::stringstream ps(part);
+          for (std::string x; std::getline(ps, x, ',');) v.push_back(std::stod(x));
+          parts.push_back(v);
+        }
+        if (parts.size() != 5 || parts[0].size() != 3 || parts[1].size() != 3 || parts[2].size() != 3 || parts[3].size() != 2 || parts[4].size() != 2)
+          throw std::invalid_argument("--slice 'px,py,pz; ux,uy,uz; vx,vy,vz; width,height; nx,ny'");
+        const int nx = int(parts[4][0]), ny = int(parts[4][1]);
+        const auto vals = field_slice(r.field, {parts[0][0], parts[0][1], parts[0][2]}, {parts[1][0], parts[1][1], parts[1][2]}, {parts[2][0], parts[2][1], parts[2][2]},
+                                      parts[3][0], parts[3][1], nx, ny);
+        const std::string path = o.count("--slice-csv") ? o["--slice-csv"] : std::string("slice.csv");
+        std::ofstream f(path);
+        f << "u_A,v_A,value\n";
+        for (int y = 0; y < ny; ++y)
+          for (int x = 0; x < nx; ++x)
+            f << (nx > 1 ? parts[3][0] * (double(x) / (nx - 1) - 0.5) : 0.0) << "," << (ny > 1 ? parts[3][1] * (double(y) / (ny - 1) - 0.5) : 0.0) << "," << vals[size_t(y * nx + x)] << "\n";
+        std::printf("wrote %s (%d × %d samples)\n", path.c_str(), nx, ny);
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps domains: %s\n", e.what());
       return 1;
     }
   }

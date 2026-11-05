@@ -1780,6 +1780,27 @@
     "--csv": "partial: the page lists the sites",
     "--cif": "Views/Pages/ScatteringPage.axaml|Write CIF with U_ij…"
    }
+  },
+  "domains": {
+   "status": "gui",
+   "studio": "Analyze › Calculations › Domains",
+   "where": "ViewModels/AnalyzeViewModel.cs|Chip(\"domains\", \"Domains\")",
+   "capi": [
+    "caps_analyze_ex"
+   ],
+   "options": {
+    "--group": "partial: the Calculations panel's Group",
+    "--grid": "cli: the chip uses 0.8 Å",
+    "--sigma": "cli: the chip uses 1.5 Å",
+    "--threshold": "cli: the chip uses the field's mean",
+    "--below": "cli: the chip finds the dense regions",
+    "--min-voxels": "cli: the chip leaves out single voxels",
+    "--csv": "partial: the chip plots the volumes",
+    "--cube": "cli: write the field from caps domains",
+    "--slice": "cli: slices on any plane from caps domains or Python",
+    "--slice-csv": "cli: the slice's file",
+    "--topology": "page"
+   }
   }
  },
  "hidden_options": {

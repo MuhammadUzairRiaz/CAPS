@@ -3,6 +3,7 @@
 
 #include "caps/adp.hpp"
 #include "caps/pattern_geometry.hpp"
+#include "caps/domains.hpp"
 #include "caps/query.hpp"
 #include "caps/normal_modes.hpp"
 #include "caps/uff.hpp"
@@ -1837,6 +1838,47 @@ double ir_correction(const std::string& kind, double x) {
   return 1.0;
 }
 
+Property domains_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o) {
+  Property p{"domains", "Domains of the density field", "domains",
+             "the mass density (Gaussian atoms) averaged over the frames, thresholded at its mean (or a level given) and labelled "
+             "into connected regions across the periodic boundaries; per region the volume, equivalent radius, fitted-ellipsoid "
+             "axes, percolation and nearest-neighbour spacing; value: the number of domains",
+             NaN, NaN, {}, {}, {}};
+  if (!t.topology.cell.valid()) { p.notes.push_back("needs a periodic cell"); return p; }
+  GridField mean;
+  for (size_t f : fr) {
+    const System s = t.frame(f);
+    const GridField g = density_field(s, {}, o.domain_grid, o.domain_sigma);
+    if (mean.values.empty()) mean = g;
+    else for (size_t q = 0; q < g.values.size() && q < mean.values.size(); ++q) mean.values[q] += g.values[q];
+  }
+  for (auto& v : mean.values) v /= double(fr.size());
+  double avg = 0;
+  for (double v : mean.values) avg += v;
+  avg /= double(mean.values.size());
+  const DomainResult r = label_domains(mean, o.domain_threshold > 0 ? o.domain_threshold : avg, !o.domain_below, 2);
+  p.value = double(r.domains.size());
+  int perc = 0;
+  double vol = 0, rad = 0, nn = 0;
+  int nnn = 0, enc = 0;
+  for (const auto& d : r.domains) {
+    perc += !d.enclosed;
+    if (d.enclosed) vol += d.volume, rad += d.equivalent_radius, ++enc;
+    if (d.nearest > 0) nn += d.nearest, ++nnn;
+  }
+  p.extra["percolating"] = perc;
+  p.extra["share of the cell in domains"] = r.fraction;
+  p.extra["threshold (g/cm³)"] = r.threshold;
+  if (enc) p.extra["mean volume of enclosed domains (Å³)"] = vol / enc, p.extra["mean equivalent radius (Å)"] = rad / enc;
+  if (nnn) p.extra["mean nearest-neighbour spacing (Å)"] = nn / nnn;
+  p.series.push_back(Series{"voxel values", "density (g/cm³)", "fraction of voxels", r.hist_x, r.hist_y});
+  Series sz{"domain volumes", "domain (largest first)", "volume (Å³)", {}, {}};
+  for (size_t k = 0; k < r.domains.size(); ++k) sz.x.push_back(double(k + 1)), sz.y.push_back(r.domains[k].volume);
+  p.series.push_back(sz);
+  p.notes = r.notes;
+  return p;
+}
+
 Property pattern_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o) {
   Property p{"pattern", "Geometry at a pattern", "",
              "the distance, angle or torsion between the points a SMARTS pattern marks with atom-map numbers (atoms sharing a "
@@ -2570,7 +2612,7 @@ std::vector<double> frame_times(const Trajectory& t, const AnalyzeOptions& o) {
 std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string>& ids, const AnalyzeOptions& o) {
   static const std::set<std::string> known = {"density", "rdf", "sq", "xray", "electron", "neutron", "rg", "ree", "cn", "persistence", "msd", "diffusion",
                                               "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion", "interaction", "orientation", "crosslinks",
-                                              "entanglements", "conformation", "vacf", "hbonds", "vanhove", "p2r", "dielectric", "fluct", "modes", "ir", "adp", "pattern"};
+                                              "entanglements", "conformation", "vacf", "hbonds", "vanhove", "p2r", "dielectric", "fluct", "modes", "ir", "adp", "pattern", "domains"};
   for (const auto& id : ids)
     if (!known.count(id)) throw std::invalid_argument("unknown property '" + id + "'");
   const auto fr = analysis_frames(t, o);
@@ -2617,6 +2659,7 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
     if (want("ir")) out.push_back(ir_prop(t, fr, times, o));
     if (want("adp")) out.push_back(adp_prop(t, fr, o));
     if (want("pattern")) out.push_back(pattern_prop(t, fr, o));
+    if (want("domains")) out.push_back(domains_prop(t, fr, o));
     if (want("fluct")) out.push_back(fluct_prop(t, fr, times, o));
     if (want("modes")) out.push_back(modes_prop(t, fr, o));
     if (want("ree") || want("cn") || want("persistence") || want("orientation")) {

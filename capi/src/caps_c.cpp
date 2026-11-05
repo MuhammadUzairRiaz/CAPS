@@ -52,6 +52,7 @@
 #include "caps/graft_chains.hpp"
 #include "caps/adp.hpp"
 #include "caps/pattern_geometry.hpp"
+#include "caps/domains.hpp"
 #include "caps/zmethod.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dlpoly.hpp"
@@ -11427,6 +11428,55 @@ extern "C" caps_doc* caps_graft_chains(caps_doc* d, const char* json, char* out,
     json_error(e, out, cap);
     return nullptr;
   }
+}
+
+// v94 domains of the current frame's density field (domains.hpp): JSON {group, grid, sigma, threshold, below,
+// min_voxels, slice {point [3], u [3], v [3], width, height, nx, ny}, cube (a path)} → {ok, error, n [3], threshold,
+// fraction, domains [{voxels, volume, equivalent_radius, centroid, axes, percolates [3], enclosed, nearest}], hist_x,
+// hist_y, slice [values], notes}
+extern "C" int32_t caps_domains(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    caps::DomainOptions o;
+    o.group = j.text("group", ""), o.grid = j.num("grid", 0.8), o.sigma = j.num("sigma", 1.5), o.threshold = j.num("threshold", 0);
+    o.above = !(j.has("below") && j["below"].boolean()), o.min_voxels = std::max(1, int(j.num("min_voxels", 1)));
+    const caps::DomainResult res = caps::density_domains(d->frame, o);
+    auto arr = [](const auto& v) { caps::Json a = caps::Json::array(); for (double x : v) a.push_back(x); return a; };
+    caps::Json ds = caps::Json::array(), nt = caps::Json::array();
+    for (const auto& dm : res.domains) {
+      caps::Json q = caps::Json::object(), pc = caps::Json::array();
+      for (bool b : dm.percolates) pc.push_back(b);
+      q["voxels"] = double(dm.voxels), q["volume"] = dm.volume, q["equivalent_radius"] = dm.equivalent_radius;
+      q["centroid"] = arr(dm.centroid), q["axes"] = arr(dm.axes), q["percolates"] = pc, q["enclosed"] = dm.enclosed, q["nearest"] = dm.nearest;
+      ds.push_back(q);
+    }
+    for (const auto& n : res.notes) nt.push_back(n);
+    caps::Json n3 = caps::Json::array();
+    for (int k = 0; k < 3; ++k) n3.push_back(double(res.field.n[k]));
+    r["n"] = n3, r["threshold"] = res.threshold, r["fraction"] = res.fraction, r["domains"] = ds, r["hist_x"] = arr(res.hist_x), r["hist_y"] = arr(res.hist_y), r["notes"] = nt;
+    if (j.has("slice") && j["slice"].is_object()) {
+      const caps::Json& sl = j["slice"];
+      auto v3 = [&](const char* k, caps::Vec3 def) {
+        if (sl.has(k) && sl[k].is_array() && sl[k].size() == 3) return caps::Vec3{sl[k][0].number(), sl[k][1].number(), sl[k][2].number()};
+        return def;
+      };
+      const caps::Vec3 c0 = d->frame.cell.to_cartesian({0.5, 0.5, 0.5});
+      const auto vals = caps::field_slice(res.field, v3("point", c0), v3("u", {1, 0, 0}), v3("v", {0, 1, 0}), sl.num("width", 20), sl.num("height", 20),
+                                          std::max(1, int(sl.num("nx", 64))), std::max(1, int(sl.num("ny", 64))));
+      r["slice"] = arr(vals);
+    }
+    const std::string cube = j.text("cube", "");
+    if (!cube.empty()) caps::write_grid(res.field, d->frame, cube), r["cube"] = cube;
+    caps::KeyValues pr = {{"group", o.group.empty() ? std::string("all atoms") : o.group}, {"level", g6(res.threshold) + " g/cm³"}, {"domains", std::to_string(res.domains.size())}};
+    prov_step(d, "analysis.domains", "Domains of the density field", std::move(pr));
+    r["ok"] = true;
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false, r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
 }
 
 // v93 the SMARTS pattern (points marked by atom-map numbers) and histogram bin of the analysis id "pattern"; checked

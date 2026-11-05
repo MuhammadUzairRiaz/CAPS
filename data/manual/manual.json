@@ -2174,6 +2174,45 @@
    "engines": []
   },
   {
+   "id": "density-domains",
+   "group": "Analysis",
+   "title": "Domains of a density field",
+   "summary": "The mass density of a group of atoms (a selection query, all atoms by default) is put on a grid spanning the cell, each atom a Gaussian normalised on the grid so that the field holds exactly the group's mass. Voxels above a level (the field's mean unless given; below it on request) are labelled into connected regions through their faces and across the periodic boundaries. While a region is flooded each voxel keeps the periodic image it was reached in; a region that reaches one of its own voxels in another image percolates along the axes where the images differ, and a region that percolates along none is enclosed. Per region: its volume, the equivalent radius (3V/4π)^⅓, the centroid and the semi-axes √(5λ_k) of the ellipsoid with the same gyration tensor (exact for a uniform ellipsoid), and the distance to the nearest other enclosed region. The voxel values' histogram is reported, and the field can be sampled on any plane by periodic trilinear interpolation. As an analysis the field is averaged over the frames first.",
+   "equation": "R_eq = (3V/4π)^{1/3};  a_k = √(5 λ_k(G)),  G = ⟨(r − r̄)(r − r̄)ᵀ⟩ over the region's voxels;  ρ(r) = Σ_i m_i g_σ(r − r_i)",
+   "equation_note": "geometry of a uniform solid ellipsoid: ⟨x²⟩ = a²/5 along each semi-axis",
+   "tex": "R_{\\mathrm{eq}} = \\left(\\frac{3V}{4\\pi}\\right)^{1/3}, \\qquad a_k = \\sqrt{5\\,\\lambda_k(\\mathbf{G})}, \\quad \\mathbf{G} = \\langle (\\mathbf{r} - \\bar{\\mathbf{r}})(\\mathbf{r} - \\bar{\\mathbf{r}})^{\\mathsf T} \\rangle, \\qquad \\rho(\\mathbf{r}) = \\sum_i m_i\\, g_\\sigma(\\mathbf{r} - \\mathbf{r}_i)",
+   "symbols": [
+    [
+     "V",
+     "region volume",
+     "Å³"
+    ],
+    [
+     "λ_k",
+     "eigenvalues of the region's gyration tensor G",
+     "Å²"
+    ],
+    [
+     "a_k",
+     "fitted-ellipsoid semi-axes",
+     "Å"
+    ],
+    [
+     "g_σ",
+     "normalised Gaussian of width σ",
+     "1/Å³"
+    ]
+   ],
+   "when": "Phase domains of rubber blends and thermoplastic elastomers, filler-rich regions, whether a phase is continuous through the cell.",
+   "cites": [],
+   "source": "core/src/domains.cpp (density_field, label_domains, density_domains, field_slice); properties.cpp (domains)",
+   "tested": "Domains.TwoSpheres (two enclosed 4 Å spheres: volume within 3 %, radius and axes 4 Å, centroids exact, 12 Å apart); Domains.SphereAcrossTheEdges (one enclosed domain at the cell corner); Domains.Percolation (a cylinder along c, a slab along a and b, the space around a sphere along all three); Domains.SliceOfALinearField (exact on a tilted plane); Domains.FieldHoldsTheMass (the field's integral is the group's mass)",
+   "deviation": "face connectivity only (no edges or corners); the level is one number for the whole cell; the Studio's chip uses the default grid, width and level (caps domains and Python take them)",
+   "engines": [
+    "analysis.domains"
+   ]
+  },
+  {
    "group": "Analysis",
    "source": "core/src/properties.cpp",
    "engines": [],

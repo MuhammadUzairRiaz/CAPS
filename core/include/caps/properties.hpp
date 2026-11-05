@@ -97,6 +97,10 @@ struct AnalyzeOptions {
   // the histogram's bin (0: 0.01 Å or 1°)
   std::string pattern;
   double pattern_bin = 0;
+  // domains of the mass-density field averaged over the frames (domains.hpp): grid and Gaussian width (Å), the level
+  // (0: the mean), regions above it or below it
+  double domain_grid = 0.8, domain_sigma = 1.5, domain_threshold = 0;
+  bool domain_below = false;
   int64_t exclude_mol = 0;
   // interfaces and orientation: the direction profiles, adhesion and Herman's f run along — the normal of the cell face
   // spanned by the other two axes (0 = a: x in an orthogonal cell, 1 = b: y, 2 = c: z)

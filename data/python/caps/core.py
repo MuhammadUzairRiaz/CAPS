@@ -1705,6 +1705,34 @@ def _set_pattern(self, smarts: str, bin: float = 0.0) -> int:
 Document.set_pattern = _set_pattern
 
 
+def _domains(self, group: str = "", grid: float = 0.8, sigma: float = 1.5, threshold: float = 0.0, below: bool = False,
+             min_voxels: int = 1, slice: Optional[dict] = None, cube: str = "") -> dict:
+    """Domains of the current frame's mass-density field of `group` (a selection query; all atoms by default): regions
+    above (below=True: below) the threshold (0: the field's mean) labelled across the periodic boundaries, each with its
+    volume, equivalent radius, fitted-ellipsoid axes, percolation along a, b, c and nearest-neighbour spacing; the
+    voxel histogram; slice={"point": [x, y, z], "u": [...], "v": [...], "width": w, "height": h, "nx": n, "ny": m}
+    samples the field on any plane; cube= writes the field."""
+    o = {"group": group, "grid": float(grid), "sigma": float(sigma), "threshold": float(threshold), "below": bool(below),
+         "min_voxels": int(min_voxels), "cube": cube}
+    if slice:
+        o["slice"] = slice
+    f = library().caps_domains
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 22)
+    n = f(self._h, _enc(json.dumps(o)), buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(self._h, _enc(json.dumps(o)), buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "domains failed"))
+    return r
+
+
+Document.domains = _domains
+
+
 def _adp(self, first: int = 0, last: int = -1, stride: int = 1, supercell=(1, 1, 1), probability: float = 0.5,
          remove_drift: bool = True, cif: str = "") -> dict:
     """Atomic displacement tensors over the frames: per atom (and per site of the unit cell when the structure is a

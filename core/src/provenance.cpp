@@ -522,6 +522,9 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
       t = "The melting temperature was estimated by the Z method" + cite({"belonoshko2006"}) + ": " + param(s, "runs") + " NVE runs (" + param(s, "steps") +
           ") from the perfect crystal at rising total energy, melting detected by the loss of Bragg order, gave a superheating limit of " + param(s, "T_LS") +
           " and a melting temperature of " + param(s, "T_m") + ".";
+    } else if (e == "analysis.domains") {
+      t = "Domains of the mass-density field of " + param(s, "group") + " (Gaussian atoms) were found at a level of " + param(s, "level") +
+          " by labelling connected regions across the periodic boundaries (" + param(s, "domains") + " domains).";
     } else if (e == "analysis.adp") {
       t = "Atomic displacement tensors U = ⟨Δr Δr^T⟩ and B = 8π²U_iso" + cite({"trueblood1996"}) + " were computed over " + param(s, "frames") + " frames about each atom's mean position, the drift of the cell's centre removed.";
     } else if (e == "build.cif_disorder") {
