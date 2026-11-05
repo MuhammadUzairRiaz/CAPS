@@ -90,6 +90,7 @@
 #include "caps/domains.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dendrimer.hpp"
+#include "caps/miller.hpp"
 #include "caps/dpd.hpp"
 #include "caps/qeq.hpp"
 #include "caps/pores.hpp"
@@ -271,6 +272,8 @@ int usage() {
                "                 (with the moves and field options of run, or --no-exchange; [-o OUT] [--json OUT] [--csv DIR])\n"
                "  caps frames  FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N]   (read thinned)\n"
                "  caps convert FILE OUT.data|xyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA]   (.car: with its .mdf)\n"
+               "  caps planes  FILE --hkl h,k,l [--shift 0.5] [--max N] [--json OUT]   lattice planes (hkl) of the cell: d-spacing,\n"
+               "               normal, each plane cut to the cell, and the view angles that look down the normal\n"
                "  caps edit    FILE --ops 'OP ARGS; OP ARGS …' | --ops-file OPS.txt -o OUT   edits in order, atoms numbered from 1:\n"
                "               element SEL Sym · delete SEL · bond I J [order] · unbond I J · addh [SEL] · attach I SMILES ·\n"
                "               length I J Å · angle I J K ° · torsion I J K L ° · invert I · config I R|S · rotate SEL x,y,z ° ·\n"
@@ -538,7 +541,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--images", "--neb", "--fmax", "--no-climb", "--relax-ends", "--no-match", "--find", "--clear", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--preset", "--unit", "--core", "--end", "--focal", "--generation", "--growth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--images", "--neb", "--fmax", "--no-climb", "--relax-ends", "--no-match", "--find", "--clear", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--shift", "--preset", "--unit", "--core", "--end", "--focal", "--generation", "--growth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -6667,6 +6670,43 @@ int main(int argc, char** argv) {
       }
       std::printf("# r(Å) g(r)\n");
       for (auto [r, g] : rdf(s, ea, eb, rmax, dr, o.count("--inter"))) std::printf("%.3f %.5f\n", r, g);
+      return 0;
+    }
+    if (cmd == "planes") {
+      if (!o.count("--hkl")) throw std::invalid_argument("caps planes FILE --hkl h,k,l [--shift 0.5] [--max N] [--json OUT]");
+      std::vector<int> hk;
+      {
+        std::string t = o["--hkl"];
+        for (auto& ch : t) if (ch == ',') ch = ' ';
+        std::istringstream in(t);
+        for (int x; in >> x;) hk.push_back(x);
+      }
+      if (hk.size() != 3) throw std::invalid_argument("--hkl takes three integers, e.g. 1,1,-1");
+      const auto mp = miller_planes(s.cell, hk[0], hk[1], hk[2], o.count("--shift") ? std::stod(o["--shift"]) : 0.0, o.count("--max") ? std::stoi(o["--max"]) : 0);
+      std::printf("%s  d = %.6f Å  normal (%.6f, %.6f, %.6f)\n", mp.label().c_str(), mp.d, mp.normal[0], mp.normal[1], mp.normal[2]);
+      std::printf("view down the normal: yaw %.4f°, pitch %.4f°\n", mp.yaw * 180 / M_PI, mp.pitch * 180 / M_PI);
+      std::printf("plane  offset Å  corners  area Å²\n");
+      Json polys = Json::array();
+      for (size_t q = 0; q < mp.polygons.size(); ++q) {
+        const auto& poly = mp.polygons[q];
+        Vec3 a2{0, 0, 0};
+        for (size_t k = 0; k < poly.size(); ++k) a2 = a2 + cross(poly[k], poly[(k + 1) % poly.size()]);
+        std::printf("%5zu %9.4f %8zu %8.3f\n", q + 1, mp.offsets[q], poly.size(), norm(a2) / 2);
+        Json pj = Json::array();
+        for (const auto& v : poly) { Json vj = Json::array(); for (int k = 0; k < 3; ++k) vj.push_back(v[size_t(k)]); pj.push_back(vj); }
+        polys.push_back(pj);
+      }
+      if (o.count("--json")) {
+        Json j = Json::object();
+        j["label"] = mp.label(), j["d"] = mp.d, j["yaw"] = mp.yaw, j["pitch"] = mp.pitch, j["polygons"] = polys;
+        Json off = Json::array(), nrm = Json::array();
+        for (double x : mp.offsets) off.push_back(x);
+        for (int k = 0; k < 3; ++k) nrm.push_back(mp.normal[size_t(k)]);
+        j["offsets"] = off, j["normal"] = nrm;
+        std::ofstream f(o["--json"]);
+        f << j.dump(1) << "\n";
+        std::printf("wrote %s\n", o["--json"].c_str());
+      }
       return 0;
     }
     if (cmd == "edit") {

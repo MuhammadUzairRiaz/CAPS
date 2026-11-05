@@ -1789,6 +1789,30 @@ def _symmetry(self, op: str = "info", tolerance: float = 0.1) -> dict:
         raise CapsError(r.get("error", "symmetry failed"))
     return r
 
+def _miller(self, h: int, k: int, l: int, shift: float = 0.0, max_planes: int = 0, show: bool = True) -> dict:
+    """Lattice planes (hkl) of the frame's cell: d (Å), the unit normal, each plane cut to the cell (polygons, Å) with
+    its offset along the normal, and yaw / pitch (radians) of the camera that looks down the normal. show draws them
+    in the view; clear_planes() removes them."""
+    f = library().caps_miller
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    o = {"h": int(h), "k": int(k), "l": int(l), "shift": float(shift), "max_planes": int(max_planes), "show": bool(show)}
+    r = _json_call(f, self._h, _enc(json.dumps(o)))
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "lattice planes failed"))
+    return r
+
+
+def _clear_planes(self) -> None:
+    f = library().caps_miller
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    _json_call(f, self._h, _enc(json.dumps({"clear": True})))
+
+
+Document.miller = _miller
+Document.clear_planes = _clear_planes
+
 
 def _set_cell(self, a: float, b: float, c: float, alpha: float = 90.0, beta: float = 90.0, gamma: float = 90.0, scale: bool = True,
               symmetric: bool = False) -> None:

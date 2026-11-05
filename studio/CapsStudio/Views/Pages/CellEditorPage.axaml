@@ -66,6 +66,32 @@
             </StackPanel>
           </Border>
           <Border Classes="pcard">
+            <StackPanel Spacing="6">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small" Content="Hide" Click="OnHideMiller" IsVisible="{Binding MillerShown}" Margin="6,0,0,0" ToolTip.Tip="Remove the planes from the view" />
+                <TextBlock Text="Lattice planes" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="(" VerticalAlignment="Center" />
+                <NumericUpDown Value="{Binding MillerH}" Minimum="-9" Maximum="9" Increment="1" FormatString="0" Width="64" ToolTip.Tip="h" />
+                <NumericUpDown Value="{Binding MillerK}" Minimum="-9" Maximum="9" Increment="1" FormatString="0" Width="64" ToolTip.Tip="k" />
+                <NumericUpDown Value="{Binding MillerL}" Minimum="-9" Maximum="9" Increment="1" FormatString="0" Width="64" ToolTip.Tip="l" />
+                <TextBlock Text=")" VerticalAlignment="Center" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Shift" Classes="label" VerticalAlignment="Center" />
+                <NumericUpDown Value="{Binding MillerShift}" Minimum="0" Maximum="0.99" Increment="0.25" FormatString="0.00" Width="84" ToolTip.Tip="Where the planes sit, in units of their spacing (0: through the cell origin)" />
+                <TextBlock Text="× d" Classes="dim" VerticalAlignment="Center" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Classes="small" Content="Show" Click="OnShowMiller" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Draw the planes (hkl) that cross the cell" />
+                <Button Classes="small" Content="View onto" Click="OnViewMiller" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Turn the view to look straight down the planes' normal" />
+              </StackPanel>
+              <TextBlock Text="{Binding MillerText}" FontSize="12.5" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding MillerError}" Classes="err" TextWrapping="Wrap" IsVisible="{Binding MillerHasError}" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
             <StackPanel Spacing="8">
               <TextBlock Text="Supercell" FontSize="13.5" FontWeight="SemiBold" />
               <StackPanel Orientation="Horizontal" Spacing="8">

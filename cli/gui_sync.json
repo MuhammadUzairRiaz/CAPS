@@ -1933,6 +1933,20 @@
     "--seed": "page",
     "--no-relax": "page"
    }
+  },
+  "planes": {
+   "status": "gui",
+   "studio": "Unit cell › Lattice planes",
+   "where": "Views/Pages/CellEditorPage.axaml|Lattice planes",
+   "capi": [
+    "caps_miller"
+   ],
+   "options": {
+    "--hkl": "page",
+    "--shift": "page",
+    "--max": "cli: the page draws every plane that crosses the cell",
+    "--json": "cli: the page shows d and the planes in the view"
+   }
   }
  },
  "hidden_options": {

@@ -250,6 +250,17 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("rpath: " + vm.PathResult + (vm.PathHasError ? " · error " + vm.PathError : ""));
             }
+            if (kv[0] == "planes")   // planes=h,k,l[|shift][|view]: the lattice planes drawn (and the view turned onto them)
+            {
+                var f = kv[1].Split('|');
+                var hk = f[0].Split(',').Select(x => decimal.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                var vm = w.ViewModel;
+                vm.MillerH = hk[0]; vm.MillerK = hk[1]; vm.MillerL = hk[2];
+                if (f.Length > 1 && f[1].Length > 0) vm.MillerShift = decimal.Parse(f[1], System.Globalization.CultureInfo.InvariantCulture);
+                vm.ShowMiller(f.Length > 2 && f[2] == "view");
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("planes: " + vm.MillerText + (vm.MillerHasError ? " · error " + vm.MillerError : ""));
+            }
             if (kv[0] == "dendrimer")   // dendrimer=PRESET|GEN|GROWTH|UNITS: Polymer page, the dendrimer built (awaited)
             {
                 var vm = w.ViewModel;

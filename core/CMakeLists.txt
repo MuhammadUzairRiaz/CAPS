@@ -98,6 +98,7 @@ add_library(caps_core STATIC
   src/reaction_path.cpp
   src/ring_edit.cpp
   src/dendrimer.cpp
+  src/miller.cpp
   src/vasp_out.cpp
   src/dft_analysis.cpp
   src/dft_commands.cpp

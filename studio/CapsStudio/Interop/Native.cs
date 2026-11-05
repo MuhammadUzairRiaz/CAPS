@@ -548,6 +548,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_thermal")] public static extern int Thermal(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_thermal_lammps")] public static extern int ThermalLammps(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? outText, int cap);
     [DllImport(Lib, EntryPoint = "caps_reaction_path")] public static extern IntPtr ReactionPath(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_miller")] public static extern int Miller(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_dendrimer")] public static extern IntPtr Dendrimer([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_dpd")] public static extern IntPtr Dpd([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_ddft")] public static extern int Ddft([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
@@ -2330,6 +2331,7 @@ public sealed class CapsDocument : IDisposable
     public void SetAtomValues(double[]? values, int ramp = 0) { using (Hold()) { Alive(); Native.SetAtomValues(H, values, values?.Length ?? 0, ramp); } }
     public void SetCell(string json) { using (Hold()) { Alive(); Check(Native.SetCell(H, json)); } }
     /// <summary>The space group kept with the structure (caps_symmetry): info, find or clear, JSON.</summary>
+    public string Miller(string json) { using (Hold()) { Alive(); return JsonCallOnce((b, c) => Native.Miller(H, json, b, c)); } }
     public string Symmetry(string json) { using (Hold()) { Alive(); return JsonCallOnce((b, c) => Native.Symmetry(H, json, b, c)); } }
     public void Supercell(int na, int nb, int nc) { using (Hold()) { Alive(); Check(Native.Supercell(H, na, nb, nc)); } }
     /// <summary>The periodic box: crossing molecules, pieces when wrapped, one molecule measured three ways.</summary>

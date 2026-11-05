@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 103, "ABI 103")
+check(caps.abi_version() == 104, "ABI 104")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -893,6 +893,13 @@ _hb = caps.dendrimer(unit="[*:1]C(=O)C(C)(CO[*:2])CO[*:2]", focal="[*:2]O", grow
 _hr = _hb.dendrimer_report
 check(_hr["units"] == 40 and _hr["terminal"] == _hr["dendritic"] + 1 and 0 < _hr["db_frey"] <= 1, f"flory {_hr}")
 print("ok   dendrimer: PAMAM, Flory AB2")
+
+# lattice planes (ABI 104): copper's (111) spacing a/√3 and its two planes through the cell
+_cuq = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
+_mq = _cuq.miller(1, 1, 1)
+check(_mq["planes"] == 2 and len(_mq["polygons"][0]) == 3 and abs(_mq["d"] * 3 ** 0.5 - 3.6149) < 1e-6, f"miller {_mq['d']}")
+_cuq.clear_planes()
+print("ok   miller planes")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))

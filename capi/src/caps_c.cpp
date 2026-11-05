@@ -116,6 +116,7 @@
 #include "caps/measured.hpp"
 #include "caps/reaction_path.hpp"
 #include "caps/dendrimer.hpp"
+#include "caps/miller.hpp"
 #include "caps/ring_edit.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/nano.hpp"
@@ -269,6 +270,16 @@ struct caps_doc {
     double dt = 1;
   } checkpoint;
   std::unique_ptr<caps::Mesh> void_mesh;           // … drawn translucent when shown
+  // v104 lattice planes (caps_miller): the (hkl) asked, drawn translucent with outlines; rebuilt when the frame's cell changes
+  struct MillerView {
+    bool on = false;
+    int h = 1, k = 0, l = 0, max_planes = 0;
+    double shift = 0;
+    caps::Cell cell;                               // the cell the mesh was cut from
+    std::unique_ptr<caps::Mesh> mesh;
+    std::vector<caps::Segment> edges;
+  };
+  mutable MillerView miller;
   std::array<int, 3> images{1, 1, 1};              // caps_set_images: periodic images drawn around the cell (faded)
   float image_fade = 0.7f;
   int save_wrap = 0;                               // caps_set_save_wrap: 0 as shown, 1 atoms into the cell, 2 molecule centres
@@ -739,6 +750,28 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
       }
     }
   if (d->void_mesh) r.meshes.push_back({d->void_mesh.get(), 0x4FB3D9, 0.32f});
+  if (d->miller.on && !d->pstate && d->frame.cell.valid()) {
+    auto& mv = d->miller;
+    const auto& c = d->frame.cell;
+    if (!mv.mesh || caps::norm(c.a - mv.cell.a) + caps::norm(c.b - mv.cell.b) + caps::norm(c.c - mv.cell.c) + caps::norm(c.origin - mv.cell.origin) > 1e-9) {
+      try {
+        const auto mp = caps::miller_planes(c, mv.h, mv.k, mv.l, mv.shift, mv.max_planes);
+        mv.mesh = std::make_unique<caps::Mesh>(caps::miller_mesh(mp));
+        mv.edges.clear();
+        for (const auto& poly : mp.polygons)
+          for (size_t q = 0; q < poly.size(); ++q) {
+            caps::Segment sg;
+            sg.a = poly[q], sg.b = poly[(q + 1) % poly.size()], sg.rgb = 0xE8A33D, sg.radius = 0.04;
+            mv.edges.push_back(sg);
+          }
+        mv.cell = c;
+      } catch (const std::exception&) { mv.on = false; }
+    }
+    if (mv.on && mv.mesh) {
+      r.meshes.push_back({mv.mesh.get(), 0xE8A33D, 0.30f});
+      r.segments.insert(r.segments.end(), mv.edges.begin(), mv.edges.end());
+    }
+  }
   if (d->pstate && r.style == caps::Style::Backbone) {   // tubes through the pipeline's chains too
     const auto& m = backbone_mask_pipeline(d);
     r.atom_style.resize(m.size());
@@ -10081,6 +10114,47 @@ extern "C" caps_doc* caps_reaction_path(caps_doc* d, const char* json, char* out
     r["error"] = std::string(e.what());
     report_out(r.dump(0), out, cap);
     return nullptr;
+  }
+}
+
+// ---------------------------------------------------------------- lattice planes in the view (v104, miller.hpp)
+extern "C" int32_t caps_miller(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    auto& mv = d->miller;
+    if ((j.has("clear") && j["clear"].kind() == caps::Json::Bool && j["clear"].boolean())) {
+      mv.on = false, mv.mesh.reset(), mv.edges.clear();
+      r["ok"] = true;
+      return report_out(r.dump(0), out, cap);
+    }
+    const caps::System& f = d->frame;
+    if (!f.cell.valid()) throw std::invalid_argument("lattice planes need a periodic cell");
+    const int h = int(j.num("h", 1)), k = int(j.num("k", 0)), l = int(j.num("l", 0)), mx = int(j.num("max_planes", 0));
+    const double shift = j.num("shift", 0);
+    const auto mp = caps::miller_planes(f.cell, h, k, l, shift, mx);
+    const bool show = !(j.has("show") && j["show"].kind() == caps::Json::Bool && !j["show"].boolean());
+    mv.on = show, mv.h = h, mv.k = k, mv.l = l, mv.shift = shift, mv.max_planes = mx, mv.mesh.reset(), mv.edges.clear();
+    r["hkl"] = caps::Json::array();
+    for (int x : mp.hkl) r["hkl"].push_back(double(x));
+    r["label"] = mp.label(), r["d"] = mp.d, r["yaw"] = mp.yaw, r["pitch"] = mp.pitch;
+    caps::Json nrm = caps::Json::array(), offs = caps::Json::array(), polys = caps::Json::array();
+    for (int q = 0; q < 3; ++q) nrm.push_back(mp.normal[size_t(q)]);
+    for (double x : mp.offsets) offs.push_back(x);
+    for (const auto& poly : mp.polygons) {
+      caps::Json pj = caps::Json::array();
+      for (const auto& v : poly) { caps::Json vj = caps::Json::array(); for (int q = 0; q < 3; ++q) vj.push_back(v[size_t(q)]); pj.push_back(vj); }
+      polys.push_back(pj);
+    }
+    r["normal"] = nrm, r["offsets"] = offs, r["polygons"] = polys, r["planes"] = double(mp.polygons.size());
+    r["ok"] = true;
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+    report_out(r.dump(0), out, cap);
+    return -1;
   }
 }
 

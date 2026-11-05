@@ -3946,6 +3946,45 @@
    "tex": "\\mathbf G = \\mathbf M^{\\mathsf T}\\mathbf M,\\qquad \\mathbf G \\leftarrow \\frac{1}{|P|}\\sum_{\\mathbf R\\in P}\\mathbf R^{\\mathsf T}\\mathbf G\\,\\mathbf R,\\qquad \\Delta \\leftarrow \\frac{1}{|S|}\\sum_{\\mathbf R\\in S}\\mathbf R\\,\\Delta,\\qquad \\mathbf f_j' = \\mathbf R(\\mathbf f_i + \\Delta) + \\mathbf t + \\mathbf n"
   },
   {
+   "id": "lattice-planes",
+   "group": "Growth",
+   "title": "Lattice planes in the view",
+   "summary": "The planes (hkl) of the cell drawn in the structure view. Their spacing is d_hkl = 1/|h a* + k b* + l c*|, with the reciprocal vectors written without 2π (a* = b × c / V and so on), and their normal runs along h a* + k b* + l c*. The planes are h u + k v + l w = m + s in fractional coordinates, for every integer m whose plane crosses the cell. The shift s moves them off the origin in units of d. Each plane is cut to the cell: its corners are where it meets the cell's twelve edges, ordered round the plane. The indices are kept as given, so (222) is spaced half as far as (111), as in diffraction. View onto turns the camera to look straight down the normal. The view turns by the yaw about y and then by the pitch about x, so yaw = atan2(−n_x, n_z) and pitch = atan2(n_y, √(n_x² + n_z²)) bring the normal onto the line of sight.",
+   "equation": "d_hkl = 1 / |h a* + k b* + l c*|,  a* = (b × c)/V, b* = (c × a)/V, c* = (a × b)/V;  yaw = atan2(−n_x, n_z),  pitch = atan2(n_y, √(n_x² + n_z²))",
+   "equation_note": "V = a · (b × c); n the unit normal; the planes sit at m + s in units of d from the cell origin",
+   "symbols": [
+    [
+     "h, k, l",
+     "Miller indices",
+     "—"
+    ],
+    [
+     "a*, b*, c*",
+     "reciprocal cell vectors",
+     "Å⁻¹"
+    ],
+    [
+     "d_hkl",
+     "interplanar spacing",
+     "Å"
+    ],
+    [
+     "s",
+     "shift of the planes",
+     "d"
+    ]
+   ],
+   "when": "Finding the cleavage and growth planes of a filler or polymer crystal before cutting a surface, checking the planes behind a powder line, and orienting a view of a lamella or a fibre crystal for a figure.",
+   "cites": [
+    "shmueli2006"
+   ],
+   "source": "core/src/miller.cpp",
+   "tested": "tests/test_miller.cpp (cubic d = a/√(h²+k²+l²) and (222) = (111)/2; hexagonal 1/d² = 4(h²+hk+k²)/(3a²) + l²/c² for four reflections; a triclinic cell against hᵀG⁻¹h with the metric tensor, to 10⁻¹²; the cube's (111) planes are two triangles of side a√2, shifted by half a spacing a triangle, the regular hexagon of side a/√2 and area 3√3a²/4, and a triangle; every corner on its plane; (100) shifted by half is one face-sized square; the view angles put five normals exactly on the line of sight); tests/python/test_bindings.py (copper (111): d = a/√3, two planes); quartz (101) gives d = 3.3434 Å",
+   "deviation": "Planes of the cell as it is: a supercell's planes are those of the supercell's indices. Planes that only touch an edge or a corner of the cell are not drawn. The camera has no roll: looking down a normal, the picture can stand at any turn about it.",
+   "engines": "caps planes FILE --hkl h,k,l [--shift] [--max] [--json]; Python Document.miller(h, k, l, shift, max_planes, show), clear_planes(); Studio Unit cell › Lattice planes",
+   "tex": "d_{hkl} = \\frac{1}{\\left|h\\,\\mathbf a^* + k\\,\\mathbf b^* + l\\,\\mathbf c^*\\right|},\\qquad \\mathbf a^* = \\frac{\\mathbf b\\times\\mathbf c}{V},\\quad \\mathbf b^* = \\frac{\\mathbf c\\times\\mathbf a}{V},\\quad \\mathbf c^* = \\frac{\\mathbf a\\times\\mathbf b}{V}"
+  },
+  {
    "id": "reaction-path",
    "group": "Minimisers",
    "title": "Reaction paths and the nudged elastic band",
