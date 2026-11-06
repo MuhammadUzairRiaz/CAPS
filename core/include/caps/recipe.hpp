@@ -81,6 +81,10 @@ struct RecipeResult {
   Manifest manifest;
   std::shared_ptr<const ForceField> field;   // the typed force field (null when nothing typed it)
   std::string forcefield;                    // its name
+  // How to run that assignment again on the same atoms (geometry edits): the library file ("uff" for UFF), its typing
+  // rules if apart from it, and the charges it settled on. Empty when it cannot be repeated from these alone: united
+  // atoms folded, gaps filled from other force fields, terms fitted by CAPS ML, a field read from a file.
+  std::string field_path, field_rules, field_charges;
   std::string sequence_report;               // a copolymer's statistics, model against built (polymer.hpp sequence_report)
 };
 

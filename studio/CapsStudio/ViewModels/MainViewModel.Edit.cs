@@ -180,6 +180,8 @@ public sealed partial class MainViewModel
         RefreshSelection();
         RefreshLayers();
         RefreshHistory();
+        // a move runs the assignment again, other edits may have cleared it: the Field page shows what the core now holds
+        try { Field.LoadReport(_doc!); } catch { Field.Reset(); }
         if (_selOpen) RefreshStereo();
         if (_ixOpen && _ixLive) RunInteractions();
         // the core keeps the selection when the atoms stay the same (tacticity, clean-up), clears it otherwise

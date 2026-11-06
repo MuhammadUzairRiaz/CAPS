@@ -1526,6 +1526,13 @@ internal static class Screenshot
                 var k = w.ViewModel.Field.Library.ToList().FindIndex(x => x.Id == kv[1]);
                 if (k >= 0) w.ViewModel.Field.FfIndex = k;
             }
+            if (kv[0] == "fieldassign")   // fieldassign=ID: that force field assigned, awaited
+            {
+                var k = w.ViewModel.Field.Library.ToList().FindIndex(x => x.Id == kv[1]);
+                if (k >= 0) w.ViewModel.Field.FfIndex = k;
+                var a = w.ViewModel.Field.Assign();
+                while (!a.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+            }
             if (kv[0] == "charges") w.ViewModel.Field.ChargeMode = int.Parse(kv[1]);
             // fieldgroups=1: Field · by group open with the suggested groups; fieldgroups=PATH: the first group a literature
             // potential from that file, the others GAFF2, assigned

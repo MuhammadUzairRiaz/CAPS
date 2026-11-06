@@ -3933,6 +3933,7 @@ void load_field_base(FieldState& F) {
     for (const auto& p : F.overlays) caps::merge_forcefield(F.base, caps::load_forcefield(p));
   if (!F.rules_path.empty()) {
     F.base.typing.clear();
+    F.base.typing_files.clear();   // load_typing skips a file it has seen: these rules may be the ones the library names
     caps::load_typing(F.base, F.rules_path);
   }
 }
@@ -8899,7 +8900,46 @@ void push_undo(caps_doc* d, const std::string& what) {
   d->redo.clear();
 }
 
+// Only positions or the cell differ: the same atoms, elements, names, types and bonds with their orders (and charges, unless
+// they come from the geometry anyway, as QEq's do).
+bool geometry_only(const caps::System& a, const caps::System& b, bool charges_from_geometry, bool labels = true) {
+  if (a.atoms.size() != b.atoms.size() || a.bonds.size() != b.bonds.size()) return false;
+  for (size_t i = 0; i < a.atoms.size(); ++i) {
+    const caps::Atom& x = a.atoms[i];
+    const caps::Atom& y = b.atoms[i];
+    if (x.element != y.element || (labels && (x.name != y.name || x.type != y.type))) return false;
+    if (!charges_from_geometry && std::fabs(x.charge - y.charge) > 1e-12) return false;
+  }
+  for (size_t i = 0; i < a.bonds.size(); ++i)
+    if (a.bonds[i].i != b.bonds[i].i || a.bonds[i].j != b.bonds[i].j || a.bonds[i].order != b.bonds[i].order) return false;
+  return true;
+}
+
+// May this assignment be run again on a new geometry? Rule-based ones can: parameters that depend on coordinates (QEq
+// charges, TraPPE cis or trans, trans pairs at metal centres, angles to unbonded ions, chiral types, virtual sites) then
+// follow the structure. A force field read whole from a file or built with a model describes the structure as it came.
+bool field_can_rerun(const caps_doc* d) {
+  return d->field && d->field->ff_path != "file" && d->field->model.empty() && (!d->field->groups.empty() || caps::is_uff(d->field->ff_path) || !d->field->base.typing.empty());
+}
+
+// The assignment run again on the document's current frame; if it no longer works, or a complete one no longer is, it is
+// cleared. The frame must be current.
+void field_rerun(caps_doc* d, std::unique_ptr<FieldState> kept) {
+  const bool was_complete = kept->complete;
+  d->field = std::move(kept);
+  try {
+    field_run(d);
+    if (was_complete && !d->field->complete) d->field.reset();
+  } catch (const std::exception&) {
+    d->field.reset();
+  }
+  if (d->field) refresh(d);   // the types and charges it wrote
+}
+
 void store(caps_doc* d, const caps::System& s) {
+  // positions or the cell alone: the assignment is run again on the new geometry, so it is what a fresh one would give
+  std::unique_ptr<FieldState> rerun;
+  if (field_can_rerun(d) && geometry_only(d->traj.topology, s, d->field->charges == "qeq")) rerun = std::move(d->field);
   // the force field an AMBER topology carried holds while the atoms (elements) and bonds are unchanged
   bool same = s.forcefield && s.atoms.size() == d->traj.topology.atoms.size() && s.bonds.size() == d->traj.topology.bonds.size();
   for (size_t i = 0; same && i < s.atoms.size(); ++i) same = s.atoms[i].element == d->traj.topology.atoms[i].element;
@@ -8916,6 +8956,7 @@ void store(caps_doc* d, const caps::System& s) {
   if (d->selection.size() != s.atoms.size()) d->selection.assign(s.atoms.size(), 0);
   refresh(d);
   if (file_ff) install_file_field(d);   // moved atoms, the same molecule: its topology's force field still applies
+  if (rerun) field_rerun(d, std::move(rerun));
 }
 
 }  // namespace
@@ -9445,6 +9486,7 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
     store(d, s);
     r["ok"] = true;
     r["field_cleared"] = had_field && !d->field;
+    r["field_reassigned"] = had_field && d->field != nullptr;
     r["what"] = had_field && !d->field ? what + " · force field cleared: assign it again before a run" : what;
     r["atoms"] = double(s.atoms.size());
     r["added"] = added;
@@ -9466,6 +9508,9 @@ extern "C" int32_t caps_undo(caps_doc* d, int32_t redo) {
     now.positions = d->traj.positions.at(d->current);
     now.what = from.back().what;
     to.push_back(std::move(now));
+    std::unique_ptr<FieldState> rerun;
+    // labels apart: an assignment writes its type names over the atoms' after the state undone to was saved
+    if (field_can_rerun(d) && geometry_only(d->traj.topology, from.back().topology, d->field->charges == "qeq", false)) rerun = std::move(d->field);
     d->traj.topology = from.back().topology;
     d->traj.positions[d->current] = from.back().positions;
     if (d->current < d->traj.cells.size()) d->traj.cells[d->current] = d->traj.topology.cell;   // a cell edit comes back too
@@ -9473,6 +9518,7 @@ extern "C" int32_t caps_undo(caps_doc* d, int32_t redo) {
     d->field.reset();
     d->selection.assign(d->traj.topology.atoms.size(), 0);
     refresh(d);
+    if (rerun) field_rerun(d, std::move(rerun));
     return 0;
   });
 }
@@ -11740,6 +11786,15 @@ extern "C" caps_doc* caps_recipe_run(const char* recipe, const char* options_jso
       d->field->base.name = res.forcefield;
       d->field->ff = res.field;
       d->field->complete = true;
+      if (!res.field_path.empty()) {   // what lets a geometry edit run this assignment again (field_rerun)
+        try {
+          FieldState F;
+          F.ff_path = res.field_path, F.rules_path = res.field_rules;
+          load_field_base(F);
+          d->field->base = std::move(F.base), d->field->ff_path = std::move(F.ff_path), d->field->rules_path = std::move(F.rules_path);
+          d->field->charges = res.field_charges;
+        } catch (const std::exception&) {}   // the file has gone: the field stands, an edit clears it
+      }
     }
     rep["exit"] = 0;
     caps::Json files = caps::Json::array();

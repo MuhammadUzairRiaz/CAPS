@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 112, "ABI 112")
+check(caps.abi_version() == 113, "ABI 113")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -978,6 +978,34 @@ _vs.edit(op="vacuum_slab", vacuum=30.0)
 _vr = _vs.field.assign("oplsaa2024")
 check(_vs.summary()["bonds"] == _vb and _vr["complete"] and _vs.energy()["forcefield"].startswith("OPLS"), f"vacuum slab {_vs.summary()['bonds']} of {_vb}, complete {_vr['complete']}")
 print("ok   vacuum_slab keeps chains whole")
+
+# moving atoms runs the assignment again on the new geometry: the energy is exactly a fresh assignment's; a vacuum slab too;
+# undo too; QEq charges follow the geometry (they are not the old ones); a change of charge or element still clears it
+_ma = caps.polymer("[*]CC(O)[*]", dp=3, chains=2, density=0.8, forcefield="oplsaa2024", seed=2)
+_e0 = _ma.energy()
+_ma.edit(op="translate", atoms=[0, 1, 2], by=[0.3, -0.2, 0.1])
+_ma.undo()
+check(_ma.energy()["assigned"] and abs(_ma.energy()["total"] - _e0["total"]) < 1e-9, f"move and undo give the recipe's energy back {_e0} {_ma.energy()}")
+_m1 = _ma.edit(op="translate", atoms=[0, 1, 2], by=[0.3, -0.2, 0.1])
+_e1 = _ma.energy()
+check(_m1["field_reassigned"] and not _m1["field_cleared"] and _e1["assigned"] and _e1["forcefield"].startswith("OPLS"), f"move keeps the field {_m1} {_e1}")
+_ma.field.assign("oplsaa2024")
+_e2 = _ma.energy()
+check(abs(_e1["total"] - _e2["total"]) < 1e-9, f"the same as a fresh assignment {_e1['total']} {_e2['total']}")
+_ma.undo()
+check(_ma.energy()["assigned"], "undo of a move keeps the field")
+_ms = _ma.edit(op="vacuum_slab", vacuum=25.0)
+check(_ms["field_reassigned"] and _ma.energy()["forcefield"].startswith("OPLS"), f"vacuum slab keeps the field {_ms}")
+_qq = caps.build.smiles("CCO", seed=1)
+_qq.field.assign("uff", "qeq")
+_q0 = [_qq.atom(i)["charge"] for i in range(_qq.atoms)]
+_qm = _qq.edit(op="translate", atoms=[8], by=[0.0, 0.5, 0.0])
+_q1 = [_qq.atom(i)["charge"] for i in range(_qq.atoms)]
+check(_qm["field_reassigned"] and max(abs(a - b) for a, b in zip(_q0, _q1)) > 1e-4 and _qq.energy()["assigned"], f"QEq follows the geometry {_qm}")
+_qq.field.assign("uff", "qeq")
+_q2 = [_qq.atom(i)["charge"] for i in range(_qq.atoms)]
+check(max(abs(a - b) for a, b in zip(_q1, _q2)) < 1e-9, "QEq charges as a fresh assignment")
+print("ok   moves run the force field again on the new geometry")
 
 # an edit that clears the force field says so, once, and energy() says it is on the fallback
 _fc = caps.polymer("[*]CC(O)[*]", dp=3, chains=2, density=0.8, forcefield="oplsaa2024", seed=2)

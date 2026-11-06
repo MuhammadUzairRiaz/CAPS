@@ -311,6 +311,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
   std::vector<std::string> ml_fitted, ml_left;
   std::string ml_model;
   std::string ffname = "built-in default (GAFF for C and H, UFF otherwise)";
+  std::string field_path, field_rules, field_charges;   // how to repeat the assignment (RecipeResult)
   if (!o.sha256.empty())
     res.manifest.steps.push_back(step("recipe.run", "recipe " + res.name, {{"recipe", res.name}, {"sha256", o.sha256}, {"stages", std::to_string(n)}}, "", {}));
   // Types a structure with the recipe's force field (throws RecipeError 3 for untyped atoms or missing parameters).
@@ -320,6 +321,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
     if (!r.has("cutoff") && f && f->native_cutoff > 0) energy.cutoff = f->native_cutoff;
   };
   auto type_now = [&](System& sys) {
+    field_path.clear(), field_rules.clear(), field_charges.clear();
     const Json T = r.has("type") ? r["type"] : Json::object();
     if (T.has("file")) {   // a force field written whole by CAPS (caps/ffio.hpp): used as it is, nothing typed again
       const std::string fp = path_of(T["file"].str());
@@ -361,6 +363,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         uo.keep_charges = charges == "keep";
         ff = std::make_shared<ForceField>(assign_uff(sys, uo));
         ffname = "UFF";
+        field_path = "uff", field_charges = charges == "qeq" || charges == "keep" ? charges : "types";
       } else {
         std::string path = path_of(name), typing = T.has("typing") ? path_of(T["typing"].str()) : "";
         std::vector<std::pair<std::string, std::string>> family;
@@ -432,6 +435,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
             load_typing(trial, rules_path);
             def = std::move(trial);
             borrowed = id;
+            field_rules = rules_path;
             break;
           } catch (const std::exception&) {}
         }
@@ -521,6 +525,12 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         for (const auto& [rule, count] : rep.used)
           if (rule.find("filled:") != std::string::npos) filled_terms += count;
         if (!filled_from.empty()) ffname += " (gaps filled from " + filled_from + ": " + std::to_string(filled_terms) + " terms)";
+        if (ua.empty() && filled_from.empty() && !complete_ml && !def.typing.empty()) {
+          field_path = path, field_charges = charges;
+          if (!typing.empty()) field_rules = typing;
+        } else {
+          field_rules.clear();
+        }
       }
     } catch (const RecipeError&) { throw; } catch (const std::exception& e) { throw RecipeError(3, e.what()); }
     own_cutoff(ff.get());
@@ -1428,6 +1438,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
   res.system = s;
   res.field = ff;
   res.forcefield = ff ? ffname : "";
+  if (ff) res.field_path = field_path, res.field_rules = field_rules, res.field_charges = field_charges;
   res.manifest.generator = by;
   if (!res.properties.empty() && !o.out_dir.empty()) {   // what was analysed, kept beside the other outputs (a remote run brings it back)
     std::filesystem::create_directories(o.out_dir);
