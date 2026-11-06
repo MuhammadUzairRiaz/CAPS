@@ -3,38 +3,38 @@
  "title": "November 2026 update",
  "highlights": [
   {
-   "title": "Semicrystalline stacks",
-   "detail": "Build lamellar cells: a crystal lamella from the polymer crystal library and an amorphous layer of loops, bridges and tails in the fractions you ask for, with crystallinity, density and P2 profiles reported.",
+   "title": "Semicrystalline stacks of every library polymer",
+   "detail": "Lamellar cells of PE, PVDF, PTFE, iPP, PEO, POM, PLLA, the nylons, PET and natural rubber, with amorphous layers grown from each polymer's own repeat unit.",
    "page": "semicrystalline"
   },
   {
-   "title": "Thermal conductivity by MD",
-   "detail": "Green-Kubo from the heat-flux autocorrelation, or reverse NEMD. You say whether the material is a 3D bulk or a 2D sheet; LAMMPS inputs cover the long runs on a cluster.",
+   "title": "Powder patterns, measured and calculated",
+   "detail": "I(2θ) of any periodic cell, Rietveld and Pawley fits to instrument files, indexing and phase fractions. Find it under Analyze, on the Scattering page.",
+   "page": "analyze"
+  },
+  {
+   "title": "Crystal properties from the force field",
+   "detail": "Phonons, quasi-harmonic thermal expansion, dielectric, piezoelectric and optical tensors, Z-method melting points and crystal habits.",
    "page": "thermal"
   },
   {
-   "title": "Polymer crystals for DFT",
-   "detail": "Unit cells of PE, iPP, PEO, PVDF, POM, the nylons, PET, PLLA, natural rubber and PTFE from their structure papers, a four-step VASP relaxation chain, and phono3py sets with a cost estimate before anything is submitted.",
-   "page": "vasp"
+   "title": "More polymer architectures",
+   "detail": "Copolymers of several units with composition drift, grafts on chosen sites, AB_n dendrimers and hyperbranched molecules.",
+   "page": "copolymer"
   },
   {
-   "title": "Figures ready for a journal",
-   "detail": "Every plot saves as a one- or two-column figure (vector PDF or SVG, or 300 dpi PNG) in one consistent look, and copies its data as CSV.",
-   "page": "figure"
+   "title": "Sorption with bending molecules",
+   "detail": "Oils, plasticisers and curatives grow in at their rotatable bonds, with a held loading, and a pore network reports channels, percolation and limiting diameters.",
+   "page": "sorption"
   },
   {
-   "title": "Force fields from their original sources",
-   "detail": "Every library file is built from its paper, supporting information or the authors' own distribution, and says where its numbers came from. Waters, gases, Martini 2, SDK and L-OPLS are new.",
+   "title": "Fit a force field to a crystal",
+   "detail": "Parameters fitted to structure, lattice energy and elastic constants, plus QEq charges for periodic fillers.",
    "page": "field"
   },
   {
-   "title": "Missing parameters filled by CAPS ML",
-   "detail": "When a force field lacks a torsion, bend or bond, CAPS can fit it to relaxed scans with its own model and marks every such term in the files it writes.",
-   "page": "field"
-  },
-  {
-   "title": "Update notices",
-   "detail": "CAPS Studio now tells you when a newer CAPS is out and shows what changed after you update. Settings has the switch."
+   "title": "Cells too small for their bonds are caught",
+   "detail": "A small crystal cell gave badly wrong energies without warning. Energy and relaxation now use enough copies, and dynamics stops and names the supercell it needs."
   }
  ]
 }

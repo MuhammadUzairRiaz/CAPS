@@ -15,6 +15,39 @@ lede: What changed in CAPS, newest first. Every force field CAPS ships is now bu
 - `--analyse` and `--labels` work on any backbone: the longest path through each molecule's heavy atoms, with the order-parameter chord matched to a zig-zag or a helix. Side atoms take their backbone atom's class.
 - In the Studio, **Build › Semicrystalline stack** lists these crystals, fills in each one's defaults and assigns its force field to the built cell. In Python, `build.semicrystalline("nylon6-alpha", forcefield="auto")` and `semicrystalline_polymers()`.
 
+### Diffraction and crystal structures
+
+- Powder patterns of any periodic cell (`caps powder`), Rietveld and Pawley fits to measured data with phase fractions (`caps refine`), powder indexing and direct-space structure solution (`caps index`, `caps solve`).
+- Measured data and grids read from JCAMP-DX, XRDML, GSAS, UXD, Rigaku and Gaussian cube files (`caps data`). Bruker binary `.raw`, STOE `.xyd` and GSAS ALT/TOF are not read: no public specification could be checked.
+- CIF disorder with assemblies, groups, mixed and split sites (`caps cif`), space groups kept with the structure (`caps symmetry`), displacement tensors from a trajectory (`caps adp`), lattice planes in the view (`caps planes`), molecular point groups (`caps pointgroup`).
+
+### Crystal properties
+
+- Phonons with dispersion, DOS and thermodynamics (`caps phonons`), quasi-harmonic free energy and thermal expansion (`caps qha`), dielectric, piezoelectric and optical tensors (`caps dielectric`).
+- Melting point by the Z method, at constant volume (`caps zmelt`). Crystal habits by BFDH, attachment and surface energy with Wulff shapes (`caps habit`).
+- Force fields fitted to crystal structure, lattice energy and elastic constants (`caps fit`). QEq charges for periodic fillers (`caps qeq`).
+
+### Polymer builders
+
+- Copolymers of several units with terminal, given-matrix or penultimate sequences and composition drift (`caps copolymer`, `caps grow`). Graft copolymers on marked sites or onto an existing structure (`caps graft`). Dendrimers and hyperbranched molecules from AB_n units such as PAMAM, PPI and bis-MPA (`caps dendrimer`).
+- Fused and spiro rings, an atom inserted into a bond, structures joined by leaving atoms. Shaped crystal cuts that keep whole molecules. Special quasirandom structures and symmetry-distinct arrangements (`caps sqs`, `caps enumerate`), and graded substitution.
+
+### Simulation and mesoscale
+
+- Sorption with bending sorbates by configurational bias, and at a held loading. Restraints in dynamics and minimisation, written to the LAMMPS and GROMACS exports (`--restraints`). Cell relaxation with chosen lattice parameters held (`caps cellrelax`). Reaction paths by climbing-image NEB on the force field (`caps path`).
+- Slab-corrected PME for cells with a vacuum gap (`--slab`). Surface and interfacial tension from the pressure tensor (`caps tension`).
+- Density fields: dynamic mean-field theory of Gaussian chains for blends and block copolymers, without shear, masks or electrostatics (`caps fields`). DPD starts composed from droplets, rods, slabs, shells and tubes (`caps dpd`). Domains of a density field with percolation, volumes and spacing (`caps domains`).
+
+### Analysis and data
+
+- Infrared spectra from the dipole's time derivative. Pore networks with percolation and limiting diameters (`caps pores`). Hydrogen-bond definitions you can set. Geometry measured at every match of a SMARTS pattern.
+- Structure-property models with descriptors, MLR, PLS, GFA and a neural network, validation, clustering and discriminants. Study tables gain multi-column order, filters, colour by value and SD files (`caps table`).
+
+### Fixes that change results
+
+- A cell too small for its bonds gave badly wrong energies with no warning: OPLS polyethylene at 1×1×1 read +191 kcal/mol per cell against the true −6.2. CAPS now finds these cells by following every 1-3 and 1-4 bond path. Energy and relaxation use enough copies, and dynamics and `caps relax` stop and name the supercell needed.
+- A vacuum slab no longer cuts chains or loses bond orders, and cell changes keep bonds from a file or builder. Moving atoms runs the force-field assignment again on the new geometry.
+
 ## October 2026 update (version 0.1.0)
 
 ### Semicrystalline stacks and thermal conductivity
