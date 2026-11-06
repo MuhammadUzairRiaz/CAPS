@@ -316,6 +316,50 @@ TEST(Lattice, ConventionalCellsOfRutileAndWurtzite) {
   EXPECT_THROW(caps::transform_cell(caps::build_crystal(r), caps::Mat3{{{0.5, 0, 0}, {0, 1, 0}, {0, 0, 1}}}), std::invalid_argument);
 }
 
+// Molecules across the cell boundary stay whole with their bond orders: a C=C pair straddling c keeps its one double bond
+// and its length, nothing breaks. A chain running round the cell along c is a network: it is cut at the plane, the broken
+// bond counted, and the others kept with their orders
+TEST(Lattice, VacuumSlabKeepsMoleculesWhole) {
+  caps::System s;
+  s.cell.a = {12, 0, 0}, s.cell.b = {0, 12, 0}, s.cell.c = {0, 0, 12};
+  auto atom = [&](double x, double y, double z) {
+    caps::Atom a;
+    a.element = 6, a.pos = {x, y, z};
+    s.atoms.push_back(a);
+  };
+  atom(2, 2, 0.4), atom(2, 2, 11.3);     // a double bond through z = 0 (0.4 and −0.7)
+  atom(8, 8, 6.0), atom(9.5, 8, 6.0);    // another molecule, inside the cell
+  s.bonds.push_back({0, 1, 2}), s.bonds.push_back({2, 3, 1});
+  caps::SlabResult r;
+  const caps::System t = caps::vacuum_slab(s, 20, true, &r);
+  EXPECT_EQ(r.broken, 0u);
+  ASSERT_EQ(t.bonds.size(), 2u);
+  EXPECT_EQ(t.bonds[0].order, 2);
+  EXPECT_NEAR(caps::norm(t.atoms[0].pos - t.atoms[1].pos), 1.1, 1e-9);
+  EXPECT_NEAR(caps::norm(t.atoms[2].pos - t.atoms[3].pos), 1.5, 1e-9);
+  double lo = 1e9, hi = -1e9;
+  for (const auto& a : t.atoms) lo = std::min(lo, a.pos[2]), hi = std::max(hi, a.pos[2]);
+  EXPECT_NEAR(hi - lo, r.thickness, 1e-9);
+  EXPECT_NEAR(t.cell.c[2], r.thickness + 20, 1e-9);
+  EXPECT_NEAR(lo, 10, 1e-9);   // centred
+
+  // a chain closed round c through the boundary (gaps 3, 3, 3.5 and 2.5 Å): the cut is in the widest gap, its bond goes
+  caps::System c;
+  c.cell = s.cell;
+  for (double z : {1.0, 4.0, 7.0, 10.5}) {
+    caps::Atom a;
+    a.element = 6, a.pos = {5, 5, z};
+    c.atoms.push_back(a);
+  }
+  c.bonds = {{0, 1, 2}, {1, 2, 1}, {2, 3, 1}, {3, 0, 1}};
+  caps::SlabResult q;
+  const caps::System w = caps::vacuum_slab(c, 15, true, &q);
+  EXPECT_EQ(q.broken, 1u);
+  ASSERT_EQ(w.bonds.size(), 3u);
+  EXPECT_EQ(w.bonds[0].order, 2);
+  EXPECT_NEAR(q.thickness, 8.5, 1e-9);   // 12 Å less that gap
+}
+
 TEST(Lattice, VacuumSlabAndNanowire) {
   const caps::System cu = caps::supercell(fcc_copper(), 2, 2, 3);
   caps::SlabResult sr;

@@ -971,6 +971,14 @@ _qr = _qh["rows"]
 check(len(_qr) == 2 and len(_qh["samples"]) == 5 and _qr[1]["Cv"] > _qr[0]["Cv"] > 0 and _qr[1]["Cp"] >= _qr[1]["Cv"] and _qr[1]["S"] > _qr[0]["S"], f"qha {_qr}")
 print("ok   qha")
 
+# a vacuum slab keeps a polymer cell's chains: the same bonds, and OPLS-AA types it again in full
+_vs = caps.polymer("[*]CC(O)[*]", dp=4, chains=3, density=0.8, forcefield="oplsaa2024", seed=2)
+_vb = _vs.summary()["bonds"]
+_vs.edit(op="vacuum_slab", vacuum=30.0)
+_vr = _vs.field.assign("oplsaa2024")
+check(_vs.summary()["bonds"] == _vb and _vr["complete"] and _vs.energy()["forcefield"].startswith("OPLS"), f"vacuum slab {_vs.summary()['bonds']} of {_vb}, complete {_vr['complete']}")
+print("ok   vacuum_slab keeps chains whole")
+
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
 _en = _cu.enumerate_occupations("Cu", "Au", count=1)

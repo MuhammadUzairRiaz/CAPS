@@ -229,7 +229,7 @@
                     <Button Grid.Column="1" Classes="small" Content="Redefine" Click="OnRedefine" />
                   </Grid>
                   <TextBox Text="{Binding RedefineMatrix}" AcceptsReturn="True" Height="70" FontFamily="{DynamicResource Mono}" />
-                  <TextBlock Text="Vacuum slab · the atoms made contiguous along c, then vacuum added along c" Classes="label" TextWrapping="Wrap" />
+                  <TextBlock Text="Vacuum slab · vacuum added along c; molecules and chains stay whole, a network running through the cell along c is cut at its widest gap" Classes="label" TextWrapping="Wrap" />
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <NumericUpDown Value="{Binding SlabVacuum}" Minimum="0" Maximum="500" Increment="5" FormatString="0.# Å vacuum" Width="140" ShowButtonSpinner="False" />
                     <CheckBox Content="Centre the slab" IsChecked="{Binding SlabCentre}" />

@@ -317,7 +317,8 @@ System vacuum_slab(const System& s, double vacuum, bool centre, SlabResult* resu
   System out = s;
   const Vec3 n = cross(s.cell.a, s.cell.b) * (1 / norm(cross(s.cell.a, s.cell.b)));   // the surface normal
   const double h = dot(s.cell.c, n);   // perpendicular height of the cell
-  // fractional c of every atom, and the slab made contiguous across the largest gap
+  const size_t N = s.atoms.size();
+  // fractional c of every atom, and the plane to cut at: the middle of the largest gap
   std::vector<double> fc;
   for (const auto& a : s.atoms) { double f = s.cell.to_fractional(a.pos)[2]; fc.push_back(f - std::floor(f)); }
   std::vector<double> sorted = fc;
@@ -327,11 +328,49 @@ System vacuum_slab(const System& s, double vacuum, bool centre, SlabResult* resu
     const double next = i + 1 < sorted.size() ? sorted[i + 1] : sorted[0] + 1;
     if (next - sorted[i] > gap) gap = next - sorted[i], cut = sorted[i] + (next - sorted[i]) / 2;
   }
+  // along the bonds: each connected piece unwrapped in c. A finite piece (a molecule, a sheet in the plane) moves whole, by
+  // whole cells, its centre above the cut. A piece whose bonds wrap round c (a crystal, a chain along c) has no whole form:
+  // its atoms fold above the cut and the bonds through the plane break, which is what cleaving a crystal means.
+  std::vector<std::vector<uint32_t>> nb(N);
+  for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  std::vector<int> piece(N, -1);
+  std::vector<char> wraps;
+  std::vector<double> u(N, 0.0);   // c, unwrapped within its piece
+  std::vector<double> fnew(N, 0.0);
+  for (size_t r = 0; r < N; ++r) {
+    if (piece[r] >= 0) continue;
+    const int id = int(wraps.size());
+    wraps.push_back(0);
+    std::vector<uint32_t> members{uint32_t(r)}, stack{uint32_t(r)};
+    piece[r] = id, u[r] = fc[r];
+    while (!stack.empty()) {
+      const uint32_t a = stack.back();
+      stack.pop_back();
+      for (uint32_t q : nb[a]) {
+        double d = fc[q] - fc[a];
+        d -= std::round(d);
+        if (piece[q] < 0) {
+          piece[q] = id, u[q] = u[a] + d;
+          members.push_back(q), stack.push_back(q);
+        } else if (std::fabs(u[q] - (u[a] + d)) > 0.5) {
+          wraps[size_t(id)] = 1;
+        }
+      }
+    }
+    if (wraps[size_t(id)]) {
+      for (uint32_t a : members) fnew[a] = (fc[a] < cut ? fc[a] + 1 : fc[a]) - cut;
+    } else {
+      double mean = 0;
+      for (uint32_t a : members) mean += u[a];
+      mean /= double(members.size());
+      const double m = mean - std::floor(mean - cut);   // its centre in [cut, cut + 1)
+      for (uint32_t a : members) fnew[a] = u[a] + (m - mean) - cut;
+    }
+  }
   double lo = 1e9, hi = -1e9;
-  for (size_t i = 0; i < out.atoms.size(); ++i) {
+  for (size_t i = 0; i < N; ++i) {
     Vec3 f = s.cell.to_fractional(out.atoms[i].pos);
-    f[2] = fc[i] < cut ? fc[i] + 1 : fc[i];   // atoms above the gap come first
-    f[2] -= cut;
+    f[2] = fnew[i];
     out.atoms[i].pos = s.cell.to_cartesian(f);
     const double z = dot(out.atoms[i].pos - s.cell.origin, n);
     lo = std::min(lo, z), hi = std::max(hi, z);
@@ -345,11 +384,24 @@ System vacuum_slab(const System& s, double vacuum, bool centre, SlabResult* resu
   for (auto& a : out.atoms) a.pos = a.pos + along * shift;
   out.cell.periodic = {true, true, true};
   out.unwrapped = true;
-  out.bonds = crystal_bonds(out);
-  if (result) result->thickness = thick, result->vacuum = vacuum;
-  char b[160];
+  // the structure's own bonds and orders stay, but for those through the plane; with none, from the geometry
+  size_t broken = 0;
+  if (s.bonds.empty()) {
+    out.bonds = crystal_bonds(out);
+  } else {
+    out.bonds.clear();
+    for (const auto& b : s.bonds) {
+      if (wraps[size_t(piece[b.i])] && std::fabs(fnew[b.i] - fnew[b.j]) > 0.5) { ++broken; continue; }
+      out.bonds.push_back(b);
+    }
+    if (broken > 0) out.typing_bonds.clear();
+  }
+  if (result) result->thickness = thick, result->vacuum = vacuum, result->broken = broken;
+  char b[200];
   std::snprintf(b, sizeof b, "vacuum slab: %.2f Å of atoms and %.2f Å of vacuum along c", thick, vacuum);
   out.notes.insert(out.notes.begin(), b);
+  if (broken > 0)
+    out.notes.insert(out.notes.begin() + 1, std::to_string(broken) + " bonds through the plane broke (a network that runs through the cell along c): the new surfaces have open valences");
   return out;
 }
 

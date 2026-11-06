@@ -9141,6 +9141,7 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       char b[128];
       std::snprintf(b, sizeof b, "Vacuum slab: %.2f Å slab, %.2f Å vacuum", r.thickness, r.vacuum);
       what = b;
+      if (r.broken > 0) what += " · " + std::to_string(r.broken) + " bonds through the plane broke (open valences on the new surfaces)";
     } else if (op == "defects") {   // {from, to ("" vacancies), fraction | count, min_spacing, seed, atoms (the region), grade, inner, outer, axis}
       caps::DefectOptions o;
       o.from = element_of(j.text("from", "C"));
