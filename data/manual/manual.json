@@ -1940,6 +1940,40 @@
    "tex": "\\epsilon_{ab} = \\sqrt{\\epsilon_a\\epsilon_b}\\ \\text{ or }\\ \\frac{\\epsilon_a + \\epsilon_b}{2}, \\qquad \\sigma_{ab} = \\frac{\\sigma_a + \\sigma_b}{2}\\ \\text{ or }\\ \\sqrt{\\sigma_a\\sigma_b} \\\\ \\text{sixth power:}\\ \\ \\sigma_{ab} = \\left(\\frac{\\sigma_a^6 + \\sigma_b^6}{2}\\right)^{1/6}, \\qquad \\epsilon_{ab} = \\frac{2\\sqrt{\\epsilon_a\\epsilon_b}\\,\\sigma_a^3\\sigma_b^3}{\\sigma_a^6 + \\sigma_b^6}"
   },
   {
+   "id": "cell-fit",
+   "group": "Force fields",
+   "title": "Cells too small for their bonds",
+   "summary": "A force field reads each separation at the nearest image and excludes or scales bonded partners there, and a bond list has one entry per pair of atoms. A small crystal cell breaks both: a polyethylene cell repeats its chain every 2.5 Å, so a carbon bonds to two images of one neighbour and partners three bonds apart lie closer through the next cell. CAPS follows every path of two and three bonds and compares where it ends with the image the engines would read.",
+   "equation": "f = h⁻¹ Σ_path r_bond,   the cell fits when |f_k| < ½ on every periodic axis k, for every 1-3 and 1-4 path",
+   "equation_note": "The test follows from the minimum-image convention; f is the path's end in fractional coordinates. A tie at ½ fails, because two images are then equally near.",
+   "tex": "\\mathbf{f} = \\mathsf{h}^{-1}\\sum_{\\mathrm{path}} \\mathbf{r}_{\\mathrm{bond}}, \\qquad |f_k| < \\tfrac{1}{2}\\ \\text{ for every periodic axis } k",
+   "symbols": [
+    [
+     "h",
+     "the cell matrix, its columns the edge vectors a, b, c",
+     "Å"
+    ],
+    [
+     "r_bond",
+     "a bond's vector at its nearest image",
+     "Å"
+    ],
+    [
+     "f_k",
+     "the path's end along cell axis k, in fractional coordinates",
+     "—"
+    ]
+   ],
+   "when": "Opening a crystal cell as published, before any supercell. Energy and relaxation evaluate enough copies on their own, with the force field assigned on the copies, and report the energy per cell given; a box relaxation there moves the three lengths independently and holds the angles. Dynamics stops and names the supercell it needs. caps ff apply writes its file with a warning.",
+   "cites": [],
+   "source": "core/src/cell_fit.cpp (cell_fit, copies_to_fit)",
+   "tested": "CellFit.PolyethyleneCells: OPLS-AA polyethylene, cut-off 10 Å. The cells that fail are those whose energy per cell differs from 4×4×10 (1×1×1 gave 191.37, 1×1×2 40.30, 1×1×3 −5.77, 2×2×3 −5.56, 1×1×8 −6.43 kcal/mol against −6.218) and the cells that pass agree with it. Evaluated as copies, 1×1×1 gives −6.217951. Python: the bond, angle, dihedral, van der Waals and Coulomb terms each match 3×3×8 to 1e-8, and the relaxed energy with the cell held to 1e-3.",
+   "deviation": "A partner counts only if the assigned force field excludes or scales it; coarse-grained beads are left out. Copies move together, so a relaxation keeps the cell's translational symmetry. Held atoms, restraints and a target density need the supercell.",
+   "engines": [
+    "field.assign"
+   ]
+  },
+  {
    "id": "crystal-fit",
    "group": "Force fields",
    "title": "Fitting a force field to crystal data",

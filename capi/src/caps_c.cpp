@@ -117,6 +117,7 @@
 #include "caps/reaction_path.hpp"
 #include "caps/dendrimer.hpp"
 #include "caps/miller.hpp"
+#include "caps/cell_fit.hpp"
 #include "caps/cell_relax.hpp"
 #include "caps/table_tools.hpp"
 #include "caps/pointgroup.hpp"
@@ -1389,6 +1390,14 @@ void field_run(caps_doc* d) {
   for (const auto& x : F.typing.notes) notes.push_back(x);
   for (const auto& x : F.rep.notes) notes.push_back(x);
   r["notes"] = notes;
+  if (const std::string small = caps::cell_fit_message(d->frame, F.ff.get()); !small.empty()) {
+    r["cell_too_small"] = small;
+    try {
+      caps::Json cp = caps::Json::array();
+      for (int n : caps::copies_to_fit(d->frame)) cp.push_back(double(n));
+      r["cell_copies"] = cp;
+    } catch (const std::exception&) {}
+  }
   r["complete"] = F.complete;
   if (F.ff) {
     caps::Evaluator ev(*F.ff, elec());
@@ -3031,7 +3040,28 @@ int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn
       push(p, c);
     };
     caps::RelaxReport rep;
-    caps::relax(s, r, &rep);
+    std::array<int, 3> relax_copies{1, 1, 1};
+    if (!caps::cell_fit(s, r.field.get()).fits) {
+      // a cell too small for its bonds: minimised as copies moving together, with the assignment made on the copies
+      if (d->field && (d->field->ff_path == "file" || !d->field->model.empty())) throw caps::FieldError(caps::cell_fit_message(s, r.field.get()));
+      if (r.target_density > 0 || !r.restraints.empty() || !r.restraint_terms.empty() || std::any_of(r.fixed.begin(), r.fixed.end(), [](auto x) { return bool(x); }))
+        throw caps::FieldError(caps::cell_fit_message(s, r.field.get()) + " (held atoms, restraints and a target density need the supercell)");
+      caps::CellRelaxOptions co;
+      co.hold = {true, true, true, true, true, true};   // the angles stay: a box relaxation moves the cell's lengths
+      if (r.relax_box) for (size_t k = 0; k < 3; ++k) co.hold[k] = !r.box_axes[k];
+      co.pressure = r.pressure, co.ftol = r.ftol, co.max_steps = r.max_iterations;
+      const auto cr = caps::relax_cell(s, [&](const caps::System& sup) { return field_for_extended(d, sup); }, r.energy, co);
+      relax_copies = cr.copies;
+      rep.converged = cr.converged;
+      rep.field = ff_label(d);
+      rep.notes = cr.notes;
+      if (r.relax_box) rep.notes.push_back("the cell's lengths relaxed each on its own, its angles held");
+      std::vector<caps::Vec3> p;
+      for (const auto& a : s.atoms) p.push_back(a.pos);
+      push(p, s.cell);
+    } else {
+      caps::relax(s, r, &rep);
+    }
     {
       static const char* names[] = {"sd", "cg", "lbfgs", "fire"};
       static const char* titles[] = {"steepest descent", "Polak–Ribière conjugate gradients", "L-BFGS", "FIRE"};
@@ -3049,6 +3079,7 @@ int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn
                             {"force field", ff_label(d)}};
       if (r.target_density > 0) pr.push_back({"target density", g6(r.target_density) + " g/cm³"});
       if (r.relax_box) pr.push_back({"box relaxation", g6(r.pressure) + " atm"});
+      if (relax_copies != std::array<int, 3>{1, 1, 1}) pr.push_back({"evaluated as copies", std::to_string(relax_copies[0]) + "×" + std::to_string(relax_copies[1]) + "×" + std::to_string(relax_copies[2])});
       if (d->held_mol > 0) pr.push_back({"held molecule", std::to_string(d->held_mol)});
       if (!r.restraints.empty()) {
         std::string t;
@@ -8095,19 +8126,48 @@ extern "C" int64_t caps_held_molecule(const caps_doc* d) { return d ? d->held_mo
 extern "C" int32_t caps_energy_terms(caps_doc* d, char* json, int32_t cap) {
   try {
     caps::ForceField ff;
-    if (d->field && d->field->complete) ff = *d->field->ff;
-    else ff = default_ff(d->frame);
+    bool assigned = d->field && d->field->complete;
+    const caps::System* eval = &d->frame;
+    // a cell too small for its bonds is evaluated as copies with their own assignment, the result per cell given. A field
+    // from a file or a model describes these atoms only and stays as it is
+    caps::System sup;
+    std::array<int, 3> copies{1, 1, 1};
+    const bool own_atoms_only = d->field && (d->field->ff_path == "file" || !d->field->model.empty());
+    const caps::ForceField* held = assigned && d->field->ff ? d->field->ff.get() : nullptr;
+    if (!own_atoms_only && !caps::cell_fit(d->frame, held).fits) {
+      copies = caps::copies_to_fit(d->frame);
+      sup = caps::supercell(d->frame, copies[0], copies[1], copies[2]);
+      eval = &sup;
+      if (d->field) {
+        try { ff = field_for_extended(d, sup); assigned = true; }
+        catch (const std::exception&) { ff = default_ff(sup); assigned = false; }
+      } else {
+        ff = default_ff(sup);
+      }
+    } else if (assigned) {
+      ff = *d->field->ff;
+    } else {
+      ff = default_ff(d->frame);
+    }
     const caps::EnergyOptions eo = elec();
     caps::Evaluator ev(ff, eo);
     std::vector<double> x, f;
-    for (const auto& a : d->frame.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
-    const caps::EnergyTerms e = ev.compute(x, d->frame.cell, f);
+    for (const auto& a : eval->atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+    const caps::EnergyTerms e = ev.compute(x, eval->cell, f);
+    const double per = 1.0 / (double(copies[0]) * copies[1] * copies[2]);
     caps::Json en = caps::Json::object();
-    en["bond"] = e.bond, en["angle"] = e.angle, en["dihedral"] = e.dihedral, en["improper"] = e.improper;
-    en["vdw"] = e.vdw, en["coulomb"] = e.coulomb, en["total"] = e.total();
+    en["bond"] = e.bond * per, en["angle"] = e.angle * per, en["dihedral"] = e.dihedral * per, en["improper"] = e.improper * per;
+    en["vdw"] = e.vdw * per, en["coulomb"] = e.coulomb * per, en["total"] = e.total() * per;
+    if (eval == &sup) {
+      caps::Json cp = caps::Json::array();
+      for (int n : copies) cp.push_back(double(n));
+      en["copies"] = cp;
+    } else if (own_atoms_only && !caps::cell_fit(d->frame, held).fits) {
+      en["note"] = caps::cell_fit_message(d->frame, held);
+    }
     en["electrostatics"] = std::string(eo.electrostatics == caps::EnergyOptions::Electrostatics::PME ? "pme" : "dsf");
     en["forcefield"] = ff.name;
-    en["assigned"] = bool(d->field && d->field->complete);   // false: the built-in fallback, nothing the user assigned
+    en["assigned"] = assigned;   // false: the built-in fallback, nothing the user assigned
     return report_out(en.dump(0), json, cap);
   } catch (const std::exception& e) {
     g_error = e.what();

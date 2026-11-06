@@ -1,5 +1,6 @@
 // Cell relaxation with chosen lattice parameters held (cell_relax.hpp).
 #include "caps/cell_relax.hpp"
+#include "caps/cell_fit.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -86,6 +87,8 @@ CellRelaxReport relax_cell(System& s, const std::function<ForceField(const Syste
   const double width[3] = {V0 / norm(cross(s.cell.b, s.cell.c)), V0 / norm(cross(s.cell.c, s.cell.a)), V0 / norm(cross(s.cell.a, s.cell.b))};
   std::array<int, 3> sc{1, 1, 1};
   for (int d = 0; d < 3; ++d) sc[size_t(d)] = std::max(1, int(std::ceil(2.06 * eo.cutoff / width[d] - 1e-9)));
+  const auto fit = copies_to_fit(s);   // a short cut-off still needs the bonds read at their own images
+  for (size_t d = 0; d < 3; ++d) sc[d] = std::max(sc[d], fit[d]);
   if (size_t(sc[0]) * size_t(sc[1]) * size_t(sc[2]) * N > 15000)
     throw std::invalid_argument("the copies this cut-off needs exceed 15000 atoms: use a larger cell or a shorter cut-off");
   rep.copies = sc;

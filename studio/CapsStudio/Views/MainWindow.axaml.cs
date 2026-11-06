@@ -688,6 +688,7 @@ public partial class MainWindow : Window
     }
 
     // ---------------------------------------------------------------- Field
+    private async void OnMakeCellFit(object? sender, Avalonia.Interactivity.RoutedEventArgs e) { if (ViewModel != null) await ViewModel.MakeCellFit(); }
     private async void OnFieldAssign(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.Assign(); }
     private async void OnFieldClear(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.Clear(); }
     private async void OnFieldUseFile(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.UseFileForceField(); }

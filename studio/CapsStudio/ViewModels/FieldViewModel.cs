@@ -138,7 +138,7 @@ public sealed partial class FieldViewModel : ObservableObject
     public bool Assigned { get => _assigned; private set { if (Set(ref _assigned, value)) { Raise(nameof(NotAssigned)); Raise(nameof(ShowReport)); Raise(nameof(Incomplete)); } } }
     public bool NotAssigned => !_assigned;
     public bool ShowReport => _assigned;
-    public bool Complete { get => _complete; private set { if (Set(ref _complete, value)) Raise(nameof(Incomplete)); } }
+    public bool Complete { get => _complete; private set { if (Set(ref _complete, value)) { Raise(nameof(Incomplete)); Raise(nameof(ReadyToRun)); } } }
     public bool Incomplete => _assigned && !_complete;
     public bool Working { get => _working; private set { if (Set(ref _working, value)) Raise(nameof(NotWorking)); } }
     public bool NotWorking => !_working;
@@ -565,6 +565,10 @@ public sealed partial class FieldViewModel : ObservableObject
         Notes.Clear();
         UntypedMotifs = "";
         OutOfDomain = "";
+        _cellCopies = [];
+        Raise(nameof(MakeCellLabel));
+        Raise(nameof(CanMakeCell));
+        CellTooSmall = "";
         _fftypes.Clear();
         SelectedRow = null;
         ForceFieldName = "";
@@ -588,6 +592,7 @@ public sealed partial class FieldViewModel : ObservableObject
         using var js = JsonDocument.Parse(json);
         var r = js.RootElement;
         ForceFieldName = Str(r, "forcefield");
+        ReadCellFit(r);
         _fileAssigned = Str(r, "file") == "file";
         Raise(nameof(CanUseFileForceField));
         IsGrouped = r.TryGetProperty("groups", out _);

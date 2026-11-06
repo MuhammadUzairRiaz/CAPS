@@ -112,6 +112,23 @@ public sealed partial class FieldViewModel
     // ---- what the force field cannot type: once per chemical motif, and what that means for it (ffdef untyped_motifs)
     private string _motifs = "", _outOfDomain = "";
     public string UntypedMotifs { get => _motifs; private set { if (Set(ref _motifs, value)) Raise(nameof(HasMotifs)); } }
+    private string _cellTooSmall = "";
+    private int[] _cellCopies = [];
+    /// <summary>The core's reason this cell cannot carry its bonds (cell_fit.hpp), "" when it can.</summary>
+    public string CellTooSmall { get => _cellTooSmall; private set { if (Set(ref _cellTooSmall, value)) { Raise(nameof(HasCellTooSmall)); Raise(nameof(ReadyToRun)); } } }
+    public bool HasCellTooSmall => _cellTooSmall.Length > 0;
+    public bool ReadyToRun => Complete && !HasCellTooSmall;
+    public int[] CellCopies => _cellCopies;
+    public string MakeCellLabel => _cellCopies.Length == 3 ? $"Make it {_cellCopies[0]}×{_cellCopies[1]}×{_cellCopies[2]} and assign again" : "";
+    public bool CanMakeCell => _cellCopies.Length == 3;
+    private void ReadCellFit(JsonElement r)
+    {
+        _cellCopies = r.TryGetProperty("cell_copies", out var c) && c.ValueKind == JsonValueKind.Array ? c.EnumerateArray().Select(x => x.GetInt32()).ToArray() : [];
+        Raise(nameof(MakeCellLabel));
+        Raise(nameof(CanMakeCell));
+        CellTooSmall = r.TryGetProperty("cell_too_small", out var s) && s.ValueKind == JsonValueKind.String ? s.GetString() ?? "" : "";
+        if (_cellTooSmall.Length > 0) CellTooSmall = char.ToUpperInvariant(_cellTooSmall[0]) + _cellTooSmall[1..];
+    }
     public string OutOfDomain { get => _outOfDomain; private set => Set(ref _outOfDomain, value); }
     public bool HasMotifs => _motifs.Length > 0;
 

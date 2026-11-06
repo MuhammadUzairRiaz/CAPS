@@ -1533,6 +1533,7 @@ internal static class Screenshot
                 var a = w.ViewModel.Field.Assign();
                 while (!a.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
             }
+            if (kv[0] == "makecell") { var t = w.ViewModel.MakeCellFit(); while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); } }   // makecell=1: the Field page's supercell button
             if (kv[0] == "charges") w.ViewModel.Field.ChargeMode = int.Parse(kv[1]);
             // fieldgroups=1: Field · by group open with the suggested groups; fieldgroups=PATH: the first group a literature
             // potential from that file, the others GAFF2, assigned

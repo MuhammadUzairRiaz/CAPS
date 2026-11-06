@@ -91,6 +91,7 @@
 #include "caps/ddft.hpp"
 #include "caps/dendrimer.hpp"
 #include "caps/miller.hpp"
+#include "caps/cell_fit.hpp"
 #include "caps/cell_relax.hpp"
 #include "caps/table_tools.hpp"
 #include "caps/pointgroup.hpp"
@@ -3087,6 +3088,7 @@ int main(int argc, char** argv) {
       if (sub == "apply") {
         if (pos.size() < 2 || !o.count("--ff")) return usage();
         System s = load(pos[1], o);
+        if (const std::string small = cell_fit_message(s); !small.empty()) std::fprintf(stderr, "warning: %s; the file written here would not describe the crystal\n", small.c_str());
         const bool uff = is_uff(o["--ff"]);
         ForceField f;
         ParamReport rep;

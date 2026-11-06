@@ -3698,6 +3698,14 @@
                 </ItemsControl>
                 <TextBlock Text="{Binding Field.ExtraOverlayText}" Classes="dim" FontSize="11" IsVisible="{Binding Field.HasExtraOverlays}" />
               </StackPanel>
+              <Border Classes="inset" IsVisible="{Binding Field.HasCellTooSmall}">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="THE CELL IS TOO SMALL FOR ITS BONDS" Classes="h3" />
+                  <TextBlock Text="{Binding Field.CellTooSmall}" TextWrapping="Wrap" />
+                  <TextBlock Text="The types below are read on this one cell, whose bonds close on themselves. Energy and relaxation assign enough copies on their own; dynamics and exported files need the supercell." Classes="dim" TextWrapping="Wrap" />
+                  <Button Content="{Binding Field.MakeCellLabel}" Click="OnMakeCellFit" IsVisible="{Binding Field.CanMakeCell}" HorizontalAlignment="Left" />
+                </StackPanel>
+              </Border>
               <Border Classes="inset" IsVisible="{Binding Field.HasMotifs}">
                 <StackPanel Spacing="4">
                   <TextBlock Text="OUTSIDE THIS FORCE FIELD" Classes="h3" />
@@ -3850,8 +3858,11 @@
                       <Border Grid.Column="1" CornerRadius="6" Padding="8,2" Background="{DynamicResource ErrBgB}" IsVisible="{Binding Field.Incomplete}">
                         <TextBlock Text="Blocks Relax and Dynamics" Foreground="{DynamicResource ErrB}" FontSize="11" />
                       </Border>
-                      <Border Grid.Column="1" CornerRadius="6" Padding="8,2" Background="{DynamicResource OkBgB}" IsVisible="{Binding Field.Complete}">
+                      <Border Grid.Column="1" CornerRadius="6" Padding="8,2" Background="{DynamicResource OkBgB}" IsVisible="{Binding Field.ReadyToRun}">
                         <TextBlock Text="Ready to run" Foreground="{DynamicResource OkB}" FontSize="11" />
+                      </Border>
+                      <Border Grid.Column="1" CornerRadius="6" Padding="8,2" Background="{DynamicResource ErrBgB}" IsVisible="{Binding Field.HasCellTooSmall}">
+                        <TextBlock Text="Blocks Dynamics" Foreground="{DynamicResource ErrB}" FontSize="11" />
                       </Border>
                     </Grid>
                   </Border>

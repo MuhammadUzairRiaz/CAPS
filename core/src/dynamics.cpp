@@ -2,6 +2,7 @@
 // rescaling (J. Chem. Phys. 126, 014101 (2007)); Langevin dynamics with the BAOAB splitting (Leimkuhler and Matthews,
 // Appl. Math. Res. Express 2013, 34); stochastic cell rescaling (Bernetti and Bussi, J. Chem. Phys. 153, 114107
 // (2020)) and Berendsen coupling (J. Chem. Phys. 81, 3684 (1984)) for isotropic pressure control.
+#include "caps/cell_fit.hpp"
 #include "caps/rng.hpp"
 #include "caps/uff.hpp"
 #include "caps/dynamics.hpp"
@@ -71,6 +72,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   DynamicsReport rep;
   const size_t n = s.atoms.size();
   if (n < 2) throw FieldError("dynamics needs at least two atoms");
+  if (const std::string small = cell_fit_message(s, o.field.get()); !small.empty()) throw FieldError(small);
   // coarse-grained beads (every site element 0) move slowly enough for the model's own steps (SDK 10 fs, MARTINI 20–40 fs)
   const bool beads = std::all_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element == 0; });
   const double dt_max = beads ? 50.0 : 5.0;

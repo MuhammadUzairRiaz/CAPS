@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 113, "ABI 113")
+check(caps.abi_version() == 114, "ABI 113")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -1006,6 +1006,35 @@ _qq.field.assign("uff", "qeq")
 _q2 = [_qq.atom(i)["charge"] for i in range(_qq.atoms)]
 check(max(abs(a - b) for a, b in zip(_q1, _q2)) < 1e-9, "QEq charges as a fresh assignment")
 print("ok   moves run the force field again on the new geometry")
+
+# a cell too small for its bonds: energy and relaxation evaluate copies and agree with a large cell to the last digit,
+# MD refuses and names the supercell, a cell that fits is evaluated as it is
+_cif = os.path.join(os.path.dirname(os.path.abspath(caps.__file__)), "..", "..", "crystals", "polymers", "pe-orthorhombic.cif")
+def _pe(*n):
+    _d = caps.open(_cif)
+    if n: _d.edit(op="supercell", n=list(n))
+    _d.field.assign("oplsaa2024")
+    return _d
+_pe1, _pe2 = _pe(), _pe(3, 3, 8)
+_ee1, _ee2 = _pe1.energy(), _pe2.energy()
+_fr1, _fr2 = _pe1.field.report(), _pe2.field.report()
+check("1×2×4" in _fr1["cell_too_small"] and _fr1["cell_copies"] == [1, 2, 4] and "cell_too_small" not in _fr2, f"report {_fr1.get('cell_too_small')}")
+check(_ee1["copies"] == [1, 2, 4] and "copies" not in _ee2 and _ee1["assigned"], f"copies {_ee1}")
+for _k in ("bond", "angle", "dihedral", "vdw", "coulomb", "total"):
+    check(abs(_ee1[_k] - _ee2[_k] / 72) < 1e-8, f"{_k} per cell {_ee1[_k]} {_ee2[_k] / 72}")
+try:
+    _pe1.md(steps=2)
+    check(False, "MD ran on a cell too small for its bonds")
+except caps.CapsError as _e:
+    check("1×2×4" in str(_e), str(_e))
+_pe1.relax(ftol=0.01)
+_pe2.relax(ftol=0.01)
+check(abs(_pe1.energy()["total"] - _pe2.energy()["total"] / 72) < 1e-3, f"relaxed {_pe1.energy()['total']} {_pe2.energy()['total'] / 72}")
+_pb1, _pb2 = _pe(), _pe(1, 2, 4)
+_pb1.relax(ftol=0.01, box=True)
+_pb2.edit(op="relax_cell", hold=["alpha", "beta", "gamma"], pressure=1.0)
+check(abs(_pb1.summary()["density"] - _pb2.summary()["density"]) < 1e-3 and 1.0 < _pb1.summary()["density"] < 1.2, f"box relax {_pb1.summary()['density']} {_pb2.summary()['density']}")
+print("ok   a cell too small for its bonds")
 
 # an edit that clears the force field says so, once, and energy() says it is on the fallback
 _fc = caps.polymer("[*]CC(O)[*]", dp=3, chains=2, density=0.8, forcefield="oplsaa2024", seed=2)

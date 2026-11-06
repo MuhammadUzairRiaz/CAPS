@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <sstream>
 
+#include "caps/cell_fit.hpp"
 #include "caps/elements.hpp"
 #include "caps/json.hpp"
 #include "cell_list.hpp"
@@ -115,6 +116,14 @@ std::vector<FileCheck> file_checks(const Trajectory& t) {
                        "The narrowest cell width is " + fmt("%.2f", w) + " Å: a bond longer than " + fmt("%.2f", 0.5 * w) +
                            " Å has no unique nearest image, so LAMMPS, GROMACS and CAPS join the wrong copies of its atoms. Make the cell larger (a supercell) or check the topology.",
                        ""});
+    }
+    if (cell) {
+      const std::string small = cell_fit_message(s);
+      if (!small.empty()) {
+        std::string t = small;
+        t[0] = char(std::toupper((unsigned char)t[0]));
+        out.push_back({"warn", "The cell is too small for its bonds", t + ". Energies and relaxation evaluate enough copies on their own; dynamics and exported files need the supercell.", ""});
+      }
     }
     if (across) d += " " + num(across) + " cross the box boundary (molecules are made whole for analysis).";
     if (stretched)

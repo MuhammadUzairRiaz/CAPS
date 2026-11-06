@@ -5,6 +5,7 @@
 // FIRE: Bitzek, Koskinen, Gähler, Moseler and Gumbsch, Phys. Rev. Lett. 97, 170201 (2006), standard parameters.
 // Push-off: Auhl, Everaers, Grest, Kremer and Plimpton, J. Chem. Phys. 119, 12718 (2003), here as capped-force
 // minimisation stages rather than capped-force dynamics.
+#include "caps/cell_fit.hpp"
 #include "caps/rng.hpp"
 #include "caps/uff.hpp"
 #include "caps/relax.hpp"
@@ -340,6 +341,7 @@ void relax_once(System& s, const RelaxOptions& o, RelaxReport* rep_out);
 }
 
 void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
+  if (const std::string small = cell_fit_message(s, o.field.get()); !small.empty()) throw FieldError(small + " (or relax it with its copies: caps cellrelax)");
   RelaxReport rep;
   relax_once(s, o, &rep);
   const ForceField ff = o.field ? *o.field : default_forcefield(s);

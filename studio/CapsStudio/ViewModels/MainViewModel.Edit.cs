@@ -190,6 +190,18 @@ public sealed partial class MainViewModel
         RenderRequested?.Invoke();
     }
 
+    /// <summary>The Field page's button for a cell too small for its bonds: the supercell the core asked for, assigned again
+    /// with the same force field (undoable).</summary>
+    public async Task MakeCellFit()
+    {
+        if (_doc == null || !Idle || !Field.CanMakeCell) return;
+        var n = Field.CellCopies;
+        var r = JsonNode.Parse(_doc.Edit(System.Text.Json.JsonSerializer.Serialize(new { op = "supercell", n })))!;
+        if (r["ok"]?.GetValue<bool>() != true) { Status = (string?)r["error"] ?? "The supercell failed"; return; }
+        AfterEdit($"Supercell {n[0]}×{n[1]}×{n[2]}");
+        await Field.Assign();
+    }
+
     private void RefreshHistory()
     {
         EditHistory.Clear();
