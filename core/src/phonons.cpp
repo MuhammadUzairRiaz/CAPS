@@ -127,6 +127,7 @@ PhononResult phonons(const System& s, const PhononOptions& o) {
   place();
   r.max_force = fmax;
   r.positions = X;
+  r.static_energy = ev.compute(x, sup.cell, f0).total() / double(ng);
   ev.freeze_pairs(x, sup.cell);
   std::vector<std::vector<double>> Phi(n, std::vector<double>(3 * Ns));   // row aα, column Jβ
   for (size_t a = 0; a < N; ++a)
@@ -306,21 +307,23 @@ PhononResult phonons(const System& s, const PhononOptions& o) {
     }
   // thermodynamics per cell
   for (double T : o.temperatures) {
-    if (T <= 0) continue;
+    if (T < 0) continue;
     double zpe = 0, U = 0, F = 0, Cv = 0;
     for (size_t q = 0; q < nk; ++q)
       for (size_t i = 0; i < n; ++i) {
         const double w0 = wk[q][i];
         if (w0 < 0.5) continue;   // Γ's acoustic modes and unstable ones
-        const double e = w0 * kCm1ToKcal, xx = e / (kB * T);
+        const double e = w0 * kCm1ToKcal;
         zpe += 0.5 * e;
+        if (T == 0) { U += 0.5 * e, F += 0.5 * e; continue; }   // the ground state: no entropy, no heat capacity
+        const double xx = e / (kB * T);
         U += e * (0.5 + 1 / std::expm1(xx));
         F += 0.5 * e + kB * T * std::log(-std::expm1(-xx));
         const double ex = std::exp(-xx);
         Cv += kB * xx * xx * ex / ((1 - ex) * (1 - ex));
       }
     r.T.push_back(T), r.zpe.push_back(zpe / double(nk)), r.U.push_back(U / double(nk)), r.F.push_back(F / double(nk));
-    r.S.push_back((U - F) / double(nk) / T * 1000), r.Cv.push_back(Cv / double(nk) * 1000);
+    r.S.push_back(T > 0 ? (U - F) / double(nk) / T * 1000 : 0.0), r.Cv.push_back(Cv / double(nk) * 1000);
   }
   // sound speeds: the acoustic slopes at 1 % of the way to the zone face along a*, b*, c*
   for (int d = 0; d < 3; ++d) {

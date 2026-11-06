@@ -95,6 +95,7 @@
 #include "caps/table_tools.hpp"
 #include "caps/pointgroup.hpp"
 #include "caps/tension.hpp"
+#include "caps/qha.hpp"
 #include "caps/dpd.hpp"
 #include "caps/qeq.hpp"
 #include "caps/pores.hpp"
@@ -280,6 +281,9 @@ int usage() {
                "               a table's rows ordered by columns (- descending), a histogram of a column, an SD file of the rows\n"
                "  caps pointgroup FILE [--tolerance 0.1] [--symmetrize -o OUT]   the molecule's point group and symmetry elements;\n"
                "               --symmetrize makes it exactly symmetric\n"
+               "  caps qha     CRYSTAL [--mode volume|axes] [--lock c] [--range 0.02] [--points 7] [--temps 0,100,200,298.15,400] [--pressure 0]\n"
+               "               [--no-relax-cell] [--ff FF.json] [--cutoff 10] [--supercell n,n,n] [--mesh m,m,m] [--csv OUT]\n"
+               "               quasi-harmonic free energy: phonons at strained cells, the cell, α, B_T, C_v, C_p and S at each temperature\n"
                "  caps tension THERMO.csv|log.lammps [--axis z] [--interfaces 2] [--skip 0.2] [--blocks 5] [--cell Lz]\n"
                "               surface or interfacial tension of a slab cell from its pressure tensor (Kirkwood–Buff), mN/m\n"
                "  caps planes  FILE --hkl h,k,l [--shift 0.5] [--max N] [--json OUT]   lattice planes (hkl) of the cell: d-spacing,\n"
@@ -553,7 +557,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--images", "--neb", "--fmax", "--no-climb", "--relax-ends", "--no-match", "--find", "--clear", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--slab", "--interfaces", "--skip", "--blocks", "--cell", "--shift", "--hold", "--hist", "--rule", "--sort", "--sdf", "--structure", "--preset", "--unit", "--core", "--end", "--focal", "--generation", "--growth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--images", "--neb", "--fmax", "--no-climb", "--relax-ends", "--no-match", "--find", "--clear", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--mode", "--range", "--lock", "--no-relax-cell", "--slab", "--interfaces", "--skip", "--blocks", "--cell", "--shift", "--hold", "--hist", "--rule", "--sort", "--sdf", "--structure", "--preset", "--unit", "--core", "--end", "--focal", "--generation", "--growth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -583,7 +587,7 @@ bool is_cli_switch(const std::string& a) {
   return a == "--no-cell" || a == "--wrap" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
          a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
          a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-         a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
+         a == "--no-relax" || a == "--no-relax-cell" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
          a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
          a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo" || a == "--equivalent" || a == "--no-drift" || a == "--below" || a == "--whole-molecules" || a == "--ewald" || a == "--hydrogen" || a == "--find" || a == "--clear" || a == "--neb" || a == "--no-climb" || a == "--relax-ends" || a == "--no-match";
@@ -4757,6 +4761,75 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps dpd: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "qha") {
+    try {
+      if (pos.empty()) return usage();
+      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      System s0 = t.frames() ? t.frame(0) : t.topology;
+      const bool quiet = o.count("--quiet");
+      const ForceField ff0 = cli_forcefield(s0, o, quiet);
+      QhaOptions q;
+      if (o.count("--cutoff")) q.phonon.energy.cutoff = std::stod(o["--cutoff"]);
+      run_cutoff(q.phonon.energy, ff0, o, quiet);
+      electrostatics(q.phonon.energy, o);
+      q.phonon.energy.coulomb = !o.count("--no-coulomb");
+      q.phonon.field_for = [&](const System& sup) { System c = sup; return cli_forcefield(c, o, true); };
+      auto ints = [&](const std::string& key) {
+        std::array<int, 3> v{0, 0, 0};
+        std::string w = o[key];
+        for (auto& ch : w) if (ch == ',' || ch == 'x') ch = ' ';
+        std::istringstream in(w);
+        if (!(in >> v[0] >> v[1] >> v[2])) throw std::invalid_argument(key + ": three numbers, comma-separated");
+        return v;
+      };
+      if (o.count("--supercell")) q.phonon.supercell = ints("--supercell");
+      if (o.count("--mesh")) q.phonon.mesh = ints("--mesh");
+      if (o.count("--mode")) q.mode = o["--mode"];
+      if (o.count("--range")) q.range = std::stod(o["--range"]);
+      if (o.count("--points")) q.points = std::stoi(o["--points"]);
+      if (o.count("--pressure")) q.pressure = std::stod(o["--pressure"]);
+      q.relax_cell = !o.count("--no-relax-cell");
+      if (o.count("--temps")) {
+        q.temperatures.clear();
+        std::stringstream ss(o["--temps"]);
+        std::string x;
+        while (std::getline(ss, x, ',')) q.temperatures.push_back(std::stod(x));
+      }
+      if (o.count("--lock")) {
+        std::stringstream ss(o["--lock"]);
+        std::string x;
+        while (std::getline(ss, x, ',')) {
+          if (x != "a" && x != "b" && x != "c") throw std::invalid_argument("--lock takes a, b, c (comma-separated)");
+          q.axes[size_t(x[0] - 'a')] = false;
+        }
+      }
+      if (!quiet) q.progress = [&](const std::string& what, double f) { std::fprintf(stderr, "\r%3.0f %% %-60s", 100 * f, what.c_str()); return true; };
+      const QhaResult r = quasi_harmonic(s0, q);
+      if (!quiet) std::fprintf(stderr, "\n");
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      std::printf("%zu strained cells · %s · V0 %.3f Å³ · fit rms %.2e kcal/mol\n", r.samples.size(), r.field.c_str(), r.volume0, r.fit_rms);
+      std::printf("%8s %9s %9s %9s %10s %10s %10s %10s %10s %8s %9s %9s %9s\n", "T/K", "a/Å", "b/Å", "c/Å", "V/Å3", "aV/1e-6K", "aa/1e-6K", "ab/1e-6K", "ac/1e-6K", "B/GPa", "Cv", "Cp", "S");
+      for (const auto& w : r.rows)
+        std::printf("%8.2f %9.4f %9.4f %9.4f %10.3f %10.2f %10.2f %10.2f %10.2f %8.3f %9.3f %9.3f %9.3f%s\n", w.T, w.length[0], w.length[1], w.length[2], w.volume, 1e6 * w.alpha_V,
+                    1e6 * w.alpha[0], 1e6 * w.alpha[1], 1e6 * w.alpha[2], w.B, w.Cv, w.Cp, w.S, w.extrapolated ? "  extrapolated" : "");
+      std::printf("Cv, Cp, S in cal/mol/K per cell\n");
+      if (o.count("--csv")) {
+        std::ofstream f(o["--csv"]);
+        f << "T_K,a_A,b_A,c_A,V_A3,alpha_V_per_K,alpha_a_per_K,alpha_b_per_K,alpha_c_per_K,B_GPa,Cv,Cp,S,G_kcal_mol,extrapolated\n";
+        char b[400];
+        for (const auto& w : r.rows) {
+          std::snprintf(b, sizeof b, "%.3f,%.6f,%.6f,%.6f,%.5f,%.6e,%.6e,%.6e,%.6e,%.5f,%.5f,%.5f,%.5f,%.6f,%d\n", w.T, w.length[0], w.length[1], w.length[2], w.volume, w.alpha_V,
+                        w.alpha[0], w.alpha[1], w.alpha[2], w.B, w.Cv, w.Cp, w.S, w.G, int(w.extrapolated));
+          f << b;
+        }
+        std::printf("wrote %s\n", o["--csv"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps qha: %s\n", e.what());
       return 1;
     }
   }

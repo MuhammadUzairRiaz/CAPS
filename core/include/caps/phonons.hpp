@@ -47,13 +47,14 @@ struct PhononOptions {
   std::array<int, 3> mesh{0, 0, 0};            // DOS mesh (0: about 40 Å / cell length each)
   double dos_sigma = 5;                        // cm⁻¹, Gaussian
   double dos_step = 1;                         // cm⁻¹
-  std::vector<double> temperatures{100, 200, 298.15, 300, 400, 500};   // K
+  std::vector<double> temperatures{100, 200, 298.15, 300, 400, 500};   // K (0: the zero-point values)
   std::function<bool(const std::string&, double)> progress;   // false stops
 };
 
 struct PhononResult {
   std::array<int, 3> supercell{1, 1, 1};
   size_t supercell_atoms = 0;
+  double static_energy = 0;                    // kcal/mol per cell at the reference (the copies divided out)
   double max_force = 0;                        // kcal/mol/Å at the reference: should be small (a minimum)
   double relax_shift = 0;                      // Å, the largest atom move of the relaxation
   int relax_steps = 0;

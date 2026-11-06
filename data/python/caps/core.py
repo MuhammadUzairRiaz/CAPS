@@ -1835,7 +1835,30 @@ def _symmetrize_molecule(self, tolerance: float = 0.1) -> dict:
     point group after it."""
     return self.edit(op="symmetrize_molecule", tolerance=float(tolerance))["point_group"]
 
+def _qha(self, mode: str = "volume", lock=(), range: float = 0.02, points: int = 7, temperatures=(0, 100, 200, 298.15, 400),
+         pressure: float = 0.0, relax_cell: bool = True, cutoff: float = 10.0, supercell=None, mesh=None) -> dict:
+    """Quasi-harmonic free energy and thermal expansion of the crystal (current frame): phonons at strained cells, the
+    cell at each temperature from the minimum of G = E + F_vib + P V. mode "volume" scales the whole cell, "axes" a, b, c
+    each (lock names those kept, for anisotropic crystals). Returns {rows [{T, length, volume, alpha_V, alpha, B (GPa), Cv,
+    Cp, S (cal/mol/K per cell), extrapolated}], samples, volume0, lengths0, fit_rms, forcefield, notes}."""
+    o = {"mode": mode, "lock": [str(x) for x in lock], "range": float(range), "points": int(points), "temperatures": [float(x) for x in temperatures],
+         "pressure": float(pressure), "relax_cell": bool(relax_cell), "cutoff": float(cutoff)}
+    if supercell is not None:
+        o["supercell"] = [int(x) for x in supercell]
+    if mesh is not None:
+        o["mesh"] = [int(x) for x in mesh]
+    f = library().caps_qha
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 22)
+    f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "quasi-harmonic failed"))
+    return r
+
 Document.miller = _miller
+Document.qha = _qha
 Document.point_group = _point_group
 Document.symmetrize_molecule = _symmetrize_molecule
 Document.relax_cell = _relax_cell

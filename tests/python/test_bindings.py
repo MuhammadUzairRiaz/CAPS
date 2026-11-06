@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 111, "ABI 111")
+check(caps.abi_version() == 112, "ABI 112")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -963,6 +963,13 @@ open(_tl, "w").write("Step Temp Pxx Pyy Pzz Lz\n" + "".join(f"{k} 300 100 100 20
 _tg = caps.surface_tension(_tl)
 check(abs(_tg["gamma"] - 30.3975) < 1e-9 and _tg["samples"] == 8, f"tension {_tg}")
 print("ok   surface_tension")
+
+# quasi-harmonic (ABI 112): the call on a crystal, a small mesh: a row per temperature, C_v rising with T, C_p not below it
+_cuq2 = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
+_qh = _cuq2.qha(points=5, temperatures=(100, 300), mesh=(3, 3, 3), cutoff=8.0)
+_qr = _qh["rows"]
+check(len(_qr) == 2 and len(_qh["samples"]) == 5 and _qr[1]["Cv"] > _qr[0]["Cv"] > 0 and _qr[1]["Cp"] >= _qr[1]["Cv"] and _qr[1]["S"] > _qr[0]["S"], f"qha {_qr}")
+print("ok   qha")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))

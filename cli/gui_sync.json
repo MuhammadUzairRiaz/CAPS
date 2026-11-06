@@ -2011,6 +2011,31 @@
     "--blocks": "partial: the page uses five",
     "--cell": "cli: the page needs Lz in the file"
    }
+  },
+  "qha": {
+   "status": "gui",
+   "studio": "Thermal conductivity › Thermal expansion",
+   "where": "Views/Pages/ThermalPage.axaml|Thermal expansion (quasi-harmonic)",
+   "capi": [
+    "caps_qha"
+   ],
+   "options": {
+    "--mode": "page",
+    "--range": "page",
+    "--temps": "page",
+    "--lock": "cli: the page lets every axis change",
+    "--points": "cli: the page uses seven volumes",
+    "--pressure": "cli: the page works at zero pressure",
+    "--no-relax-cell": "cli: the page relaxes the cell first",
+    "--cutoff": "partial: the page uses the Relax cut-off, at most 12 Å",
+    "--ff": "partial: the page uses the force field assigned in Field",
+    "--supercell": "cli: the page sets it from the cut-off",
+    "--mesh": "cli: the page sets it from the cell",
+    "--csv": "cli: the page shows the table",
+    "--topology": "cli: the page uses the open structure",
+    "--quiet": "cli: no progress line",
+    "--no-coulomb": "cli: the page follows the force field's charges"
+   }
   }
  },
  "hidden_options": {

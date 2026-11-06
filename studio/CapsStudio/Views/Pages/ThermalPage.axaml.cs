@@ -68,6 +68,7 @@ public partial class ThermalPage : PageBase
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunThermal();
     private async void OnDielectric(object? s, RoutedEventArgs e) => await Vm.RunDielectric();
     private async void OnZmelt(object? s, RoutedEventArgs e) => await Vm.RunZmelt();
+    private async void OnQha(object? s, RoutedEventArgs e) => await Vm.RunQha();
     private async void OnPhonons(object? s, RoutedEventArgs e) => await Vm.RunPhonons();
 
     private async void OnLammps(object? s, RoutedEventArgs e)

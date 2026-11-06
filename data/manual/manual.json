@@ -3640,6 +3640,46 @@
    ]
   },
   {
+   "id": "quasi-harmonic",
+   "group": "Analysis",
+   "title": "Quasi-harmonic free energy and thermal expansion",
+   "summary": "The cell of a crystal at each temperature from its vibrations. Harmonic phonons at a set of strained cells, each with its atoms relaxed, give G = E_static + F_vib + PV at every strain; a polynomial fitted to G at each temperature has its minimum at the cell of that temperature. The whole cell can scale (G in V/V₀ − 1, degree up to 4, for cubic and isotropic crystals), or a, b and c can each change with the angles kept (every polynomial term to third order with x_i⁴ and x_i²x_j², from 29 cells), which shows anisotropy such as a polymer crystal shrinking along its chains. The grid is centred on the relaxed static cell. Expansion coefficients come from central differences of the minimum over ±1 K, the bulk modulus from the Hessian of G at the minimum, C_v and S from fits of their own, and C_p from them. The free-energy minimum is found numerically from phonons rather than with the analytic derivatives of Gale's method, which would need the third derivatives of the energy. The Lennard-Jones term is always shifted at the cut-off with no tail term, because the energies of a few per cent strain are small and a truncated potential jumps each time a pair crosses the cut-off: in polyethylene those jumps were a tenth of the signal.",
+   "equation": "G(ε, T) = E(ε) + F_vib(ε, T) + P V(ε),  F_vib = Σ_{qν} [½ħω + k_B T ln(1 − e^(−ħω/k_B T))];  ∂G/∂ε = 0;  B_T = V / (vᵀ H⁻¹ v);  C_p = C_v + T V B_T α_V²",
+   "equation_note": "H the Hessian of G in the strains, v = ∂V/∂ε; α_i = (1/L_i) ∂L_i/∂T",
+   "symbols": [
+    [
+     "ε",
+     "strains of the cell",
+     "—"
+    ],
+    [
+     "F_vib",
+     "vibrational free energy per cell",
+     "kcal/mol"
+    ],
+    [
+     "α_V, α_a",
+     "volume and axial expansion coefficients",
+     "K⁻¹"
+    ],
+    [
+     "B_T",
+     "isothermal bulk modulus",
+     "GPa"
+    ]
+   ],
+   "when": "The cell of a crystal at temperature without a long MD run, axial expansion of polymer crystals and cellulose, zero-point expansion, and C_p for comparison with calorimetry, well below melting.",
+   "cites": [
+    "gale1998",
+    "togo2015"
+   ],
+   "source": "core/src/qha.cpp",
+   "tested": "tests/test_qha.cpp (an Einstein model with a Grüneisen γ against independent bisection: V(T) to 2·10⁻⁵, B_T and C_v and S to 2·10⁻³, the relation α B_T V = γ C_v to 5·10⁻³, α = 0 at 0 K, zero-point expansion; pressure shifts the minimum to the root of dF/dV = −P; fcc Lennard-Jones argon: zero-point expansion, volume and α rising and B_T falling with T, C_v below 3R per atom and above 85 % of it at 60 K, the volume and axes modes agreeing to 0.2 % with α_a = α_b = α_c = α_V/3 to 2 %; a locked axis keeps its length); tests/python/test_bindings.py. Checked by hand: orthorhombic PE with GAFF gives α_c negative (−5 to −7.5 × 10⁻⁶ K⁻¹) and large positive α_a, α_b at 100 to 300 K",
+   "deviation": "No anharmonicity beyond the strain dependence of the modes, so results degrade towards melting (and glassy or disordered phases are out of scope). Angles stay fixed in the axes mode. Modes that go imaginary at a strain leave F_vib, counted in the notes. A minimum outside the sampled strains is marked extrapolated: widen the range (0.05 suits soft polymer axes). The cell's shifted Lennard-Jones differs slightly from a tail-corrected one: use a cut-off of 10 to 13 Å.",
+   "engines": "caps qha CRYSTAL [--mode volume|axes] [--lock c] [--range] [--points] [--temps] [--pressure] [--csv]; Python Document.qha(mode, lock, range, points, temperatures, pressure, …); Studio Thermal conductivity › Thermal expansion",
+   "tex": "G(\\varepsilon, T) = E(\\varepsilon) + F_{\\mathrm{vib}}(\\varepsilon, T) + P V(\\varepsilon),\\qquad F_{\\mathrm{vib}} = \\sum_{\\mathbf q\\nu}\\left[\\tfrac{1}{2}\\hbar\\omega_{\\mathbf q\\nu} + k_{\\mathrm B}T\\ln\\left(1 - e^{-\\hbar\\omega_{\\mathbf q\\nu}/k_{\\mathrm B}T}\\right)\\right],\\qquad B_T = \\frac{V}{\\mathbf v^{\\mathsf T}\\mathbf H^{-1}\\mathbf v},\\qquad C_p = C_v + T V B_T \\alpha_V^2"
+  },
+  {
    "id": "crystal-dielectric",
    "group": "Analysis",
    "title": "Dielectric, piezoelectric and optical response of a crystal",

@@ -250,6 +250,18 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("rpath: " + vm.PathResult + (vm.PathHasError ? " · error " + vm.PathError : ""));
             }
+            if (kv[0] == "qha")   // qha=MODE(0 volume, 1 axes)|RANGE|TEMPS: the Thermal page, the expansion run (awaited)
+            {
+                var vm = w.ViewModel;
+                var f = kv[1].Split('|');
+                vm.QhaMode = int.Parse(f[0]);
+                vm.QhaRange = decimal.Parse(f[1], System.Globalization.CultureInfo.InvariantCulture);
+                vm.QhaTemps = f[2];
+                var t = vm.RunQha();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 30; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("qha: " + vm.QhaResult + (vm.QhaHasError ? " · error " + vm.QhaError : ""));
+            }
             if (kv[0] == "pointgroup")   // pointgroup=TOL[|sym]: the point group found (and the molecule symmetrised)
             {
                 var vm = w.ViewModel;

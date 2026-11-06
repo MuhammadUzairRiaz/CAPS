@@ -121,6 +121,7 @@
 #include "caps/table_tools.hpp"
 #include "caps/pointgroup.hpp"
 #include "caps/tension.hpp"
+#include "caps/qha.hpp"
 #include "caps/ring_edit.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/nano.hpp"
@@ -10166,6 +10167,64 @@ extern "C" caps_doc* caps_reaction_path(caps_doc* d, const char* json, char* out
     report_out(r.dump(0), out, cap);
     return nullptr;
   }
+}
+
+// ---------------------------------------------------------------- quasi-harmonic free energy and expansion (v112, qha.hpp)
+extern "C" int32_t caps_qha(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    caps::System s = d->traj.frames() ? d->traj.frame(d->current) : d->traj.topology;
+    caps::QhaOptions o;
+    o.phonon.energy = elec();
+    o.phonon.energy.cutoff = j.num("cutoff", 10);
+    o.phonon.field_for = [&](const caps::System& sup) { return field_for_extended(d, sup); };
+    auto three = [&](const char* k, std::array<int, 3>& v) {
+      if (j.has(k) && j[k].is_array() && j[k].items().size() == 3)
+        for (size_t q = 0; q < 3; ++q) v[q] = int(j[k].items()[q].number());
+    };
+    three("supercell", o.phonon.supercell);
+    three("mesh", o.phonon.mesh);
+    o.mode = j.text("mode", "volume");
+    o.range = j.num("range", 0.02), o.points = int(j.num("points", 7)), o.pressure = j.num("pressure", 0);
+    o.relax_cell = !(j.has("relax_cell") && j["relax_cell"].kind() == caps::Json::Bool && !j["relax_cell"].boolean());
+    if (j.has("temperatures") && j["temperatures"].is_array()) {
+      o.temperatures.clear();
+      for (const auto& x : j["temperatures"].items()) o.temperatures.push_back(x.number());
+    }
+    if (j.has("lock") && j["lock"].is_array())
+      for (const auto& x : j["lock"].items()) {
+        const std::string n = x.str();
+        if (n != "a" && n != "b" && n != "c") throw std::invalid_argument("lock: a, b or c, not '" + n + "'");
+        o.axes[size_t(n[0] - 'a')] = false;
+      }
+    bool cancelled = false;
+    if (progress) o.progress = [&](const std::string& w, double f) { cancelled = progress(w.c_str(), f, user) != 0; return !cancelled; };
+    const caps::QhaResult res = caps::quasi_harmonic(s, o);
+    caps::Json rows = caps::Json::array(), samples = caps::Json::array(), nt = caps::Json::array();
+    auto arr3 = [](const std::array<double, 3>& v) { caps::Json a = caps::Json::array(); for (double x : v) a.push_back(x); return a; };
+    for (const auto& q : res.rows) {
+      caps::Json x = caps::Json::object();
+      x["T"] = q.T, x["length"] = arr3(q.length), x["strain"] = arr3(q.strain), x["volume"] = q.volume, x["G"] = q.G;
+      x["alpha_V"] = q.alpha_V, x["alpha"] = arr3(q.alpha), x["B"] = q.B, x["Cv"] = q.Cv, x["Cp"] = q.Cp, x["S"] = q.S, x["extrapolated"] = q.extrapolated;
+      rows.push_back(x);
+    }
+    for (const auto& q : res.samples) {
+      caps::Json x = caps::Json::object();
+      x["strain"] = arr3(q.strain), x["volume"] = q.volume, x["energy"] = q.energy, x["imaginary"] = double(q.imaginary), x["min_wavenumber"] = q.min_wavenumber;
+      samples.push_back(x);
+    }
+    for (const auto& n : res.notes) nt.push_back(n);
+    r["mode"] = res.mode, r["rows"] = rows, r["samples"] = samples, r["notes"] = nt, r["volume0"] = res.volume0, r["lengths0"] = arr3(res.lengths0);
+    r["fit_rms"] = res.fit_rms, r["forcefield"] = res.field, r["ok"] = true;
+    caps::KeyValues pv = {{"mode", res.mode}, {"strained cells", std::to_string(res.samples.size())}, {"force field", res.field}};
+    prov_step(d, "analysis.qha", "Quasi-harmonic free energy and thermal expansion", std::move(pv), "", {"gale1998", "togo2015"});
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false, r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
 }
 
 // ---------------------------------------------------------------- surface tension from the pressure tensor (v111, tension.hpp)

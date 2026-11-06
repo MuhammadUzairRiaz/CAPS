@@ -562,6 +562,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_habit")] public static extern int Habit(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_fit_terms")] public static extern int FitTerms(IntPtr doc, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_fit_crystal")] public static extern int FitCrystal(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_qha")] public static extern int Qha(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_phonons")] public static extern int Phonons(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_powder")] public static extern int Powder(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_sorption")] public static extern int Sorption(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
@@ -2475,6 +2476,20 @@ public sealed class CapsDocument : IDisposable
 
     /// <summary>Force-field phonons (caps_phonons) of this crystal: dispersion, DOS, thermodynamics; JSON report. The document
     /// is not changed.</summary>
+    public string Qha(string json, Func<string, double, bool>? progress = null)
+    {
+        using (Hold(longRun: true))
+        {
+            Alive();
+            CapsAnalyzeProgress? cb = progress == null ? null : (w, f, _) => progress(Marshal.PtrToStringUTF8(w) ?? "", f) ? 0 : 1;
+            var buf = new byte[1 << 20];
+            var n = Native.Qha(H, json, cb, IntPtr.Zero, buf, buf.Length);
+            if (n > buf.Length) { buf = new byte[n]; n = Native.Qha(H, json, cb, IntPtr.Zero, buf, buf.Length); }
+            GC.KeepAlive(cb);
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+        }
+    }
+
     public string Phonons(string json, Func<string, double, bool>? progress = null)
     {
         using (Hold(longRun: true))

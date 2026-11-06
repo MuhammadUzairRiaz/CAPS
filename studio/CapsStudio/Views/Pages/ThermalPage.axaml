@@ -84,6 +84,24 @@
           <Border Classes="pcard">
             <StackPanel Spacing="8">
               <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="primary" Click="OnQha" IsEnabled="{Binding HasDocument}" Content="Expansion"
+                        ToolTip.Tip="Phonons at strained cells: the free energy's minimum at each temperature gives the cell, the expansion and the bulk modulus" />
+                <TextBlock Text="Thermal expansion (quasi-harmonic)" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="For a crystal: how its cell changes with temperature from its vibrations. Each axis on its own shows anisotropy, such as a polymer crystal shrinking along its chains while it swells across them." />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <StackPanel Spacing="4"><TextBlock Text="The cell changes" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.QhaModes}" SelectedIndex="{Binding QhaMode}" HorizontalAlignment="Stretch" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Strain range" Classes="label" /><NumericUpDown Value="{Binding QhaRange}" Minimum="0.005" Maximum="0.1" Increment="0.005" FormatString="0.000" ToolTip.Tip="The linear strain at the ends of the grid: widen it when a minimum is marked extrapolated" /></StackPanel>
+              </Grid>
+              <TextBox Text="{Binding QhaTemps}" Classes="mono" Watermark="temperatures in K: 0, 100, 200, 300" />
+              <TextBlock Text="{Binding QhaError}" Classes="err" TextWrapping="Wrap" IsVisible="{Binding QhaHasError}" />
+              <SelectableTextBlock Text="{Binding QhaResult}" FontFamily="{DynamicResource Mono}" FontSize="11" />
+              <TextBlock Text="{Binding QhaNote}" Classes="dim" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <DockPanel>
                 <Button DockPanel.Dock="Right" Classes="primary" Click="OnPhonons" IsEnabled="{Binding HasDocument}" Content="Vibrations"
                         ToolTip.Tip="Phonons of the open crystal with its force field: the atoms relaxed in a supercell, force constants by small displacements" />
                 <TextBlock Text="Lattice vibrations" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
