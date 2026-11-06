@@ -8106,6 +8106,7 @@ extern "C" int32_t caps_energy_terms(caps_doc* d, char* json, int32_t cap) {
     en["vdw"] = e.vdw, en["coulomb"] = e.coulomb, en["total"] = e.total();
     en["electrostatics"] = std::string(eo.electrostatics == caps::EnergyOptions::Electrostatics::PME ? "pme" : "dsf");
     en["forcefield"] = ff.name;
+    en["assigned"] = bool(d->field && d->field->complete);   // false: the built-in fallback, nothing the user assigned
     return report_out(en.dump(0), json, cap);
   } catch (const std::exception& e) {
     g_error = e.what();
@@ -9440,9 +9441,11 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
         for (const char* c : {"parrinello1981", "liu1989"}) if (std::find(st.cites.begin(), st.cites.end(), c) == st.cites.end()) st.cites.push_back(c);
       st.time = caps::now_iso();
     }
+    const bool had_field = d->field != nullptr;
     store(d, s);
     r["ok"] = true;
-    r["what"] = what;
+    r["field_cleared"] = had_field && !d->field;
+    r["what"] = had_field && !d->field ? what + " · force field cleared: assign it again before a run" : what;
     r["atoms"] = double(s.atoms.size());
     r["added"] = added;
   } catch (const std::exception& e) {

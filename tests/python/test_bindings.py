@@ -979,6 +979,14 @@ _vr = _vs.field.assign("oplsaa2024")
 check(_vs.summary()["bonds"] == _vb and _vr["complete"] and _vs.energy()["forcefield"].startswith("OPLS"), f"vacuum slab {_vs.summary()['bonds']} of {_vb}, complete {_vr['complete']}")
 print("ok   vacuum_slab keeps chains whole")
 
+# an edit that clears the force field says so, once, and energy() says it is on the fallback
+_fc = caps.polymer("[*]CC(O)[*]", dp=3, chains=2, density=0.8, forcefield="oplsaa2024", seed=2)
+check(_fc.energy()["assigned"], "assigned before the edit")
+_f1 = _fc.edit(op="charge", atoms=[0], charge=0.0)
+_f2 = _fc.edit(op="charge", atoms=[0], charge=0.0)
+check(_f1["field_cleared"] and "assign it again" in _f1["what"] and not _f2["field_cleared"] and not _fc.energy()["assigned"], f"field cleared {_f1} {_f2}")
+print("ok   edits say when the force field is cleared")
+
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
 _en = _cu.enumerate_occupations("Cu", "Au", count=1)

@@ -57,7 +57,9 @@ System transform_cell(const System& s, const Mat3& m, double tol) {
   if (expect > 2e6) throw std::invalid_argument("the new cell would hold more than two million atoms");
   std::vector<Vec3> kept;
   const double eps = 1e-6;
-  for (const auto& at : s.atoms) {
+  std::vector<uint32_t> source;   // each new atom's atom in s
+  for (uint32_t ai = 0; ai < s.atoms.size(); ++ai) {
+    const Atom& at = s.atoms[ai];
     Vec3 f0 = s.cell.to_fractional(at.pos);
     for (int k = 0; k < 3; ++k) f0[size_t(k)] -= std::floor(f0[size_t(k)]);
     for (int i = int(std::floor(lo[0])) - 1; i <= int(std::ceil(hi[0])); ++i)
@@ -81,12 +83,34 @@ System transform_cell(const System& s, const Mat3& m, double tol) {
           b.image = {0, 0, 0};
           b.id = int64_t(out.atoms.size() + 1);
           out.atoms.push_back(b);
+          source.push_back(ai);
         }
   }
   if (std::fabs(double(out.atoms.size()) - expect) > 0.5)
     throw std::invalid_argument("the matrix does not map the lattice onto itself: " + std::to_string(out.atoms.size()) + " atoms found, N·|det| = " +
                                 std::to_string(expect));
-  out.bonds = crystal_bonds(out);
+  // the structure's own bonds and orders, each copied to every image of its atoms by the bond's own vector; perceived from
+  // the geometry only when it has none, or when the copies do not come out as N·|det|
+  out.bonds.clear();
+  bool copied = !s.bonds.empty();
+  if (copied) {
+    std::vector<std::vector<uint32_t>> copies(s.atoms.size());
+    for (uint32_t k = 0; k < source.size(); ++k) copies[source[k]].push_back(k);
+    for (const auto& bd : s.bonds) {
+      const Vec3 v = s.cell.minimum_image(s.atoms[bd.j].pos - s.atoms[bd.i].pos);
+      for (uint32_t x : copies[bd.i]) {
+        int found = -1;
+        for (uint32_t y : copies[bd.j])
+          if (norm(out.cell.minimum_image(out.atoms[y].pos - out.atoms[x].pos - v)) < std::max(tol, 1e-6)) { found = int(y); break; }
+        if (found < 0) { copied = false; break; }
+        out.bonds.push_back({x, uint32_t(found), bd.order});
+      }
+      if (!copied) break;
+    }
+    if (copied && std::fabs(double(out.bonds.size()) - double(s.bonds.size()) * expect / double(s.atoms.size())) > 0.5) copied = false;
+  }
+  if (!copied) out.bonds = crystal_bonds(out);
+  out.typing_bonds.clear();
   out.unwrapped = true;
   return out;
 }

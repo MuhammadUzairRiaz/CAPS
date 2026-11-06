@@ -316,6 +316,38 @@ TEST(Lattice, ConventionalCellsOfRutileAndWurtzite) {
   EXPECT_THROW(caps::transform_cell(caps::build_crystal(r), caps::Mat3{{{0.5, 0, 0}, {0, 1, 0}, {0, 0, 1}}}), std::invalid_argument);
 }
 
+// A change of cell keeps the structure's bonds and orders: a C=C pair and a C–C pair, one across the boundary, in a cell
+// doubled by a matrix: each bond twice over with its order and length, none invented (the carbons of different pairs at
+// bonding distance from each other would be perceived as bonded)
+TEST(Lattice, TransformCellKeepsBondOrders) {
+  caps::System s;
+  s.cell.a = {8, 0, 0}, s.cell.b = {0, 8, 0}, s.cell.c = {0, 0, 8};
+  auto atom = [&](double x, double y, double z) {
+    caps::Atom a;
+    a.element = 6, a.pos = {x, y, z};
+    s.atoms.push_back(a);
+  };
+  atom(2, 2, 0.4), atom(2, 2, 7.3);   // a double bond through z = 0, 1.1 Å
+  atom(5, 5, 4), atom(6.5, 5, 4);     // a single bond, 1.5 Å
+  atom(2, 2, 2.0);                    // an atom close to the first (1.6 Å) with no bond to it
+  s.bonds = {{0, 1, 2}, {2, 3, 1}};
+  const caps::Mat3 m{{{2, 0, 0}, {0, 1, 0}, {0, 0, 1}}};
+  const caps::System t = caps::transform_cell(s, m);
+  ASSERT_EQ(t.atoms.size(), 10u);
+  ASSERT_EQ(t.bonds.size(), 4u);
+  int doubles = 0;
+  for (const auto& b : t.bonds) {
+    const double d = caps::norm(t.cell.minimum_image(t.atoms[b.j].pos - t.atoms[b.i].pos));
+    doubles += b.order == 2;
+    EXPECT_NEAR(d, b.order == 2 ? 1.1 : 1.5, 1e-6);
+  }
+  EXPECT_EQ(doubles, 2);
+  // with no bonds at all they come from the geometry, as before
+  caps::System none = s;
+  none.bonds.clear();
+  EXPECT_GT(caps::transform_cell(none, m).bonds.size(), 0u);
+}
+
 // Molecules across the cell boundary stay whole with their bond orders: a C=C pair straddling c keeps its one double bond
 // and its length, nothing breaks. A chain running round the cell along c is a network: it is cut at the plane, the broken
 // bond counted, and the others kept with their orders
