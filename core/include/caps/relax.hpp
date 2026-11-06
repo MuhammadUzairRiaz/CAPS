@@ -30,6 +30,9 @@ struct RelaxOptions {
   double ftol = 0.5;              // stop when the largest atomic force is below this, kcal/mol/Å
   double etol = 1e-8;             // or when the relative energy change per step is below this
   int max_iterations = 5000;      // per minimisation
+  // Refuse a cell too small for its bonds (cell_fit). React turns it off for the relax right after a reaction: bonds just
+  // made are stretched, the paths through them look too long for the cell until the relax pulls them in, and it asks again after.
+  bool check_cell_fit = true;
   EnergyOptions energy;
   // The force field to use (from CAPS Field); null: CAPS's built-in GAFF typing of C and H.
   std::shared_ptr<const ForceField> field;

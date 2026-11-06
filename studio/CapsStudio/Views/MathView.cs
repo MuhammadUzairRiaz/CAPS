@@ -98,7 +98,7 @@ public sealed class MathView : Control
     public abstract record Node;
     public sealed record Seq(List<Node> Items) : Node;
     public sealed record Sym(string Text, SymKind Kind, bool Bold = false) : Node;
-    public sealed record Frac(Node Num, Node Den, bool Small) : Node;
+    public sealed record Frac(Node Num, Node Den, bool Small, bool Bar = true) : Node;
     public sealed record Sqrt(Node Body) : Node;
     public sealed record Scripts(Node Base, Node? Sup, Node? Sub) : Node;
     public sealed record BigOp(string Glyph, bool Integral) : Node;
@@ -116,7 +116,7 @@ public sealed class MathView : Control
             ["alpha"] = "α", ["beta"] = "β", ["gamma"] = "γ", ["delta"] = "δ", ["epsilon"] = "ε", ["varepsilon"] = "ε", ["zeta"] = "ζ",
             ["eta"] = "η", ["theta"] = "θ", ["iota"] = "ι", ["kappa"] = "κ", ["lambda"] = "λ", ["mu"] = "μ", ["nu"] = "ν", ["xi"] = "ξ",
             ["pi"] = "π", ["rho"] = "ρ", ["sigma"] = "σ", ["tau"] = "τ", ["upsilon"] = "υ", ["phi"] = "φ", ["varphi"] = "φ", ["chi"] = "χ",
-            ["psi"] = "ψ", ["omega"] = "ω", ["ell"] = "ℓ",
+            ["psi"] = "ψ", ["omega"] = "ω", ["ell"] = "ℓ", ["hbar"] = "ℏ",
             ["Gamma"] = "Γ", ["Delta"] = "Δ", ["Theta"] = "Θ", ["Lambda"] = "Λ", ["Xi"] = "Ξ", ["Pi"] = "Π", ["Sigma"] = "Σ",
             ["Phi"] = "Φ", ["Psi"] = "Ψ", ["Omega"] = "Ω",
         };
@@ -133,8 +133,11 @@ public sealed class MathView : Control
             ["{"] = ("{", SymKind.Open), ["}"] = ("}", SymKind.Close), ["langle"] = ("⟨", SymKind.Open), ["rangle"] = ("⟩", SymKind.Close),
             ["lfloor"] = ("⌊", SymKind.Open), ["rfloor"] = ("⌋", SymKind.Close), ["lceil"] = ("⌈", SymKind.Open), ["rceil"] = ("⌉", SymKind.Close),
             ["|"] = ("‖", SymKind.Upright), ["AA"] = ("Å", SymKind.Upright), ["angle"] = ("∠", SymKind.Upright),
+            ["lvert"] = ("|", SymKind.Open), ["rvert"] = ("|", SymKind.Close), ["lVert"] = ("‖", SymKind.Open), ["rVert"] = ("‖", SymKind.Close),
+            ["varnothing"] = ("∅", SymKind.Upright), ["dagger"] = ("†", SymKind.Upright), ["star"] = ("⋆", SymKind.Bin),
+            ["iff"] = ("⟺", SymKind.Rel), ["perp"] = ("⊥", SymKind.Rel),
         };
-        private static readonly HashSet<string> Funcs = ["exp", "ln", "log", "cos", "sin", "tan", "erfc", "erf", "sign", "tr", "dev", "det", "arccos", "arg"];
+        private static readonly HashSet<string> Funcs = ["exp", "ln", "log", "cos", "sin", "tan", "erfc", "erf", "sign", "tr", "dev", "det", "arccos", "arg", "sinh", "cosh", "tanh"];
         private static readonly HashSet<string> Limits = ["lim", "min", "max", "argmax", "argmin", "sup", "inf"];
         private static readonly Dictionary<string, double> Spaces = new() { [","] = 0.17, [":"] = 0.22, [";"] = 0.28, ["!"] = -0.17, [" "] = 0.3, ["quad"] = 1, ["qquad"] = 2 };
 
@@ -296,6 +299,9 @@ public sealed class MathView : Control
                 {
                     case "frac": case "dfrac": return new Frac(Arg(), Arg(), false);
                     case "tfrac": return new Frac(Arg(), Arg(), true);
+                    case "binom": return new Fenced("(", ")", new Frac(Arg(), Arg(), false, false));
+                    case "xrightarrow": return new Scripts(new Sym("⟶", SymKind.Rel), Arg(), null);
+                    case "acute": return new Sym((Flatten(Arg()) + "\u0301").Normalize(), SymKind.Italic);
                     case "sqrt": return new Sqrt(Arg());
                     case "text": case "mathrm": case "textrm": case "mathsf":
                         {
@@ -311,6 +317,8 @@ public sealed class MathView : Control
                     case "prod": return new BigOp("∏", false);
                     case "int": return new BigOp("∫", true);
                     case "oint": return new BigOp("∮", true);
+                    case "iint": return new BigOp("∬", true);
+                    case "bigcap": return new BigOp("⋂", false);
                     case "dot": case "ddot": case "hat": case "bar": case "tilde": case "vec": case "overline": return new Accent(name, Arg());
                     case "left":
                         {
@@ -611,7 +619,7 @@ public sealed class MathView : Control
             var p = new Placed { W = w + 0.1 * s, A = up + num.A, D = down + den.D };
             p.Items.Add((num, 0.05 * s + (w - num.W) / 2, -up));
             p.Items.Add((den, 0.05 * s + (w - den.W) / 2, down));
-            p.Paint.Add((ctx, x, y, b) => ctx.FillRectangle(b, new Rect(x + 0.05 * s, y - axis - t / 2, w, t)));
+            if (f.Bar) p.Paint.Add((ctx, x, y, b) => ctx.FillRectangle(b, new Rect(x + 0.05 * s, y - axis - t / 2, w, t)));
             return p;
         }
 

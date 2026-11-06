@@ -22,7 +22,7 @@ internal static class SelfTest
         }
         Console.WriteLine($"info Python: {(MainViewModel.PythonAvailable ? MainViewModel.PythonExe : "none")}");
 
-        Check(Native.AbiVersion() == 75, "native ABI version 75");
+        Check(Native.AbiVersion() == 114, "native ABI version 114");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -914,7 +914,7 @@ internal static class SelfTest
             var linksLine = vm.RxNetworkText.Split('\n')[0];
             var rxDone = System.Text.RegularExpressions.Regex.Match(vm.RxLog, @"^(\d+) reactions");
             Check(linksLine.StartsWith("Links between chains: ") && rxDone.Success && int.Parse(rxDone.Groups[1].Value) > 0 && vm.RxNetworkText.Contains("Force field during the run"),
-                  $"ENR + diacid: {linksLine} · {vm.RxLog.Split('\n')[0]}");
+                  $"ENR + diacid: {linksLine} · {string.Join(" ", vm.RxLog.Split('\n').Take(2))}");
             // the same network as a LAMMPS fix bond/react set with the cure options: molecule ids by molmap, crosslink targets
             // in the input (the wiring: a cell where every acid end has reacted has no pair left, and OPLS-AA 2005 has no
             // C–S–S terms for the sulfur bridges cured above — the export says either; the deck itself is checked in the core suite)

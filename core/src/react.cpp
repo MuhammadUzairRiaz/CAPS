@@ -17,6 +17,7 @@
 #include <sstream>
 
 #include "caps/analysis.hpp"
+#include "caps/cell_fit.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/elements.hpp"
 #include "caps/json.hpp"
@@ -1136,6 +1137,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     r.max_iterations = o.relax_iterations;
     r.energy = o.energy;
     r.field = ff;
+    r.check_cell_fit = false;   // judged below, once the new bonds are no longer stretched
     RelaxReport rr;
     try {
       relax(s, r, &rr);
@@ -1143,6 +1145,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       RelaxOptions again = r;
       again.max_iterations = std::max(3 * o.relax_iterations, 2000);   // the repaired centre and its strained neighbours settle
       for (int pass = 0; pass < 5 && repair_inverted_hydrogens(s) > 0; ++pass) relax(s, again, &rr);
+      if (const std::string small = cell_fit_message(s, ff.get()); !small.empty()) throw FieldError(small);
     } catch (const FieldError& e) {
       throw ReactError(std::string("cannot relax after the reaction: ") + e.what() +
                        ". Run with relaxation off (topology only) or add parameters for these atoms.");
@@ -1187,6 +1190,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     r.max_iterations = std::max(o.relax_iterations, 3000);
     r.energy = o.energy;
     r.field = ff;
+    r.check_cell_fit = false;   // the dynamics that goes on from here asks, once these bonds are relaxed
     r.fixed.assign(s.atoms.size(), 1);
     for (size_t i = 0; i < s.atoms.size(); ++i) r.fixed[i] = site[i] ? 0 : 1;
     const auto v = s.velocities;

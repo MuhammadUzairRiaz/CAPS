@@ -341,7 +341,8 @@ void relax_once(System& s, const RelaxOptions& o, RelaxReport* rep_out);
 }
 
 void relax(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
-  if (const std::string small = cell_fit_message(s, o.field.get()); !small.empty()) throw FieldError(small + " (or relax it with its copies: caps cellrelax)");
+  if (o.check_cell_fit)
+    if (const std::string small = cell_fit_message(s, o.field.get()); !small.empty()) throw FieldError(small + " (or relax it with its copies: caps cellrelax)");
   RelaxReport rep;
   relax_once(s, o, &rep);
   const ForceField ff = o.field ? *o.field : default_forcefield(s);
