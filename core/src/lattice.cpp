@@ -89,10 +89,11 @@ System transform_cell(const System& s, const Mat3& m, double tol) {
   if (std::fabs(double(out.atoms.size()) - expect) > 0.5)
     throw std::invalid_argument("the matrix does not map the lattice onto itself: " + std::to_string(out.atoms.size()) + " atoms found, N·|det| = " +
                                 std::to_string(expect));
-  // the structure's own bonds and orders, each copied to every image of its atoms by the bond's own vector; perceived from
-  // the geometry only when it has none, or when the copies do not come out as N·|det|
+  // bonds written by a file or a builder keep their orders: each copied to every image of its atoms by the bond's own vector.
+  // Bonds perceived from distances are perceived again (in a small crystal cell an atom bonds to several images of one
+  // neighbour, which one entry per pair cannot say), as they are when the copies do not come out as N·|det|
   out.bonds.clear();
-  bool copied = !s.bonds.empty();
+  bool copied = !s.bonds.empty() && s.bonds_from_file;
   if (copied) {
     std::vector<std::vector<uint32_t>> copies(s.atoms.size());
     for (uint32_t k = 0; k < source.size(); ++k) copies[source[k]].push_back(k);
@@ -408,9 +409,10 @@ System vacuum_slab(const System& s, double vacuum, bool centre, SlabResult* resu
   for (auto& a : out.atoms) a.pos = a.pos + along * shift;
   out.cell.periodic = {true, true, true};
   out.unwrapped = true;
-  // the structure's own bonds and orders stay, but for those through the plane; with none, from the geometry
+  // bonds written by a file or a builder stay with their orders, but for those through the plane; bonds perceived from
+  // distances are perceived again (a small crystal cell's list holds one entry per pair of atoms, not every image)
   size_t broken = 0;
-  if (s.bonds.empty()) {
+  if (s.bonds.empty() || !s.bonds_from_file) {
     out.bonds = crystal_bonds(out);
   } else {
     out.bonds.clear();

@@ -331,6 +331,7 @@ TEST(Lattice, TransformCellKeepsBondOrders) {
   atom(5, 5, 4), atom(6.5, 5, 4);     // a single bond, 1.5 Å
   atom(2, 2, 2.0);                    // an atom close to the first (1.6 Å) with no bond to it
   s.bonds = {{0, 1, 2}, {2, 3, 1}};
+  s.bonds_from_file = true;
   const caps::Mat3 m{{{2, 0, 0}, {0, 1, 0}, {0, 0, 1}}};
   const caps::System t = caps::transform_cell(s, m);
   ASSERT_EQ(t.atoms.size(), 10u);
@@ -348,6 +349,28 @@ TEST(Lattice, TransformCellKeepsBondOrders) {
   EXPECT_GT(caps::transform_cell(none, m).bonds.size(), 0u);
 }
 
+// Perceived bonds are perceived again: the two-atom cell of diamond lists its pair once, though each atom has four bonds to
+// images of the other. Doubled every way it has 16 atoms and 32 bonds, the same as supercell gives, not 8 copies of one
+TEST(Lattice, TransformCellPerceivesACrystalAgain) {
+  const double a = 2.522;   // Å, the primitive edge of diamond: a_cubic / √2
+  caps::System d;
+  d.cell.a = {a, 0, 0};
+  d.cell.b = {a / 2, a * std::sqrt(3.0) / 2, 0};
+  d.cell.c = {a / 2, a / (2 * std::sqrt(3.0)), a * std::sqrt(2.0 / 3.0)};
+  caps::Atom c;
+  c.element = 6;
+  d.atoms.push_back(c);
+  c.pos = (d.cell.a + d.cell.b + d.cell.c) * 0.25;
+  d.atoms.push_back(c);
+  d.bonds = {{0, 1, 1}};
+  d.bonds_from_file = false;
+  const caps::Mat3 m{{{2, 0, 0}, {0, 2, 0}, {0, 0, 2}}};
+  const caps::System t = caps::transform_cell(d, m);
+  ASSERT_EQ(t.atoms.size(), 16u);
+  EXPECT_EQ(t.bonds.size(), 32u);
+  EXPECT_EQ(t.bonds.size(), caps::supercell(d, 2, 2, 2).bonds.size());
+}
+
 // Molecules across the cell boundary stay whole with their bond orders: a C=C pair straddling c keeps its one double bond
 // and its length, nothing breaks. A chain running round the cell along c is a network: it is cut at the plane, the broken
 // bond counted, and the others kept with their orders
@@ -362,6 +385,7 @@ TEST(Lattice, VacuumSlabKeepsMoleculesWhole) {
   atom(2, 2, 0.4), atom(2, 2, 11.3);     // a double bond through z = 0 (0.4 and −0.7)
   atom(8, 8, 6.0), atom(9.5, 8, 6.0);    // another molecule, inside the cell
   s.bonds.push_back({0, 1, 2}), s.bonds.push_back({2, 3, 1});
+  s.bonds_from_file = true;
   caps::SlabResult r;
   const caps::System t = caps::vacuum_slab(s, 20, true, &r);
   EXPECT_EQ(r.broken, 0u);
@@ -384,6 +408,7 @@ TEST(Lattice, VacuumSlabKeepsMoleculesWhole) {
     c.atoms.push_back(a);
   }
   c.bonds = {{0, 1, 2}, {1, 2, 1}, {2, 3, 1}, {3, 0, 1}};
+  c.bonds_from_file = true;
   caps::SlabResult q;
   const caps::System w = caps::vacuum_slab(c, 15, true, &q);
   EXPECT_EQ(q.broken, 1u);

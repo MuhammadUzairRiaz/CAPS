@@ -48,8 +48,8 @@ System conventional_cell(const System& s, double tolerance = 0.1, ConventionalRe
 
 // A slab with vacuum along c. Finite pieces of the bond graph (molecules, polymer chains, sheets in the plane) stay whole and
 // move by whole cells, so chains may stick out of the old height; pieces that run through the cell along c (a crystal, a
-// network) are cut at the largest gap and report the bonds that broke. The structure's own bonds and orders are kept; a
-// structure with no bonds gets them from the geometry.
+// network) are cut at the largest gap. Bonds from a file or a builder keep their orders and the ones that broke are counted;
+// perceived bonds are perceived again from the new geometry (and not counted).
 struct SlabResult {
   double thickness = 0, vacuum = 0;
   size_t broken = 0;        // bonds through the cutting plane
