@@ -22,7 +22,7 @@ import caps
 L = caps.library()
 L.caps_set_electrostatics.argtypes = [C.c_int32, C.c_double, C.c_double, C.c_int32]
 L.caps_set_electrostatics(1, 1e-6, 0.6, 6)
-LMP = os.environ.get("LMP", os.path.expanduser("~/lammps/build-caps/lmp"))
+LMP = os.environ.get("LMP", shutil.which("lmp") or os.path.expanduser("~/lammps/build-caps/lmp"))
 GMX = shutil.which("gmx")
 samples = os.environ.get("CAPS_SAMPLES", "samples")
 KJ = 4.184
@@ -109,3 +109,47 @@ dd.edit(op="water_model", model="tip4p2005")
 check("D toluene OPLS-AA + cyclohexane GAFF + water TIP4P/2005", dd,
       [{"name": "toluene", "molecules": "1-8", "forcefield": "oplsaa2024"}, {"name": "cyclohexane", "molecules": "9-16", "forcefield": "gaff"},
        {"name": "water", "molecules": "water", "water": "tip4p2005"}])
+
+
+# Force fields that change the atoms by group: massless sites on rigid molecules, written for LAMMPS as atoms of a rigid body
+def gas_cell(gases):
+    d = caps.polymer(r"[*]C/C=C\C[*]", dp=10, chains=2, density=0.6, seed=1)
+    for smi, n in gases:
+        d.insert(smi, n, tolerance=2.0, seed=1)
+    return d
+
+
+PB = {"name": "PB", "molecules": "1-2", "forcefield": "oplsaa2024"}
+TR = "trappe-ua-umn"
+check("E polybutadiene OPLS-AA + O2 TraPPE (a massless centre site)", gas_cell([("O=O", 3)]),
+      [PB, {"name": "O2", "molecules": "3-5", "forcefield": TR}], eps_rule="geometric", sigma_rule="geometric")
+check("F polybutadiene OPLS-AA + N2 TraPPE", gas_cell([("N#N", 3)]),
+      [PB, {"name": "N2", "molecules": "3-5", "forcefield": TR}], eps_rule="geometric", sigma_rule="geometric")
+check("G polybutadiene OPLS-AA + O2 + N2 + CO2, each TraPPE", gas_cell([("O=O", 2), ("N#N", 2), ("O=C=O", 2)]),
+      [PB, {"name": "O2", "molecules": "3-4", "forcefield": TR}, {"name": "N2", "molecules": "5-6", "forcefield": TR},
+       {"name": "CO2", "molecules": "7-8", "forcefield": TR}], eps_rule="geometric", sigma_rule="geometric")
+
+
+def rigid_nve(label, d, groups, steps=4000, **kw):
+    """The exported input with fix nve and fix rigid/small for fix nvt and fix rigid/nvt/small: etotal must stay put (the
+    rigid thermostat's scalar repeats the bodies' kinetic energy, so it cannot be added to etotal), and the bodies rigid."""
+    d.field.assign_groups(groups, **kw)
+    folder = tempfile.mkdtemp(prefix="caps_rigid_nve_")
+    d.export_engines(folder, stem="s", run="nvt", steps=steps, temperature=300, timestep=0.5, thermo_every=200, dump_every=500, kspace_accuracy=1e-5, cutoff=9, gromacs=False)
+    text = open(os.path.join(folder, "s.in")).read()
+    text = re.sub(r"rigid/nvt/small molecule temp \S+ \S+ \S+", "rigid/small molecule", text)
+    text = re.sub(r"(fix\s+integrate mobile) nvt temp \S+ \S+ \S+", r"\1 nve", text)
+    open(os.path.join(folder, "nve.in"), "w").write(text)
+    subprocess.run([LMP, "-in", "nve.in", "-log", "nve.log"], cwd=folder, capture_output=True, text=True)
+    log = open(os.path.join(folder, "nve.log")).read()
+    if "ERROR" in log:
+        print(f"== {label}\n   LAMMPS:", [l for l in log.splitlines() if "ERROR" in l][-1])
+        return
+    rows = [l.split() for l in log.splitlines() if re.match(r"^\s*\d+\s+-?\d", l) and len(l.split()) == 8]
+    rows = rows[max(i for i, r in enumerate(rows) if r[0] == "0"):]
+    e = [float(r[5]) for r in rows]
+    print(f"== {label}\n   NVE etotal {e[0]:.3f} → {e[-1]:.3f}, range {max(e) - min(e):.3f} kcal/mol over {rows[-1][0]} steps")
+
+
+rigid_nve("H polybutadiene + O2, NVE", gas_cell([("O=O", 3)]), [PB, {"name": "O2", "molecules": "3-5", "forcefield": TR}], eps_rule="geometric", sigma_rule="geometric")
+rigid_nve("I polybutadiene + N2, NVE", gas_cell([("N#N", 3)]), [PB, {"name": "N2", "molecules": "3-5", "forcefield": TR}], eps_rule="geometric", sigma_rule="geometric")

@@ -145,7 +145,7 @@ class _ReactOpts(C.Structure):
                 ("field_mode", C.c_int32), ("between_chains", C.c_int32), ("keep_byproducts", C.c_int32), ("selection", C.c_int32),
                 ("weights", C.c_char_p), ("auto_capture", C.c_int32), ("capture_max", C.c_double), ("capture_step", C.c_double),
                 ("target_kind", C.c_int32), ("target_value", C.c_double), ("sites_per_chain", C.c_int32),
-                ("remove_unreacted", C.c_int32)]
+                ("remove_unreacted", C.c_int32), ("remove_pendant", C.c_int32)]
 
 
 class _BuildOpts(C.Structure):
@@ -270,14 +270,14 @@ def _json_call(fn, *args) -> Any:
         if n < 0:
             raise _error()
         if n <= cap:
-            text = buf.value.decode()
+            text = buf.value.decode(errors="replace")
             return json.loads(text) if text else {}
         cap = n + 1
     raise CapsError("reply too large")
 
 
 def _report() -> C.Array:
-    return C.create_string_buffer(8192)
+    return C.create_string_buffer(1 << 20)   # a report can be long; a reply cut inside a character still decodes
 
 
 # ---------------------------------------------------------------------------------------------------------------- document
@@ -373,7 +373,7 @@ class _Field:
         buf = C.create_string_buffer(1 << 22)   # one run: the report is not asked for again with a larger buffer
         if library().caps_ff_complete(self._doc._h, _enc(_forcefield_path(forcefield)), _enc(json.dumps(o)), None, None, buf, len(buf)) < 0:
             raise _error()
-        return json.loads(buf.value.decode())
+        return json.loads(buf.value.decode(errors="replace"))
 
     def add_rule(self, kind: str, types: str, params, style: str = "") -> dict:
         """A parameter entered by hand where the force field has none: kind pair | bond | angle | dihedral | improper, the atom
@@ -628,7 +628,7 @@ class Document:
         rc = library().caps_relax(self._h, C.byref(o), None, None, rep, len(rep))
         if rc < 0:
             raise _error()
-        self.report = rep.value.decode()
+        self.report = rep.value.decode(errors="replace")
         return rc
 
     def hold(self, molecule: int = 0, atoms: Optional[list] = None) -> None:
@@ -665,7 +665,7 @@ class Document:
         rep = _report()
         if library().caps_md(self._h, C.byref(o), None, None, rep, len(rep)) < 0:
             raise _error()
-        self.report = rep.value.decode()
+        self.report = rep.value.decode(errors="replace")
         return self.report
 
     def equilibrate(self, protocol: str = "larsen21", temperature: float = 300.0, t_max: float = 600.0, pressure: float = 1.0,
@@ -692,7 +692,7 @@ class Document:
         rc = library().caps_equilibrate(self._h, _enc(text), C.byref(o), None, None, rep, len(rep))
         if rc < 0:
             raise _error()
-        self.report = rep.value.decode()
+        self.report = rep.value.decode(errors="replace")
         self.checks = _json_call(library().caps_equilibrate_checks, self._h) if until_converged else {}
         return rc == 0
 
@@ -703,7 +703,7 @@ class Document:
         rep = _report()
         if library().caps_insert_molecules(self._h, _enc(smiles), int(count), float(tolerance), int(seed), rep, len(rep)) < 0:
             raise _error()
-        self.report = rep.value.decode()
+        self.report = rep.value.decode(errors="replace")
         return self.report
 
     _TARGETS = {"conversion": 0, "crosslinks": 1, "per_chain": 2, "density": 3, "mc": 4, "degree": 5}
@@ -712,7 +712,8 @@ class Document:
               relax_iterations: int = 500, md_ps: float = 0.0, temperature: float = 500.0, cutoff: float = 10.0, seed: int = 1,
               during_md: bool = False, between_chains: bool = False, keep_byproducts: bool = False, weights=None,
               auto_capture: bool = False, capture_max: float = 0.0, capture_step: float = 0.0, crosslinks=None,
-              default_field: bool = False, sites_per_chain: int = 0, remove_unreacted: bool = False) -> str:
+              default_field: bool = False, sites_per_chain: int = 0, remove_unreacted: bool = False,
+              remove_pendant: bool = False) -> str:
         """Crosslinks the current frame cycle by cycle (Polymatic-style; REACTER-style capture and probability) with
         reaction templates: built-in names ("cc_crosslink", "sulfur_allylic", "peroxide_allylic", "polysulfide_allylic",
         "epoxy_amine_primary", "enr_acid_ester", "ester_condensation", "anhydride_alcohol", …; see reaction_templates()) or
@@ -723,7 +724,8 @@ class Document:
         The assigned force field types and relaxes every cycle and is re-assigned to the product (default_field=True:
         the built-in default, the assignment dropped). sites_per_chain: at most this many of each chain's reactive sites react
         (react_sites() counts them). remove_unreacted: afterwards, molecules made only of S and H (a sulfur donor that never
-        reacted: H2S, H-S-S-H, H2Sx) leave the cell; how many is in the report and in removed_unreacted. Returns the report;
+        reacted: H2S, H-S-S-H, H2Sx) leave the cell; how many is in the report and in removed_unreacted. remove_pendant: afterwards, C-Sx-H groups (a sulfur
+        run on one carbon, capped by hydrogen) leave and the carbon has its hydrogen back (removed_pendant). Returns the report;
         network numbers in react_summary()."""
         names = [templates] if isinstance(templates, str) else list(templates)
         text = "\n".join(reaction_template(t) if "\n" not in t and t.strip() in reaction_templates() else t for t in names)
@@ -731,11 +733,11 @@ class Document:
         o = _ReactOpts(int(seed), int(cycles), int(per_cycle), float(target), float(capture), int(relax), int(relax_iterations),
                        float(md_ps), float(temperature), float(cutoff), 1, int(during_md), int(default_field), int(between_chains),
                        int(keep_byproducts), 1 if weights else 0, _enc(",".join(str(w) for w in weights) if weights else ""),
-                       int(auto_capture), float(capture_max), float(capture_step), kind, value, int(sites_per_chain), int(remove_unreacted))
+                       int(auto_capture), float(capture_max), float(capture_step), kind, value, int(sites_per_chain), int(remove_unreacted), int(remove_pendant))
         rep = _report()
         if library().caps_react(self._h, _enc(text), C.byref(o), None, None, rep, len(rep)) < 0:
             raise _error()
-        self.report = rep.value.decode()
+        self.report = rep.value.decode(errors="replace")
         summary = _json_call(library().caps_react_summary, self._h)
         self.removed_unreacted = {"molecules": int(summary.get("removed_unreacted", 0)), "atoms": int(summary.get("removed_unreacted_atoms", 0))}
         return self.report
@@ -750,7 +752,7 @@ class Document:
         n = lib.caps_react_sites(self._h, _enc(text), None, 0)
         buf = C.create_string_buffer(n + 1)
         lib.caps_react_sites(self._h, _enc(text), buf, n + 1)
-        return json.loads(buf.value.decode())
+        return json.loads(buf.value.decode(errors="replace"))
 
     def bond_react(self, templates, directory: str, **options) -> dict:
         """The reactions as a LAMMPS fix bond/react set in directory (templates as for react()): STEM.data, STEM.in and
@@ -810,7 +812,7 @@ class Document:
         buf = _report()
         if library().caps_thermal_lammps(self._h, _enc(json.dumps(o)), _enc(path), buf, len(buf)) < 0:
             raise _error()
-        return buf.value.decode()
+        return buf.value.decode(errors="replace")
 
     def react_summary(self) -> dict:
         """The network of the last react(): chains, crosslinks (links between chains), target, density (mol/m³),
@@ -830,7 +832,7 @@ class Document:
             raise _error()
         buf = C.create_string_buffer(n + 1)
         lib.caps_sulfur_bridges(self._h, int(ring_limit), buf, n + 1)
-        return json.loads(buf.value.decode())
+        return json.loads(buf.value.decode(errors="replace"))
 
     # editing, selection, analysis
     def edit(self, **op) -> dict:
@@ -879,7 +881,7 @@ class Document:
         buf = C.create_string_buffer(1 << 16)
         if library().caps_fragment_smiles(self._h, _enc(a), buf, len(buf)) < 0:
             raise _error()
-        return buf.value.decode()
+        return buf.value.decode(errors="replace")
 
     def query(self, query: str, op: str = "replace") -> int:
         """Selects by the query grammar (design/boards/SmartSelect): smarts "c1ccccc1", element C N O, type c3,
@@ -914,7 +916,7 @@ class Document:
         rep = _report()
         h = library().caps_resolution_convert(self._h, _enc(json.dumps({"to": to, "per_bead": per_bead})), rep, len(rep))
         d = Document(h, f"{self.label} ({to})")
-        d.report = rep.value.decode()
+        d.report = rep.value.decode(errors="replace")
         return d
 
     def interactions(self, **options) -> dict:
@@ -1004,7 +1006,7 @@ class Document:
         buf = C.create_string_buffer(need)
         if library().caps_gromacs(self._h, _enc(str(stem)), buf, need) < 0:
             raise _error()
-        return buf.value.decode()
+        return buf.value.decode(errors="replace")
 
     def cg_map(self, scheme: str = "unit", per_bead: int = 3, temperature: float = 300.0, ibi: Optional[dict] = None,
                rules=None) -> "Document":
@@ -1030,7 +1032,7 @@ class Document:
         if not h:
             raise _error()
         d = Document(h, "coarse-grained")
-        d.report = json.loads(rep.value.decode())
+        d.report = json.loads(rep.value.decode(errors="replace"))
         return d
 
     def backmap_kg(self, unit: str, name: str = "unit", relax: bool = True, seed: int = 1) -> "Document":
@@ -1043,7 +1045,7 @@ class Document:
         if not h:
             raise _error()
         d = Document(h, "backmapped")
-        d.report = rep.value.decode()
+        d.report = rep.value.decode(errors="replace")
         return d
 
     def export_engines(self, folder: str, stem: str = "system", lammps: bool = True, gromacs: bool = True, run: str = "check", **opts) -> dict:
@@ -1107,7 +1109,7 @@ def _export_scene(self, path: str, format: str = "", width: int = 1280, height: 
     buf = C.create_string_buffer(512)
     if f(self._h, C.byref(cam), C.byref(opt), _enc(str(path)), _enc(fmt), buf, len(buf)) != 0:
         raise _error()
-    return json.loads(buf.value.decode())
+    return json.loads(buf.value.decode(errors="replace"))
 
 
 Document.export_scene = _export_scene
@@ -1170,7 +1172,7 @@ def _layers(self) -> dict:
     n = lib.caps_layers(self._h, None, 0)
     buf = C.create_string_buffer(n + 1)
     lib.caps_layers(self._h, buf, n + 1)
-    return json.loads(buf.value.decode())
+    return json.loads(buf.value.decode(errors="replace"))
 
 
 def _tags(self) -> dict:
@@ -1184,7 +1186,7 @@ def _tags(self) -> dict:
     buf = C.create_string_buffer(n + 1)
     lib.caps_tags(self._h, buf, n + 1)
     out = {}
-    for t in json.loads(buf.value.decode())["tags"]:
+    for t in json.loads(buf.value.decode(errors="replace"))["tags"]:
         name = t["name"].encode()
         k = lib.caps_tag_atoms(self._h, name, None, 0)
         idx = (C.c_int32 * max(k, 1))()
@@ -1221,7 +1223,7 @@ def _doc_json(self, fn: str, payload: dict) -> dict:
         raise _error()
     buf = C.create_string_buffer(n + 1)
     f(self._h, arg, buf, n + 1)
-    return json.loads(buf.value.decode())
+    return json.loads(buf.value.decode(errors="replace"))
 
 
 def _pair_histograms(self, lo: float = 0.8, hi: float = 3.2, bin: float = 0.04) -> list:
@@ -1314,7 +1316,7 @@ def _sorption(self, sorbate: str = "O=C=O", pressures_kpa=(), temperature: float
     f.restype = C.c_int32
     buf = C.create_string_buffer((1 << 22) + (len(o["pressures_kpa"]) + 1) * int(map_grid) ** 3 * 24)
     f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "sorption failed"))
     return r
@@ -1347,7 +1349,7 @@ def _powder(self, anode: str = "Cu", wavelength: float = 0.0, two_theta=(5.0, 90
     n_pts = int((o["two_theta_max"] - o["two_theta_min"]) / max(1e-6, o["step"])) + 2
     buf = C.create_string_buffer((1 << 20) + n_pts * 80 + int(max_peaks) * 300)
     f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "powder pattern failed"))
     return r
@@ -1378,7 +1380,7 @@ def _phonons(self, cutoff: float = 10.0, supercell=None, mesh=None, path=None, d
     if n > len(buf):   # a very large cell: once more with room for all of it
         buf = C.create_string_buffer(int(n))
         f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "phonons failed"))
     return r
@@ -1397,7 +1399,7 @@ def _fit_terms(self) -> list:
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(self._h, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "no terms"))
     return r["terms"]
@@ -1442,7 +1444,7 @@ def _fit_crystal(self, parameters, targets=(), relaxed: bool = True, formula_uni
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "fit failed"))
     return r
@@ -1470,7 +1472,7 @@ def _habit(self, max_index: int = 3, attachment: bool = False, surface: bool = F
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "habit failed"))
     return r
@@ -1487,7 +1489,7 @@ def _qspr(o: dict) -> dict:
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(_enc(json.dumps(o)), buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "qspr failed"))
     return r
@@ -1549,7 +1551,7 @@ def _refine(self, data: str, mode: str = "rietveld", phases=(), anode: str = "Cu
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "refinement failed"))
     return r
@@ -1572,7 +1574,7 @@ def _dielectric(self, cutoff: float = 10.0, relax: bool = True, relax_cell: bool
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "dielectric failed"))
     return r
@@ -1589,7 +1591,7 @@ def _index_call(o: dict) -> dict:
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(_enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "index failed"))
     return r
@@ -1636,7 +1638,7 @@ def copolymer_statistics(feed, r1: Optional[float] = None, r2: Optional[float] =
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(_enc(json.dumps(o)), buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "copolymer model failed"))
     return r
@@ -1653,7 +1655,7 @@ def _sequence_report(self) -> dict:
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(self._h, buf, len(buf))
-    return json.loads(buf.value.decode())
+    return json.loads(buf.value.decode(errors="replace"))
 
 
 Document.sequence_report = _sequence_report
@@ -1681,7 +1683,7 @@ def _graft(self, units, sites, dp: int = 10, equivalent: bool = False, probabili
     f.restype = C.c_void_p
     buf = C.create_string_buffer(1 << 16)
     h = f(self._h, _enc(json.dumps(o)), buf, len(buf))
-    r = json.loads(buf.value.decode() or "{}")
+    r = json.loads(buf.value.decode(errors="replace") or "{}")
     if not h:
         raise CapsError(r.get("error", "graft failed"))
     d = Document(h)
@@ -1745,7 +1747,7 @@ def _charges(self, method: str = "qeq", kernel: str = "ohno", ewald: bool = Fals
     if n > len(buf):
         buf = C.create_string_buffer(int(n) + 16)
         f(self._h, _enc(json.dumps(o)), buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "charges failed"))
     return r
@@ -1767,7 +1769,7 @@ def _pores(self, probe: float = 1.4, grid: float = 0.25, samples: int = 2000, ra
     if n > len(buf):
         buf = C.create_string_buffer(int(n) + 16)
         f(self._h, _enc(json.dumps(o)), buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "pores failed"))
     return r
@@ -1852,7 +1854,7 @@ def _qha(self, mode: str = "volume", lock=(), range: float = 0.02, points: int =
     f.restype = C.c_int32
     buf = C.create_string_buffer(1 << 22)
     f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "quasi-harmonic failed"))
     return r
@@ -1896,7 +1898,7 @@ def _reaction_path(self, other: str, match: bool = True, method: str = "idpp", i
     f.restype = C.c_void_p
     buf = C.create_string_buffer(1 << 20)
     h = f(self._h, _enc(json.dumps(o)), buf, len(buf))
-    r = json.loads(buf.value.decode() or "{}")
+    r = json.loads(buf.value.decode(errors="replace") or "{}")
     if not h:
         raise CapsError(r.get("error", "reaction path failed"))
     d = Document(h)
@@ -1926,7 +1928,7 @@ def _domains(self, group: str = "", grid: float = 0.8, sigma: float = 1.5, thres
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(self._h, _enc(json.dumps(o)), buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "domains failed"))
     return r
@@ -1950,7 +1952,7 @@ def _adp(self, first: int = 0, last: int = -1, stride: int = 1, supercell=(1, 1,
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(self._h, _enc(json.dumps(o)), buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "adp failed"))
     return r
@@ -1967,7 +1969,7 @@ def cif_disorder(path: str) -> dict:
     f.restype = C.c_int32
     buf = C.create_string_buffer(1 << 16)
     f(_enc(path), buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "cannot read the CIF"))
     return r
@@ -1984,7 +1986,7 @@ def open_cif(path: str, mode: str = "major", group: str = "", supercell=(1, 1, 1
     f.restype = C.c_void_p
     buf = C.create_string_buffer(1 << 16)
     h = f(_enc(path), _enc(json.dumps(o)), buf, len(buf))
-    r = json.loads(buf.value.decode() or "{}")
+    r = json.loads(buf.value.decode(errors="replace") or "{}")
     if not h:
         raise CapsError(r.get("error", "cannot read the CIF"))
     d = Document(h)
@@ -2003,7 +2005,7 @@ def _set_restraints(self, text: str) -> int:
     buf = C.create_string_buffer(1 << 14)
     n = f(self._h, _enc(text or ""), buf, len(buf))
     if n < 0:
-        raise CapsError(json.loads(buf.value.decode()).get("error", "restraints refused"))
+        raise CapsError(json.loads(buf.value.decode(errors="replace")).get("error", "restraints refused"))
     return int(n)
 
 
@@ -2017,7 +2019,7 @@ def _restraints(self) -> dict:
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(self._h, buf, len(buf))
-    return json.loads(buf.value.decode())
+    return json.loads(buf.value.decode(errors="replace"))
 
 
 Document.set_restraints = _set_restraints
@@ -2039,7 +2041,7 @@ def _zmelt(self, temperatures, steps: int = 10000, dt: float = 1.0, bisect: int 
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "Z method failed"))
     return r
@@ -2057,7 +2059,7 @@ def _disorder_call(self, o: dict) -> dict:
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(self._h, _enc(json.dumps(o)), buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "disorder failed"))
     return r
@@ -2113,7 +2115,7 @@ def dpd(species, regions=None, box: float = 0.0, density: float = 3.0, chi=None,
     f.restype = C.c_void_p
     buf = C.create_string_buffer(1 << 22)
     h = f(_enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode() or "{}")
+    r = json.loads(buf.value.decode(errors="replace") or "{}")
     if not h:
         raise CapsError(r.get("error", "DPD failed"))
     d = Document(h)
@@ -2138,7 +2140,7 @@ def dendrimer(preset: str = "", generation: int = -1, core: str = "", unit: str 
     f.restype = C.c_void_p
     buf = C.create_string_buffer(1 << 20)
     h = f(_enc(json.dumps(o)), buf, len(buf))
-    r = json.loads(buf.value.decode() or "{}")
+    r = json.loads(buf.value.decode(errors="replace") or "{}")
     if not h:
         raise CapsError(r.get("error", "dendrimer failed"))
     d = Document(h)
@@ -2165,7 +2167,7 @@ def stack(layers, gap: float = 2.0, vacuum: float = 0.0, match: str = "both", ke
     arr = (C.c_void_p * len(docs))(*[d._h for d in docs])
     buf = C.create_string_buffer(1 << 20)
     h = f(arr, len(docs), _enc(json.dumps(o)), buf, len(buf))
-    r = json.loads(buf.value.decode() or "{}")
+    r = json.loads(buf.value.decode(errors="replace") or "{}")
     if not h:
         raise CapsError(r.get("error", "stack failed"))
     d = Document(h)
@@ -2258,7 +2260,7 @@ def density_fields(molecules, chi=None, grid=(32, 32, 32), bond: float = 1.1543,
     if n > len(buf):
         buf = C.create_string_buffer(int(n))
         f(_enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "density fields failed"))
     return r
@@ -2277,7 +2279,7 @@ def _adsorption(self, adsorbates, cycles: int = 3, steps: int = 20000, t_high: f
     f.restype = C.c_int32
     buf = C.create_string_buffer(1 << 22)
     f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "adsorption failed"))
     return r
@@ -2308,7 +2310,7 @@ def protocol_text(name: str, temperature: float = 300.0, t_max: float = 600.0, p
     buf = C.create_string_buffer(1 << 14)
     if library().caps_protocol_text(_enc(name), C.byref(p), buf, len(buf)) < 0:
         raise _error()
-    return buf.value.decode()
+    return buf.value.decode(errors="replace")
 
 
 def water_models() -> list:
@@ -2369,7 +2371,7 @@ def cg_help(command: str) -> str:
     buf = C.create_string_buffer(cap)
     if library().caps_cg_help(_enc(command), buf, cap) < 0:
         raise _error()
-    return buf.value.decode()
+    return buf.value.decode(errors="replace")
 
 
 def dft_help(command: str) -> str:
@@ -2379,7 +2381,7 @@ def dft_help(command: str) -> str:
     n = library().caps_dft_help(_enc(command), buf, cap)
     if n < 0:
         raise _error()
-    return buf.value.decode()
+    return buf.value.decode(errors="replace")
 
 
 def label_kinds() -> dict:
@@ -2452,7 +2454,7 @@ def bibtex(manifest: dict) -> str:
         if n < 0:
             raise _error()
         if n <= cap:
-            return buf.value.decode()
+            return buf.value.decode(errors="replace")
         cap = n + 1
     raise CapsError("reply too large")
 
@@ -2539,7 +2541,7 @@ def run(recipe, out_dir: str = ".", seed: Optional[int] = None, threads: int = 0
     cb = _RecipeProgress(_cb)
     buf = C.create_string_buffer(1 << 20)
     h = library().caps_recipe_run(_enc(text), _enc(json.dumps(opts)), cb, None, buf, len(buf))
-    rep = json.loads(buf.value.decode() or "{}")
+    rep = json.loads(buf.value.decode(errors="replace") or "{}")
     if not h:
         err = CapsError(rep.get("error") or _error().args[0])
         err.exit_code = rep.get("exit", 4)
@@ -2697,7 +2699,7 @@ def blend(components, density: float = 0.5, seed: int = 1, morphology: str = "mi
     if not h:
         raise _error()
     d = Document(h, "blend")
-    d.report = rep.value.decode()
+    d.report = rep.value.decode(errors="replace")
     d.components = []
     for line in d.report.splitlines():
         if line.startswith("component ") and "molecules" in line:
@@ -2727,7 +2729,7 @@ def pack(molecules=None, box=30.0, tolerance: float = 2.0, seed: int = 1, densit
         if not h:
             raise _error()
         d = Document(h, str(inp))
-        d.report = rep.value.decode()
+        d.report = rep.value.decode(errors="replace")
         return d
     if inp is not None:
         build = {"pack": _os_path_abspath(str(inp))}
@@ -2773,7 +2775,7 @@ def chi_by_md(polymer, solvent: Optional[str] = None, polymer_b=None, dp: int = 
     lib = library()
     buf = C.create_string_buffer(1 << 16)
     lib.caps_chi_md(_enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "chi_by_md failed"))
     return r
@@ -2790,7 +2792,7 @@ def chi_by_contacts(a: str, b: str, forcefield: Optional[str] = "gaff2", samples
          "pack_trials": pack_trials, "temperatures": list(temperatures), "t": t, "seed": seed}
     buf = C.create_string_buffer(1 << 18)
     library().caps_chi_contacts(_enc(json.dumps(o)), None, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "chi_by_contacts failed"))
     return r
@@ -2843,7 +2845,7 @@ class build:
         rep = _report()
         ff = None if forcefield in ("", None) else ("uff" if forcefield == "uff" else _forcefield_path(forcefield))
         d = Document(library().caps_build_smiles(_enc(smiles), _enc(ff), C.byref(o), rep, len(rep)), smiles)
-        d.report = rep.value.decode()
+        d.report = rep.value.decode(errors="replace")
         return d
 
     @staticmethod
@@ -2853,7 +2855,7 @@ class build:
         rep = _report()
         ff = _forcefield_path(forcefield) if forcefield else None
         d = Document(library().caps_build_beads(_enc(text), _enc(ff), seed, rep, len(rep)), text)
-        d.report = rep.value.decode()
+        d.report = rep.value.decode(errors="replace")
         return d
 
     @staticmethod
@@ -2865,7 +2867,7 @@ class build:
                 "supercell": list(supercell), "primitive": primitive}
         rep = _report()
         d = Document(library().caps_crystal_build(_enc(json.dumps(spec)), rep, len(rep)), space_group)
-        d.report = rep.value.decode()
+        d.report = rep.value.decode(errors="replace")
         return d
 
     @staticmethod
@@ -2879,7 +2881,7 @@ class build:
             o.update(sigma=sigma, temperature=temperature, bead_mass=bead_mass)
         rep = _report()
         d = Document(library().caps_kg_build(_enc(json.dumps(o)), rep, len(rep)), "Kremer–Grest melt")
-        d.report = rep.value.decode()
+        d.report = rep.value.decode(errors="replace")
         return d
 
     @staticmethod
@@ -2897,7 +2899,7 @@ class build:
         if not h:
             raise _error()
         d = Document(h, name + " (coarse-grained)")
-        d.report = json.loads(rep.value.decode())
+        d.report = json.loads(rep.value.decode(errors="replace"))
         return d
 
     @staticmethod
@@ -2910,7 +2912,7 @@ class build:
              "seed": seed, "tolerance": tolerance}
         rep = _report()
         d = Document(library().caps_martini_melt(_enc(json.dumps(o)), None, None, rep, len(rep)), "MARTINI melt")
-        d.report = rep.value.decode()
+        d.report = rep.value.decode(errors="replace")
         return d
 
     @staticmethod
@@ -2942,7 +2944,7 @@ class build:
         if not h:
             raise _error()
         d = Document(h, "semicrystalline " + polymer)
-        d.report = json.loads(rep.value.decode())
+        d.report = json.loads(rep.value.decode(errors="replace"))
         return d
 
     @staticmethod
@@ -2953,7 +2955,7 @@ class build:
         base on those lattice planes)."""
         rep = _report()
         d = Document(library().caps_nano_build(_enc(json.dumps(options)), rep, len(rep)), options.get("kind", "nano"))
-        d.report = rep.value.decode()
+        d.report = rep.value.decode(errors="replace")
         return d
 
     @staticmethod
@@ -2963,7 +2965,7 @@ class build:
         rep = _report()
         h = solute._h if solute is not None else None
         d = Document(library().caps_solvate(h, _enc(json.dumps(options)), None, None, rep, len(rep)), "solvated")
-        d.report = rep.value.decode()
+        d.report = rep.value.decode(errors="replace")
         return d
 
 
@@ -3081,7 +3083,7 @@ def _exchange_run(self, protocol: str = "run", chemistry: str = "", progress=Non
     cb = stage_fn(lambda s, fr, u: 0 if progress is None or progress(s.decode(), fr) is not False else 1)
     buf = C.create_string_buffer(1 << 24)
     f(self._h, _enc(json.dumps(o)), cb, None, buf, len(buf))
-    r = json.loads(buf.value.decode())
+    r = json.loads(buf.value.decode(errors="replace"))
     if not r.get("ok"):
         raise CapsError(r.get("error", "exchange run failed"))
     return r
@@ -3111,7 +3113,7 @@ def reaction_templates() -> list:
     n = library().caps_reaction_template(b"", None, 0)
     buf = C.create_string_buffer(max(1, n + 1))
     library().caps_reaction_template(b"", buf, len(buf))
-    return [x for x in buf.value.decode().split("\n") if x.strip()]
+    return [x for x in buf.value.decode(errors="replace").split("\n") if x.strip()]
 
 
 def reaction_library(path: str = "") -> list:
@@ -3135,7 +3137,7 @@ def reaction_template(name: str) -> str:
         raise _error()
     buf = C.create_string_buffer(n + 1)
     library().caps_reaction_template(_enc(name), buf, len(buf))
-    return buf.value.decode()
+    return buf.value.decode(errors="replace")
 
 
 def space_groups() -> list:

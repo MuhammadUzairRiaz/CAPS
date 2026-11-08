@@ -165,6 +165,8 @@ struct FieldState {
   std::shared_ptr<const caps::ForceField> ff;   // null while atoms are untyped
   std::vector<caps::LammpsStyle::Group> group_atoms;   // by-group force fields: each group's name and atoms (LAMMPS groups)
   bool complete = false;
+  struct GroupPrep { int sites_added = 0, atoms_folded = 0; std::string note; };
+  std::map<std::string, GroupPrep> group_prep;   // by group name: what this assignment did to the group's molecules
   std::vector<std::string> prep_notes;       // what was done to the structure for the force field (united-atom sites)
   std::string report;                        // JSON, see caps_field_report
   // the file's own types, restored by caps_field_clear
@@ -259,7 +261,13 @@ struct caps_doc {
   std::vector<std::vector<caps::Vec3>> scan_frames; // caps_torsion_scan: the geometry of each point
   std::vector<caps::Vec3> scan_original;           // the frame before a scan point was shown
   std::vector<char> selection;                     // caps_select: the Studio's selection over the frame's atoms
-  struct Snapshot { caps::System topology; std::vector<caps::Vec3> positions; std::string what; };
+  struct Snapshot {
+    caps::System topology;
+    std::vector<caps::Vec3> positions;
+    std::string what;
+    std::shared_ptr<const caps::Trajectory> whole;   // a change of atoms in every frame (force-field groups): undone whole
+    std::vector<uint32_t> held;                      // with `whole`: the atoms held then (their indices changed too)
+  };
   std::vector<Snapshot> undo, redo;                // caps_edit history
   std::vector<std::vector<Snapshot>> branches;     // redo steps set aside when an edit followed an undo (newest last)
   struct Named { std::string name; Snapshot state; int step = 0; bool on_branch = false; };
@@ -986,6 +994,8 @@ std::string hex_colour(unsigned c) {
 // Types and parameterises the current structure with the field state, writes the types (and charges) into the
 // document so the viewer colours by force-field type, and builds the JSON report.
 void field_run_groups(caps_doc* d);
+bool field_prepare_groups(caps_doc* d);
+void field_group_rigid_geometry(caps_doc* d, bool prepared);
 void field_run_model(caps_doc* d);
 void install_file_field(caps_doc* d);
 
@@ -3820,6 +3830,7 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     r.target_value = o->target_value;
     r.sites_per_chain = std::max(0, o->sites_per_chain);
     r.remove_unreacted = o->remove_unreacted != 0;
+    r.remove_pendant = o->remove_pendant != 0;
     // the user's force field for every state of the network (a complete assignment is needed from the start)
     const bool use_field = o->field_mode == 0 && d->field;
     if (use_field) {
@@ -4203,10 +4214,21 @@ int32_t caps_field_assign_groups(caps_doc* d, const char* json) {
     }
     auto old = std::move(d->field);
     d->field = std::move(F);
+    bool prepared = false;
     try {
+      prepared = field_prepare_groups(d);   // force fields that add or fold atoms act on the real structure first
       field_run(d);
+      field_group_rigid_geometry(d, prepared);
     } catch (...) {
-      d->field = std::move(old);   // the previous assignment stays
+      d->field = std::move(old);   // the previous assignment stays, and the structure it describes
+      if (prepared) {   // the undo step just made, taken back
+        d->traj = *d->undo.back().whole;
+        d->fixed_atoms = d->undo.back().held;
+        d->undo.pop_back();
+        d->selection.assign(d->traj.topology.atoms.size(), 0);
+        d->atom_state.clear();
+        refresh(d);
+      }
       throw;
     }
     const caps::Json G = caps::Json::parse(d->field->groups);
@@ -6751,15 +6773,12 @@ void install_file_field(caps_doc* d) {
   field_run(d);
 }
 
-void field_run_groups(caps_doc* d) {
-  FieldState& F = *d->field;
-  const caps::Json G = caps::Json::parse(F.groups);
-  const caps::System& s = d->frame;
+// Which group holds each atom: molecule ids ("1", "2-10, 12", as the structure numbers them), "water", or the rest.
+std::vector<int> group_owner(const caps::Json& G, const caps::System& s) {
   const size_t n = s.atoms.size();
   const auto molx = s.molecules();
   auto mol_of = [&](size_t i) { return s.has_mol ? s.atoms[i].mol : int64_t(molx[i]) + 1; };
   if (!G.has("groups") || !G["groups"].is_array() || G["groups"].size() == 0) throw caps::FFError("groups: [{name, molecules, forcefield, charges}]");
-  // which atoms each group holds: molecule ids ("1", "2-10, 12") or the rest
   std::vector<int> owner(n, -1);
   const size_t ng = G["groups"].size();
   int rest = -1;
@@ -6795,6 +6814,209 @@ void field_run_groups(caps_doc* d) {
       if (rest < 0) throw caps::FFError("atom " + std::to_string(i + 1) + " (molecule " + std::to_string(mol_of(i)) + ") is in no group: add it, or a group for the rest");
       owner[i] = rest;
     }
+  return owner;
+}
+
+// One frame with each group's preparation applied to that group's molecules. defs[g]: the group's force field where it may
+// change the structure, else null. Other groups' atoms keep their order; a prepared molecule is written where it first
+// began, its atoms (and sites) together. old_to_new: the new index of each atom outside the prepared groups, else -1.
+caps::System prepare_group_frame(const caps::System& s, const std::vector<int>& owner, const caps::Json& G, const std::vector<std::shared_ptr<caps::FFDef>>& defs,
+                                 std::vector<FieldState::GroupPrep>& prep, std::vector<int64_t>* old_to_new, bool& changed) {
+  const size_t n = s.atoms.size();
+  const size_t ng = defs.size();
+  const auto molx = s.molecules();
+  auto mol_of = [&](size_t i) { return s.has_mol ? s.atoms[i].mol : int64_t(molx[i]) + 1; };
+  const bool hv = s.velocities.size() == n;
+  std::vector<caps::System> subs(ng);
+  std::vector<char> done(ng, 0);
+  changed = false;
+  prep.assign(ng, {});
+  for (size_t g = 0; g < ng; ++g) {
+    if (!defs[g]) continue;
+    const caps::Json& J = G["groups"][g];
+    const std::string name = J.text("name", "group " + std::to_string(g + 1));
+    caps::System& sub = subs[g];
+    sub.cell = s.cell, sub.has_charges = s.has_charges, sub.has_mol = true, sub.bonds_from_file = s.bonds_from_file, sub.unwrapped = s.unwrapped;
+    std::vector<int64_t> at(n, -1);
+    int64_t cross_in = -1, cross_out = -1;   // a bond out of the group
+    for (size_t i = 0; i < n; ++i)
+      if (owner[i] == int(g)) {
+        at[i] = int64_t(sub.atoms.size());
+        sub.atoms.push_back(s.atoms[i]);
+        sub.atoms.back().mol = mol_of(i);
+        if (hv) sub.velocities.push_back(s.velocities[i]);
+      }
+    if (sub.atoms.empty()) continue;
+    for (const auto& b : s.bonds) {
+      if (at[b.i] >= 0 && at[b.j] >= 0) sub.bonds.push_back({uint32_t(at[b.i]), uint32_t(at[b.j]), b.order});
+      else if (at[b.i] >= 0 || at[b.j] >= 0) cross_out = at[b.i] >= 0 ? b.j : b.i, cross_in = at[b.i] >= 0 ? b.i : b.j;
+    }
+    const size_t atoms0 = sub.atoms.size(), bonds0 = sub.bonds.size();
+    int sites0 = 0, real0 = 0;
+    for (const auto& a : sub.atoms) (a.element == 0 ? sites0 : real0)++;
+    const int charges = int(J.num("charges", 4));
+    std::string ch = charges == 4 ? "auto" : charges == 1 ? "gasteiger" : charges == 2 ? "keep" : charges == 3 ? "qeq" : charges == 5 ? "increments" : "types";
+    prep[g].note = caps::prepare_for_forcefield(sub, *defs[g], ch);
+    int sites1 = 0, real1 = 0;
+    for (const auto& a : sub.atoms) (a.element == 0 ? sites1 : real1)++;
+    prep[g].sites_added = sites1 - sites0, prep[g].atoms_folded = real0 - real1;
+    if (sub.atoms.size() == atoms0 && sub.bonds.size() == bonds0 && sites1 == sites0) prep[g].note.clear();   // prepared already: nothing to do
+    if (prep[g].note.empty()) continue;
+    if (cross_in >= 0)
+      throw caps::FFError(name + ": " + defs[g]->name + " changes this group's atoms, but atom " + std::to_string(cross_in + 1) + " is bonded to atom " + std::to_string(cross_out + 1) +
+                          " of another group; put the whole molecule in one group");
+    done[g] = 1, changed = true;
+  }
+  if (!changed) return s;
+  if (s.topology) throw caps::FFError("this structure's topology came from its file, and a force field by group cannot add or fold its atoms; assign one force field to the whole structure");
+  std::vector<std::map<int64_t, std::vector<uint32_t>>> by_mol(ng);
+  for (size_t g = 0; g < ng; ++g)
+    if (done[g])
+      for (uint32_t k = 0; k < subs[g].atoms.size(); ++k) by_mol[g][subs[g].atoms[k].mol].push_back(k);
+  caps::System out = s;
+  out.atoms.clear(), out.bonds.clear(), out.velocities.clear();
+  std::vector<int64_t> map(n, -1);
+  std::vector<std::vector<int64_t>> sub_map(ng);
+  for (size_t g = 0; g < ng; ++g) if (done[g]) sub_map[g].assign(subs[g].atoms.size(), -1);
+  std::vector<std::set<int64_t>> written(ng);
+  for (size_t i = 0; i < n; ++i) {
+    const size_t g = size_t(owner[i]);
+    if (!done[g]) {
+      map[i] = int64_t(out.atoms.size());
+      out.atoms.push_back(s.atoms[i]);
+      out.atoms.back().mol = mol_of(i);
+      if (hv) out.velocities.push_back(s.velocities[i]);
+      continue;
+    }
+    const int64_t m = mol_of(i);
+    if (!written[g].insert(m).second) continue;
+    const auto it = by_mol[g].find(m);
+    if (it == by_mol[g].end()) throw caps::FFError("preparing a group lost molecule " + std::to_string(m));
+    for (uint32_t k : it->second) {
+      sub_map[g][k] = int64_t(out.atoms.size());
+      out.atoms.push_back(subs[g].atoms[k]);
+      if (hv) out.velocities.push_back(k < subs[g].velocities.size() ? subs[g].velocities[k] : caps::Vec3{0, 0, 0});
+    }
+  }
+  for (size_t g = 0; g < ng; ++g)
+    if (done[g] && by_mol[g].size() != written[g].size()) throw caps::FFError("preparing a group made molecules that were not there");
+  for (const auto& b : s.bonds)
+    if (map[b.i] >= 0 && map[b.j] >= 0) out.bonds.push_back({uint32_t(map[b.i]), uint32_t(map[b.j]), b.order});
+  for (size_t g = 0; g < ng; ++g)
+    if (done[g])
+      for (const auto& b : subs[g].bonds) out.bonds.push_back({uint32_t(sub_map[g][b.i]), uint32_t(sub_map[g][b.j]), b.order});
+  for (size_t i = 0; i < out.atoms.size(); ++i) out.atoms[i].id = int64_t(i) + 1;
+  out.has_mol = true;
+  out.has_charges = true;
+  if (out.velocities.size() != out.atoms.size()) out.velocities.clear();
+  if (old_to_new) *old_to_new = std::move(map);
+  return out;
+}
+
+// Every group's force field that changes the structure (added massless sites, united-atom folding, beads, shells) applied to
+// the real document before the groups are typed, once, in every frame, as one undo step. True when the structure changed.
+bool field_prepare_groups(caps_doc* d) {
+  FieldState& F = *d->field;
+  const caps::Json G = caps::Json::parse(F.groups);
+  const std::vector<int> owner = group_owner(G, d->frame);
+  const size_t ng = G["groups"].size();
+  std::vector<std::shared_ptr<caps::FFDef>> defs(ng);
+  bool any = false;
+  for (size_t g = 0; g < ng; ++g) {
+    const caps::Json& J = G["groups"][g];
+    if (J.has("water") || (J.has("potential") && J["potential"].is_object())) continue;
+    const std::string path = J.text("forcefield", "");
+    if (path.empty()) continue;
+    FieldState tmp;
+    tmp.ff_path = path;
+    load_field_base(tmp);
+    if (caps::needs_prepare(tmp.base)) defs[g] = std::make_shared<caps::FFDef>(std::move(tmp.base)), any = true;
+  }
+  if (!any) return false;
+  std::vector<FieldState::GroupPrep> prep;
+  std::vector<int64_t> old_to_new;
+  bool changed = false;
+  caps::System now = prepare_group_frame(d->traj.frame(d->current), owner, G, defs, prep, &old_to_new, changed);
+  if (!changed) return false;
+  // every frame the same way; the molecule ids and groups are the current frame's
+  caps::Trajectory next = d->traj;
+  const size_t na = now.atoms.size();
+  for (size_t f = 0; f < d->traj.frames(); ++f) {
+    const caps::System fr = d->traj.frame(f);
+    if (fr.atoms.size() != owner.size()) throw caps::FFError("frame " + std::to_string(f + 1) + " has another number of atoms than the structure");
+    std::vector<FieldState::GroupPrep> p;
+    bool c = false;
+    const caps::System done = prepare_group_frame(fr, owner, G, defs, p, nullptr, c);
+    if (done.atoms.size() != na) throw caps::FFError("frame " + std::to_string(f + 1) + " prepares to a different number of atoms than the current frame");
+    next.positions[f].resize(na);
+    for (size_t i = 0; i < na; ++i) next.positions[f][i] = done.atoms[i].pos;
+    if (f < next.velocities.size() && !next.velocities[f].empty()) {
+      if (done.velocities.size() == na) next.velocities[f] = done.velocities;
+      else next.velocities[f].clear();
+    }
+  }
+  next.columns.clear();   // per-atom columns of the old atoms
+  next.topology = now;
+  push_undo(d, "Prepared force-field groups");
+  d->undo.back().whole = std::make_shared<caps::Trajectory>(d->traj);
+  d->undo.back().held = d->fixed_atoms;
+  d->traj = std::move(next);
+  d->traj.topology.forcefield.reset();
+  // the Studio's per-atom state follows the atoms it can; held atoms in a prepared molecule have no new index
+  d->selection.assign(na, 0);
+  d->atom_state.clear();
+  int lost = 0;
+  std::vector<uint32_t> fixed;
+  for (uint32_t i : d->fixed_atoms) {
+    if (i < old_to_new.size() && old_to_new[i] >= 0) fixed.push_back(uint32_t(old_to_new[i]));
+    else ++lost;
+  }
+  d->fixed_atoms = std::move(fixed);
+  refresh(d);
+  F.file_types.clear(), F.file_charges.clear();
+  for (const auto& at : d->traj.topology.atoms) F.file_types.push_back({at.type, at.name}), F.file_charges.push_back(at.charge);
+  F.file_type_table = d->traj.topology.types;
+  F.file_has_charges = true;
+  for (size_t g = 0; g < ng; ++g)
+    if (defs[g] && !prep[g].note.empty()) {
+      const std::string name = G["groups"][g].text("name", "group " + std::to_string(g + 1));
+      F.group_prep[name] = prep[g];
+      F.prep_notes.push_back(name + ": " + prep[g].note);
+    }
+  if (lost) F.prep_notes.push_back(std::to_string(lost) + " held atoms were in molecules these force fields changed and are no longer held: hold them again");
+  return true;
+}
+
+// Rigid molecules with massless sites take their force field's own lengths and angles in a one-frame structure, as with one
+// force field for the whole system (the sites follow); other groups' molecules are left as they are.
+void field_group_rigid_geometry(caps_doc* d, bool prepared) {
+  FieldState& F = *d->field;
+  if (!F.ff || F.ff->vsites.empty() || d->traj.frames() != 1) return;
+  const auto mol = d->frame.molecules();
+  std::set<int> bodies;
+  for (const auto& v : F.ff->vsites)
+    if (!(v.from.size() == 3 && d->frame.atoms[v.from[0]].element == 8 && d->frame.atoms[v.from[1]].element == 1 && d->frame.atoms[v.from[2]].element == 1)) bodies.insert(mol[v.site]);
+  if (bodies.empty()) return;
+  caps::ForceField only;
+  for (const auto& b : F.ff->bonds) if (b.k == 0 && bodies.count(mol[b.i])) only.bonds.push_back(b);
+  for (const auto& a : F.ff->angles) if (a.kt == 0 && bodies.count(mol[a.j])) only.angles.push_back(a);
+  for (const auto& v : F.ff->vsites) if (bodies.count(mol[v.site])) only.vsites.push_back(v);
+  caps::System s = d->frame;
+  const int k = caps::apply_rigid_geometry(s, only, 0, s.atoms.size());
+  if (k <= 0) return;
+  if (!prepared) push_undo(d, "Rigid geometry of " + F.ff->name);
+  for (size_t i = 0; i < s.atoms.size(); ++i) d->traj.positions[d->current][i] = s.atoms[i].pos;
+  refresh(d);
+  F.prep_notes.push_back(std::to_string(k) + " bond lengths and angles of rigid molecules set to their force field's own");
+}
+
+void field_run_groups(caps_doc* d) {
+  FieldState& F = *d->field;
+  const caps::Json G = caps::Json::parse(F.groups);
+  const caps::System& s = d->frame;
+  const size_t n = s.atoms.size();
+  const std::vector<int> owner = group_owner(G, s);
+  const size_t ng = G["groups"].size();
   F.group_atoms.clear();
   for (size_t g = 0; g < ng; ++g) {
     caps::LammpsStyle::Group grp{G["groups"][g].text("name", "group" + std::to_string(g + 1)), {}};
@@ -7012,8 +7234,24 @@ void field_run_groups(caps_doc* d) {
     caps::Json gj = caps::Json::object();
     gj["name"] = tag, gj["forcefield"] = R.text("forcefield", ""), gj["file"] = paths[g], gj["atoms"] = double(parts[g].atoms.size());
     gj["complete"] = R.has("complete") && R["complete"].kind() == caps::Json::Bool && R["complete"].boolean();
+    {   // what the force field did to the group's molecules, and the charge the group ends with
+      double q = 0;
+      std::set<uint32_t> members(parts[g].atoms.begin(), parts[g].atoms.end());
+      for (uint32_t a : parts[g].atoms) q += M->charge[a];
+      int sites = 0;
+      for (const auto& v : M->vsites) sites += members.count(v.site) ? 1 : 0;
+      const auto gp = F.group_prep.find(tag);
+      gj["sites"] = double(sites), gj["net_charge"] = q;
+      gj["sites_added"] = double(gp == F.group_prep.end() ? 0 : gp->second.sites_added);
+      gj["atoms_folded"] = double(gp == F.group_prep.end() ? 0 : gp->second.atoms_folded);
+      char b[240];
+      std::snprintf(b, sizeof b, "group %s: %zu atoms, %d massless sites (%d added), %d atoms folded, net charge %+.4f e%s", tag.c_str(), parts[g].atoms.size(), sites,
+                    int(gj.num("sites_added", 0)), int(gj.num("atoms_folded", 0)), q, std::fabs(q - std::round(q)) > 1e-3 ? " (not a whole number: check this group's charges)" : "");
+      notes.push_back(caps::Json(std::string(b)));
+    }
     groups.push_back(gj);
   }
+  for (const auto& x : F.prep_notes) notes.push_back(caps::Json(x));
   for (auto& a : atom_rows) atoms_out.push_back(a);
   for (const auto& m : merge_notes) notes.push_back(caps::Json(m));
   double qsum = 0;
@@ -9567,13 +9805,22 @@ extern "C" int32_t caps_undo(caps_doc* d, int32_t redo) {
     now.topology = d->traj.topology;
     now.positions = d->traj.positions.at(d->current);
     now.what = from.back().what;
+    if (from.back().whole) now.whole = std::make_shared<caps::Trajectory>(d->traj), now.held = d->fixed_atoms;
     to.push_back(std::move(now));
     std::unique_ptr<FieldState> rerun;
     // labels apart: an assignment writes its type names over the atoms' after the state undone to was saved
     if (field_can_rerun(d) && geometry_only(d->traj.topology, from.back().topology, d->field->charges == "qeq", false)) rerun = std::move(d->field);
-    d->traj.topology = from.back().topology;
-    d->traj.positions[d->current] = from.back().positions;
-    if (d->current < d->traj.cells.size()) d->traj.cells[d->current] = d->traj.topology.cell;   // a cell edit comes back too
+    if (from.back().whole) {
+      d->traj = *from.back().whole;
+      d->current = std::min(d->current, d->traj.frames() ? d->traj.frames() - 1 : size_t(0));
+      d->fixed_atoms = from.back().held;
+      d->atom_state.clear();
+      rerun.reset();
+    } else {
+      d->traj.topology = from.back().topology;
+      d->traj.positions[d->current] = from.back().positions;
+      if (d->current < d->traj.cells.size()) d->traj.cells[d->current] = d->traj.topology.cell;   // a cell edit comes back too
+    }
     from.pop_back();
     d->field.reset();
     d->selection.assign(d->traj.topology.atoms.size(), 0);
@@ -9670,6 +9917,15 @@ extern "C" int32_t caps_snapshot(caps_doc* d, const char* json) {
       push_undo(d, "Restore snapshot · " + n.name);
       d->traj.topology = n.state.topology;
       d->traj.positions[d->current] = n.state.positions;
+      // a snapshot from before the atoms changed: the other frames hold the later atoms, and only this frame is the snapshot
+      if (std::any_of(d->traj.positions.begin(), d->traj.positions.end(), [&](const auto& p) { return p.size() != n.state.positions.size(); })) {
+        d->traj.positions = {n.state.positions};
+        d->traj.cells = {d->traj.topology.cell};
+        d->traj.timesteps = {0};
+        d->traj.velocities.clear();
+        d->traj.columns.clear();
+        d->current = 0;
+      }
       d->field.reset();
       d->selection.assign(d->traj.topology.atoms.size(), 0);
       refresh(d);

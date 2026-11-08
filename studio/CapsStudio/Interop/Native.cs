@@ -301,6 +301,8 @@ public struct CapsReactOpts
     public int SitesPerChain;     // at most this many of each chain's reactive sites react (0: no limit)
     // ABI 70
     public int RemoveUnreacted;   // molecules of S and H only (unreacted sulfur donors) leave the cell afterwards
+    // ABI 115
+    public int RemovePendant;     // C-Sx-H groups leave and the carbon has its hydrogen back
 }
 
 [StructLayout(LayoutKind.Sequential)]

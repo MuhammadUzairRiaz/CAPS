@@ -2715,6 +2715,7 @@ public sealed partial class MainViewModel : ObservableObject
         TargetKind = _rxTargetKind, TargetValue = _rxTargetKind == 0 ? 0 : _rxTargetValue,
         SitesPerChain = (int)_rxSitesPer,
         RemoveUnreacted = _rxRemoveUnreacted ? 1 : 0,
+        RemovePendant = _rxRemovePendant ? 1 : 0,
     };
 
     public async Task RunReact() => await RunReact(null, null);

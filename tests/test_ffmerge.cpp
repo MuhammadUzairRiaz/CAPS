@@ -428,3 +428,100 @@ TEST(FFMerge, NineSixSiteRefitByMatchedIntegral) {
   }
   EXPECT_EQ(caps::lj96_to_126_depth_ratio(4.0, 3.0), 1.0);   // a cut-off inside the well: nothing to match
 }
+
+// An overlay that extends a force field keeps its massless-site rules, the base's first
+TEST(FFMerge, OverlayExtendsKeepsVirtualSites) {
+  const std::filesystem::path dir = std::filesystem::temp_directory_path() / "caps_overlay_sites";
+  std::filesystem::create_directories(dir);
+  const std::string path = (dir / "sites.json").string();
+  {
+    std::ofstream o(path);
+    o << "{\"format\": \"caps-forcefield\", \"format_version\": 1, \"name\": \"overlay with a site\", \"extends\": \"" << kFF << "trappe-ua-umn.json\", \"atom_types\": [],\n"
+      << " \"virtual_sites\": [{\"smarts\": \"[Cl][Cl]\", \"type\": \"M_test\", \"from\": [0, 1], \"w\": [0.5, 0.5]}]}\n";
+  }
+  const FFDef base = load_forcefield(kFF + "trappe-ua-umn.json");
+  const FFDef def = load_forcefield(path);
+  ASSERT_EQ(def.site_rules.size(), base.site_rules.size() + 1);
+  EXPECT_EQ(def.site_rules.front().type, base.site_rules.front().type);
+  EXPECT_EQ(def.site_rules.back().type, "M_test");
+  EXPECT_TRUE(needs_prepare(def));
+  // the same rule again stays one rule, and a plain overlay merged on top carries its sites too
+  FFDef again = def;
+  merge_forcefield(again, def);
+  EXPECT_EQ(again.site_rules.size(), def.site_rules.size());
+  std::filesystem::remove_all(dir);
+}
+
+// A molecule across the periodic boundary: its site at the minimum image, and rigid geometry that does not tear it apart
+TEST(FFMerge, RigidSiteAcrossTheBoundary) {
+  const FFDef def = load_forcefield(kFF + "trappe-ua-umn.json");
+  System s;
+  s.cell.a = {20, 0, 0}, s.cell.b = {0, 20, 0}, s.cell.c = {0, 0, 20};
+  Atom a;
+  a.element = 8, a.mol = 1, a.name = "O";
+  a.pos = {0.5, 5, 5};
+  s.atoms.push_back(a);
+  a.pos = {19.3, 5, 5};   // 1.2 Å away through the wall
+  s.atoms.push_back(a);
+  s.bonds.push_back({0, 1, 2});
+  s.has_mol = true, s.bonds_from_file = true;
+  std::string ch = "auto";
+  EXPECT_NE(prepare_for_forcefield(s, def, ch).find("massless"), std::string::npos);
+  ASSERT_EQ(s.atoms.size(), 3u);
+  const auto mid = [&](size_t k) { return s.cell.minimum_image(s.atoms[k].pos - Vec3{19.9, 5, 5}); };
+  EXPECT_NEAR(norm(mid(2)), 0.0, 1e-9);
+  const TypingResult tr = assign_types(s, def);
+  ASSERT_EQ(tr.untyped, 0);
+  ParamReport rep;
+  const ForceField ff = parameterize(s, def, tr.types, "types", &rep, false);
+  ASSERT_EQ(ff.vsites.size(), 1u);
+  ASSERT_EQ(ff.bonds.size(), 1u);
+  ASSERT_EQ(ff.bonds[0].k, 0.0);
+  EXPECT_GT(apply_rigid_geometry(s, ff, 0, s.atoms.size()), 0);
+  EXPECT_NEAR(norm(s.cell.minimum_image(s.atoms[1].pos - s.atoms[0].pos)), ff.bonds[0].r0, 1e-9);
+  const Vec3 half = s.cell.minimum_image(s.atoms[1].pos - s.atoms[0].pos) * 0.5;
+  EXPECT_NEAR(norm(s.cell.minimum_image(s.atoms[2].pos - (s.atoms[0].pos + half))), 0.0, 1e-9);
+}
+
+// LAMMPS: a site only on a rigid molecule; a flexible one or an out-of-plane site is refused by name, never written without it
+TEST(FFMerge, LammpsRefusesSitesItCannotCarry) {
+  const FFDef def = load_forcefield(kFF + "trappe-ua-umn.json");
+  System s;
+  s.cell.a = {20, 0, 0}, s.cell.b = {0, 20, 0}, s.cell.c = {0, 0, 20};
+  Atom a;
+  a.element = 8, a.mol = 7, a.name = "O";
+  a.pos = {5, 5, 5};
+  s.atoms.push_back(a);
+  a.pos = {6.21, 5, 5};
+  s.atoms.push_back(a);
+  s.bonds.push_back({0, 1, 2});
+  s.has_mol = true, s.bonds_from_file = true;
+  std::string ch = "auto";
+  prepare_for_forcefield(s, def, ch);
+  const TypingResult tr = assign_types(s, def);
+  ParamReport rep;
+  ForceField ff = parameterize(s, def, tr.types, "types", &rep, false);
+  EnergyOptions e;
+  const std::string path = (std::filesystem::temp_directory_path() / "caps_refuse_site.data").string();
+  LammpsStyle st;
+  EXPECT_NO_THROW(write_lammps_data_ff(s, ff, e, path, true, st));   // rigid: written
+  ForceField flexible = ff;
+  flexible.bonds[0].k = 100;
+  try {
+    write_lammps_data_ff(s, flexible, e, path, true, st);
+    ADD_FAILURE() << "a site on a flexible molecule was written";
+  } catch (const FieldError& x) {
+    const std::string w = x.what();
+    EXPECT_NE(w.find("molecule 7"), std::string::npos) << w;
+    EXPECT_NE(w.find("flexible"), std::string::npos) << w;
+  }
+  ForceField out_of_plane = ff;
+  out_of_plane.vsites[0].c = 0.1;
+  try {
+    write_lammps_data_ff(s, out_of_plane, e, path, true, st);
+    ADD_FAILURE() << "an out-of-plane site was written";
+  } catch (const FieldError& x) {
+    EXPECT_NE(std::string(x.what()).find("out-of-plane"), std::string::npos) << x.what();
+  }
+  std::filesystem::remove(path);
+}

@@ -167,6 +167,9 @@ struct LammpsStyle {
   // rigid, pairs inside a body excluded, fix rigid/nvt/small molecule; the others integrate on their own, and an NPT
   // barostat dilates only them). CAPS's own runs have no rigid bodies.
   std::vector<int64_t> rigid_mols;
+  // those of them that carry a massless site written as an atom of the body (set by the writers): their pairs are excluded by
+  // zero-force bonds, which also take them out of PPPM, not by neigh_modify exclude
+  std::vector<int64_t> rigid_site_mols;
   // Restraints written as fix restrain and fix spring/self after the groups (caps/restraints.hpp; what LAMMPS cannot
   // express is left out, in the notes)
   std::vector<caps::Restraint> restraints;

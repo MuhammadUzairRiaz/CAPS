@@ -46,6 +46,9 @@ lede: What changed in CAPS, newest first. Every force field CAPS ships is now bu
 ### Fixes that change results
 
 - A cell too small for its bonds gave badly wrong energies with no warning: OPLS polyethylene at 1×1×1 read +191 kcal/mol per cell against the true −6.2. CAPS now finds these cells by following every 1-3 and 1-4 bond path. Energy and relaxation use enough copies, and dynamics and `caps relax` stop and name the supercell needed.
+- A force field per group can now change that group's atoms: TraPPE O2 and N2 beside an all-atom polymer get their massless centre sites, and a united-atom group folds its hydrogens. The report gives each group's sites, folded atoms and net charge.
+- TraPPE O2 and N2 export to LAMMPS: a massless site on a rigid molecule is written as an atom of a rigid body, and rigid bodies are held during the minimisation before a run (they used to come apart there).
+- `caps react --remove-pendant` removes C-Sx-H groups left at one end and gives the carbon its hydrogen back.
 - A vacuum slab no longer cuts chains or loses bond orders, and cell changes keep bonds from a file or builder. Moving atoms runs the force-field assignment again on the new geometry.
 
 ## October 2026 update (version 0.1.0)

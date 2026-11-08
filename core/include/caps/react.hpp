@@ -190,6 +190,8 @@ struct ReactOptions {
   // after the run, molecules made only of sulfur and hydrogen with at least one sulfur (a donor that never reacted: H2S,
   // H-S-S-H, H2Sx) leave the cell; the report counts them (removed_unreacted, removed_unreacted_atoms)
   bool remove_unreacted = false;
+  // afterwards, C–Sx–H groups (a sulfur run on one carbon, capped by hydrogen, nothing else on it) leave and the carbon has its H back
+  bool remove_pendant = false;
   // at most this many of each chain's reactive sites react (a template's site atoms on that chain; 0: no limit) — e.g. 2 of
   // the 5 epoxides of a 10-unit ENR-50 chain; a site reacting in the template's step on a small molecule is not counted
   int sites_per_chain = 0;
@@ -230,6 +232,7 @@ struct ReactReport {
   // the network: chains (molecules of the start with ≥ 30 atoms and ≥ 20 % of the largest), links between different chains
   // and within one; crosslink density ν = links / (V N_A); strands 2 × links (tetrafunctional junctions); Mc = chain mass / strands
   int chains = 0, crosslinks = 0, intrachain = 0, byproducts = 0;
+  int removed_pendant = 0, removed_pendant_atoms = 0;       // ReactOptions::remove_pendant
   int removed_unreacted = 0, removed_unreacted_atoms = 0;   // ReactOptions::remove_unreacted: donor molecules and their atoms
   int target_crosslinks = 0;    // the target as a number of links (0: a conversion target)
   double volume = 0, chain_mass = 0;   // Å³, g/mol
@@ -266,6 +269,8 @@ std::string sulfur_census_json(const SulfurCensus& c);
 // Removes the molecules made only of S and H with at least one S (unreacted sulfur donors); returns how many molecules, and
 // in atoms (optional) how many atoms left. removed (optional, one per atom of the input): 1 where an atom was removed.
 int remove_unreacted_donors(System& s, int* atoms = nullptr, std::vector<char>* removed = nullptr);
+// The C–Sx–H groups removed, the sulfur on the carbon becoming its hydrogen. Returns how many; atoms: the atoms that left.
+int remove_pendant_sulfur(System& s, int* atoms = nullptr, std::vector<char>* removed = nullptr);
 
 // The template editor (design/boards/ReactionTemplate): the pattern before and after the reaction as 2D drawings with
 // map numbers, what changes, and checks. JSON {name, pre: {atoms: [{map, symbol, x, y, reacting}], bonds: [[m1, m2]]},

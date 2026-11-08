@@ -133,6 +133,7 @@ public sealed partial class MainViewModel
         if (_rxBetween) sb.Append(" --between-chains");
         if (_rxKeepBy) sb.Append(" --keep-byproducts");
         if (_rxRemoveUnreacted) sb.Append(" --remove-unreacted");
+        if (_rxRemovePendant) sb.Append(" --remove-pendant");
         if (_rxAutoCapture) sb.Append($" --auto-capture --capture-max {C(_rxCaptureMax)}");
         if ((int)_rxSitesPer > 0) sb.Append($" --sites-per-chain {(int)_rxSitesPer}");
         if (RxSeveral && _rxByWeights) sb.Append(" --weights " + string.Join(",", RxReactions.Select(r => r.WeightD.ToString(CultureInfo.InvariantCulture))));
@@ -191,6 +192,9 @@ public sealed partial class MainViewModel
     // ---- React: unreacted sulfur donors leave the cell afterwards (caps react --remove-unreacted; the core's)
     private bool _rxRemoveUnreacted;
     public bool RxRemoveUnreacted { get => _rxRemoveUnreacted; set => Set(ref _rxRemoveUnreacted, value); }
+    // ---- and C-Sx-H groups left at one end (caps react --remove-pendant)
+    private bool _rxRemovePendant;
+    public bool RxRemovePendant { get => _rxRemovePendant; set => Set(ref _rxRemovePendant, value); }
 
     // ---- MD and equilibration in double precision (caps md / equilibrate --precision double; mixed is the default)
     private bool _mdDouble;

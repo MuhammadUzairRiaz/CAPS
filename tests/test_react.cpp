@@ -1444,3 +1444,33 @@ TEST(React, TemplateViewConditions) {
   EXPECT_FALSE(v["once"].items().empty());
   EXPECT_EQ(v["charges"].str(), t[0].keep_charges ? "keep" : "forcefield");
 }
+
+// C–Sx–H left at one end of a sulfur run: the run goes and the carbon has its hydrogen back; bridges and donors are not pendant
+TEST(React, RemovePendantSulfurRestoresHydrogen) {
+  System s = build_molecule("CCS").system;
+  ASSERT_EQ(s.atoms.size(), 9u);
+  int atoms = 0;
+  EXPECT_EQ(remove_pendant_sulfur(s, &atoms), 1);
+  EXPECT_EQ(atoms, 1);   // the thiol's H; its S became the carbon's H
+  ASSERT_EQ(s.atoms.size(), 8u);
+  int h = 0, c = 0;
+  for (const auto& a : s.atoms) (a.element == 1 ? h : a.element == 6 ? c : (ADD_FAILURE() << "element " << a.element, h))++;
+  EXPECT_EQ(c, 2);
+  EXPECT_EQ(h, 6);
+  for (const auto& b : s.bonds) {
+    const int zi = s.atoms[b.i].element, zj = s.atoms[b.j].element;
+    if (zi + zj == 7) EXPECT_LT(norm(s.atoms[b.i].pos - s.atoms[b.j].pos), 1.2);
+  }
+  // a run of sulfurs with the H at its end
+  System run = build_molecule("CSSS").system;
+  EXPECT_EQ(remove_pendant_sulfur(run, &atoms), 1);
+  for (const auto& a : run.atoms) EXPECT_NE(a.element, 16);
+  // a bridge between two carbons and a molecule with no carbon stay
+  System bridge = build_molecule("CSSC").system, donor = build_molecule("SS").system;
+  const size_t nb = bridge.atoms.size(), nd = donor.atoms.size();
+  EXPECT_EQ(remove_pendant_sulfur(bridge), 0);
+  EXPECT_EQ(remove_pendant_sulfur(donor), 0);
+  EXPECT_EQ(bridge.atoms.size(), nb);
+  EXPECT_EQ(donor.atoms.size(), nd);
+}
+

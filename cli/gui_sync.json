@@ -1208,6 +1208,7 @@
     "--insert": "Views/Pages/ReactPage.axaml|RxInsertSmiles",
     "--count": "Views/Pages/ReactPage.axaml|RxInsertCount",
     "--remove-unreacted": "Views/Pages/ReactPage.axaml|RxRemoveUnreacted",
+    "--remove-pendant": "Views/Pages/ReactPage.axaml|RxRemovePendant",
     "--summary": "ViewModels/MainViewModel.ReactNet.cs|ReactSummary()",
     "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
     "--list-templates": "Views/Pages/ReactPage.axaml|RxBuiltinLabels",

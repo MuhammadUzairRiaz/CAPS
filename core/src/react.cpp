@@ -1564,6 +1564,22 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     rep.notes.push_back("removed " + std::to_string(rep.removed_unreacted) + " unreacted sulfur donor molecule(s) (" +
                         std::to_string(rep.removed_unreacted_atoms) + " atoms): molecules of S and H only");
   }
+  if (o.remove_pendant) {   // C–Sx–H left at one end of a sulfur run: the run goes, the carbon has its hydrogen back
+    std::vector<char> gone;
+    rep.removed_pendant = remove_pendant_sulfur(s, &rep.removed_pendant_atoms, &gone);
+    if (rep.removed_pendant) {
+      auto prune = [&](std::vector<int64_t>& v) {
+        if (v.size() != gone.size()) return;
+        std::vector<int64_t> kept;
+        for (size_t i = 0; i < v.size(); ++i) if (!gone[i]) kept.push_back(v[i]);
+        v = std::move(kept);
+      };
+      prune(tag);
+      prune(carry);
+    }
+    rep.notes.push_back("removed " + std::to_string(rep.removed_pendant) + " pendant C-Sx-H group(s) (" + std::to_string(rep.removed_pendant_atoms) +
+                        " atoms leave; each carbon has its hydrogen back)");
+  }
   rep.chains_after = tag;
   // each atom keeps the molecule it started in (a byproduct kept as a molecule: a new id), so a network written and read
   // back still knows its chains
@@ -1625,6 +1641,71 @@ int remove_unreacted_donors(System& s, int* atoms, std::vector<char>* removed) {
     const auto ids = s.molecules();
     for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].mol = ids[i] + 1;
     s.has_mol = true;
+  }
+  if (atoms) *atoms = nat;
+  if (removed) *removed = std::move(gone);
+  return count;
+}
+
+int remove_pendant_sulfur(System& s, int* atoms, std::vector<char>* removed) {
+  const size_t n = s.atoms.size();
+  std::vector<std::vector<uint32_t>> nb(n);
+  for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  auto el = [&](uint32_t i) { return s.atoms[i].element; };
+  std::vector<char> seen(n, 0), gone(n, 0);
+  int count = 0, nat = 0;
+  for (uint32_t i = 0; i < n; ++i) {
+    if (el(i) != 16 || seen[i]) continue;
+    std::vector<uint32_t> run, todo{i};
+    seen[i] = 1;
+    while (!todo.empty()) {
+      const uint32_t x = todo.back();
+      todo.pop_back();
+      run.push_back(x);
+      for (uint32_t y : nb[x])
+        if (el(y) == 16 && !seen[y]) seen[y] = 1, todo.push_back(y);
+    }
+    // exactly C–Sx–H: one carbon, at least one hydrogen, nothing else on the run (a bridge, an accelerator's fragment stay)
+    std::vector<std::pair<uint32_t, uint32_t>> carbons;   // (carbon, its sulfur)
+    std::vector<uint32_t> hydrogens;
+    bool other = false;
+    for (uint32_t x : run)
+      for (uint32_t y : nb[x]) {
+        if (el(y) == 6) carbons.push_back({y, x});
+        else if (el(y) == 1) hydrogens.push_back(y);
+        else if (el(y) != 16) other = true;
+      }
+    if (other || carbons.size() != 1 || hydrogens.empty()) continue;
+    const auto [c, first] = carbons[0];
+    // the sulfur on the carbon becomes the carbon's hydrogen, in the bond's direction; a sibling's labels when it has one
+    Vec3 d = s.atoms[first].pos - s.atoms[c].pos;
+    if (s.cell.valid()) d = s.cell.minimum_image(d);
+    const double r = norm(d);
+    Atom& h = s.atoms[first];
+    if (r > 1e-9) h.pos = s.atoms[c].pos + d * (1.09 / r);
+    h.element = 1, h.name = "H", h.charge = 0;
+    for (uint32_t y : nb[c])
+      if (y != first && el(y) == 1 && !std::count(hydrogens.begin(), hydrogens.end(), y)) { h.type = s.atoms[y].type, h.name = s.atoms[y].name, h.charge = s.atoms[y].charge; break; }
+    for (uint32_t x : run) if (x != first) gone[x] = 1, ++nat;
+    for (uint32_t y : hydrogens) gone[y] = 1, ++nat;
+    ++count;
+  }
+  if (count) {
+    std::vector<int64_t> map(n, -1);
+    std::vector<Atom> kept;
+    for (size_t i = 0; i < n; ++i)
+      if (!gone[i]) { map[i] = int64_t(kept.size()); kept.push_back(s.atoms[i]); }
+    std::vector<Bond> bonds;
+    for (const auto& b : s.bonds)
+      if (map[b.i] >= 0 && map[b.j] >= 0) bonds.push_back({uint32_t(map[b.i]), uint32_t(map[b.j]), b.order});
+    if (s.velocities.size() == n) {
+      std::vector<Vec3> v;
+      for (size_t i = 0; i < n; ++i) if (!gone[i]) v.push_back(s.velocities[i]);
+      s.velocities = std::move(v);
+    }
+    s.atoms = std::move(kept);
+    s.bonds = std::move(bonds);
+    for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].id = int64_t(i + 1);
   }
   if (atoms) *atoms = nat;
   if (removed) *removed = std::move(gone);
@@ -1725,6 +1806,8 @@ std::string react_summary_json(const ReactReport& rep, const System& s) {
   j["notes"] = notes;
   j["removed_unreacted"] = double(rep.removed_unreacted);
   j["removed_unreacted_atoms"] = double(rep.removed_unreacted_atoms);
+  j["removed_pendant"] = double(rep.removed_pendant);
+  j["removed_pendant_atoms"] = double(rep.removed_pendant_atoms);
   const SulfurCensus sc = sulfur_census(s);
   if (sc.sulfur_atoms) j["sulfur"] = Json::parse(sulfur_census_json(sc));
   return j.dump();

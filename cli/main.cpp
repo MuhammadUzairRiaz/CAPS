@@ -474,7 +474,7 @@ int usage() {
                "               [--no-relax] [--relax-iterations 500] [--md-ps 0] [--during-md] [--temp 300] [--seed 1] [--cutoff Å] [--no-coulomb]\n"
                "               [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--between-chains] [--crosslinks links|per-chain|density|mc|degree:VALUE]\n"
                "               [--sites-per-chain N] [--weights 2,1] [--auto-capture [--capture-max 8] [--capture-step 0.5]] [--keep-byproducts]\n"
-               "               [--insert SMILES --count N] [--remove-unreacted] [--summary NET.json] [--fa 2 --fb 4 --ratio 1] [--list-templates] [--quiet]\n"
+               "               [--insert SMILES --count N] [--remove-unreacted] [--remove-pendant] [--summary NET.json] [--fa 2 --fb 4 --ratio 1] [--list-templates] [--quiet]\n"
                "  caps ml eval FILE [--model M.model] [--json OUT.json]   energy (eV) and forces (eV/A) of a molecule from CAPS's\n"
                "               machine-learned potential (data/ml/caps-mace-v1.model; a build with -DCAPS_WITH_TORCH=ON)\n"
                "  caps ml relax JOBS.json -o OUT.json [--model M.model]   constrained relaxations (bonds / angles / dihedrals held)\n"
@@ -530,7 +530,7 @@ std::vector<std::string> glob_files(const std::string& pattern) {
 const std::set<std::string>& known_options() {
   static const std::set<std::string> k = {
     "--all", "--allow-missing", "--auto-capture", "--auto-scale", "--between-chains", "--capture-max", "--capture-step", "--crosslinks",
-    "--during-md", "--keep-byproducts", "--relax-iterations", "--remove-unreacted", "--sites-per-chain", "--summary", "--axis", "--barostat", "--beads", "--bg", "--bibtex",
+    "--during-md", "--keep-byproducts", "--relax-iterations", "--remove-unreacted", "--remove-pendant", "--sites-per-chain", "--summary", "--axis", "--barostat", "--beads", "--bg", "--bibtex",
     "--block", "--blocks", "--born", "--branch", "--born-every", "--born-strain", "--box", "--box-relax",
     "--capture", "--cell", "--centre", "--chains", "--charges", "--colour", "--comfortable", "--compare", "--complete",
     "--components", "--conc", "--constraint-solver", "--constraints", "--configs", "--conformers", "--count", "--csv", "--cutoff", "--cycles",
@@ -590,7 +590,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
          a == "--no-relax" || a == "--no-relax-cell" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
-         a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
+         a == "--during-md" || a == "--remove-unreacted" || a == "--remove-pendant" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
          a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo" || a == "--equivalent" || a == "--no-drift" || a == "--below" || a == "--whole-molecules" || a == "--ewald" || a == "--hydrogen" || a == "--find" || a == "--clear" || a == "--neb" || a == "--no-climb" || a == "--relax-ends" || a == "--no-match";
 }
 
@@ -6178,6 +6178,7 @@ int main(int argc, char** argv) {
       r.between_chains = o.count("--between-chains") > 0;
       r.keep_byproducts = o.count("--keep-byproducts") > 0;
       r.remove_unreacted = o.count("--remove-unreacted") > 0;
+      r.remove_pendant = o.count("--remove-pendant") > 0;
       if (o.count("--sites-per-chain")) r.sites_per_chain = std::max(0, std::stoi(o["--sites-per-chain"]));
       r.auto_capture = o.count("--auto-capture") > 0;
       if (o.count("--capture-max")) r.capture_max = std::stod(o["--capture-max"]);

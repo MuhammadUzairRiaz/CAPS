@@ -1117,6 +1117,106 @@ static bool tip4p_reduce(const System& s, const ForceField& ff, System& rs, Forc
   return true;
 }
 
+// A massless site on a RIGID molecule (every bond and angle constant 0, as the TraPPE small molecules): written as a real
+// atom of the body that fix rigid carries, so its charge acts where the model puts it. LAMMPS needs a mass on every type:
+// the site takes kRigidSiteMass from the atoms that define it, in proportion to their weights, which keeps the molecule's
+// mass and centre of mass exact (Σ w = 1, x_site = Σ w x) and changes its inertia by about 1e-3 g/mol of its own.
+// Pairs inside the body are excluded with zero-force bonds from the site to the molecule's atoms: LAMMPS's special lists
+// also take such pairs out of PPPM, which neigh_modify exclude does not. Returns whether any site was taken; sites shaped
+// like four-site water are left for tip4p_reduce. A site on a flexible molecule or out of the plane is refused by name.
+constexpr double kRigidSiteMass = 1e-3;
+static bool rigid_site_reduce(const System& s, const ForceField& ff, System& rs, ForceField& rf, LammpsStyle& st) {
+  const size_t n = s.atoms.size();
+  int nm = 0;
+  const auto comp = s.molecules(&nm);
+  auto mol_id = [&](uint32_t a) { return s.has_mol ? s.atoms[a].mol : int64_t(comp[a]) + 1; };
+  auto tip4p_like = [&](const VirtualSite& v) {
+    return v.c == 0 && v.from.size() == 3 && s.atoms[v.from[0]].element == 8 && s.atoms[v.from[1]].element == 1 && s.atoms[v.from[2]].element == 1;
+  };
+  // which molecules are rigid: a non-zero constant anywhere makes one flexible, and so does an atom no constant-0 bond holds
+  std::vector<char> flexible(size_t(std::max(nm, 0)), 0), site_of(n, 0), held(n, 0);
+  auto flex = [&](uint32_t a) { if (comp[a] >= 0) flexible[size_t(comp[a])] = 1; };
+  for (const auto& v : ff.vsites) site_of[v.site] = 1;
+  for (const auto& t : ff.bonds) {
+    if (t.k != 0) flex(t.i);
+    else held[t.i] = held[t.j] = 1;
+  }
+  for (const auto& t : ff.angles) if (t.kt != 0) flex(t.j);
+  for (const auto& t : ff.dihedrals) if (t.v != 0) flex(t.i);
+  for (const auto& t : ff.impropers) if (t.v != 0) flex(t.i);
+  for (const auto& t : ff.impropers_dlpoly) if (t.v != 0) flex(t.i);
+  for (const auto& t : ff.impropers_harmonic) flex(t.i);
+  for (const auto& t : ff.inversions) flex(t.c);
+  for (const auto& t : ff.bonds_x) flex(t.i);
+  for (const auto& t : ff.angles_x) flex(t.j);
+  for (const auto& t : ff.urey_bradley) flex(t.i);
+  for (const auto& t : ff.cbt) flex(t.j);
+  for (const auto& t : ff.bonds2) flex(t.i);
+  for (const auto& t : ff.angles2) flex(t.j);
+  for (const auto& t : ff.dihedrals2) flex(t.j);
+  for (const auto& t : ff.impropers2) flex(t.j);
+  for (size_t i = 0; i < n; ++i)
+    if (!site_of[i] && !held[i] && comp[i] >= 0 && std::any_of(ff.vsites.begin(), ff.vsites.end(), [&](const VirtualSite& v) { return comp[v.site] == comp[i]; })) flexible[size_t(comp[i])] = 1;
+  rs = s;
+  rf = ff;
+  rf.vsites.clear();
+  std::set<int64_t> bodies;
+  std::vector<std::vector<uint32_t>> members(size_t(std::max(nm, 0)));
+  for (uint32_t i = 0; i < n; ++i) if (comp[i] >= 0) members[size_t(comp[i])].push_back(i);
+  bool any = false;
+  for (const auto& v : ff.vsites) {
+    if (tip4p_like(v)) { rf.vsites.push_back(v); continue; }
+    const std::string where = "molecule " + std::to_string(mol_id(v.site)) + " (site " + ff.atom_type[v.site] + ")";
+    if (v.c != 0) throw FieldError(ff.name + ": " + where + ": out-of-plane virtual sites (TIP5P's lone pairs) have no LAMMPS form; export to GROMACS instead");
+    if (comp[v.site] < 0 || flexible[size_t(comp[v.site])])
+      throw FieldError(ff.name + ": " + where + ": virtual sites on a flexible molecule have no LAMMPS form (only a site on a rigid molecule, every bond and angle constant 0, can be carried by fix rigid); export to GROMACS instead");
+    double sum = 0;
+    for (double w : v.w) sum += w;
+    if (std::fabs(sum - 1) > 1e-9) throw FieldError(ff.name + ": " + where + ": its weights do not sum to 1, so a real atom there would move the centre of mass; export to GROMACS instead");
+    for (size_t k = 0; k < v.from.size(); ++k) {
+      rf.mass[v.from[k]] -= kRigidSiteMass * v.w[k];
+      if (rf.mass[v.from[k]] <= 0) throw FieldError(ff.name + ": " + where + ": an atom defining the site has no mass to share with it; export to GROMACS instead");
+    }
+    rf.mass[v.site] = kRigidSiteMass;
+    for (uint32_t a : members[size_t(comp[v.site])])
+      if (a != v.site && !site_of[a]) {
+        rf.bonds.push_back({std::min(v.site, a), std::max(v.site, a), 0.0, 1.0});
+        rs.bonds.push_back({std::min(v.site, a), std::max(v.site, a), 1});
+      }
+    bodies.insert(mol_id(v.site));
+    any = true;
+  }
+  if (!any) return false;
+  // LAMMPS's masses are per type: an atom type shared with atoms that gave no mass away would need two
+  std::map<int, double> by_type;
+  for (size_t i = 0; i < n; ++i) {
+    auto [it, fresh] = by_type.try_emplace(rf.type_index[i], rf.mass[i]);
+    if (!fresh && std::fabs(it->second - rf.mass[i]) > 1e-9)
+      throw FieldError(ff.name + ": type " + ff.type_names[size_t(rf.type_index[i])] + " is on atoms of a rigid molecule with a massless site and on other atoms, and LAMMPS keeps one mass per type: give that molecule its own types, or export to GROMACS");
+  }
+  for (int64_t m : bodies) {
+    if (std::find(st.rigid_mols.begin(), st.rigid_mols.end(), m) == st.rigid_mols.end()) st.rigid_mols.push_back(m);
+    st.rigid_site_mols.push_back(m);
+  }
+  return true;
+}
+
+// The virtual sites LAMMPS can take: four-site water, and sites on rigid molecules. False: others remain (build refuses).
+static bool reduce_virtual_sites(const System& s, const ForceField& ff, System& rs, ForceField& rf, LammpsStyle& st) {
+  if (tip4p_reduce(s, ff, rs, rf, st)) return true;
+  System s1;
+  ForceField f1;
+  LammpsStyle st1 = st;
+  if (!rigid_site_reduce(s, ff, s1, f1, st1)) return false;
+  if (f1.vsites.empty()) {
+    rs = std::move(s1), rf = std::move(f1), st = std::move(st1);
+    return true;
+  }
+  if (!tip4p_reduce(s1, f1, rs, rf, st1)) return false;
+  st = std::move(st1);
+  return true;
+}
+
 // LAMMPS's tip4p numbers for the reduced system: O type, H type, O–H bond type, H–O–H angle type (1-based)
 static std::array<int, 4> tip4p_types(const System& s, const ForceField& ff, const Layout& L) {
   std::array<int, 4> r{0, 0, 0, 0};
@@ -1143,7 +1243,7 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
     System rs;
     ForceField rf;
     LammpsStyle st2 = st;
-    if (tip4p_reduce(s, ff0, rs, rf, st2)) return write_lammps_data_ff(rs, rf, e0, path, pair_coeffs, st2);
+    if (reduce_virtual_sites(s, ff0, rs, rf, st2)) return write_lammps_data_ff(rs, rf, e0, path, pair_coeffs, st2);
   }
   const bool metal = lammps_metal_units(ff0, st);
   const ForceField mff = metal ? forcefield_in_metal_units(ff0) : ForceField{};
@@ -1369,7 +1469,7 @@ std::string lammps_shake_fix(const System& s, const ForceField& ff0, const Energ
     System rs;
     ForceField rf;
     LammpsStyle st2 = st;
-    if (tip4p_reduce(s, ff0, rs, rf, st2)) return lammps_shake_fix(rs, rf, e0, mode, group, st2);
+    if (reduce_virtual_sites(s, ff0, rs, rf, st2)) return lammps_shake_fix(rs, rf, e0, mode, group, st2);
   }
   const bool metal = lammps_metal_units(ff0, st);
   const ForceField mff = metal ? forcefield_in_metal_units(ff0) : ForceField{};
@@ -1533,7 +1633,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     System rs;
     ForceField rf;
     LammpsStyle st2 = st;
-    if (tip4p_reduce(s, ff0, rs, rf, st2)) return write_lammps_input(rs, rf, e0, data_path, path, held_mol, pair_coeffs, run, st2, notes);
+    if (reduce_virtual_sites(s, ff0, rs, rf, st2)) return write_lammps_input(rs, rf, e0, data_path, path, held_mol, pair_coeffs, run, st2, notes);
   }
   const bool metal = lammps_metal_units(ff0, st);
   const ForceField mff = metal ? forcefield_in_metal_units(ff0) : ForceField{};
@@ -1744,10 +1844,25 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   std::vector<int64_t> rigid;
   for (int64_t m : st.rigid_mols)
     if (m > 0 && m != held_mol) rigid.push_back(m);
-  if (!rigid.empty())
+  if (!rigid.empty()) {
+    std::vector<int64_t> by_exclude;   // bodies with a massless site have their pairs taken out by zero-force bonds instead
+    for (int64_t m : rigid)
+      if (std::find(st.rigid_site_mols.begin(), st.rigid_site_mols.end(), m) == st.rigid_site_mols.end()) by_exclude.push_back(m);
     out << "\n# rigid bodies: each of these molecules moves as one body (fix rigid below); pairs inside a body are not computed\n"
-        << "group           rigid molecule " << lammps_ranges(rigid) << "\n"
-        << "neigh_modify    exclude molecule/intra rigid\n";
+        << "group           rigid molecule " << lammps_ranges(rigid) << "\n";
+    if (by_exclude.size() == rigid.size()) {
+      out << "neigh_modify    exclude molecule/intra rigid\n";
+    } else {
+      if (!by_exclude.empty())
+        out << "group           rigid_exclude molecule " << lammps_ranges(by_exclude) << "\n"
+            << "neigh_modify    exclude molecule/intra rigid_exclude\n";
+      out << "# " << (rigid.size() - by_exclude.size()) << " of them carry a massless site (TraPPE's O2, N2 ...), written as an atom of the body with mass "
+          << kRigidSiteMass << " taken from its neighbours (the molecule's mass and centre of mass are exact).\n"
+          << "# Only fix rigid may move these atoms: keep them out of every other integrator (fix nve, nvt and npt act on group mobile).\n"
+          << "# Bonds of zero force join each site to its molecule, so special_bonds removes the pairs inside the body, from PPPM too.\n"
+          << "# To check energy conservation, swap the thermostats for fix rigid/small and fix nve and watch etotal (f_rigid_bodies repeats the bodies' kinetic energy: do not add it).\n";
+    }
+  }
   if (!st.restraints.empty()) out << lammps_restraint_lines(st.restraints, s, metal ? 1.0 / 23.060549 : 1.0, notes);
   if (held_mol > 0)
     out << "\n# molecule " << held_mol << " (the surface or filler) held in place, as in CAPS: no velocity, no force\n"
@@ -1766,6 +1881,10 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     default:
       break;
   }
+  // nothing but rigid bodies (a box of TraPPE O2): group mobile is empty, and the bodies carry the thermostat and barostat
+  const bool only_bodies = !rigid.empty() && held_mol <= 0 && s.has_mol && std::all_of(s.atoms.begin(), s.atoms.end(), [&](const Atom& a) {
+    return std::find(rigid.begin(), rigid.end(), a.mol) != rigid.end();
+  });
   const std::string mobile = held_mol > 0 || !rigid.empty() ? "mobile" : "all";
   if (held_mol > 0 || !rigid.empty())
     out << "group           mobile subtract all" << (held_mol > 0 ? " held" : "") << (rigid.empty() ? "" : " rigid") << "\n";
@@ -1776,7 +1895,9 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   out << b;
   if (run.minimize_first || run.kind == K::Minimize)
   {
-    std::snprintf(b, sizeof b, "\n# 1. energy minimisation\nmin_style       cg\nminimize        1.0e-4 %s 5000 50000\nreset_timestep  0\n", metal ? "4.34e-8" : "1.0e-6");
+    std::snprintf(b, sizeof b, "\n# 1. energy minimisation\n%smin_style       cg\nminimize        1.0e-4 %s 5000 50000\nreset_timestep  0\n%s",
+                  rigid.empty() ? "" : "# fix rigid does not act in a minimisation: the bodies are held, or their atoms would move apart\nfix             hold_bodies rigid setforce 0.0 0.0 0.0\n",
+                  metal ? "4.34e-8" : "1.0e-6", rigid.empty() ? "" : "unfix           hold_bodies\n");
     out << b;   // the force tolerance 1e-6 kcal/mol/Å, in eV/Å in metal units
   }
   if (run.kind == K::Minimize) {
@@ -1873,6 +1994,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     std::snprintf(b, sizeof b, "velocity        %s create %.6g %llu mom yes rot yes dist gaussian\n", vgroup.c_str(), run.temperature,
                   static_cast<unsigned long long>(run.seed));
     out << b;
+    if (only_bodies) throw std::invalid_argument("every molecule is a rigid body: a deformation of the cell has no flexible atoms to act on; export NVT or NPT runs instead");
     if (!rigid.empty()) {
       std::snprintf(b, sizeof b, "fix             rigid_bodies rigid rigid/nvt/small molecule temp %.6g %.6g %.6g\n", run.temperature, run.temperature, run.tdamp * tu);
       out << b;
@@ -1969,10 +2091,16 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   if (!rigid.empty()) {   // the bodies under their own Nosé–Hoover thermostat (LAMMPS removes their constrained degrees of freedom);
     // LAMMPS wants rigid fixes before any fix that changes the box
     char r[200];
-    std::snprintf(r, sizeof r, "fix             rigid_bodies rigid rigid/nvt/small molecule temp %.6g %.6g %.6g\n", run.temperature, run.temperature, run.tdamp * tu);
+    if (only_bodies && npt)
+      std::snprintf(r, sizeof r, "fix             rigid_bodies rigid rigid/npt/small molecule temp %.6g %.6g %.6g iso %.6g %.6g %.6g\n", run.temperature, run.temperature, run.tdamp * tu,
+                    run.pressure * pu, run.pressure * pu, run.pdamp * tu);
+    else
+      std::snprintf(r, sizeof r, "fix             rigid_bodies rigid rigid/nvt/small molecule temp %.6g %.6g %.6g\n", run.temperature, run.temperature, run.tdamp * tu);
     out << r;
   }
-  if (npt)
+  if (only_bodies)
+    b[0] = 0;
+  else if (npt)
     std::snprintf(b, sizeof b, "fix             integrate %s npt temp %.6g %.6g %.6g iso %.6g %.6g %.6g%s\n", mobile.c_str(), run.temperature, run.temperature,
                   run.tdamp * tu, run.pressure * pu, run.pressure * pu, run.pdamp * tu, rigid.empty() ? "" : " dilate mobile");
   else

@@ -934,6 +934,11 @@ void merge_forcefield(FFDef& base, const FFDef& ov) {
   for (const auto& [g, rules] : ov.cross_rules) append(base.cross_rules[g], rules);
   base.typing.insert(base.typing.begin(), ov.typing.begin(), ov.typing.end());   // the overlay's rules come first
   base.typing_pairs.insert(base.typing_pairs.end(), ov.typing_pairs.begin(), ov.typing_pairs.end());
+  for (const auto& r : ov.site_rules)   // the base's sites, then the overlay's (one repeated exactly stays one rule)
+    if (std::none_of(base.site_rules.begin(), base.site_rules.end(), [&](const FFDef::SiteRule& x) {
+          return x.smarts == r.smarts && x.type == r.type && x.from == r.from && x.w == r.w && x.c == r.c;
+        }))
+      base.site_rules.push_back(r);
   base.notes.push_back("merged overlay: " + (ov.name.empty() ? std::string("(unnamed)") : ov.name));
 }
 
@@ -3253,8 +3258,11 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
           a.type = it->second;
         }
     }
-    note += std::string(note.empty() ? "" : "; ") + std::to_string(added) + " massless sites of " + ff.name + " added (" + ff.site_rules[0].type +
-            (ff.site_rules.size() > 1 ? ", …" : "") + ")";
+    std::set<std::string> kinds;
+    for (const auto& a : s.atoms) if (a.element == 0) kinds.insert(a.name);
+    std::string names;
+    for (const auto& k : kinds) names += (names.empty() ? "" : ", ") + k;
+    note += std::string(note.empty() ? "" : "; ") + std::to_string(added) + " massless sites of " + ff.name + " added (" + names + ")";
   }
   return note;
 }

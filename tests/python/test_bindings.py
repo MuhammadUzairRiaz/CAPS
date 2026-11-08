@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 114, "ABI 113")
+check(caps.abi_version() == 115, "ABI 115")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],
@@ -1238,5 +1238,165 @@ check(max(abs(a - b) for a, b in zip(_q, _ref)) < 2e-6, f"CM5 methanol {[round(v
 _o = _cm5.opls(_z, _x, _q)
 check(abs(sum(_o)) < 1e-12 and abs(_o[4] - _o[5]) < 1e-12 and abs(_o[0] - 1.27 * _q[0]) < 0.01, f"1.27 x CM5 {_o}")
 print("ok   CM5 charges")
+
+# Force-field groups that change the atoms: massless sites (TraPPE O2, N2) and united-atom folding on the real structure
+_TR, _OP = "trappe-ua-umn", "oplsaa2024"
+_G = lambda name, mols, ff: {"name": name, "molecules": mols, "forcefield": ff}
+_kw = dict(eps_rule="geometric", sigma_rule="geometric")
+def _gas_cell(gases):
+    d = caps.polymer("[*]C/C=C\\C[*]", dp=10, chains=2, density=0.6, seed=1)
+    for smi, n in gases:
+        d.insert(smi, n, tolerance=2.0, seed=1)
+    return d
+def _atoms(d):
+    return [d.atom(i) for i in range(d.summary()["atoms"])]
+def _mi(u, v, cell):   # minimum-image difference of an orthorhombic cell
+    return [(a - b) - L * round((a - b) / L) if L > 0 else a - b for a, b, L in zip(u, v, cell)]
+def _sites_at_midpoints(d):
+    s = d.summary()
+    cell = (s["cell_a"], s["cell_b"], s["cell_c"])
+    by = {}
+    for a in _atoms(d):
+        by.setdefault(a["molecule"], []).append(a)
+    n = 0
+    for m in by.values():
+        sites = [a for a in m if a["element"] == "X"]
+        if not sites:
+            continue
+        real = [a for a in m if a["element"] != "X"]
+        if len(sites) != 1 or len(real) != 2:
+            return -1
+        half = [0.5 * x for x in _mi(real[1]["position"], real[0]["position"], cell)]
+        off = _mi(sites[0]["position"], [real[0]["position"][k] + half[k] for k in range(3)], cell)
+        if max(abs(x) for x in off) > 1e-6:
+            return -1
+        n += 1
+    return n
+def _check_group_case(label, d, groups, atoms, sites):
+    d.field.assign_groups(groups, **_kw)
+    r = d.field.report()
+    s = d.summary()
+    check(s["atoms"] == atoms, f"{label}: {s['atoms']} atoms, expected {atoms}")
+    check(r["complete"] and r["untyped"] == 0 and not r.get("missing"), f"{label}: complete, untyped {r['untyped']}, missing {r.get('missing')}")
+    check(abs(s["total_charge"]) < 1e-9, f"{label}: net charge {s['total_charge']}")
+    check(all(abs(g["net_charge"]) < 1e-9 for g in r["groups"]), f"{label}: group charges {[g['net_charge'] for g in r['groups']]}")
+    check(sum(g["sites"] for g in r["groups"]) == sites and _sites_at_midpoints(d) == sites, f"{label}: {_sites_at_midpoints(d)} sites at midpoints, expected {sites}")
+    return r
+
+_PB = _G("PB", "1-2", _OP)
+_r = _check_group_case("PB + O2", _gas_cell([("O=O", 3)]), [_PB, _G("O2", "3-5", _TR)], 213, 3)
+check([g["sites_added"] for g in _r["groups"]] == [0, 3], f"sites added by group: {_r['groups']}")
+_check_group_case("PB + N2", _gas_cell([("N#N", 3)]), [_PB, _G("N2", "3-5", _TR)], 213, 3)
+_d = _gas_cell([("O=O", 2), ("N#N", 2), ("O=C=O", 2)])
+_r = _check_group_case("PB + O2 + N2 + CO2", _d, [_PB, _G("O2", "3-4", _TR), _G("N2", "5-6", _TR), _G("CO2", "7-8", _TR)], 204 + 6 + 6 + 6, 4)
+check([g["sites_added"] for g in _r["groups"]] == [0, 2, 2, 0], f"three gases: {[g['sites_added'] for g in _r['groups']]}")
+print("ok   force-field groups: massless sites on the real structure")
+
+# assigning twice adds nothing, and one undo restores the structure
+_d = _gas_cell([("O=O", 3)])
+_gr = [_PB, _G("O2", "3-5", _TR)]
+_q0 = [a["position"] for a in _atoms(_d)]
+_d.field.assign_groups(_gr, **_kw)
+_d.field.assign_groups(_gr, **_kw)
+check(_d.summary()["atoms"] == 213 and _sites_at_midpoints(_d) == 3, f"assigned twice: {_d.summary()['atoms']} atoms")
+_d.undo()
+check(_d.summary()["atoms"] == 210 and [a["position"] for a in _atoms(_d)] == _q0, "one undo restores the structure before the groups")
+_d.undo(redo=True)
+check(_d.summary()["atoms"] == 213, f"redo brings the sites back: {_d.summary()['atoms']}")
+# the group that fails leaves the structure and the undo stack as they were
+_d = _gas_cell([("O=O", 3)])
+try:
+    _d.field.assign_groups([_PB, _G("O2", "3-5", _TR), _G("none", "6", "no-such-force-field")], **_kw)
+    check(False, "an unknown force field was accepted")
+except caps.CapsError:
+    pass
+check(_d.summary()["atoms"] == 210, f"a failed assignment keeps the atoms: {_d.summary()['atoms']}")
+
+# an all-atom group beside a united-atom one: the atom count falls, molecule ids are the structure's before preparation
+_d = caps.pack(molecules=[("Cc1ccccc1", 2), ("CCCCCC", 2)], box=24.0, tolerance=2.0, seed=3)
+_n0 = _d.summary()["atoms"]
+_d.field.assign_groups([_G("toluene", "1-2", _OP), _G("hexane", "3-4", _TR)], **_kw)
+_r = _d.field.report()
+check(_n0 == 2 * 15 + 2 * 20 and _d.summary()["atoms"] == 2 * 15 + 2 * 6, f"folded: {_n0} -> {_d.summary()['atoms']}")
+check(_r["complete"] and _r["untyped"] == 0 and [g["atoms_folded"] for g in _r["groups"]] == [0, 28], f"folded by group: {_r['groups']}")
+_ty = [a["name"] for a in _atoms(_d)]
+check(all(t.startswith("opls") for t in _ty[:30]) and not any(t.startswith("opls") for t in _ty[30:]), f"types by group: {_ty[:2]} {_ty[30:32]}")
+_e = _d.energy()["total"]
+_d.field.assign_groups([_G("toluene", "1-2", _OP), _G("hexane", "3-4", _TR)], **_kw)
+check(_d.summary()["atoms"] == 42 and abs(_d.energy()["total"] - _e) < 1e-6, "a folded group assigned again changes nothing")
+_d.undo()
+check(_d.summary()["atoms"] == _n0, "undo gives the hydrogens back")
+
+# groups without a preparation are as they were: TraPPE CO2 (no site) and four-site water
+_d = caps.pack(molecules=[("O=C=O", 2), (os.path.join(samples, "water.pdb"), 3)], box=24.0, tolerance=2.0, seed=4)
+_d.edit(op="water_model", model="tip4p2005")
+_n0 = _d.summary()["atoms"]
+_d.field.assign_groups([_G("CO2", "1-2", _TR), {"name": "water", "molecules": "water", "water": "tip4p2005"}], **_kw)
+_r = _d.field.report()
+check(_d.summary()["atoms"] == _n0 and _r["complete"] and [g["sites_added"] for g in _r["groups"]] == [0, 0] and [g["sites"] for g in _r["groups"]] == [0, 3],
+      f"CO2 + TIP4P: {_d.summary()['atoms']} atoms of {_n0}, {_r['groups']}")
+
+# every frame gets its sites; ids come from the bonds when the file has no molecules
+_f = os.path.join(tempfile.gettempdir(), "caps_groups_frames.xyz")
+with open(_f, "w", encoding="utf-8") as _o:
+    for _k in range(3):
+        _o.write("9\nframe\n")
+        for _i, (_x0, _el) in enumerate([(2.0, "O"), (14.0, "O")]):
+            _o.write(f"O {_x0 + 0.1 * _k:.4f} 2.0 2.0\nO {_x0 + 1.21 + 0.1 * _k:.4f} 2.0 2.0\n")
+        _o.write(f"C 8.0 8.0 {8.0 + 0.1 * _k:.4f}\nH 9.09 8.0 {8.0 + 0.1 * _k:.4f}\nH 7.64 9.03 {8.0 + 0.1 * _k:.4f}\nH 7.64 7.49 {8.89 + 0.1 * _k:.4f}\nH 7.64 7.49 {7.11 + 0.1 * _k:.4f}\n")
+_d = caps.open(_f)
+_s0 = _d.summary()
+check(_s0["frames"] == 3 and _s0["molecules"] == 3, f"three frames, three molecules: {_s0['frames']} {_s0['molecules']}")
+_d.field.assign_groups([_G("O2", "1-2", _TR), {"name": "CH4", "molecules": "rest", "forcefield": _OP}], **_kw)
+_s = _d.summary()
+check(_s["atoms"] == 11 and _s["frames"] == 3, f"frames keep up: {_s['atoms']} atoms, {_s['frames']} frames")
+for _k in range(3):
+    _d.set_frame(_k)
+    _p = [a["position"] for a in _atoms(_d)]
+    check(len(_p) == 11 and abs(_p[2][0] - (2.0 + 0.605 + 0.1 * _k)) < 1e-3 and abs(_p[5][0] - (14.0 + 0.605 + 0.1 * _k)) < 1e-3, f"frame {_k}: site at {_p[2][0]}")
+_d.undo()
+_s = _d.summary()
+check(_s["atoms"] == 9 and _s["frames"] == 3, f"undo in every frame: {_s['atoms']} atoms, {_s['frames']} frames")
+_d.set_frame(2)
+check(abs(_d.atom(1)["position"][0] - (3.21 + 0.2)) < 1e-3, "undo restored the last frame's own positions")
+print("ok   force-field groups: folding, undo, regressions, every frame")
+
+# a rigid molecule with a massless site is written for LAMMPS as an atom of the body; the body stays rigid in a real run
+import shutil as _sh, subprocess as _sp, math as _ma
+_d = _gas_cell([("O=O", 3)])
+_d.field.assign_groups([_PB, _G("O2", "3-5", _TR)], **_kw)
+_f = tempfile.mkdtemp(prefix="caps_rigid_site_")
+_d.export_engines(_f, stem="s", run="nvt", steps=400, dump_every=100, thermo_every=100, temperature=300, kspace_accuracy=1e-4, cutoff=9, gromacs=False)
+_t = open(os.path.join(_f, "s.in")).read()
+check("rigid/nvt/small" in _t and "hold_bodies" in _t and "exclude molecule/intra" not in _t, "the input writes the rigid fix, holds bodies while minimising, and does not exclude with neigh_modify")
+_m = open(os.path.join(_f, "s.data")).read().split("Masses")[1].split("Bond Coeffs")[0]
+_ma0 = {l.split("#")[1].strip(): float(l.split()[1]) for l in _m.splitlines() if "#" in l and l.strip()}
+check(abs(2 * _ma0["O_108"] + _ma0["M_109"] - 2 * 15.999) < 1e-5 and _ma0["M_109"] > 0, f"the molecule's mass is exact, the site has one: {_ma0}")
+if _sh.which("lmp") and os.environ.get("CAPS_TEST_LMP") != "0":
+    _p = _sp.run([_sh.which("lmp"), "-in", "s.in", "-log", "log"], cwd=_f, capture_output=True, text=True)
+    check(_p.returncode == 0, "LAMMPS ran the rigid-site input: " + _p.stdout[-300:])
+    if _p.returncode == 0:
+        _fr = open(os.path.join(_f, "traj.lammpstrj")).read().split("ITEM: TIMESTEP")[1:]
+        _ds = []
+        for _x in _fr:
+            _sec = _x.split("ITEM: ATOMS")[1].splitlines()
+            _hd = _sec[0].split()
+            _rows = sorted((r.split() for r in _sec[1:] if r.strip()), key=lambda r: int(r[_hd.index("id")]))
+            _xyz = [[float(r[_hd.index(k)]) for k in ("xu", "yu", "zu")] for r in _rows]
+            _ds.append([_ma.dist(_xyz[i], _xyz[i + 1]) for i in range(204, 213, 3)])
+            check(all(abs(_ma.dist(_xyz[i], _xyz[i + 2]) - _ds[-1][(i - 204) // 3] / 2) < 2e-3 for i in range(204, 213, 3)), "each site stays at the midpoint")
+        check(len(_ds) > 2 and max(max(c) - min(c) for c in zip(*_ds)) < 2e-3, f"the bodies stay rigid: {_ds[0]} {_ds[-1]}")
+print("ok   force-field groups: rigid sites in LAMMPS")
+
+# pendant C-Sx-H groups through a whole react(): the census empties and the carbons have their hydrogens back
+_d = caps.pack(molecules=[("CCS", 3), ("CCC=CCC", 3)], box=22.0, tolerance=2.0, seed=2)
+_d.field.assign("uff")
+check(_d.sulfur_bridges()["pendant"] == {"S1": 3}, f"three pendant groups: {_d.sulfur_bridges()}")
+_d.react("sulfur_allylic", cycles=1, per_cycle=1, relax=False, seed=3, capture=2.0, remove_pendant=True)
+check(_d.sulfur_bridges()["pendant"] == {} and _d.react_summary()["removed_pendant"] == 3 and _d.summary()["atoms"] == 78, f"pendant removed: {_d.summary()['atoms']} atoms")
+check({a["element"] for a in _atoms(_d)} == {"C", "H"} and _d.field.report()["complete"], "only carbon and hydrogen left, the force field complete on them")
+# a report of more than the buffer, cut inside a character, still decodes
+check(b"\xc3".decode(errors="replace") != "", "cut UTF-8 decodes")
+
 
 print("all python checks passed")

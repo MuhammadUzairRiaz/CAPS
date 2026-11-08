@@ -129,6 +129,8 @@
                           ToolTip.Tip="Off: the leaving atoms are removed; on: they stay as their own molecules (the force field must describe them)" />
                 <CheckBox Classes="toggle" Content="Remove unreacted sulfur donors afterwards" IsChecked="{Binding RxRemoveUnreacted}"
                           ToolTip.Tip="After the cure, molecules made only of S and H (H₂S, H–Sx–H that never reacted) leave the cell; the summary counts them (caps react --remove-unreacted)" />
+                <CheckBox Classes="toggle" Content="Remove pendant sulfur groups afterwards" IsChecked="{Binding RxRemovePendant}"
+                          ToolTip.Tip="After the cure, C–Sx–H groups (a sulfur run on one carbon, capped by hydrogen) leave and the carbon has its hydrogen back; the summary counts them (caps react --remove-pendant)" />
                 <CheckBox Classes="toggle" Content="Retype with a force field after every cycle" IsChecked="{Binding RxUseField}" />
                 <StackPanel Spacing="4" IsVisible="{Binding RxUseField}">
                   <TextBlock Text="Force field for the reaction" Classes="label" />

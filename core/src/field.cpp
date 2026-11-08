@@ -1173,10 +1173,11 @@ int apply_rigid_geometry(System& s, const ForceField& ff, size_t first, size_t l
     return out;
   };
   auto in = [&](uint32_t a) { return a >= first && a < last; };
+  auto mi = [&](const Vec3& d) { return s.cell.valid() ? s.cell.minimum_image(d) : d; };   // a molecule across the boundary
   int changed = 0;
   for (const auto& b : ff.bonds) {
     if (b.k != 0 || b.r0 <= 0 || !in(b.i) || !in(b.j)) continue;
-    const Vec3 d = s.atoms[b.j].pos - s.atoms[b.i].pos;
+    const Vec3 d = mi(s.atoms[b.j].pos - s.atoms[b.i].pos);
     const double r = norm(d);
     if (r < 1e-9 || std::fabs(r - b.r0) < 1e-6) continue;
     const auto mv = side(b.j, b.i);
@@ -1187,7 +1188,7 @@ int apply_rigid_geometry(System& s, const ForceField& ff, size_t first, size_t l
   }
   for (const auto& a : ff.angles) {
     if (a.kt != 0 || !in(a.i) || !in(a.j) || !in(a.k)) continue;
-    const Vec3 u = s.atoms[a.i].pos - s.atoms[a.j].pos, w = s.atoms[a.k].pos - s.atoms[a.j].pos;
+    const Vec3 u = mi(s.atoms[a.i].pos - s.atoms[a.j].pos), w = mi(s.atoms[a.k].pos - s.atoms[a.j].pos);
     const double nu = norm(u), nw = norm(w);
     if (nu < 1e-9 || nw < 1e-9) continue;
     const double th = std::acos(std::clamp(dot(u, w) / (nu * nw), -1.0, 1.0)), dth = a.theta0 - th;
@@ -1203,10 +1204,20 @@ int apply_rigid_geometry(System& s, const ForceField& ff, size_t first, size_t l
     const double c = std::cos(dth), sn = std::sin(dth);
     const Vec3 o = s.atoms[a.j].pos;
     for (uint32_t m : mv) {
-      const Vec3 v = s.atoms[m].pos - o;
+      const Vec3 v = mi(s.atoms[m].pos - o);
       s.atoms[m].pos = o + v * c + cross(n, v) * sn + n * (dot(n, v) * (1 - c));
     }
     ++changed;
+  }
+  // a massless site is defined by the atoms that just moved (its charge sits there, and an export writes where it is)
+  if (changed && !ff.vsites.empty()) {
+    std::vector<double> x(3 * s.atoms.size());
+    for (size_t i = 0; i < s.atoms.size(); ++i)
+      for (int k = 0; k < 3; ++k) x[3 * i + size_t(k)] = s.atoms[i].pos[k];
+    place_virtual_sites(ff, x, s.cell);
+    for (const auto& v : ff.vsites)
+      if (in(v.site))
+        for (int k = 0; k < 3; ++k) s.atoms[v.site].pos[k] = x[3 * v.site + size_t(k)];
   }
   return changed;
 }
