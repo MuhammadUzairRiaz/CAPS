@@ -1,4 +1,4 @@
-<!-- Which structure of the project a module works on (Materials Studio style): pick any of them here; run modules can
+<!-- Which structure of the project a module works on: pick any of them here; run modules can
      keep the original and put their result in a new structure. -->
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views"

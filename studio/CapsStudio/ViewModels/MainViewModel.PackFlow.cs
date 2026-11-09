@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CapsStudio.ViewModels;
 
-/// <summary>Pack as its own workflow (as Materials Studio keeps Amorphous Cell's Packing apart from Construction):
+/// <summary>Pack as its own workflow, apart from Grow:
 /// molecules packed into an empty box, or around the current structure (a grown cell, a surface), which stays fixed;
 /// its own force field, assigned when packing finishes; then the cell goes straight to LAMMPS or GROMACS, with
 /// minimisation and dynamics in CAPS as optional steps.</summary>

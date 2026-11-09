@@ -1,5 +1,4 @@
-// Lattice tools for crystals and periodic structures (Materials Studio's Build › Crystals and Build › Surfaces, in
-// CAPS's own form):
+// Lattice tools for crystals and periodic structures:
 //   transform_cell      a new cell a' b' c' = (a b c)·M for any 3×3 matrix M (integer, or fractional such as ½ for a
 //                       centred ↔ primitive change): the atoms of the old lattice that fall in the new cell; the count
 //                       must come to N·|det M| (otherwise M does not map the lattice onto itself and it throws)

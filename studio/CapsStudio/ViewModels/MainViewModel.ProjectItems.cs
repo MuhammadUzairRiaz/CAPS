@@ -5,7 +5,7 @@ using CapsStudio.Interop;
 
 namespace CapsStudio.ViewModels;
 
-/// <summary>One structure of the project (as a Materials Studio document): a molecule, a grown polymer cell, a packed
+/// <summary>One structure of the project: a molecule, a grown polymer cell, a packed
 /// box, a crystal, a file. Every module (Force field, Minimise, Equilibrate, Dynamics, React, Analyze, Export) works on
 /// the active one; the others keep their state (camera, frame, what was done to them) until they are picked again.</summary>
 public sealed class ProjectItem : ObservableObject
@@ -41,7 +41,7 @@ public sealed class ProjectItem : ObservableObject
     /// <summary>The React page's settings of the last reaction run on it, for Edit its reaction.</summary>
     public System.Text.Json.Nodes.JsonObject? ReactSettings { get => _reactSettings; set { _reactSettings = value; Raise(nameof(Reacted)); } }
     public bool Reacted => _reactSettings != null || _history.Contains("reacted", StringComparison.Ordinal);
-    /// <summary>Its job folders, newest first (Materials Studio's project tree).</summary>
+    /// <summary>Its job folders, newest first.</summary>
     public ObservableCollection<Job> Jobs { get; } = new();
     private bool _renaming;
     /// <summary>The name is being edited in place (double click, or Rename in its menu).</summary>
@@ -364,7 +364,7 @@ public sealed partial class MainViewModel
         if (_activeItem != null) UpdateItemInfo(_activeItem);
     }
 
-    // Minimise, Equilibrate and Dynamics can keep the structure they start from (as Materials Studio writes a job's result
+    // Minimise, Equilibrate and Dynamics can keep the structure they start from (a job's result written
     // to a new document): the run works on a copy that joins the project
     private bool _resultAsNew;
     public bool ResultAsNew { get => _resultAsNew; set => Set(ref _resultAsNew, value); }

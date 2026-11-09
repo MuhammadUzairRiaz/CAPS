@@ -10,7 +10,7 @@
     "H. Sun, S. J. Mumby, J. R. Maple, A. T. Hagler, J. Am. Chem. Soc. 116, 2978 (1994)",
     "H. Sun, Macromolecules 28, 701 (1995)"
    ],
-   "origin": "BIOVIA .frc",
+   "origin": "LAMMPS msi2lmp .frc",
    "source_file": "pcff.frc",
    "status": "validated",
    "notes": "validated against the parameters msi2lmp assigns from pcff.frc for LAMMPS's msi2lmp test structures (water, ethane, benzene, naphthalene, a carbon nanotube, hydroxyapatite), energies term by term in LAMMPS; CAPS's own energies and forces equal LAMMPS's (bench/ff/check_msi2lmp.py, check_data_lammps.py)",
@@ -31,7 +31,8 @@
     "label": "PCFF",
     "key": "pcff",
     "order": 0
-   }
+   },
+   "license": "file as distributed with LAMMPS (tools/msi2lmp/frc_files), whose README describes these files as public domain; the file's own header credits BIOSYM"
   },
   {
    "id": "cvff-frc",
@@ -40,7 +41,7 @@
    "references": [
     "P. Dauber-Osguthorpe et al., Proteins 4, 31 (1988)"
    ],
-   "origin": "BIOVIA .frc",
+   "origin": "LAMMPS msi2lmp .frc",
    "source_file": "cvff.frc",
    "status": "validated",
    "notes": "validated against the parameters msi2lmp assigns from cvff.frc for LAMMPS's msi2lmp test structures (crambin, nylon, a carbon nanotube, water, aromatics): equal, apart from msi2lmp counting a wildcard torsion's neighbours by type; CAPS's own energies and forces equal LAMMPS's (bench/ff/check_msi2lmp.py, check_data_lammps.py)",
@@ -61,7 +62,8 @@
     "label": "CVFF",
     "key": "cvff",
     "order": 2
-   }
+   },
+   "license": "file as distributed with LAMMPS (tools/msi2lmp/frc_files), whose README describes these files as public domain; the file's own header credits BIOSYM"
   },
   {
    "id": "compass-frc",
@@ -70,7 +72,7 @@
    "references": [
     "H. Sun, J. Phys. Chem. B 102, 7338 (1998)"
    ],
-   "origin": "BIOVIA .frc",
+   "origin": "LAMMPS msi2lmp .frc",
    "source_file": "compass_published.frc",
    "status": "validated",
    "notes": "validated against the parameters msi2lmp assigns from compass_published.frc for LAMMPS's msi2lmp test structures (ethane, benzene, naphthalene, a carbon nanotube, hydrogen): equal (msi2lmp leaves out bond-bond-1-3 terms without a cp type); CAPS's own energies and forces equal LAMMPS's (bench/ff/check_msi2lmp.py, check_data_lammps.py). The published file covers alkanes, aromatics, alcohols, ethers, acetate esters and small molecules, but has no alkene C, halogen, nitrile or N–H amide types and not every ester torsion (methacrylates): 38 of CAPS's 127 library polymers (bench/polymers/check_matrix.py), the others refused with the missing type or term named",
@@ -91,7 +93,8 @@
     "label": "COMPASS",
     "key": "compass",
     "order": 1
-   }
+   },
+   "license": "file as distributed with LAMMPS (tools/msi2lmp/frc_files), whose README describes these files as public domain; the file's own header credits BIOSYM"
   },
   {
    "id": "iff-pcff",
@@ -121,7 +124,8 @@
     "label": "INTERFACE (IFF, PCFF)",
     "key": "iff_pcff",
     "order": 34
-   }
+   },
+   "license": "INTERFACE force field 1.5 file (Heinz group, built on pcff.frc); no licence is stated with the file"
   },
   {
    "id": "iff-cvff",
@@ -151,7 +155,8 @@
     "label": "INTERFACE (IFF, CVFF)",
     "key": "iff_cvff",
     "order": 35
-   }
+   },
+   "license": "INTERFACE force field 1.5 file (Heinz group, built on cvff.frc); no licence is stated with the file"
   },
   {
    "id": "oplsua2024",
@@ -209,7 +214,8 @@
     "label": "Martini 3",
     "key": "martini3",
     "order": 36
-   }
+   },
+   "license": "files of the Martini developers (cgmartini.nl); see their site for terms"
   },
   {
    "id": "gaff-1.81-ambertools",

@@ -34368,7 +34368,7 @@
   }
  ],
  "notes": [
-  "converted by CAPS from cvff.frc: explicit parameters as LAMMPS's msi2lmp assigns them; Materials Studio's automatic parameters where no explicit entry exists (reported as automatic)",
+  "converted by CAPS from cvff.frc: explicit parameters as LAMMPS's msi2lmp assigns them; the .frc file's automatic parameters where no explicit entry exists (reported as automatic)",
   "CVFF as msi2lmp writes it for LAMMPS: harmonic bonds and angles, no cross terms, no Morse bonds"
  ],
  "typing": "../typing/cvff.typing.json",

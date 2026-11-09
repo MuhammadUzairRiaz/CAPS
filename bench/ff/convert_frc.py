@@ -13,7 +13,7 @@ The explicit parameters are read as msi2lmp reads them, so that CAPS assigns wha
     bonds and angles; Wilson out-of-plane and angle-angle terms as msi2lmp builds them ("oop_scheme": "msi2lmp");
   · CVFF: a torsion with a wildcard end spreads its barrier over the torsions about the central bond.
 
-Materials Studio's automatic parameters (the *_auto sections, by #auto_equivalence) are kept as the fallback CAPS
+the .frc file's automatic parameters (the *_auto sections, by #auto_equivalence) are kept as the fallback CAPS
 reports as automatic when no explicit entry exists (msi2lmp stops there instead). Charges: #bond_increments.
 
 usage: convert_frc.py [FRC_DIR]   (default ~/lammps/tools/msi2lmp/frc_files) → data/forcefields/{cvff,pcff,compass}-frc.json
@@ -121,7 +121,7 @@ def rule(e, params, style=None, name=None):
     return r
 
 
-# typing rules the .frc family needs beyond CAPS's own rules for the older library files: Materials Studio's PCFF
+# typing rules the .frc family needs beyond CAPS's own rules for the older library files: PCFF's
 # templates (pcff_templates.dat) type sulfone S as sf, a child of s' in their hierarchy; pcff.frc parameterises s'
 # (o= s' bond, ver 2.1 ref 8), so a sulfone S takes s'
 PCFF_EXTRA = [{"type": "s'", "smarts": "[SX4](=O)(=O)", "priority": 2,
@@ -226,7 +226,7 @@ def convert(frc, cls, name, version, references, typing, out_name, src=None, ext
             return rule(e, [K, 1 if phi0 == 0 else -1, int(n)], style)
         ff["dihedrals"] = ordered(entries(first(secs, "#torsion_1"), 4, 3), t1)
         ff["impropers"] = ordered(entries(first(secs, "#out_of_plane"), 4, 3), lambda e: t1(e, "cvff"))
-    # Materials Studio's automatic parameters (by #auto_equivalence), used only when no explicit entry exists
+    # the .frc file's automatic parameters (by #auto_equivalence), used only when no explicit entry exists
     def auto_rule(e, params, style):
         r = rule(e, params, style, "auto " + " ".join(e[2]))
         r["comment"] = "auto, " + r["comment"]
@@ -264,7 +264,7 @@ def convert(frc, cls, name, version, references, typing, out_name, src=None, ext
         for t in ff["atom_types"]:
             if t["name"] in IFF_ION_CHARGES:
                 t["charge"] = IFF_ION_CHARGES[t["name"]]
-    ff["notes"] = [f"converted by CAPS from {frc}: explicit parameters as LAMMPS's msi2lmp assigns them; Materials Studio's "
+    ff["notes"] = [f"converted by CAPS from {frc}: explicit parameters as LAMMPS's msi2lmp assigns them; the .frc file's "
                    "automatic parameters where no explicit entry exists (reported as automatic)"]
     if cls == 1:
         ff["notes"].append("CVFF as msi2lmp writes it for LAMMPS: harmonic bonds and angles, no cross terms, no Morse bonds")
@@ -345,7 +345,7 @@ for fid in ("pcff-frc", "cvff-frc", "compass-frc", "iff-pcff", "iff-cvff"):
         continue
     ff = json.load(open(os.path.join(ROOT, "data", "forcefields", fid + ".json")))
     new.append({"id": fid, "name": ff["name"], "version": ff["version"], "references": ff["references"],
-                "origin": "INTERFACE .frc" if fid.startswith("iff") else "BIOVIA .frc",
+                "origin": "INTERFACE .frc" if fid.startswith("iff") else "LAMMPS msi2lmp .frc",
                 "source_file": ff["source"].split(" ")[0], "status": "validated", "notes": "validated against " + CHECKED[fid],
                 "file": fid + ".json",
                 "typing": {"rules": ff["typing"].replace("../", ""),

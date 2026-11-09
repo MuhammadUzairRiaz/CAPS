@@ -7,7 +7,7 @@ using Avalonia.Input;
 namespace CapsStudio.Views;
 
 /// <summary>The menu bar (the system menu bar on macOS, in the window elsewhere), organised as desktop modelling suites
-/// are (Materials Studio's File · Edit · View · Build · Modules · Tools · Help): every item runs a palette command or opens
+/// are (File · Edit · View · Build · Modules · Tools · Help): every item runs a palette command or opens
 /// a page, so the menu, the palette, the rail and the shortcuts never disagree.</summary>
 public partial class MainWindow
 {

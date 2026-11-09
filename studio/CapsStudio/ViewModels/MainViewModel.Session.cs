@@ -4,7 +4,7 @@ using CapsStudio.Interop;
 
 namespace CapsStudio.ViewModels;
 
-/// <summary>The project tree kept across sessions (as a Materials Studio project reopens with its documents and job
+/// <summary>The project tree kept across sessions (reopened with its documents and job
 /// folders): on quitting, each structure is written to the session folder (its current frame as a LAMMPS data file with
 /// the force field and provenance) or, for a trajectory, remembered by its path; Start offers to bring them back, each
 /// with its job folders from the job history.</summary>

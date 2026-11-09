@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare CAPS's automatic typing with Materials Studio's, as recorded in msi2lmp data files (the Masses comments
+"""Compare CAPS's automatic typing with the types recorded in msi2lmp data files (the Masses comments
 give each numeric type's force-field type). An independent check: these structures were typed by Accelrys'
 own rules.
 
@@ -32,6 +32,6 @@ for path in files:
     ok = sum(e == g for e, g in zip(expect, got))
     grand[0] += ok
     grand[1] += len(expect)
-    print(f"{os.path.basename(path)}: {ok}/{len(expect)} atoms as Materials Studio" +
+    print(f"{os.path.basename(path)}: {ok}/{len(expect)} atoms as recorded" +
           ("" if not conf else "  differences: " + ", ".join(f"{e}→{g}×{k}" for (e, g), k in conf.most_common())))
 print(f"total {grand[0]}/{grand[1]} ({100.0 * grand[0] / max(grand[1], 1):.1f} %)")

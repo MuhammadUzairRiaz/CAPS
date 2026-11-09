@@ -2,7 +2,7 @@
 """CVFF, PCFF and COMPASS from their .frc files (data/forcefields/*-frc.json) against LAMMPS's own msi2lmp tool.
 
 msi2lmp's reference data files (lammps/tools/msi2lmp/test/reference: class1 = cvff.frc, class2a = compass_published.frc,
-class2b = pcff.frc) give each structure with the types Materials Studio assigned and the parameters msi2lmp found for
+class2b = pcff.frc) give each structure with the types recorded in the files and the parameters msi2lmp found for
 them. CAPS reads the same structure with the same types (--types), assigns its parameters from the .frc conversion
 and writes its data file and input in the force field's own LAMMPS styles; LAMMPS then evaluates both with the same
 settings (Coulomb and van der Waals cut at 15 Å, special_bonds 0 0 1, no tail) and the energy terms are compared.
@@ -326,7 +326,7 @@ def polymer_cases(src):
             if not os.path.exists(ref):
                 out.append((label, None, "msi2lmp: " + ((r.stdout + r.stderr).strip().splitlines() or ["failed"])[-1][:150], "", "", "", [], []))
                 continue
-            # msi2lmp -i leaves a term the .frc's explicit tables lack at zero; CAPS would take Materials Studio's automatic
+            # msi2lmp -i leaves a term the .frc's explicit tables lack at zero; CAPS would take the .frc file's automatic
             # parameters there: compared with the explicit tables only, missing terms zero on both sides
             import json as _json
             lib = _json.load(open(os.path.join(ROOT, "data", "forcefields", ff)))
@@ -370,7 +370,7 @@ def main():
         ref = os.path.join(d, "msi2lmp_lammps_order.data")
         open(ref, "w").write("\n".join(fixed) + "\n")
         text = open(ref).read()
-        # the types Materials Studio assigned, from the .car file msi2lmp read (atoms in the same order)
+        # the recorded types, from the .car file msi2lmp read (atoms in the same order)
         atoms = []
         for line in open(car).read().splitlines()[4:]:
             w = line.split()

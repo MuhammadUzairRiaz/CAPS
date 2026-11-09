@@ -139,6 +139,7 @@ TEST(React, CrosslinkRelaxesAndRemovesHydrogen) {
   const size_t atoms = s.atoms.size(), bonds = s.bonds.size();
   ReactOptions o;
   o.templates = parse_templates(builtin_template("cc_crosslink"));
+  o.templates[0].capture = 8.0;   // whether two CH2 sit within 4.5 Å depends on the relaxed packing (and on the thread count)
   o.max_per_cycle = 2;
   o.max_cycles = 3;
   ReactReport r;
@@ -168,6 +169,7 @@ TEST(React, FailedCycleKeepsTheCompletedOnes) {
   relax(s, rl);
   ReactOptions o;
   o.templates = parse_templates(builtin_template("cc_crosslink"));
+  o.templates[0].capture = 8.0;
   o.max_per_cycle = 1;
   o.max_cycles = 4;
   System after1;
@@ -383,6 +385,7 @@ TEST(React, ChargesKeptThroughTheReaction) {
   for (const auto& a : s.atoms) q0 += a.charge;
   auto t = parse_templates(builtin_template("cc_crosslink") + "charges keep\n");
   ASSERT_TRUE(t[0].keep_charges);
+  t[0].capture = 8.0;
   System k = s;
   const auto m = find_matches(k, t[0]);
   ASSERT_FALSE(m.empty());
@@ -394,8 +397,11 @@ TEST(React, ChargesKeptThroughTheReaction) {
   EXPECT_NEAR(q1, q0, 1e-12);
   // the default: recomputed for the new chemistry
   auto d = parse_templates(builtin_template("cc_crosslink"));
+  d[0].capture = 8.0;
   System r = s;
-  apply_matches(r, d, {find_matches(r, d[0]).front()});
+  const auto md = find_matches(r, d[0]);
+  ASSERT_FALSE(md.empty());
+  apply_matches(r, d, {md.front()});
   EXPECT_FALSE(r.has_charges);
   EXPECT_THROW(parse_templates(builtin_template("cc_crosslink") + "charges maybe\n"), ReactError);
 }

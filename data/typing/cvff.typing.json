@@ -162,13 +162,13 @@
    "type": "n4",
    "smarts": "[NX4+]",
    "priority": 2,
-   "description": "sp3 N with four substituents: ammonium, protonated amines (as Materials Studio's CVFF typing)"
+   "description": "sp3 N with four substituents: ammonium, protonated amines (CVFF typing of the msi2lmp examples)"
   },
   {
    "type": "n",
    "smarts": "[NX2]=C(N)N",
    "priority": 3,
-   "description": "guanidine =N (as Materials Studio)"
+   "description": "guanidine =N"
   },
   {
    "type": "n2",

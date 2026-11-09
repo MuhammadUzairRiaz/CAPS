@@ -13,11 +13,11 @@ public sealed record PropRow(string Group, string Name, string Value, bool IsHea
     public bool IsValue => !IsHeader;
 }
 
-/// <summary>One output of a job, as the files of a Materials Studio job folder: the result structure, its trajectory,
+/// <summary>One output of a job: the result structure, its trajectory,
 /// charts, the report, the provenance, a checkpoint.</summary>
 public sealed record JobOutput(string Label, string Icon, Action Open);
 
-/// <summary>The Properties explorer and the job-output tree of the project (as Materials Studio's Properties and Project
+/// <summary>The Properties explorer and the job-output tree of the project (properties and project
 /// explorers): what the selection is, in numbers; and under each structure, a folder per job with what it produced.</summary>
 public partial class MainViewModel
 {

@@ -73,7 +73,7 @@ std::array<double, 3> nanotube_geometry(int n, int m, double cc = 1.42);
 
 // Fibre: a cylinder along the crystal's c axis (which must be normal to a and b), periodic along it — a glass, carbon or
 // steel fibre to embed in a rubber matrix.
-// Finite shapes cut from the crystal (Materials Studio's nanocluster shapes and more): a rod (finite cylinder), a cone
+// Finite shapes cut from the crystal: a rod (finite cylinder), a cone
 // and a frustum along z (base at the bottom), a regular tetrahedron, a square pyramid (apex up) and a hemisphere
 // (flat face down, on z = 0 of its centre). Their height is `height` (0: 2 × radius); the frustum's top radius is
 // top_ratio × radius.

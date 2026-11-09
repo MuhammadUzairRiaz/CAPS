@@ -1,6 +1,5 @@
 #!/bin/bash
-# CAPS carries nothing from the excluded conversion tool: no
-# tracked file may name it, and no tracked file may name the OPLS library converted from it as a library id (its
+# CAPS's libraries are built from their original sources only: no tracked file may name the excluded conversion tool, and no tracked file may name the OPLS library converted from it as a library id (its
 # ignore patterns in .gitignore aside, which keep local copies out of the repository). Names are built from pieces so
 # this file does not match itself.
 # usage: test_repo_ff_sources.sh SOURCE_DIR   (exit 77, skipped, outside a git checkout)

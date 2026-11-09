@@ -1,6 +1,5 @@
 // CAPS adsorption locator: the low-energy places of adsorbate molecules on a substrate (a surface slab, a crystal, a
-// polymer or filler surface), by Monte Carlo simulated annealing (Kirkpatrick, Gelatt & Vecchi, Science 220, 671 (1983)),
-// the method of Materials Studio's Adsorption Locator.
+// polymer or filler surface), by Monte Carlo simulated annealing (Kirkpatrick, Gelatt & Vecchi, Science 220, 671 (1983)).
 //
 // The substrate stays fixed; each adsorbate molecule moves as a rigid body (translation, rotation about its centre, a
 // jump to a random place and orientation) under the Metropolis rule at a temperature that falls geometrically from

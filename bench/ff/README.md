@@ -10,7 +10,7 @@ interaction, and every CAPS energy form is checked against LAMMPS.
 | `check_forms.cpp` (+ `check_forms_cmp.py`) | each CAPS functional form with random coefficients against the LAMMPS style it mirrors (class II, Morse / GROMOS bonds, cosine angles, Urey–Bradley, umbrella inversion, Buckingham, Morse pair, separate 1-4 LJ) |
 | `compare_moltemplate.py` | a moltemplate conversion against moltemplate's output and LAMMPS |
 | `compare_class2.py` | class II (COMPASS) conversions: every cross term, bond increments, LAMMPS CLASS2 energies / forces |
-| `compare_msi_types.py` | automatic typing against Materials Studio's types in msi2lmp data files |
+| `compare_msi_types.py` | automatic typing against the types recorded in msi2lmp's example data files |
 | `check_data_lammps.py` | LAMMPS data files written by CAPS, run in LAMMPS: every energy term and force, for each force-field family, hybrid styles included |
 | `validate_rtf_types.py` | automatic typing against a CHARMM topology's residues (CGenFF's own model compounds); `--apply` parameterises them |
 | `convert_frc.py` | CVFF, PCFF, COMPASS and IFF 1.5 from their `.frc` files with msi2lmp's semantics; IFF's silica and metal typing rules and the silica charges IFF states |
@@ -84,10 +84,10 @@ a virtual site included (exported as `virtual_sites2` / `virtual_sites3`).
 
 | Rules | Check | Result |
 |---|---|---|
-| `data/typing/cvff.typing.json` | Materials Studio typing in the msi2lmp examples | 811 / 823 atoms |
+| `data/typing/cvff.typing.json` | the types recorded in the msi2lmp examples | 811 / 823 atoms |
 | `data/typing/cgenff-toppar.typing.json` | the residues of `top_all36_cgenff.rtf` (`validate_rtf_types.py --cap-links`) | 9872 / 9872 atoms, 519 / 519 residues (residues with lone pairs left out) |
 
-CAPS follows the cff91 definition for PCFF (`c5`: aromatic carbon in a five-membered ring). Materials Studio's own
+CAPS follows the cff91 definition for PCFF (`c5`: aromatic carbon in a five-membered ring). The msi2lmp examples' own
 examples are not consistent with one another (ethane and the cff97 phenylalanine use generic `c`, crambin `c1`/`c2`/`c3`; crambin and nylon type NH3+ `n4`/`hn`,
 the cff97 example `n+`/`h+`); CAPS follows the majority. Where the libraries lack parameters for a correctly typed
 group (PCFF nitroso N=O, charged-imidazole N–H; CVFF sulfate S–O−), CAPS reports the missing terms.

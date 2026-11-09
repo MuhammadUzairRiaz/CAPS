@@ -250,7 +250,7 @@ public sealed partial class MainViewModel
     }
 
     public void AddHydrogensAll() { var sel = SelectionAtoms(); RunEdit(sel.Length > 0 ? new { op = "add_h", atoms = (object)sel } : new { op = "add_h", atoms = (object)"" }); }
-    // the Modify toolbar (Materials Studio's Modify Element / Bond Type / Hybridization, on the picked atoms)
+    // the Modify toolbar (element, bond type, hybridization of the picked atoms)
     public static readonly string[] QuickElements = ["H", "C", "N", "O", "F", "Si", "P", "S", "Cl", "Br"];
     /// <summary>The picked atoms made this element (their type follows).</summary>
     public void ModifyElementPicked(string symbol)

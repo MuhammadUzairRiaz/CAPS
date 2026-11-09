@@ -2006,7 +2006,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       // then the bond equivalents, as COMPASS's tools match increments (c43, c44, c4o are c4 for bonds: c4-c43 is c4-c4)
       if (!r) r = lookup(def.bond_increments, Nb, {b.i, b.j}, &rev);
       if (!r || r->params.size() < 2) {
-        if (def.missing_increment_zero) {   // counted 0 (Materials Studio, msi2lmp); named once per type pair
+        if (def.missing_increment_zero) {   // counted 0 (as msi2lmp); named once per type pair
           const std::string what = shown(Nq, {b.i, b.j});
           if (zeroed.insert(what).second) zero_names += (zero_names.empty() ? "" : ", ") + what;
           ++unmatched;
@@ -2020,7 +2020,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     }
     rep.notes.push_back("charges from bond increments" +
                         (unmatched ? " (" + std::to_string(unmatched) + " bonds without an increment" +
-                                         (def.missing_increment_zero ? ", counted 0 as Materials Studio and msi2lmp do: " + zero_names : std::string()) + ")"
+                                         (def.missing_increment_zero ? ", counted 0 as msi2lmp does: " + zero_names : std::string()) + ")"
                                    : std::string()));
   } else if (charges == "types") {
     for (size_t i = 0; i < n; ++i) {

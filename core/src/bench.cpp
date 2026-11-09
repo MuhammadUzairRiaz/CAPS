@@ -75,7 +75,7 @@ const std::vector<Meta>& metas() {
   static const std::vector<Meta> m = {
       {"T1", "Forces and virial", "analytic vs finite differences of the energy", {"Check", "Atoms", "Max |ΔF| (kcal/mol/Å)", "RMS F", "Status"}, nullptr},
       {"T2", "Packing", "CAPS Pack on water boxes", {"System", "Molecules", "Atoms", "Wall (s)", "d min (Å)", "Success"}, nullptr},
-      {"T3", "Amorphous cell builders", "vs Materials Studio, Polymatic, PySIMM, RadonPy", {}, "needs the other builders installed; compare their cells with CAPS Grow outside the Studio"},
+      {"T3", "Amorphous cell builders", "vs Polymatic, PySIMM, RadonPy", {}, "needs the other builders installed; compare their cells with CAPS Grow outside the Studio"},
       {"T4", "MD throughput", "ns/day, NVT with Bussi", {"System", "Atoms", "Threads", "ns/day", "Status"}, nullptr},
       {"T5", "NVE energy conservation", "drift, kT/ns/atom", {"System", "dt (fs)", "Length (ps)", "Drift (kT/ns/atom)", "RMS fluct. (kcal/mol)", "Status"}, nullptr},
       {"T6", "Properties vs experiment", "your equilibrated cells against data/reference/polymers.json", {"Material", "Cell", "Frames", "Density (g/cm³)", "Experiment", "Status"}, nullptr},

@@ -11515,7 +11515,7 @@ extern "C" int32_t caps_checkpoint(caps_doc* d, const char* json, char* out, int
   return report_out(r.dump(0), out, cap);
 }
 
-// The Properties explorer's data (as Materials Studio's): the structure (formula, composition, mass, charge, cell with
+// The Properties explorer's data: the structure (formula, composition, mass, charge, cell with
 // its angles, frames, force field) and one atom (types, charge, position, fractional position, bonded neighbours).
 extern "C" int32_t caps_structure_info(caps_doc* d, char* out, int32_t cap) {
   caps::Json r = caps::Json::object();
