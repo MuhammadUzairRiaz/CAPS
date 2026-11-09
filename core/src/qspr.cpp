@@ -1,5 +1,6 @@
 // CAPS structure–property models (see qspr.hpp).
 #include "caps/qspr.hpp"
+#include "caps/rng.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -385,7 +386,7 @@ Net train_net(const std::vector<std::vector<double>>& rows, const std::vector<do
     t[i] = (y[i] - net.my) / net.sy;
   }
   std::mt19937_64 rng(seed);
-  std::normal_distribution<double> N(0.0, 1.0);
+  caps::Normal<double> N(0.0, 1.0);
   double best = std::numeric_limits<double>::infinity();
   std::vector<double> bw;
   const size_t nw = net.H * net.p + 2 * net.H + 1;
@@ -422,6 +423,7 @@ void gfa_score(GfaModel& m, const std::vector<std::vector<double>>& rows, const 
 
 // a better model: a lower LOF, or as good (to rounding: an exact fit) with fewer terms
 bool gfa_better(const GfaModel& a, const GfaModel& b) {
+  if (!std::isfinite(a.lof) || !std::isfinite(b.lof)) return a.lof < b.lof;   // a singular model never ties with a real one
   const double tol = 1e-9 * std::max(std::fabs(a.lof), std::fabs(b.lof)) + 1e-24;
   if (std::fabs(a.lof - b.lof) <= tol) return a.basis.size() < b.basis.size();
   return a.lof < b.lof;
@@ -431,7 +433,7 @@ GfaModel run_gfa(const std::vector<std::vector<double>>& rows, const std::vector
                  std::vector<GfaModel>* top) {
   std::mt19937_64 rng(seed);
   const size_t n = rows.size(), p = rows[0].size();
-  auto rnd = [&](size_t k) { return size_t(std::uniform_int_distribution<size_t>(0, k - 1)(rng)); };
+  auto rnd = [&](size_t k) { return size_t(caps::UniformInt<size_t>(0, k - 1)(rng)); };
   auto random_term = [&] {
     Term t;
     const int kinds[4] = {1, 2, 4, 5};
@@ -687,7 +689,7 @@ ModelResult fit_model(const std::vector<double>& y, const std::vector<std::vecto
     std::mt19937_64 rng(o.seed + 7);
     for (int k = 0; k < o.randomise; ++k) {
       std::vector<double> ys = y;
-      std::shuffle(ys.begin(), ys.end(), rng);
+      caps::shuffle(ys.begin(), ys.end(), rng);
       try {
         Core cs = fit_core(ys, rows, names, o, o.seed + uint64_t(k) + 11);
         r.random_r2.push_back(cs.r.r2);
@@ -733,7 +735,7 @@ RowClusters cluster_rows(const std::vector<std::vector<double>>& rows0, const st
     for (int rs = 0; rs < std::max(1, restarts); ++rs) {
       std::vector<size_t> idx(n);
       std::iota(idx.begin(), idx.end(), 0);
-      std::shuffle(idx.begin(), idx.end(), rng);
+      caps::shuffle(idx.begin(), idx.end(), rng);
       std::vector<std::vector<double>> C;
       for (int c = 0; c < k; ++c) C.push_back(X[idx[size_t(c)]]);
       std::vector<int> lab(n, -1);

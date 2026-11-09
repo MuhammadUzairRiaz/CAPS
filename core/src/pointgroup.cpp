@@ -279,7 +279,7 @@ PermGroup group_of(const Mol& m, const Found& f, double tol) {
 
 // the orthogonal matrix that best carries each x_i onto x_perm(i) (polar factor of Σ x_π xᵀ, steadied by the
 // approximate matrix where the atoms span no direction, as the normal of a planar molecule)
-M3 fitted(const Mol& m, const std::vector<int>& perm, const M3& approx) {
+M3 fit_once(const Mol& m, const std::vector<int>& perm, const M3& approx) {
   M3 H{};
   double scale = 0;
   for (size_t i = 0; i < m.x.size(); ++i) {
@@ -300,6 +300,14 @@ M3 fitted(const Mol& m, const std::vector<int>& perm, const M3& approx) {
     for (int c = 0; c < 3; ++c)
       for (int k = 0; k < 3; ++k) S[r][c] += V[r][k] * V[c][k] / std::sqrt(std::max(w[size_t(k)], 1e-300));
   return mul(H, S);
+}
+
+// The small term in fit_once fixes a planar or linear molecule's rotation but pulls the result towards `approx`; refitted
+// from its own answer that pull vanishes (it was about 1e-7 Å from the first estimate).
+M3 fitted(const Mol& m, const std::vector<int>& perm, const M3& approx) {
+  M3 R = fit_once(m, perm, approx);
+  for (int pass = 0; pass < 2; ++pass) R = fit_once(m, perm, R);
+  return R;
 }
 
 PointGroupReport report_of(const Mol& m, const Found& f, double tol) {

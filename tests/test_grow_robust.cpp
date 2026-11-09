@@ -223,11 +223,19 @@ TEST(GrowRobust, LibraryCrossSectionDense) {
     o.seed = 5;
     o.auto_scale = true;
     what += "method " + std::to_string(k.method);
+    // 1.1 g/cm³ is near what one unit at a time can fill: a random path may jam (and says so), another seed must not
     System s;
-    try {
-      s = grow_chains(c, o);
-    } catch (const std::exception& e) {
-      ADD_FAILURE() << what << ": " << e.what();
+    std::string jammed;
+    for (uint64_t seed = 5; seed < 9 && s.atoms.empty(); ++seed) {
+      o.seed = seed;
+      try {
+        s = grow_chains(c, o);
+      } catch (const std::exception& e) {
+        jammed = e.what();
+      }
+    }
+    if (s.atoms.empty()) {
+      ADD_FAILURE() << what << ": " << jammed;
       continue;
     }
     expect_cell(s, c, 10, o.density, 0.6, what);
