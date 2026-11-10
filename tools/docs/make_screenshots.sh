@@ -144,10 +144,34 @@ make() {
     17_cg) shot 17_cg "" "cg=1" "wait=1000" ;;
     # Export for the minimised OPLS-AA 2024 polystyrene cell: LAMMPS and GROMACS files, the checks
     19_export) shot 19_export "" "$PS" "relax=1" "exportpage=1" "wait=1000" ;;
+    # Semicrystalline stack of orthorhombic PE: 3 x 4 cells across the chains, a 3 nm lamella and a 3 nm amorphous layer,
+    # built and relaxed with the polymer's own force field (OPLS-AA 2024)
+    28_semicrystalline) shot 28_semicrystalline "" "semi=3,4,3,3" "wait=1500" ;;
+    # Thermal › Lattice vibrations of orthorhombic PE (the library cell, Bunn 1939) with OPLS-AA 2024, scrolled to the card
+    29_thermal_phonons) mkdir -p "$DEMO/thermal"; cp "$ROOT/data/crystals/polymers/pe-orthorhombic.cif" "$DEMO/thermal/"
+      (cd "$DEMO" && shot 29_thermal_phonons "$DEMO/thermal/pe-orthorhombic.cif" "thermal=3d" "phonons=oplsaa2024" "wait=1000" "pagescroll=375") ;;
+    # Thermal › Dielectric and piezoelectric response of periclase (MgO) with the Catlow, Faux & Norgett 1976 shell model
+    30_thermal_dielectric) mkdir -p "$DEMO/thermal"; cp "$ROOT/data/crystals/periclase.cif" "$DEMO/thermal/"
+      (cd "$DEMO" && shot 30_thermal_dielectric "$DEMO/thermal/periclase.cif" "thermal=3d" "dielectric=catlow1976-mgo" "wait=1000" "pagescroll=480") ;;
+    # Scattering › Powder pattern 2θ of orthorhombic PE: Cu Kα1 and Kα2, 10-45°, 20 nm crystallites, scrolled to the reflections
+    31_powder) mkdir -p "$DEMO/thermal"; cp "$ROOT/data/crystals/polymers/pe-orthorhombic.cif" "$DEMO/thermal/"
+      (cd "$DEMO" && shot 31_powder "$DEMO/thermal/pe-orthorhombic.cif" "powder=Cu|10|45|20" "wait=1000" "pagescroll=420") ;;
+    # Study table of the 14 polymer crystals in the library (density, chains and atoms per cell, c, β from polymers.json),
+    # ordered by density, rows with more than two chains per cell hidden, cells coloured by density
+    32_study) mkdir -p "$DEMO/study"
+      python3 - "$ROOT/data/crystals/polymers/polymers.json" "$DEMO/study/polymer_crystals.csv" <<'PY'
+import json, sys
+crystals = json.load(open(sys.argv[1]))["crystals"]
+with open(sys.argv[2], "w") as f:
+    f.write("crystal,density,chains,atoms,c,beta\n")
+    for e in crystals:
+        f.write(f"{e['id']},{e['density']},{e['chains']},{e['atoms']},{e['cell']['c']},{e['cell']['beta']:g}\n")
+PY
+      (cd "$DEMO" && shot 32_study "" "study=$DEMO/study/polymer_crystals.csv|-density|chains <= 2|density" "wait=800") ;;
     *) echo "no picture called $1" >&2; return 1 ;;
   esac
 }
 
-if [ $# -eq 0 ]; then set -- 01_start 02_studio 03_molecule 04_polymer 04b_composition 05_grow 06_field 07_relax 08_dynamics 09_equilibrate 10_pack 11_blend 12_nano_sheet 13_nano_matrix 14_crystal 15_surface 16_react 17_cg 18_analyze 19_export 20_project 21_solvation 22_glass 23_jobs 27_dft_sheets; fi
+if [ $# -eq 0 ]; then set -- 01_start 02_studio 03_molecule 04_polymer 04b_composition 05_grow 06_field 07_relax 08_dynamics 09_equilibrate 10_pack 11_blend 12_nano_sheet 13_nano_matrix 14_crystal 15_surface 16_react 17_cg 18_analyze 19_export 20_project 21_solvation 22_glass 23_jobs 27_dft_sheets 28_semicrystalline 29_thermal_phonons 30_thermal_dielectric 31_powder 32_study; fi
 for n in "$@"; do make "$n"; done
 echo "PNGs and work files in $WORK"
