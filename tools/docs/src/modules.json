@@ -205,9 +205,16 @@
      "d": [
       "[[Open in Studio]]; [[Use in Pack]] to fill a box with it; [[Use as repeat unit]] when the SMILES has two `*` (it becomes unit A of the Polymer builder); or [[Insert into document]]."
      ]
+    },
+    {
+     "t": "Rings and joins in the Studio",
+     "d": [
+      "With a structure open in the Studio, the **Rings and joins** button on the view toolbar edits it in place. Pick the two atoms of a bond and [[Fuse on bond]] adds a ring of 3 to 8 atoms that shares it; pick one atom and [[Spiro on atom]] adds a ring through it. **Atoms** names the new ring atoms (`O`, `N C=O C C`; empty for carbons), and [[Aromatic]] makes a fused six-ring aromatic. [[Benzene]] fuses a benzene ring onto the picked bond.",
+      "**Insert** puts an atom of the chosen element into the picked bond. **Join a structure**: pick the leaving atom (a hydrogen, or any atom with one bond), give the piece's own leaving atom and the torsion or leave them to CAPS, then [[Choose file and join…]]."
+     ]
     }
    ],
-   "cli": "caps build 'C=Cc1ccccc1' -o styrene.mol2 --conformers 5 --ff uff",
+   "cli": "caps build 'C=Cc1ccccc1' -o styrene.mol2 --conformers 5 --ff uff\ncaps build 'c1ccccc1' -o benzene.mol2\ncaps edit benzene.mol2 --ops 'ring 1 2 6 aromatic' -o naphthalene.mol2",
    "python": "from caps import build\n\nm = build.smiles(\"C=Cc1ccccc1\", forcefield=\"uff\", conformers=5)\nm.save(\"styrene.mol2\")",
    "next": [
     "packing",
@@ -246,7 +253,8 @@
     {
      "t": "Set the architecture",
      "d": [
-      "[[Linear]] (default), [[Branched]], [[Star]], [[Comb]] or [[Dendrimer]], with arms, generations or branch probability. [[Network →]] goes to React."
+      "[[Linear]] (default), [[Branched]], [[Star]], [[Comb]] or [[Dendrimer]], with arms, generations or branch probability. [[Network →]] goes to React.",
+      "[[Graft]] puts side chains of another repeat unit on the backbone: the graft unit as SMILES with two `*`, the graft probability per unit and at most so many per chain (0: no limit). Mark the backbone atom a graft starts on with an atom class, `[CH:3]` (natural rubber: `[*]CC(C)=[CH:3]C[*]`); without a mark it starts on the head or tail atom."
      ]
     },
     {
@@ -262,6 +270,20 @@
      ]
     },
     {
+     "t": "Copolymers from reactivity ratios",
+     "d": [
+      "**Build › Copolymer builder…** draws a chain from the monomers' reactivity ratios r₁ and r₂ and the feed f₁. Under **Model and drift**: [[Terminal (last unit)]] or [[Penultimate (last two units)]] (two monomers, with r₁′ and r₂′); a third monomer M₃ with its feed f₃ and four more ratios; and drift as the faster monomer is used up, [[Drift between chains (batch)]] or [[Drift along each chain (living)]], up to a final conversion.",
+      "The page shows the composition and the sequence head to tail, the model against this chain; [[Redraw]] draws another. A copolymer cell grown in Polymer cell gets its composition and run lengths, model against cell, in the Grow log."
+     ]
+    },
+    {
+     "t": "Dendrimers and hyperbranched molecules",
+     "d": [
+      "Under **Dendrimers from units**, pick the **Family** (PAMAM with an EDA core, PPI with a DAB core, bis-MPA with a TMP core, or your own units) and the **Growth**: [[Perfect (every site)]] shell by shell to a generation, or a hyperbranched molecule by [[Slow monomer addition]] or [[Flory statistics (no core)]] with a number of units and a seed. Your own units are SMILES with an A site `[*:1]` and B sites `[*:2]`.",
+      "[[Build dendrimer]] opens the molecule as a new structure and reports the units per shell, the dendritic, linear and terminal units and the degree of branching."
+     ]
+    },
+    {
      "t": "Stereo, linkage and ends",
      "d": [
       "Atactic, isotactic or syndiotactic (or a dyad pattern); head-to-tail, head-to-head or random reversals; end groups such as hydrogen, methyl, phenyl or hydroxyl."
@@ -271,6 +293,12 @@
      "t": "Build",
      "d": [
       "[[Build in document]] builds one chain and opens it. [[Send to CAPS Grow]] takes the polymer to Polymer cell to grow a periodic cell. [[Save to your library]] keeps it for later."
+     ]
+    },
+    {
+     "t": "Graft chains onto a structure",
+     "d": [
+      "Under **Graft onto the open structure**, pick atoms in the view of the open structure (a filler surface, a chain) and press [[Graft onto picked atoms]]: chains of the units above, of the DP set on the page, grow from them while the structure stays where it is; each picked atom gives up a hydrogen. [[Every equivalent atom]] grafts on every atom like the one you picked. Set the probability, the most grafts in all and the spacing between sites. Undo with ⌘Z."
      ]
     }
    ],
@@ -287,7 +315,8 @@
      "first-cell",
      "Your first polymer cell"
     ]
-   ]
+   ],
+   "cli": "caps grow -o graft.data --units '[*]CC(C)=[CH:3]C[*]' --architecture graft \\\n    --graft-units '[*]CC(C)(C(=O)OC)[*]' --graft-dp 10 --graft-probability 0.1 --chains 4 --dp 40\ncaps copolymer --feed 0.5,0.5 --r1 0.5 --r2 0.5 --conversion 0.9 --csv drift.csv\ncaps dendrimer --preset pamam --generation 3 -o pamam_g3.pdb"
   },
   {
    "slug": "polymer-cell",
@@ -578,17 +607,50 @@
      ]
     },
     {
+     "t": "Read a disordered CIF",
+     "d": [
+      "When an imported CIF has disorder, the **CIF disorder** card says what it found (assemblies and groups, mixed and split sites, vacancies) and how to read it: [[Major group and occupant]] (one ordered cell, the default), [[A named group]] in every assembly, or [[Random fill of a supercell]] with its repeats and a seed, which fills the sites to their occupancies and keeps every copy of a disordered group whole. [[Read it again]] opens the file read that way as a new structure."
+     ]
+    },
+    {
+     "t": "Substitutional disorder",
+     "d": [
+      "Make the supercell first. Under **Substitutional disorder**, give the element whose sites are shared and the one that takes some of them. [[Quasirandom alloy]] at a share in % opens the arrangement whose near-neighbour pair statistics match a random alloy. [[Distinct arrangements]] for a number of substituent atoms lists every arrangement up to the cell's symmetry with how many equivalent copies it has; [[Open arrangement]] opens one by its number.",
+      "For a gradient, use **Point defects** under **Cell tools** with [[Graded from the centre]] or graded along x, y or z, and give the share at the centre or low end and at the surface or high end: core–shell particles and gradient alloys."
+     ]
+    },
+    {
+     "t": "Find the crystal's shape",
+     "d": [
+      "Under **Crystal shape**, set the highest index (hkl ≤ 3 by default) and press [[Find the shape]] for the faces by interplanar spacing. Tick [[Attachment energies]] and [[Surface energies]] to add the growth and equilibrium shapes; both use the force field assigned on the Force field page. Switch between [[Spacing (BFDH)]], [[Growth (attachment energy)]] and [[Equilibrium (surface energy)]], turn the shape, and [[Build particle]] cuts a particle of that shape and radius as a new structure."
+     ]
+    },
+    {
+     "t": "Space group, lattice planes and point group",
+     "d": [
+      "**Modify › Unit cell & supercell…** shows the space group kept with the structure: read from its CIF, built here, or found with [[Find]] (the highest group the atoms have within 0.1 Å); [[Drop]] makes it P 1. With [[Apply fits the cell to the crystal system]] on, a changed cell keeps the system's metric (cubic a = b = c, hexagonal γ = 120°). With [[Moving an atom moves its symmetry images]] on, the move tool takes each atom's images with it.",
+      "On the same page, **Lattice planes** draws the planes (h k l) cut to the cell, with a shift in units of their spacing; [[Show]] draws them and [[View onto]] turns the view down their normal. **Point group (molecule)** finds a molecule's point group within a tolerance, and [[Symmetrise]] moves the atoms so it is exactly symmetric."
+     ]
+    },
+    {
      "t": "Save it",
      "d": [
-      "File › Save as **CIF** (P 1 with the cell and formula; opens in VESTA, Mercury, pymatgen, ASE) or **VASP POSCAR** (VASP 5, atoms grouped by element)."
+      "File › Save as **CIF** (the asymmetric unit with its operations while a space group is kept, else P 1 with the cell and formula; opens in VESTA, Mercury, pymatgen, ASE) or **VASP POSCAR** (VASP 5, atoms grouped by element)."
      ]
     }
    ],
-   "cli": "caps crystal --group 'P 42/m n m' --cell 4.594,4.594,2.959 \\\n    --sites 'Ti1 Ti 0 0 0; O1 O 0.3048 0.3048 0' --supercell 2,2,2 -o rutile.cif\ncaps crystal rutile.cif --find-symmetry",
+   "cli": "caps crystal --group 'P 42/m n m' --cell 4.594,4.594,2.959 \\\n    --sites 'Ti1 Ti 0 0 0; O1 O 0.3048 0.3048 0' --supercell 2,2,2 -o rutile.cif\ncaps crystal rutile.cif --find-symmetry\ncaps cif disordered.cif --disorder random --supercell 2,2,2 --seed 1 -o filled.cif\ncaps sqs alloy.cif --from Cu --to Au --fraction 0.25 --supercell 2,2,2 -o sqs.cif\ncaps habit rutile.cif --ff catlow1985-rutile --attachment\ncaps planes rutile.cif --hkl 1,1,0",
    "python": "from caps import build\n\nrutile = build.crystal(\"P 42/m n m\", 4.594, 4.594, 2.959,\n                       [(\"Ti1\", \"Ti\", 0, 0, 0), (\"O1\", \"O\", 0.3048, 0.3048, 0)],\n                       supercell=(2, 2, 2))\nrutile.save(\"rutile.vasp\")",
    "next": [
     "surface",
-    "nanostructure"
+    "nanostructure",
+    "thermal"
+   ],
+   "theory": [
+    [
+     "growth",
+     "Growth"
+    ]
    ]
   },
   {
@@ -625,7 +687,8 @@
     {
      "t": "Stack layers (optional)",
      "d": [
-      "[[Add layer]]: this slab again (a sandwich) or a structure file; or a Polymer cell. **Lattice matching** shows the strain per layer, which can be shared between them."
+      "[[Add layer]]: this slab again (a sandwich) or a structure file; or a Polymer cell. **Lattice matching** shows the strain per layer, which can be shared between them.",
+      "A layer with an oblique cell is mapped onto the slab's cell in the plane, and the shear shows under **Strain a · shear**. [[Keep each layer's volume]] thins a stretched layer and thickens a compressed one by the change of its area."
      ]
     },
     {
@@ -639,9 +702,15 @@
      "d": [
       "Force field › **By group**: an inorganic model for the slab (for example IFF, clay or glass sets) and the polymer's own force field for the film. Then Analyze gives the interface density profile, adhesion and pull-out."
      ]
+    },
+    {
+     "t": "Electrostatics with vacuum",
+     "d": [
+      "For a slab with vacuum along z, choose [[Particle-mesh Ewald]] under **Settings › Force fields › Electrostatics** and tick [[Slab cells: correct for the vacuum along z]]: the reciprocal sum runs on a cell three times as long with the dipole correction, so the film does not feel its own images along z. Minimise, Dynamics and Equilibrate follow it, and LAMMPS inputs get `kspace_modify slab 3` and `boundary p p f`. On the command line, `--slab 3`."
+     ]
     }
    ],
-   "cli": "caps surface quartz.cif -o slab.data --hkl 0,0,1 --layers 3 --vacuum 15 --list\ncaps interface quartz.cif -o film.data --units '*CC(C)=CC*' --film 30 \\\n    --film-density 0.9 --chains 8 --dp 10",
+   "cli": "caps surface quartz.cif -o slab.data --hkl 0,0,1 --layers 3 --vacuum 15 --list\ncaps interface quartz.cif -o film.data --units '*CC(C)=CC*' --film 30 \\\n    --film-density 0.9 --chains 8 --dp 10\ncaps md film.data -o film_md.data --slab 3 --steps 5000",
    "next": [
     "force-field",
     "minimise"
@@ -679,7 +748,8 @@
     {
      "t": "Choose the type",
      "d": [
-      "**Sheet** (graphene or h-BN, width, layers, periodic or a flake with H edges), **Nanotube** (chirality n, m; length; multi-walled or ropes), **Particle** (a crystal cut to a sphere, cube, octahedron, fibre …; optional passivation) or **Pore** (slit, cylinder or from a CIF, with a fluid)."
+      "**Sheet** (graphene or h-BN, width, layers, periodic or a flake with H edges), **Nanotube** (chirality n, m; length; multi-walled or ropes), **Particle** (a crystal cut to a sphere, cube, octahedron, fibre …; optional passivation) or **Pore** (slit, cylinder or from a CIF, with a fluid).",
+      "For a particle of a molecular crystal (cellulose, S₈, a stearate), tick [[Whole molecules (kept by their centres)]]: each molecule is kept or left out by where its centroid falls, so none is cut; a periodic network is still cut atom by atom. **Base on planes (h k l)** puts the shape's base normal to those lattice planes."
      ]
     },
     {
@@ -726,7 +796,12 @@
    "lede": "Cut a lamella from a polymer crystal of the library and grow the amorphous layer between it and its periodic image from the crystal's own repeat unit: loops, bridges and tails in the fractions you ask for, at the amorphous density, relaxed with the polymer's force field.",
    "input": "A crystal from the list (or, on the command line, a CIF of another polymer crystal).",
    "output": "A lamellar cell with the groups crystal and amorphous, its force field assigned, and a report: segment counts and lengths, crystallinity from the chain order parameter, density and order profiles along the stack, stem tilt.",
-   "shots": [],
+   "shots": [
+    {
+     "img": "28_semicrystalline.jpg",
+     "cap": "**Semicrystalline stack** of orthorhombic polyethylene: 3 × 4 cells across the chains, a 3.0 nm lamella and a 3.0 nm amorphous layer at 0.852 g/cm³, relaxed with OPLS-AA 2024 (the polymer's own force field). 3,186 atoms in 9 chains with 24 stems, 12 loops, 3 bridges and 18 tails; crystallinity 0.607 from the order parameter (P2 > 0.75), with the density and P2 profiles along the stack normal. The view colours each chain."
+    }
+   ],
    "steps": [
     {
      "t": "Choose the crystal",
@@ -808,7 +883,21 @@
      "t": "Composites: one force field per part",
      "d": [
       "Switch on [[By group]], press [[Suggest groups]] (filler, polymer, blend components), choose a force field — or a literature potential such as Tersoff from a file — for each group, then [[Assign by group]].",
-      "Set how cross pairs mix ([[Between groups · ε]], [[σ]], [[1-4 pairs]]) or give pairs explicitly; CAPS writes the cross terms."
+      "Set how cross pairs mix ([[Between groups · ε]], [[σ]], [[1-4 pairs]]) or give pairs explicitly; CAPS writes the cross terms.",
+      "A group's force field can change its atoms: TraPPE O₂ and N₂ next to an all-atom polymer get their massless centre sites, and a united-atom group has its hydrogens folded into the carbons. [[Assign by group]] does this as one undo step, and the report gives each group's sites, folded atoms and net charge."
+     ]
+    },
+    {
+     "t": "Charges for periodic fillers",
+     "d": [
+      "**Modules › Partial charges…** with QEq: choose [[Ohno–Klopman shielding]] or [[Slater ns densities (original QEq)]], tick [[Ewald sum over the periodic images]] for a crystal or filler periodic in a, b and c, and [[Hydrogen hardness follows its charge]] if you need it. Per-element bounds such as `O:-1.2:0, Si:0:2.4` hold atoms that would pass them and share the rest of the charge out again."
+     ]
+    },
+    {
+     "t": "Fit a filler's potentials to crystal data",
+     "d": [
+      "For a crystal with an ionic or shell model (CaCO₃, silica, ZnO, a Buckingham set), the **Fit to crystal data** card at the end of the page. [[Find parameters]] lists the pair, bond and charge parameters of the assigned force field that act in the crystal; tick the ones to fit.",
+      "Under **Targets**, one per line: what, value, an optional weight and unit (`C11 297`, `bulk 160 0.01`, `energy -941.2 eV`): a b c, the angles, the volume, the lattice energy per formula unit, C11 to C66, bulk and shear moduli. The observed structure is always a target. Set the formula units per cell, keep [[Relax the crystal at every step]] on unless you need speed, and press [[Fit]]; with nothing ticked the crystal is only evaluated. [[Keep the fitted values]] puts them into the structure's assignment, and [[Save force field…]] writes them to a file."
      ]
     },
     {
@@ -821,7 +910,7 @@
    "tips": [
     "Class II force fields (PCFF, COMPASS) go to LAMMPS only: GROMACS has no class II functional form, and the Export page says so instead of writing an approximate file."
    ],
-   "cli": "# types from the rules, then the parameters and the decks\ncaps ff type cell.data --ff oplsaa2024 -o types.txt --explain\ncaps ff apply cell.data --ff oplsaa2024 --types types.txt \\\n    -o cell_ff.data --lammps-input cell.in --gromacs cell",
+   "cli": "# types from the rules, then the parameters and the decks\ncaps ff type cell.data --ff oplsaa2024 -o types.txt --explain\ncaps ff apply cell.data --ff oplsaa2024 --types types.txt \\\n    -o cell_ff.data --lammps-input cell.in --gromacs cell\n\n# QEq for a periodic filler, and a fit to crystal data\ncaps qeq silica.cif --kernel slater --ewald --bounds 'O:-1.2:0,Si:0:2.4' -o silica_q.data\ncaps fit spec.json --out fitted.json --json fit_report.json",
    "python": "import caps\n\nd = caps.open(\"cell.data\")\nreport = d.field.assign(\"pcff\")          # types, charges and every term\nprint(report)",
    "next": [
     "minimise",
@@ -884,6 +973,26 @@
      ]
     },
     {
+     "t": "Restraints in every run",
+     "d": [
+      "Under **Restraints in every run**, one restraint per line with atoms numbered from 1: `distance 1 2 3.0 20`, `torsion 1 2 3 4 60:90 50`, `position 1-40 5 axes z radius 0.5`. A target value, or LO:HI for a flat bottom, then k in kcal/mol/Å² or per rad²; `ramp K` changes k over a run. [[From selection]] adds the selected atoms at their present distance, angle or torsion.",
+      "[[Apply]] uses the list in Minimise, Dynamics and Equilibrate and writes it into the LAMMPS and GROMACS files."
+     ]
+    },
+    {
+     "t": "Relax a crystal cell with parameters held",
+     "d": [
+      "Under **Cell with held parameters**, the six lattice parameters relax with the atoms; tick the ones that keep their value (the chain axis of a polymer crystal, β of a monoclinic cell), set the pressure and press [[Relax cell]]. The cell keeps its orientation. Undo with ⌘Z."
+     ]
+    },
+    {
+     "t": "Find a reaction path",
+     "d": [
+      "Under **Reaction path**, [[Choose end B…]] picks the other end; the open structure is A. [[Match B's atoms to A's (any order in the file)]] pairs atoms by element, bonded environment and position. Choose how the first images are laid between the ends (interpolated pair distances or straight lines), the number of images and the largest force, tick [[Minimise both ends first]] and [[Climbing-image nudged elastic band]] as needed, then [[Find the path]].",
+      "The energy along the path is plotted. The NEB uses the force field assigned on the Force field page, else UFF."
+     ]
+    },
+    {
      "t": "Set when to stop",
      "d": [
       "Any of: |F|max below 0.5 kcal/mol/Å, 5000 iterations per stage, a relative ΔE per step, or a box stress below 100 atm."
@@ -899,7 +1008,7 @@
    "tips": [
     "The reported |F|max counts free atoms only; atoms you held are not included."
    ],
-   "cli": "caps relax cell.data -o cell_min.data --method lbfgs --ftol 0.5 \\\n    --density 1.05 --step 0.06",
+   "cli": "caps relax cell.data -o cell_min.data --method lbfgs --ftol 0.5 \\\n    --density 1.05 --step 0.06\ncaps relax cell.data -o cell_r.data --restraints 'distance 1 2 3.0 20; position 1-40 5 axes z'\ncaps cellrelax pe-orthorhombic.cif -o pe_relaxed.cif --hold c --ff oplsaa2024\ncaps path reactant.xyz product.xyz -o path.xyz --images 7 --neb --ff FF.json",
    "python": "import caps\n\nd = caps.open(\"cell.data\")\nd.relax(ftol=0.5, method=\"lbfgs\", density=1.05)\nd.save(\"cell_min.data\")",
    "next": [
     "equilibrate",
@@ -1100,7 +1209,8 @@
     {
      "t": "Sulfur cure: add the donors",
      "d": [
-      "Under **Sulfur donors** set the Sₓ range and the dose in phr (2.5 by default) and press [[Insert]]. A donor that reaches two chains becomes a C–Sₓ–C bridge."
+      "Under **Sulfur donors** set the Sₓ range and the dose in phr (2.5 by default) and press [[Insert]]. A donor that reaches two chains becomes a C–Sₓ–C bridge.",
+      "[[Remove pendant sulfur groups afterwards]] takes out the C–Sₓ–H groups left on one carbon after the cure and gives that carbon its hydrogen back; the summary counts them (`caps react --remove-pendant`)."
      ]
     },
     {
@@ -1253,15 +1363,35 @@
      ]
     },
     {
+     "t": "Compose the start from regions (optional)",
+     "d": [
+      "Under **Regions of the start**, [[Add]] droplets, rods (across the box), slabs, shells and tubes, each with its centre as fractions of the box edge, its radius, thickness or inner radius, axis and priority (where regions overlap, the higher priority claims the space). Name a region in a species' row and its molecules start there; a region no species names stays empty, a void or a filler. Amphiphiles can start with their first bead on the region's surface and the rest along the normal, into the region or out of it.",
+      "**Box edge · r_c** fixes where the regions sit. With regions, the random or templated start is not used."
+     ]
+    },
+    {
      "t": "Press Run DPD",
      "d": [
       "Follow **Segregation over the run** and the structure factor of the first bead type; the result gives ψ, the domain spacing and the domains at the end, and the page's view shows the beads of the last frame coloured by bead type."
+     ]
+    },
+    {
+     "t": "Density fields for larger morphologies",
+     "d": [
+      "**As density fields** runs the same molecules and χ as Gaussian chains on a grid (dynamic mean-field density functional theory): choose a 2D or 3D grid, the steps and the noise Ω, then [[Fields]]. Keep χ per bead pair near 1 or below and chains of 20 beads or fewer on these grids. There is no shear, mask or electrostatics in this version."
+     ]
+    },
+    {
+     "t": "Measure the domains",
+     "d": [
+      "In Analyze, the [[Domains]] chip labels the domains of a group's density field in each frame, across the periodic boundaries: their volumes, radii and ellipsoid axes, whether they percolate, and their spacing. `caps domains` also writes slices on any plane."
      ]
     }
    ],
    "next": [
     "analyze"
-   ]
+   ],
+   "cli": "caps dpd --molecules 'AAAABBBB:300@shell:in; C:9000' \\\n    --regions 'core droplet r=3 prio=2; shell shell r=5 in=3 prio=1' --box 16 --chi AB=5 -o dpd.xyz\ncaps fields --molecules 'A8B8:1' --chi AB=1.9 --grid 64,64,1 --steps 2000 --vtk fields.vtk"
   },
   {
    "slug": "adsorption",
@@ -1291,6 +1421,12 @@
      "t": "Open the substrate and assign its force field",
      "d": [
       "The substrate is held fixed; only the adsorbates move."
+     ]
+    },
+    {
+     "t": "Find the pores first",
+     "d": [
+      "For a porous crystal or a filler, **Modules › Analysis › Free volume…** › **Pore network** shows where the sorbate can go: with a probe radius and grid, [[Find channels]] maps where the probe's centre fits. A cluster that meets its own periodic image is a channel, one that does not is a pocket. You get the largest cavity diameter, the limiting pore diameter along each axis (the widest probe that still passes) and the accessible volume and surface per cell, per cm³ and per gram."
      ]
     },
     {
@@ -1329,6 +1465,94 @@
    "python": "import caps\n\nslab = caps.open(\"slab.data\")\nslab.field.assign(\"pcff\")\nres = slab.adsorption([(\"O=C=O\", 4)], region=\"above\")\nprint(res[\"adsorption_energy\"])\n\ncell = caps.open(\"polymer.data\")\ncell.field.assign(\"pcff\")\niso = cell.sorption(\"O=C=O\", pressures_kpa=(10, 100, 1000))\n\n# a bending sorbate, 3 molecules held in the cell and kept as the structure\nheld = cell.sorption(\"CCCCCC\", flexible=True, fixed_loading=3, keep_configuration=True)\nprint(held[\"fixed\"][\"adsorption_energy\"])",
    "next": [
     "analyze"
+   ],
+   "cli": "caps pores framework.cif --probe 1.4 --json pores.json"
+  },
+  {
+   "slug": "thermal",
+   "title": "Thermal properties",
+   "stage": "run",
+   "where": [
+    "Modules",
+    "Thermal conductivity…"
+   ],
+   "card": "Thermal conductivity by Green–Kubo or reverse NEMD; for crystals, phonons, quasi-harmonic expansion, dielectric and piezoelectric tensors and the Z-method melting point.",
+   "lede": "Heat transport and lattice properties of the open structure on one page: the thermal conductivity of a bulk material or a sheet by MD, and, for a crystal with its force field, phonon bands and heat capacity, thermal expansion, the dielectric and piezoelectric response and the melting point.",
+   "input": "A structure with a force field assigned. Phonons, expansion, the dielectric response and melting need a crystal.",
+   "output": "κ along x, y and z with its running integral or the slab temperatures, and LAMMPS inputs for the long run; phonon bands, DOS, sound speeds, C_v and S; the cell, α, B and C_p at each temperature; ε⁰, ε^∞, refractive indices, piezoelectric e and d and the reflectivity; the melting point from the Z curve.",
+   "shots": [
+    {
+     "img": "29_thermal_phonons.jpg",
+     "cap": "**Lattice vibrations** of orthorhombic polyethylene (the library cell from Bunn 1939, 12 atoms) with OPLS-AA 2024: the dispersion along a path through the Brillouin zone, the density of states for C and H, and the sound speeds of the acoustic branches. Along the chains (c*) the fastest branch gives 14.47 km/s; across them the fastest are 2.05 km/s (a*) and 2.53 km/s (b*). Below them, the zero-point energy and C_v and S per cell at 100 and 298 K."
+    },
+    {
+     "img": "30_thermal_dielectric.jpg",
+     "cap": "**Dielectric and piezoelectric response** of periclase (MgO) with the shell model of Catlow, Faux & Norgett (1976): ε⁰ 9.807 and ε^∞ 2.943 on every axis, refractive index 1.716, no piezoelectricity because the crystal is centrosymmetric, zone-centre modes from 306 to 516 cm⁻¹, and the infrared reflectivity, close to 1 from about 390 cm⁻¹ up. The **Melting point (Z method)** card waits below with its default starting temperatures."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Say what the material is",
+     "d": [
+      "Under **Material**, choose [[3D bulk (κ along x, y, z)]] or [[2D sheet (vacuum along z: in-plane κ, sheet conductance)]]. CAPS does not guess.",
+      "For a sheet, set the effective thickness in Å; 0 takes the atoms' extent plus their van der Waals radii. κ of a sheet depends on this choice (graphite's interlayer spacing, 3.35 Å, is the usual one for graphene); the sheet conductance κ·t does not."
+     ]
+    },
+    {
+     "t": "Choose the method",
+     "d": [
+      "[[Green–Kubo (heat-flux autocorrelation, NVE)]] or [[Reverse NEMD (Müller-Plathe exchanges)]]. Set T, the NVT run before sampling, the sampled time, the time step, how often to sample and the correlation time. NEMD also takes the flux axis, the number of slabs and how often kinetic energy is exchanged."
+     ]
+    },
+    {
+     "t": "Run short here, long on a cluster",
+     "d": [
+      "[[Run here]] is for a check: the card shows how many steps that is, and a laptop should stay at a few thousand. κ needs nanoseconds, so set **LAMMPS sampled run · ps** and press [[Write LAMMPS inputs…]]: the same method in LAMMPS (`compute heat/flux` on `compute centroid/stress/atom`, or `fix thermal/conductivity`).",
+      "**Result** gives κ along each axis; the plot at the bottom shows the running integral κ(t) or the slab temperatures."
+     ]
+    },
+    {
+     "t": "Phonons of a crystal",
+     "d": [
+      "On **Lattice vibrations**, [[Vibrations]] relaxes the atoms in a supercell of the crystal and finds the force constants by small displacements. You get the dispersion along a path through the Brillouin zone, the density of states per element, the sound speeds of the acoustic branches along a*, b* and c*, and the zero-point energy, C_v and S per cell. Along a polymer chain the fastest acoustic branch reflects the fibre's stiffness."
+     ]
+    },
+    {
+     "t": "Thermal expansion",
+     "d": [
+      "**Thermal expansion (quasi-harmonic)** computes phonons at strained cells and takes the cell at each temperature from the minimum of the free energy. [[As a whole (volume)]] scales the whole cell; [[Each axis on its own (a, b, c)]] shows anisotropy, such as a polymer crystal shrinking along its chains while it swells across them.",
+      "Set the strain range (0.020 by default) and the temperatures in K, then [[Expansion]]. The table gives a, b, c, V, α along each axis, B and C_p. A row marked * is extrapolated: widen the strain range."
+     ]
+    },
+    {
+     "t": "Dielectric and piezoelectric response",
+     "d": [
+      "[[Dielectric]] gives the static and high-frequency dielectric tensors, the refractive indices, the piezoelectric constants e and d and the infrared reflectivity, from the lattice dynamics of the force field. The electrons' part (ε^∞, the refractive index) needs a shell model. Useful for fillers and polymer crystals in sensing rubbers: ZnO, BaTiO₃, β-PVDF."
+     ]
+    },
+    {
+     "t": "Melting point by the Z method",
+     "d": [
+      "For an inorganic filler, a salt or a small-molecule crystal at its own volume. Give the starting temperatures (reach about twice the expected melting point), the steps of each run, the time step and how many extra runs to place between the last crystal and the first melted start, then [[Melt it]].",
+      "Each start is one constant-energy run from the perfect crystal; the bottom of the Z that the runs draw on the T(E) plot is the melting point. The cell must be at least twice the cut-off wide. Polymer crystals melt more reliably in a heating scan."
+     ]
+    }
+   ],
+   "cli": "caps thermal cell.data --dimensionality 3d --method gk --temp 300 \\\n    --lammps-input kappa.in          # only the inputs; add --ps to run here too\ncaps phonons pe-orthorhombic.cif --ff oplsaa2024 --csv pe_phonons\ncaps qha pe-orthorhombic.cif --ff oplsaa2024 --mode axes --temps 0,100,200,300\ncaps dielectric periclase.cif --ff catlow1976-mgo\ncaps zmelt crystal.cif --ff FF.json --temps 600,1200,1800,2400 --bisect 3",
+   "python": "import caps\n\npe = caps.open(\"pe-orthorhombic.cif\")\npe.field.assign(\"oplsaa2024\")\nprint(pe.phonons()[\"sound\"])            # m/s along a*, b*, c*\n\nmgo = caps.open(\"periclase.cif\")\nmgo.field.assign(\"catlow1976-mgo\")\nprint(mgo.dielectric()[\"eps0_principal\"])\nfor row in mgo.qha(temperatures=(0, 300, 600))[\"rows\"]:\n    print(row[\"T\"], row[\"volume\"], row[\"alpha_V\"])",
+   "next": [
+    "scattering",
+    "export"
+   ],
+   "theory": [
+    [
+     "analysis",
+     "Analysis methods"
+    ],
+    [
+     "protocols",
+     "Protocols"
+    ]
    ]
   },
   {
@@ -1449,6 +1673,20 @@
      ]
     },
     {
+     "t": "Spectra, hydrogen bonds and patterns",
+     "d": [
+      "[[IR spectrum]] under **Dynamics** gives the infrared spectrum from the time derivative of the cell's dipole, with quantum correction factors. It takes the charges from the force field and the run's temperature, and wants frames at most 5 fs apart.",
+      "**H-bond definition** sets the donor and acceptor elements (add C for weak C–H···O, S or Cl for sulfur chemistries and halides), the criterion ([[D···A ≤ 3.5 Å, ∠H–D···A ≤ 30° (Luzar–Chandler)]] or [[H···A < vdW sum, ∠D–H···A ≥ 110° (IUPAC 2011)]]) and, to count only between two groups, a selection for each; then tick [[H-bonds]].",
+      "**Pattern geometry** takes a SMARTS whose atom-map numbers mark 2, 3 or 4 points (`[#6][S:1][S:2][#6]`: the S–S distance at every match; atoms that share a number give their centroid). Tick [[Pattern geometry]] for the distribution."
+     ]
+    },
+    {
+     "t": "Surface tension of a slab",
+     "d": [
+      "`caps tension` reads the pressure tensor from a CAPS thermo CSV (`caps md --log`) or a LAMMPS log and gives the surface or interfacial tension in mN/m with block errors; `caps.surface_tension()` does the same in Python. The Studio has no control for it yet."
+     ]
+    },
+    {
      "t": "Dedicated pages for the big ones",
      "d": [
       "**Glass transition**: cooling from 500 K to 200 K in 20 K steps, 100 ps NPT each, Tg from a two-line fit ([[Run cooling]]). [[Open finished runs…]] reads scans that ran elsewhere (`caps tg` folders, `OUT.tg-points.json` or its csv folder); several are replicas, pooled as mean ± SD with error bars, the same as `caps tg --fit RUN RUN …`.",
@@ -1458,9 +1696,11 @@
      ]
     }
    ],
-   "cli": "caps analyze traj.lammpstrj --topology cell.data \\\n    --props density,rdf,rg,msd,diffusion --csv results/\ncaps tg cell.data -o tg.data --from 500 --to 200 --step 20 --ps 100 --csv tg/\ncaps tensile cell.data -o strained.data --axis x --rate 1e-3 --strain 0.2",
+   "cli": "caps analyze traj.lammpstrj --topology cell.data \\\n    --props density,rdf,rg,msd,diffusion --csv results/\ncaps tg cell.data -o tg.data --from 500 --to 200 --step 20 --ps 100 --csv tg/\ncaps tensile cell.data -o strained.data --axis x --rate 1e-3 --strain 0.2\ncaps tension thermo.csv --axis z --interfaces 2",
    "python": "import caps\n\nd = caps.open(\"traj.lammpstrj\", topology=\"cell.data\")\nfor r in d.analyze(\"density,rdf,rg\"):\n    print(r[\"name\"], r[\"value\"], r.get(\"error\"), r[\"unit\"])",
    "next": [
+    "scattering",
+    "study",
     "export",
     "project"
    ],
@@ -1469,6 +1709,158 @@
      "analysis",
      "Analysis"
     ]
+   ],
+   "theory": [
+    [
+     "analysis",
+     "Analysis methods"
+    ]
+   ]
+  },
+  {
+   "slug": "scattering",
+   "title": "Scattering & diffraction",
+   "stage": "out",
+   "where": [
+    "Modules",
+    "Analysis",
+    "Scattering…"
+   ],
+   "card": "Powder patterns of any cell, Rietveld and Pawley fits of measured data, indexing, total scattering and displacement parameters from MD.",
+   "lede": "Compute the X-ray, electron or neutron pattern of the open cell and lay it over a measured one: the powder pattern with every reflection, a Rietveld or Pawley fit of a measured 2θ pattern, the cells that index its lines, the total scattering I(q) of an amorphous cell, and atomic displacement parameters from a trajectory.",
+   "input": "A crystal or any periodic cell, or a trajectory (to average frames, and for displacement parameters); a measured pattern to fit.",
+   "output": "Reflections (h k l, d, 2θ, multiplicity, intensity) and I(2θ); a refined cell with measured, calculated and difference curves; candidate cells ranked by M20; I(q) for X-rays and neutrons; U_ij, U_iso and B per atom or site, and a CIF with them.",
+   "shots": [
+    {
+     "img": "31_powder.jpg",
+     "cap": "**Powder pattern 2θ** of orthorhombic polyethylene (the library cell, Bunn 1939) for Cu Kα1 and Kα2 from 10 to 45°, with 20 nm crystallites: (110) at 21.64° and (200) at 24.03° with 37.8 % of its intensity, and the weaker reflections listed with d, multiplicity and intensity. On the left, the Analyze calculations, with the new IR spectrum, ADP · B, Pattern geometry and Domains chips."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Open the structure and the page",
+     "d": [
+      "Open a crystal (a CIF, a library crystal) or a simulated cell, then **Modules › Analysis › Scattering…**. [[Total scattering I(q)]] shows the reciprocal-lattice sum with the g(r) transform above it, for amorphous cells and local order; [[Powder pattern 2θ]] shows the reflections as a diffractometer records them."
+     ]
+    },
+    {
+     "t": "Set the powder pattern",
+     "d": [
+      "Under **Powder pattern**: the tube (Cu, Mo, Co, Fe, Cr or Ag Kα, with [[Kα2]] at half the intensity), the 2θ range, the instrument width W, the crystallite size in nm (Scherrer broadening), the microstrain, a temperature factor B and the peak profile.",
+      "For a drawn fibre or a rolled film, give the planes the crystallites lie along and the March–Dollase r. [[Average the trajectory's frames]] lets the thermal motion of an MD run damp the reflections and add diffuse scattering. Press [[Pattern]]."
+     ]
+    },
+    {
+     "t": "Read the reflections",
+     "d": [
+      "The table lists h k l, d, 2θ, the multiplicity M and the intensity I (strongest 100); the plot draws I(2θ)."
+     ]
+    },
+    {
+     "t": "Load a measured pattern",
+     "d": [
+      "[[Load experimental curve]] reads two columns (q in Å⁻¹, or 2θ in degrees, and intensity) or a PANalytical .xrdml, GSAS, Bruker .uxd or Rigaku .asc file, and draws it with the calculated one."
+     ]
+    },
+    {
+     "t": "Refine and index",
+     "d": [
+      "With a measured 2θ pattern loaded, [[Refine against it]] fits it with the open crystal: the lattice, zero shift, peak widths, background and scale (Rietveld). Tick [[Pawley (free intensities)]] to leave each reflection's intensity free and fit only the cell and the peak shapes. The plot shows the measured, calculated and difference curves.",
+      "[[Index it]] finds the cells whose reflections fall on the measured lines (its peaks found, Kα2 dropped), best M20 first.",
+      "From the command line, `caps refine` also takes several crystals and gives their weight fractions, and `caps solve` finds a molecular crystal against the pattern by simulated annealing in direct space."
+     ]
+    },
+    {
+     "t": "Displacement parameters from MD",
+     "d": [
+      "Open a trajectory of a crystal. Under **Atomic displacement parameters**, give the repeats of the unit cell in the trajectory's cell (atoms on the same place of the unit cell form a site), then [[Compute]] for U_ij, U_iso and B of each atom or site. [[Colour by U_iso]] shows the mobile atoms bright; [[Write CIF with U_ij…]] writes the mean positions with their anisotropic U."
+     ]
+    },
+    {
+     "t": "Measured data in other formats",
+     "d": [
+      "`caps data` reads a measured curve (columns, .xrdml, GSAS, .uxd, Rigaku, JCAMP-DX) or a Gaussian .cube grid and writes it as CSV, .cube, .vtk or .npy. Bruker binary .raw, STOE .xyd and GSAS ALT/TOF files are not read: no public specification could be checked."
+     ]
+    }
+   ],
+   "cli": "caps powder pe-orthorhombic.cif --anode Cu --two-theta 10:45 --size 200 --csv pe_xrd.csv\ncaps refine measured.xy pe-orthorhombic.cif --anode Cu --two-theta 10,60 --json fit.json\ncaps index measured.xy --systems orthorhombic,monoclinic\ncaps adp traj.lammpstrj --topology cell.data --supercell 3,5,8 --cif sites.cif\ncaps data pattern.xrdml -o pattern.csv",
+   "python": "import caps\n\npe = caps.open(\"pe-orthorhombic.cif\")\npat = pe.powder(anode=\"Cu\", two_theta=(10, 45), size=200)   # size in Å\nfor p in pat[\"peaks\"][:3]:\n    print(p[\"h\"], p[\"k\"], p[\"l\"], p[\"two_theta\"], p[\"intensity\"])\n\nfit = pe.refine(\"measured.xy\")                 # Rietveld; mode=\"pawley\" for free intensities\nprint(fit[\"rwp\"], fit[\"phases\"][0][\"lattice\"])",
+   "next": [
+    "study",
+    "thermal"
+   ],
+   "theory": [
+    [
+     "analysis",
+     "Analysis methods"
+    ]
+   ]
+  },
+  {
+   "slug": "study",
+   "title": "Study table",
+   "stage": "out",
+   "where": [
+    "Modules",
+    "Analysis",
+    "Study table…"
+   ],
+   "card": "Results of many structures and runs in one sheet: formula columns, order and filters, charts with fits, statistics and structure-property models.",
+   "lede": "Collect results from several structures, batch runs and files in one table, add columns from formulas, chart one column against another, and fit models of a property: regression, PLS, genetic function approximation and a small neural network with cross-validation, or clusters and discriminants of the rows.",
+   "input": "The open structure and its Analyze results, Batch results, a table from the Reader, a CSV file or rows pasted from a spreadsheet.",
+   "output": "A study table (saved as a CAPS study file, or exported as CSV or an SD file), a chart with a fit, and statistics and model reports.",
+   "shots": [
+    {
+     "img": "32_study.jpg",
+     "cap": "**Study table** of the 14 polymer crystals in the library, read from a CSV of their density (g/cm³), chains and atoms per cell and c (Å). The rows are ordered by density, highest first; the filter `chains <= 2` hides the four cells with four chains (10 of 14 rows shown), and the density cells are coloured by value."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Add rows",
+     "d": [
+      "Under **Rows from**: [[The open structure]] (atoms, mass, density, cell and the Analyze results shown now), [[Batch results]], [[Reader table]] (a LAMMPS log, an xvg, a CSV), [[CSV file…]] or [[Paste]]. Columns are matched by name across sources, and a row that came from a file opens it with ↗."
+     ]
+    },
+    {
+     "t": "Add formula columns",
+     "d": [
+      "Under **New column**, a name and a formula over the columns to its left, such as `1000 / [Tg (K)]` or `ln(D)`; names with spaces go in square brackets. Leave the formula blank to type values. The constants pi, e, R, kB and NA are known."
+     ]
+    },
+    {
+     "t": "Order, filter and colour",
+     "d": [
+      "Type columns in priority order and press [[Order]]; a leading `-` sorts that column descending, and rows without a number go last. [[Filter]] shows only the rows that meet a condition such as `Tg > 300 and density < 1.2`. **Colour cells by** shades the cells of one column by value.",
+      "The filter hides rows from the sheet and from the SD file; the chart and the statistics still use every row."
+     ]
+    },
+    {
+     "t": "Chart a column against another",
+     "d": [
+      "Pick **Across (x)** and **Up (y)**, and a fit model under the chart. [[Histogram of the x column]] counts the rows in bins, with the Freedman–Diaconis, Scott or Sturges rule for the width."
+     ]
+    },
+    {
+     "t": "Statistics and models",
+     "d": [
+      "Choose a mode under **Statistics**: describe each column, Pearson correlations, regression of y (the chart's Up column) on the ticked columns, principal components, stepwise regression, PLS, genetic function approximation (GFA), a neural network with one hidden layer, Ward clusters of the rows, or discriminant analysis with the Up column as classes.",
+      "The models report q² by cross-validation (leave-one-out up to 30 rows, else 10-fold) and ten fits on shuffled y. Rows missing a value in a chosen column are left out.",
+      "[[Add descriptors of the rows' structures]] adds graph indices (Wiener, χ, κ, Balaban J), H-bond counts, van der Waals volume and area and charged partial surface areas of each row's structure as columns."
+     ]
+    },
+    {
+     "t": "Save or export",
+     "d": [
+      "[[Save…]] keeps the table to open again, [[Export CSV…]] writes it as text, and [[Export SD file…]] writes the rows shown that have a structure, one record each, with every column as an SD data item."
+     ]
+    }
+   ],
+   "cli": "caps table results.csv --sort 'Tg,-density' --hist density --rule fd\ncaps qspr descriptors --smiles 'CCO;CC(C)O' --csv descriptors.csv\ncaps qspr model results.csv --y Tg --x density,ced --method pls --folds 10 --randomise 10",
+   "python": "import csv\nimport caps\n\nrows = list(csv.DictReader(open(\"results.csv\")))\ny = [float(r[\"Tg\"]) for r in rows]\nx = {c: [float(r[c]) for r in rows] for c in (\"density\", \"ced\")}\nm = caps.qspr_model(y, x, method=\"pls\", folds=10, randomise=10)\nprint(m[\"equation\"], m[\"r2\"], m[\"q2\"])",
+   "next": [
+    "project",
+    "export"
    ],
    "theory": [
     [
