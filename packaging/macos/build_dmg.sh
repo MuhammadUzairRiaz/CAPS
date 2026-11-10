@@ -25,7 +25,7 @@ if [ -n "${CAPS_TORCH_DIR:-}" ]; then
   echo "   with CAPS's ML potential (libtorch from $CAPS_TORCH_DIR)"
 fi
 cmake -S "$ROOT" -B "$WORK/native" -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF \
-      -DCMAKE_OSX_ARCHITECTURES="$ARCH" -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 "${TORCH_ARGS[@]}" > "$WORK/cmake.log"
+      -DCMAKE_OSX_ARCHITECTURES="$ARCH" -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 ${TORCH_ARGS[@]+"${TORCH_ARGS[@]}"} > "$WORK/cmake.log"
 cmake --build "$WORK/native" -j "$(sysctl -n hw.ncpu)" > "$WORK/build.log"
 
 echo "== Studio (.NET, self-contained, $RID)"

@@ -26,7 +26,7 @@ if [ -n "${CAPS_TORCH_DIR:-}" ]; then
   TORCH_ARGS=(-DCAPS_WITH_TORCH=ON -DTorch_DIR="$CAPS_TORCH_DIR/share/cmake/Torch")
   echo "   with CAPS's ML potential (libtorch from $CAPS_TORCH_DIR)"
 fi
-cmake -S "$ROOT" -B "$WORK/native" -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF "${TORCH_ARGS[@]}" > "$WORK/cmake.log"
+cmake -S "$ROOT" -B "$WORK/native" -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF ${TORCH_ARGS[@]+"${TORCH_ARGS[@]}"} > "$WORK/cmake.log"
 cmake --build "$WORK/native" -j "$(nproc)" > "$WORK/build.log"
 
 echo "== Studio (.NET, self-contained, $RID)"
