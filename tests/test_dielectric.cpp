@@ -6,6 +6,7 @@
 #include "caps/dielectric.hpp"
 #include "caps/elements.hpp"
 #include "caps/phonons.hpp"
+#include "caps/qha.hpp"
 #include "caps/uff.hpp"
 
 using namespace caps;
@@ -159,3 +160,88 @@ TEST(Dielectric, ZincBlendePiezoelectricByDirectStrain) {
   std::printf("e14 direct %.6f, linear response %.6f C/m²\n", e14, r.e[0][3]);
   EXPECT_NEAR(e14, r.e[0][3], 1e-3 * std::fabs(r.e[0][3]) + 1e-5);
 }
+
+// Phonons of a shell model (adiabatic): the shells condensed out at every k, three branches per ion, and the Γ optical
+// modes those the dielectric module finds by its own condensation. A shell vibrating as a particle of its own gave core-
+// shell modes of thousands of cm⁻¹ (MgO: 4063) and their zero-point energy, which bent the quasi-harmonic results.
+TEST(Dielectric, ShellModelPhononsCondenseTheShells) {
+  System s = salt(5.65);
+  s.atoms.push_back(s.atoms[1]);   // the Cl shell at its core
+  auto ff_for = [](const System& x) {
+    ForceField ff = salt_ff(x);
+    ff.type_names.push_back("Cls");
+    ff.lj.push_back({0, 0});
+    for (size_t i = 2; i < x.atoms.size(); i += 3) {
+      ff.type_index[i] = 2, ff.atom_type[i] = "Cls", ff.charge[i] = -2.5, ff.charge[i - 1] = 1.5;
+      ff.bonds.push_back({uint32_t(i - 1), uint32_t(i), 1500.0, 0.0});
+      ff.excluded[i - 1].push_back(uint32_t(i)), ff.excluded[i].push_back(uint32_t(i - 1));
+    }
+    ff.pair_func.clear();
+    ff.pair_func[{0, 2}] = {1, 26990.0, 0.3216, 0.0};
+    ff.pair_func[{2, 2}] = {1, 50000.0, 0.33, 1500.0};
+    return ff;
+  };
+  DielectricOptions d;
+  d.energy = ewald();
+  d.field_for = ff_for;
+  d.shell = {0, 0, 1};
+  d.points = 50, d.piezo = false;
+  d.relax_cell = false;   // the phonons keep the cell as given
+  const DielectricResult dr = crystal_dielectric(s, d);
+  PhononOptions o;
+  o.energy = ewald();
+  o.field_for = ff_for;
+  o.mesh = {4, 4, 4};
+  o.path = {{0, 0, 0}, {0.5, 0, 0.5}};
+  o.labels = {"G", "X"};
+  o.path_points = 10;
+  const PhononResult pr = phonons(s, o);
+  ASSERT_FALSE(pr.bands.empty());
+  ASSERT_EQ(pr.bands[0].size(), 6u);   // two ions, not three particles
+  for (int k = 0; k < 3; ++k) EXPECT_NEAR(pr.bands[0][size_t(k)], 0, 1.0);   // the translations
+  ASSERT_EQ(dr.modes.size(), 3u);
+  for (int k = 0; k < 3; ++k) EXPECT_NEAR(pr.bands[0][size_t(3 + k)], dr.modes[size_t(k)], 0.01 * dr.modes[size_t(k)]) << k;
+  for (const auto& b : pr.bands)
+    for (double w : b) EXPECT_LT(w, 400);   // no core-shell mode
+}
+
+// Quasi-harmonic run of a charged shell-model crystal from the default (damped shifted force) Coulomb sum: switched to
+// Ewald, since the cut-off sum puts kinks in G(V) as shells of ions cross it, and the core-shell modes condensed out. The
+// fit is then smooth, the crystal expands as it warms, faster when hotter, and softens (in MgO the bulk modulus had risen
+// with temperature, from both faults)
+TEST(Dielectric, ShellModelQuasiHarmonicIsSmooth) {
+  System s = salt(5.65);
+  s.atoms.push_back(s.atoms[1]);
+  auto ff_for = [](const System& x) {
+    ForceField ff = salt_ff(x);
+    ff.type_names.push_back("Cls");
+    ff.lj.push_back({0, 0});
+    for (size_t i = 2; i < x.atoms.size(); i += 3) {
+      ff.type_index[i] = 2, ff.atom_type[i] = "Cls", ff.charge[i] = -2.5, ff.charge[i - 1] = 1.5;
+      ff.bonds.push_back({uint32_t(i - 1), uint32_t(i), 1500.0, 0.0});
+      ff.excluded[i - 1].push_back(uint32_t(i)), ff.excluded[i].push_back(uint32_t(i - 1));
+    }
+    ff.pair_func.clear();
+    ff.pair_func[{0, 2}] = {1, 26990.0, 0.3216, 0.0};
+    ff.pair_func[{2, 2}] = {1, 50000.0, 0.33, 1500.0};
+    return ff;
+  };
+  QhaOptions o;
+  o.phonon.field_for = ff_for;
+  o.phonon.energy.cutoff = 8.0;   // the default electrostatics: damped shifted force
+  o.phonon.mesh = {4, 4, 4};
+  o.points = 7, o.range = 0.03;
+  o.temperatures = {0, 200, 400, 600};
+  const QhaResult r = quasi_harmonic(s, o);
+  bool ewald = false;
+  for (const auto& n : r.notes) ewald = ewald || n.find("Ewald") != std::string::npos;
+  EXPECT_TRUE(ewald);
+  EXPECT_LT(r.fit_rms, 0.01);
+  ASSERT_EQ(r.rows.size(), 4u);
+  for (size_t k = 1; k < r.rows.size(); ++k) {
+    EXPECT_GT(r.rows[k].volume, r.rows[k - 1].volume) << k;
+    EXPECT_LT(r.rows[k].B, r.rows[k - 1].B) << k;
+    if (k > 1) EXPECT_GT(r.rows[k].alpha_V, r.rows[k - 1].alpha_V) << k;
+  }
+}
+

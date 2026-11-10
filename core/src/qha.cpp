@@ -290,6 +290,17 @@ QhaResult quasi_harmonic(const System& cell0, const QhaOptions& o) {
   QhaOptions oq = o;
   if (oq.phonon.energy.tail) notes.push_back("Lennard-Jones shifted at the cut-off, no tail term: the surface must be smooth in the strains (a truncated potential jumps as pairs cross the cut-off)");
   oq.phonon.energy.tail = false;
+  // the same for charges: the damped shifted force sum is a cut-off method, and its curvature jumps each time a shell of
+  // ions crosses the cut-off as the cell is strained (MgO: the bulk modulus rose with temperature); Ewald (PME) is smooth
+  if (oq.phonon.energy.electrostatics == EnergyOptions::Electrostatics::DSF) {
+    const ForceField f0 = oq.phonon.field_for(base);
+    if (std::any_of(f0.charge.begin(), f0.charge.end(), [](double q) { return q != 0; })) {
+      oq.phonon.energy.electrostatics = EnergyOptions::Electrostatics::PME;
+      oq.phonon.energy.ewald_rtol = std::min(oq.phonon.energy.ewald_rtol, 1e-6);
+      oq.phonon.energy.pme_spacing = std::min(oq.phonon.energy.pme_spacing, 0.6);
+      notes.push_back("Coulomb by Ewald (PME) for the free-energy surface: the damped shifted force sum's cut-off puts kinks in G(V)");
+    }
+  }
   if (o.relax_cell) {
     stop("relaxing the cell", 0);
     CellRelaxOptions co;

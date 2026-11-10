@@ -10,7 +10,8 @@
 //           ±δ, ±2δ: 29 cells for three axes; for anisotropic crystals (a polymer's negative expansion along its chains)
 // At the minimum: α_V and α_a,b,c by central differences over ±ΔT, B_T = V / (vᵀ H⁻¹ v) with H the Hessian of G in the
 // strains and v = ∂V/∂strain, C_v and S from fits of their own, C_p = C_v + T V B_T α_V².
-// The Lennard-Jones term is shifted at the cut-off with no tail term whatever the options say: the energies of a few per
+// Charges are summed by Ewald (PME) whatever the options say (the damped shifted force cut-off puts kinks in G(V)), and
+// the Lennard-Jones term is shifted at the cut-off with no tail term whatever the options say: the energies of a few per
 // cent strain are small, and a truncated potential jumps each time a pair crosses the cut-off (a tenth of the signal in
 // polyethylene). Limits: no anharmonicity beyond the volume dependence of the modes, so results degrade towards melting. Modes that go
 // imaginary at a strain leave F_vib (counted and noted).

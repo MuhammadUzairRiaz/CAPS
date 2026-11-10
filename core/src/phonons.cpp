@@ -181,33 +181,95 @@ PhononResult phonons(const System& s, const PhononOptions& o) {
       p.d = std::move(cand);
       pairs.push_back(std::move(p));
     }
+  // ---- shell models (adiabatic): a shell is the lighter of two bonded particles within 0.25 Å of each other. It has no
+  // inertia of its own and follows its core at once, so its mass goes to the core and it is condensed out of the
+  // dynamical matrix at every k, K_eff = K_cc − K_cs K_ss⁻¹ K_sc (Cochran 1959; Dick & Overhauser 1958): three branches
+  // per ion, not per particle (a shell treated as a particle with its own small mass gives core-shell modes of thousands
+  // of cm⁻¹ and their zero-point energy)
+  // (bonded in the structure, or by a spring of the force field: its first N particles are the cell's own)
+  std::vector<int> core_of(N, -1);
+  auto pair_up = [&](size_t i, size_t j) {
+    if (i == j || i >= N || j >= N) return;
+    if (norm(s.cell.minimum_image(s.atoms[j].pos - s.atoms[i].pos)) >= 0.25) return;
+    const size_t sh = mass[i] < mass[j] ? i : j, co = sh == i ? j : i;
+    core_of[sh] = int(co);
+  };
+  for (const auto& b : s.bonds) pair_up(b.i, b.j);
+  for (const auto& b : ff.bonds)
+    if (b.i < Ns && b.j < Ns) pair_up(b.i % N, b.j % N);
+  std::vector<size_t> moving, shells;   // the particles with inertia (cores and plain atoms), the shells
+  std::vector<double> mdyn = mass;
+  for (size_t a = 0; a < N; ++a) {
+    if (core_of[a] < 0) moving.push_back(a);
+    else shells.push_back(a), mdyn[size_t(core_of[a])] += mass[a];
+  }
+  if (!shells.empty()) r.notes.push_back(std::to_string(shells.size()) + " shells condensed out (adiabatic shell model): their mass is their core's");
+  const size_t nd = 3 * moving.size(), ns = 3 * shells.size();
   // ---- the dynamical matrix at k (Cartesian, Å⁻¹): wavenumbers ascending, and (optionally) each column's weight per atom
   const double vol = s.cell.volume();
   const Vec3 B0 = cross(s.cell.b, s.cell.c) * (2 * kPi / vol), B1 = cross(s.cell.c, s.cell.a) * (2 * kPi / vol), B2 = cross(s.cell.a, s.cell.b) * (2 * kPi / vol);
   auto kcart = [&](const std::array<double, 3>& f) { return B0 * f[0] + B1 * f[1] + B2 * f[2]; };
   auto solve = [&](const Vec3& k, std::vector<double>& w, std::vector<std::vector<double>>* atom_weight) {
-    std::vector<cd> D(n * n, cd(0, 0));
+    std::vector<cd> K(n * n, cd(0, 0));   // the force constants at k, not yet mass-weighted
     for (const auto& p : pairs) {
       cd ph(0, 0);
       for (const auto& d : p.d) ph += std::polar(1.0, dot(k, d));
       ph /= double(p.d.size());
-      const double im = 1 / std::sqrt(mass[p.a] * mass[p.b]);
       for (int al = 0; al < 3; ++al)
-        for (int be = 0; be < 3; ++be) D[(3 * p.a + size_t(al)) * n + 3 * p.b + size_t(be)] += p.phi[al][be] * im * ph;
+        for (int be = 0; be < 3; ++be) K[(3 * p.a + size_t(al)) * n + 3 * p.b + size_t(be)] += p.phi[al][be] * ph;
     }
+    auto row = [&](const std::vector<size_t>& set, size_t i) { return 3 * set[i / 3] + i % 3; };
+    std::vector<cd> D(nd * nd);
+    for (size_t i = 0; i < nd; ++i)
+      for (size_t j = 0; j < nd; ++j) D[i * nd + j] = K[row(moving, i) * n + row(moving, j)];
+    if (ns) {   // K_cc − K_cs K_ss⁻¹ K_sc: K_ss X = K_sc by Gaussian elimination with partial pivoting
+      std::vector<cd> M(ns * ns), X(ns * nd);
+      for (size_t i = 0; i < ns; ++i) {
+        for (size_t j = 0; j < ns; ++j) M[i * ns + j] = K[row(shells, i) * n + row(shells, j)];
+        for (size_t j = 0; j < nd; ++j) X[i * nd + j] = K[row(shells, i) * n + row(moving, j)];
+      }
+      for (size_t c = 0; c < ns; ++c) {
+        size_t piv = c;
+        for (size_t i = c + 1; i < ns; ++i) if (std::abs(M[i * ns + c]) > std::abs(M[piv * ns + c])) piv = i;
+        if (std::abs(M[piv * ns + c]) < 1e-12) throw std::runtime_error("phonons: the core-shell springs leave a shell free");
+        if (piv != c) {
+          for (size_t j = 0; j < ns; ++j) std::swap(M[c * ns + j], M[piv * ns + j]);
+          for (size_t j = 0; j < nd; ++j) std::swap(X[c * nd + j], X[piv * nd + j]);
+        }
+        for (size_t i = 0; i < ns; ++i) {
+          if (i == c) continue;
+          const cd f = M[i * ns + c] / M[c * ns + c];
+          if (f == cd(0, 0)) continue;
+          for (size_t j = c; j < ns; ++j) M[i * ns + j] -= f * M[c * ns + j];
+          for (size_t j = 0; j < nd; ++j) X[i * nd + j] -= f * X[c * nd + j];
+        }
+      }
+      for (size_t i = 0; i < ns; ++i) {
+        const cd inv = 1.0 / M[i * ns + i];
+        for (size_t j = 0; j < nd; ++j) X[i * nd + j] *= inv;
+      }
+      for (size_t i = 0; i < nd; ++i)
+        for (size_t j = 0; j < nd; ++j) {
+          cd sum(0, 0);
+          for (size_t l = 0; l < ns; ++l) sum += K[row(moving, i) * n + row(shells, l)] * X[l * nd + j];
+          D[i * nd + j] -= sum;
+        }
+    }
+    for (size_t i = 0; i < nd; ++i)
+      for (size_t j = 0; j < nd; ++j) D[i * nd + j] /= std::sqrt(mdyn[moving[i / 3]] * mdyn[moving[j / 3]]);
     // Hermitian part, then the real symmetric form of twice the size
-    const size_t m2 = 2 * n;
+    const size_t m2 = 2 * nd;
     std::vector<double> A(m2 * m2);
-    for (size_t i = 0; i < n; ++i)
-      for (size_t j = 0; j < n; ++j) {
-        const cd h = 0.5 * (D[i * n + j] + std::conj(D[j * n + i]));
-        A[i * m2 + j] = h.real(), A[(i + n) * m2 + j + n] = h.real();
-        A[i * m2 + j + n] = -h.imag(), A[(i + n) * m2 + j] = h.imag();
+    for (size_t i = 0; i < nd; ++i)
+      for (size_t j = 0; j < nd; ++j) {
+        const cd h = 0.5 * (D[i * nd + j] + std::conj(D[j * nd + i]));
+        A[i * m2 + j] = h.real(), A[(i + nd) * m2 + j + nd] = h.real();
+        A[i * m2 + j + nd] = -h.imag(), A[(i + nd) * m2 + j] = h.imag();
       }
     std::vector<double> ev2;
     symmetric_eigen(A, m2, ev2);
-    w.resize(n);
-    for (size_t i = 0; i < n; ++i) {
+    w.resize(nd);
+    for (size_t i = 0; i < nd; ++i) {
       const double lam = 0.5 * (ev2[2 * i] + ev2[2 * i + 1]);
       w[i] = (lam < 0 ? -1.0 : 1.0) * kWavenumber * std::sqrt(std::fabs(lam));
     }
@@ -216,9 +278,9 @@ PhononResult phonons(const System& s, const PhononOptions& o) {
       for (size_t c = 0; c < m2; ++c) {
         auto& aw = (*atom_weight)[c];
         aw[N] = (ev2[c] < 0 ? -1.0 : 1.0) * kWavenumber * std::sqrt(std::fabs(ev2[c]));
-        for (size_t row = 0; row < n; ++row) {
-          const double u = A[row * m2 + c], v = A[(row + n) * m2 + c];
-          aw[row / 3] += 0.5 * (u * u + v * v);
+        for (size_t rw = 0; rw < nd; ++rw) {
+          const double u = A[rw * m2 + c], v = A[(rw + nd) * m2 + c];
+          aw[moving[rw / 3]] += 0.5 * (u * u + v * v);
         }
       }
     }
@@ -272,7 +334,7 @@ PhononResult phonons(const System& s, const PhononOptions& o) {
   });
   double wmin = 0, wmax = 0;
   for (size_t q = 0; q < nk; ++q)
-    for (size_t i = 0; i < n; ++i) {
+    for (size_t i = 0; i < wk[q].size(); ++i) {
       if (q == 0 && i < 3) continue;   // Γ's acoustic modes
       wmin = std::min(wmin, wk[q][i]), wmax = std::max(wmax, wk[q][i]);
       r.imaginary += wk[q][i] < -10;
@@ -310,7 +372,7 @@ PhononResult phonons(const System& s, const PhononOptions& o) {
     if (T < 0) continue;
     double zpe = 0, U = 0, F = 0, Cv = 0;
     for (size_t q = 0; q < nk; ++q)
-      for (size_t i = 0; i < n; ++i) {
+      for (size_t i = 0; i < wk[q].size(); ++i) {
         const double w0 = wk[q][i];
         if (w0 < 0.5) continue;   // Γ's acoustic modes and unstable ones
         const double e = w0 * kCm1ToKcal;
