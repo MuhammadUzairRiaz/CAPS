@@ -114,10 +114,10 @@
    "description": "bromide"
   },
   {
-   "type": "CO2",
+   "type": "CO2C",
    "smarts": "[CX3;$(*(~[OX1])~[OX1])]",
    "priority": 5,
-   "description": "carboxylate C"
+   "description": "carboxylate C (des.ff CO2 with the carboxylate block's torsions)"
   },
   {
    "type": "O2",

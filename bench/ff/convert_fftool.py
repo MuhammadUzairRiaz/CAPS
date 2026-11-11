@@ -2,6 +2,7 @@
 """A CAPS force-field file from a force field in fftool's format (Padua's .ff files: CL&P's il.ff, its des.ff).
 
   convert_fftool.py FILE.ff [FILE.ff ...] OUT.json --name NAME [--reference "..."] [--version "..."] [--typing ../typing/ID.typing.json]
+                    [--split "TYPE:NEW:CLASS:BLOCK|BLOCK..." ...]
 
 The format (units kJ/mol, A, degrees): ATOMS "name class mass charge lj sigma epsilon" (class names the type in the
 bonded terms), BONDS / ANGLES "i j [k] harm|cons x0 k" with energy k/2 (x - x0)^2 ('cons': a constrained bond or angle,
@@ -9,6 +10,12 @@ kept flexible here with its constant), DIHEDRALS "i j k l opls V1 V2 V3 V4", IMP
 third. CAPS's form, real units: pairs epsilon / 4.184, sigma; bonds and angles harmonic K = k / 2 / 4.184; dihedrals opls
 V / 4.184; impropers cvff K = V2 / 2 / 4.184, d = -1, n = 2 (V2 / 2 [1 - cos 2 phi]), centre third; geometric mixing,
 1-4 x 0.5 (OPLS-AA, which CL&P follows). Later files add to and override earlier ones.
+
+--split: one class serving two chemistries whose blocks give the same torsion different values (des.ff's CO, the C of
+a carboxylate and of a carboxylic acid, with HC-CT-CT-CO and CT-CT-CT-CO in both blocks). NEW is a copy of TYPE (same
+mass, charge, Lennard-Jones, bond / angle / improper class; TYPE as its alias) whose dihedral class is CLASS, and the
+dihedrals of the source blocks whose "#" heading contains one of the BLOCK texts take CLASS for TYPE's class, so
+neither block overwrites the other. The typing rules give NEW to the chemistry of those blocks.
 """
 import json, sys
 
@@ -27,10 +34,16 @@ def element_of(m):
 
 
 types, pairs, bonds, angles, dihedrals, impropers, notes = {}, {}, {}, {}, {}, {}, []
+splits = [dict(zip(("type", "new", "cls", "blocks"), s.split(":", 3))) for s in many("--split")]
+for sp in splits:
+    sp["blocks"] = sp["blocks"].split("|")
 for path in files:
-    sec = None
+    sec, block = None, ""
     for raw in open(path, errors="replace"):
         line = raw.split("#")[0].strip()
+        head = raw.strip()
+        if head.startswith("#") and not any(f" {s} " in head for s in ("opls", "harm", "cons", "lj")):
+            block = head.lstrip("#").strip()  # a block heading, not a commented-out term
         if not line:
             continue
         w = line.split()
@@ -51,10 +64,23 @@ for path in files:
             angles[k] = {"name": "-".join(w[:3]), "match": w[:3], "style": "harmonic", "params": [float(w[5]) / 2 / KJ, float(w[4])],
                          **({"comment": "constrained in the source"} if w[3] == "cons" else {})}
         elif sec == "DIHEDRALS" and len(w) >= 9 and w[4] == "opls":
+            for sp in splits:
+                cls = types[sp["type"]]["equivalence"]["dihedral"]
+                if any(b in block for b in sp["blocks"]):
+                    w[:4] = [sp["cls"] if x == cls else x for x in w[:4]]
             k = tuple(w[:4]) if tuple(w[:4]) <= tuple(w[3::-1]) else tuple(w[3::-1])
             dihedrals[k] = {"name": "-".join(w[:4]), "match": w[:4], "style": "opls", "params": [float(x) / KJ for x in w[5:9]]}
         elif sec in ("IMPROPER", "IMPROPERS") and len(w) >= 9 and w[4] == "opls":
             impropers[tuple(w[:4])] = {"name": "-".join(w[:4]), "match": w[:4], "style": "cvff", "params": [float(w[6]) / 2 / KJ, -1, 2]}
+for sp in splits:
+    t = types[sp["type"]]
+    blocks = " / ".join(f"'{b}'" for b in sp["blocks"])
+    types[sp["new"]] = {**t, "name": sp["new"], "equivalence": {**t["equivalence"], "dihedral": sp["cls"]}, "aliases": [sp["type"]],
+                        "description": f"{sp['type']} with its own dihedral class {sp['cls']}: the torsions of the {blocks} blocks"}
+    pairs[sp["new"]] = {**pairs[sp["type"]], "name": sp["new"], "match": [sp["new"]]}
+    notes.append(f"{sp['new']} is {sp['type']} (class {t['equivalence']['dihedral']}) with its own dihedral class {sp['cls']}, which takes "
+                 f"the dihedrals of the source's {blocks} blocks, so they and the other blocks naming "
+                 f"{t['equivalence']['dihedral']} do not overwrite one another")
 doc = {"format": "caps-forcefield", "format_version": 1, "name": arg("--name"), "source": ", ".join(f.split("/")[-1] for f in files),
        "references": many("--reference"), "units": "real",
        "styles": {"pair": "lj/cut/coul/long", "bond": "harmonic", "angle": "harmonic", "dihedral": "opls", "improper": "cvff"},

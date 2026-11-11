@@ -138,6 +138,8 @@ EXPLAINED = {
                     "charges; the table has no sulfone alpha-C, so CAPS takes the alkane numbers beside the neutral SO2",
     ("135", "927"): "propyne's CH3 (2024 table): H3C-C#C 927 (+0.02), whose group balances the terminal alkyne's 925 / 925 / 926 "
                     "(-0.20); the topology's alkane 135 is GROMACS's own alkyne set, where the inner sp C carries the balance",
+    ("154", "160"): "tertiary alcohol O (2024 table): 160 (-0.65, OPLS/2020) beside its tertiary C 159 (0.232); with 154 the "
+                    "alcohol is -0.033 e (GROMACS's 159 is 0.265, which balances 154)",
     ("135", "273"): "acetate's CH3: GROMACS's own carboxylate CH3 273 (-0.28), whose charges sum to -1 with 271 / 272; the topology "
                     "uses 135 with charges of its own",
 }
@@ -154,6 +156,24 @@ EXPLAINED.update({**{p: BR for p in (("152", "976"), ("152", "978"), ("153", "97
                                   "(-0.40) has the charge the topologies' 186 has"})
 UNBAL = " has no numbers in the table whose charges balance; left untyped, CAPS reports it (with the topology's numbers and the " \
         "table's charges it would carry a net charge)"
+# GROMACS's oplsaa.ff has no numbers whose own charges balance these groups (the topologies set charges of their own in
+# [atoms]); the GROMACS-named library leaves them untyped and reports them, as the 2024 library does (check_type_charges.py)
+GMX_UNBAL = {m: why for why, ms in {
+    "alkyl bromide / iodide: Br 722 is a united-atom type (-0.22) and I 732 iodobenzene's (-0.10); with 152 / 153 the "
+    "molecule is charged and the file has no all-atom alkyl bromide or iodoalkane": ("1-bromobutane", "1-bromopropane",
+        "12-dibromoethane", "12-dibromopropane", "2-iodopropane", "bromoethane", "bromomethane", "dibromomethane", "iodomethane"),
+    "polychlorinated C: 152 / 153 are RCH2Cl's; on CHCl2, CH2Cl2, CHCl3, CCl3 the molecule is charged (chloroform -0.50 e)":
+        ("11-dichloroethane", "112-trichloroethane", "1122-tetrachloroethane", "dichloromethane", "pentachloroethane",
+         "trichloromethane", "dichlorofluoromethane"),
+    "Cl2C=: the file has no 398 / 399; 227 + 2 x 226 is -0.235 e": ("11-dichloroethene",),
+    "acrylonitrile: no alkene C carrying a nitrile (260 is benzonitrile's ring C, +0.06 e on acrylonitrile)": ("2-propenenitrile",),
+    "anhydride: the ester numbers leave C(=O)-O-C(=O) at -0.17 e": ("acetic-anhydride",),
+    "biphenyl: 145B carries -0.115 with no H to balance it (-0.23 e)": ("biphenyl",),
+    "dimethyl carbonate: the file has no methoxy C of a carbonate (789); the ester numbers leave -0.08 e": ("dimethylcarbonate",),
+    "diaryl ether: no 177; the phenyl ester pair 472 / 473 leaves +0.055 e a link": ("diphenyl-ether",),
+    "styrene: its 165 is not the 2024 table's styrene ipso C; benzene's 145 there leaves -0.115 e": ("styrene",),
+    "vinyl ester: the phenyl ester O 473 with the alkene numbers leaves -0.135 e": ("vinyl-acetate",),
+}.items() for m in ms}
 EXPLAINED_MOLECULE = {"methyloxirane": "epoxide: the table's epoxide types 1025-1029 with three-ring angle terms; the topologies' "
                                        "ether types put 109.5 deg angles on the ring (about 119 kcal/mol strain, 44 with these)",
                       "triethyl-phosphate": "a phosphate triester: the table's 440-444 are the dimethyl phosphate anion's (-0.38 e on "
@@ -198,7 +218,8 @@ def compare(out, ff, show):
             else:
                 good = False; diffs.append((name, i + 1, x, y))
         full += good
-    why = lambda d: EXPLAINED_MOLECULE.get(d[0]) or EXPLAINED.get((d[2], d[3]))
+    why = lambda d: EXPLAINED_MOLECULE.get(d[0]) or EXPLAINED.get((d[2], d[3])) or \
+        (GMX_UNBAL.get(d[0]) and ff == "oplsaa-gromacs" and GMX_UNBAL[d[0]] + "; left untyped (CAPS reports it)")
     unexplained = [d for d in diffs if not why(d)]
     print(f"{ff} against the GROMACS OPLS-AA topologies: {ok}/{tot} atoms ({100 * ok / max(tot, 1):.1f} %), "
           f"{untyped} untyped, {full}/{n} molecules fully the same; {len(diffs) - len(unexplained)} differing atoms with a "

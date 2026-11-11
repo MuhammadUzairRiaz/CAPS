@@ -685,7 +685,8 @@ TEST(Typing, OplsAlkynesAllenesAndGromacsNumbers) {
   const System bp = mol({"C", "C", "C", "C", "C", "C", "C", "C", "C", "C", "C", "C"}, {0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1},
                         {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 0}, {6, 7}, {7, 8}, {8, 9}, {9, 10}, {10, 11}, {11, 6}, {0, 6}});
   EXPECT_EQ(type_with("oplsaa2024", bp).types[0], "opls_519");
-  EXPECT_EQ(type_with("oplsaa-gromacs", bp).types[0], "opls_145B");
+  // GROMACS's 145B carries -0.115 with no H to balance it (biphenyl -0.23 e): the junction C stays untyped there
+  EXPECT_EQ(type_with("oplsaa-gromacs", bp).types[0], "");
 }
 
 // PCFF: hexa-1,3,5-triene's middle double bond c=2=c=2 with c=1-c=2 single bonds (pcff.frc ref 12: c=-c=1 1.34 A,
@@ -773,5 +774,38 @@ TEST(Typing, AuditSecondRoundTypes) {
     const TypingResult t = type_with(ff, ph3);
     EXPECT_EQ(t.untyped, 0) << ff;
     EXPECT_EQ(t.types[1], "hp") << ff;
+  }
+}
+
+// OPLS-AA in GROMACS's names, the same principle as the 2024 library: a group is typed only with numbers of GROMACS's
+// oplsaa.ff whose own charges balance it; the groups its reference topologies type with numbers plus charges of their own
+// (alkyl bromides, polychlorinated C, anhydrides, diaryl ethers, polysulfide S, biphenyl, styrene) stay untyped
+TEST(Typing, OplsGromacsGroupsBalanceOrStayUntyped) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsaa-gromacs.json");
+  auto net = [&](const std::string& smi, int* untyped) {
+    System s = build_molecule(smi).system;
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    *untyped = tr.untyped;
+    double q = 0;
+    for (const std::string& t : tr.types)
+      for (const auto& ft : def.types)
+        if (ft.name == t) q += ft.charge;
+    return q;
+  };
+  for (const auto& [smi, z] : std::vector<std::pair<std::string, double>>{
+           {"CC(=O)[O-]", -1}, {"CCOC(=O)OCC", 0}, {"CC#C", 0}, {"CC(C)(C)O", 0}, {"CS(C)=O", 0}, {"CCOC(C)=O", 0},
+           {"OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O", 0}, {"Cc1ccccc1", 0}, {"OC(=O)c1ccccc1", 0}}) {
+    int u = -1;
+    const double q = net(smi, &u);
+    EXPECT_EQ(u, 0) << smi;
+    EXPECT_NEAR(q, z, 1e-6) << smi;
+  }
+  for (const std::string smi : {"CCCCBr", "ClC(Cl)Cl", "CC(=O)OC(C)=O", "c1ccc(cc1)Oc1ccccc1", "CSSSC", "c1ccc(cc1)-c1ccccc1",
+                                "C=Cc1ccccc1", "C=C(Cl)Cl", "COC(=O)OC", "C#C", "c1ccsc1"}) {
+    int u = 0;
+    net(smi, &u);
+    EXPECT_GT(u, 0) << smi << " has no balancing GROMACS numbers and stays untyped";
   }
 }

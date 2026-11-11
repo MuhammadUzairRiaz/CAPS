@@ -99,7 +99,7 @@ ADD = [
     ("opls_503", 8, f"[{NH_R5[1:-1]};$(*~[#6X3;r5;!r6]~[#6X3;r5;!r6;$(*-[CX4H2]-{AA})]);$(*~[#6;r5;r6])]", "Trp NE1"),
     ("opls_504", 8, f"[H][{NH_R5[1:-1]};$(*~[#6X3;r5;!r6]~[#6X3;r5;!r6;$(*-[CX4H2]-{AA})]);$(*~[#6;r5;r6])]", "Trp HE1"),
     # cystine
-    ("opls_203", 6, "[SX2;$(*-[SX2])]", "disulfide S"), ("opls_214", 6, "[CX4H2;$(*-[SX2]-[SX2])]", "CH2 on a disulfide S"),
+    ("opls_203", 6, "[SX2;$(*-[SX2]);$(*-[#6])]", "disulfide S (on carbon: an S between two S has no number)"), ("opls_214", 6, "[CX4H2;$(*-[SX2]-[SX2])]", "CH2 on a disulfide S"),
     # pyroglutamate (a gamma-lactam closing on the C alpha)
     ("opls_238", 8, "[NX3H1;r5;$(*-[CX3;r5]=[OX1])]", "lactam N-H"), ("opls_241", 8, "[H][NX3H1;r5;$(*-[CX3;r5]=[OX1])]", "lactam N-H H"),
     ("opls_235", 8, "[CX3;r5;$(*=[OX1]);$(*-[NX3;r5])]", "lactam C=O"), ("opls_236", 8, "[OX1]=[CX3;r5;$(*-[NX3;r5])]", "lactam O"),
@@ -108,11 +108,11 @@ ADD = [
     # DMSO: OPLS-AA's all-atom sulfoxide types 496 / 497 / 498 (the general rules), as the GROMACS OPLS-AA topologies of
     # Caleman et al. 2012 type it; aminoacids.rtp's DMSO residue ("use at your own risk", 2006) takes the united-atom DMSO
     # S and O (124 / 125) with alkane C 139 and charges of its own, which with the types' charges leave DMSO at +0.04 e
-    # biphenyl: GROMACS's own note on opls_145 ("Use #145B for biphenyl"), class C! with its C!-C! / CA-C! terms
-    ("opls_145B", 3, "[c;$(c-!@c)]", "biphenyl junction C"),
+    # (no 145B for biphenyl: GROMACS's file charges it -0.115 with no H to balance, -0.23 e on biphenyl; left untyped)
     # alkynes, GROMACS's own set (ffnonbonded.itp 925-931, other meanings than the 2024 table's): terminal C 925, its H 926,
     # the inner sp C of R-C#CH by R's H count (927 2-3 H, 928 1 H, 929 none or phenyl), the H on R's carbon 930 (that C:
     # 135-139), RC#CR 931; propyne 135 + 3 x 930 + 927 + 925 + 926 = 0, as the GROMACS topology of Caleman et al. types it
+    ("opls_925", 2, "[CX2H1]#[CX2;$(*-[#6])]", "alkyne terminal C of R-C#CH (acetylene, -0.21 x 2 + 0.20 x 2, has no balance)"),
     ("opls_927", 2, "[CX2;$(*#[CX2H1]);$(*-[CX4H3,CX4H2])]", "alkyne inner C, R with 2-3 H"),
     ("opls_928", 2, "[CX2;$(*#[CX2H1]);$(*-[CX4H1])]", "alkyne inner C, R with 1 H"),
     ("opls_929", 2, "[CX2;$(*#[CX2H1]);$(*-[CX4H0,c])]", "alkyne inner C, R with no H or phenyl"),

@@ -592,6 +592,22 @@
     "dihedral": "HO",
     "improper": "HO"
    }
+  },
+  {
+   "name": "CO2C",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.7,
+   "equivalence": {
+    "bond": "CO",
+    "angle": "CO",
+    "dihedral": "COC",
+    "improper": "CO"
+   },
+   "aliases": [
+    "CO2"
+   ],
+   "description": "CO2 with its own dihedral class COC: the torsions of the 'acetate, carboxylates' / 'betaine' blocks"
   }
  ],
  "pairs": [
@@ -1063,6 +1079,16 @@
    "params": [
     0.0,
     1.0
+   ]
+  },
+  {
+   "name": "CO2C",
+   "match": [
+    "CO2C"
+   ],
+   "params": [
+    0.105,
+    3.75
    ]
   }
  ],
@@ -1803,12 +1829,12 @@
    ]
   },
   {
-   "name": "CT-NT-CT-CO",
+   "name": "CT-NT-CT-COC",
    "match": [
     "CT",
     "NT",
     "CT",
-    "CO"
+    "COC"
    ],
    "style": "opls",
    "params": [
@@ -1819,11 +1845,11 @@
    ]
   },
   {
-   "name": "NT-CT-CO-O2",
+   "name": "NT-CT-COC-O2",
    "match": [
     "NT",
     "CT",
-    "CO",
+    "COC",
     "O2"
    ],
    "style": "opls",
@@ -2027,11 +2053,11 @@
    ]
   },
   {
-   "name": "HC-CT-CO-O2",
+   "name": "HC-CT-COC-O2",
    "match": [
     "HC",
     "CT",
-    "CO",
+    "COC",
     "O2"
    ],
    "style": "opls",
@@ -2043,11 +2069,11 @@
    ]
   },
   {
-   "name": "CT-CT-CO-O2",
+   "name": "CT-CT-COC-O2",
    "match": [
     "CT",
     "CT",
-    "CO",
+    "COC",
     "O2"
    ],
    "style": "opls",
@@ -2059,34 +2085,34 @@
    ]
   },
   {
-   "name": "CO-CT-CT-HC",
+   "name": "HC-CT-CT-COC",
    "match": [
-    "CO",
+    "HC",
     "CT",
     "CT",
-    "HC"
+    "COC"
    ],
    "style": "opls",
    "params": [
     0.0,
     0.0,
-    -0.09999999999999999,
+    -0.225,
     0.0
    ]
   },
   {
-   "name": "CO-CT-CT-CT",
+   "name": "CT-CT-CT-COC",
    "match": [
-    "CO",
     "CT",
     "CT",
-    "CT"
+    "CT",
+    "COC"
    ],
    "style": "opls",
    "params": [
-    -2.059990439770554,
-    -0.3130019120458891,
-    0.3150095602294455,
+    -3.1849904397705546,
+    -0.825,
+    0.49299713193116634,
     0.0
    ]
   },
@@ -2203,6 +2229,22 @@
    ]
   },
   {
+   "name": "CO-CT-CT-HC",
+   "match": [
+    "CO",
+    "CT",
+    "CT",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    -0.09999999999999999,
+    0.0
+   ]
+  },
+  {
    "name": "OH-CT-CO-OH",
    "match": [
     "OH",
@@ -2231,6 +2273,22 @@
     9.065965583173996,
     0.0,
     0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "CO-CT-CT-CT",
+   "match": [
+    "CO",
+    "CT",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -2.059990439770554,
+    -0.3130019120458891,
+    0.3150095602294455,
     0.0
    ]
   },
@@ -2457,7 +2515,7 @@
  ],
  "notes": [
   "converted by CAPS (bench/ff/convert_fftool.py) from des.ff",
-  "des.ff gives HC-CT-CT-CO and CT-CT-CT-CO twice, in its carboxylate block (-0.9414; -13.3260 / -3.4518 / 2.0627 kJ/mol) and again, as CO-CT-CT-HC and CO-CT-CT-CT, in its carboxylic-acid block (-0.4184; -8.6190 / -1.3096 / 1.3180); both blocks name the same CO type, so one value serves both and this file keeps the acid block's (the later lines): a carboxylate longer than acetate takes the acid torsions"
+  "CO2C is CO2 (class CO) with its own dihedral class COC, which takes the dihedrals of the source's 'acetate, carboxylates' / 'betaine' blocks, so they and the other blocks naming CO do not overwrite one another"
  ],
  "version": "des.ff 2025/12/19",
  "typing": "../typing/clandp-des.typing.json"

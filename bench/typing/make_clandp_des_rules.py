@@ -10,7 +10,9 @@ component's charge only in one way, which these rules follow.
              C2, CE, CS, CT, H1, HC), protonated tertiary amines (N3, H3), hydroxyethylammonium (COL on the CH2 holding
              the OH), tetraalkylphosphonium (P3, C1P, C2 and the alkane types), betaine (N4B: its trimethylammonium head
              is +1 like N1111's with N4B for N4, so its CH2 COO- is a carboxylate's CH2, C2C with HC)
-  anions     chloride, bromide (OPLS's), carboxylates (CO2, O2, CTA, C2C, C3C)
+  anions     chloride, bromide (OPLS's), carboxylates (CO2C, O2, CTA, C2C, C3C; CO2C is des.ff's CO2 with the dihedral
+             class of des.ff's carboxylate and betaine blocks, convert_fftool.py --split, as des.ff's acid block gives
+             HC-CT-CT-CO and CT-CT-CT-CO other values)
   HBDs       urea (CU, OU, NU, HU); alcohols (OPLS-AA mono alcohols: CTO for CH2-OH, C2O for CH-OH, OH, HO, H on C HC);
              diols and triols (OPLS-AA's: OHG / HOG in a diol, OHT / HOT in a 1,2,3-triol, CTO on CH2-OH, CSO on CH-OH,
              H1O on those carbons); carboxylic acids (CO2 for the acid C, O3, OOH, HOO; des.ff's own CXT for an acetic
@@ -70,7 +72,7 @@ add("HC", 6, f"[H][CX4;$(*-{COO})]", "H on a carbon bonded to a carboxylate C (b
 add("Cl", 5, "[Cl;X0]", "chloride")
 add("Br", 5, "[Br;X0]", "bromide")
 # ---------------------------------------------------------------- carboxylates
-add("CO2", 5, f"[CX3;$(*(~[OX1])~[OX1])]", "carboxylate C")
+add("CO2C", 5, f"[CX3;$(*(~[OX1])~[OX1])]", "carboxylate C (des.ff CO2 with the carboxylate block's torsions)")
 add("O2", 5, "[OX1;$(*~[CX3]~[OX1])]", "carboxylate O")
 add("CTA", 5, f"[CX4H3;$(*-{COO})]", "acetate CH3")
 add("C2C", 6, f"[CX4H2;$(*-{COO})]", "CH2 on a carboxylate (betaine's CH2 included)")

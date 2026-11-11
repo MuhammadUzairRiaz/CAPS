@@ -18,7 +18,7 @@
                        HFA134a (CF3CH2F). Table 1 (read from the page image): OPLS-AA's fixed bond lengths (stiff harmonic
                        here, to be constrained), bends k_theta / 2 (theta - theta0)^2 in K / rad^2, F-C-C-F and F-C-C-H
                        torsions C0 + C1 (1 + cos phi) + C2 (1 - cos 2 phi) + C3 (1 + cos 3 phi) (eq. 3; the table's four
-                       columns read as C0..C3); Table 2: charges and Lennard-Jones of FF no. 2, Lorentz-Berthelot; eq. 1 has no
+                       columns read as C0..C3; each fit is the whole C-C rotation scan, so shared over the bond's nine dihedrals); Table 2: charges and Lennard-Jones of FF no. 2, Lorentz-Berthelot; eq. 1 has no
                        intramolecular non-bonded energy, so every intramolecular pair is excluded. Cut-off 14 A (section 3.2).
 
 usage: make_zeolite_sorbates.py [DATA_DIR]
@@ -173,10 +173,20 @@ angles = [{"name": f"{a}-C_hfa-{c}", "match": [a, "C_hfa", c], "params": [k / 2 
                               ("H_hfa", "F_hfa", 107.0, 20148.7), ("F_hfa", "F_hfa", 109.1, 38786.2))]
 
 
+# Each of Table 1's two fits is a relaxed scan of the whole C-C rotation ("for a series of dihedral angles", HF/6-31+g(d,p)):
+# alone, either gives the scanned barrier (F-C-C-F 4.33, F-C-C-H 4.26 kcal/mol; their C3 1070 / 1065 K agree because both
+# describe the same rotation). Applied to every one of the nine dihedrals about the C-C bond (3 F-C-C-F, 6 F-C-C-H), whose
+# 3-fold terms all add in phase, they gave a 38 kcal/mol barrier; so each term is divided by the nine dihedrals of the
+# bond, and their sum is the scanned profile (4.24 kcal/mol, staggered minimum)
+N_CC = 9
+
+
 def tors(a, d, c0, c1, c2, c3):
-    p = [(c1 * KB, 1, 0.0), (c2 * KB, 2, 180.0), (c3 * KB, 3, 0.0), (c0 * KB, 0, 90.0)]
+    f = KB / N_CC
+    p = [(c1 * f, 1, 0.0), (c2 * f, 2, 180.0), (c3 * f, 3, 0.0), (c0 * f, 0, 90.0)]
     return {"name": f"{a}-C_hfa-C_hfa-{d}", "match": [a, "C_hfa", "C_hfa", d], "params": [len(p)] + [x for t in p for x in t],
-            "comment": f"C0 + C1 (1 + cos phi) + C2 (1 - cos 2 phi) + C3 (1 + cos 3 phi); C0..C3 {c0}, {c1}, {c2}, {c3} K (Table 1)"}
+            "comment": f"[C0 + C1 (1 + cos phi) + C2 (1 - cos 2 phi) + C3 (1 + cos 3 phi)] / 9; C0..C3 {c0}, {c1}, {c2}, {c3} K (Table 1, "
+                       "eq. 3: a fit to the whole C-C rotation scan, shared over the bond's nine dihedrals)"}
 
 
 dihedrals = [tors("F_hfa", "F_hfa", 11.35, 1.96, -24.50, 1070.18), tors("F_hfa", "H_hfa", -29.32, 1.59, 9.96, 1064.65)]
