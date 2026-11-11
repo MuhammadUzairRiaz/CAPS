@@ -268,8 +268,9 @@ std::string gromacs_mdp(const System& s, const ForceField& ff, const EnergyOptio
     if (e.slab > 1) m << "ewald-geometry           = 3dc         ; Yeh-Berkowitz slab correction (the cell's vacuum along z: keep it at least twice the slab)\n";
   } else {
     m << "; no periodic cell in CAPS: the molecule is in a box 2 r_c larger, plain cut-off Coulomb (CAPS: damped shifted force)\n";
-    m << "coulombtype              = Reaction-Field\n";
-    m << "epsilon-rf               = 1\n";
+    // the Verlet scheme's Cut-off is reaction field with epsilon-rf 1 (k_rf 0, c_rf 1/r_c), the same form as written
+    // explicitly before, without grompp's warning on epsilon-rf = epsilon-r
+    m << "coulombtype              = Cut-off\n";
   }
   if (std::any_of(ff.bonds.begin(), ff.bonds.end(), [](const BondTerm& b) { return b.k == 0 && b.r0 > 0; })) {
     // rigid diatomics (TraPPE N2, O2, H2): their bond is in [ constraints ], which hold whatever "constraints" says
