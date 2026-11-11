@@ -5520,8 +5520,147 @@ internal static class SelfTest
             var box = w.GetVisualDescendants().OfType<Avalonia.Controls.ComboBox>().FirstOrDefault(c => ReferenceEquals(c.ItemsSource, w.ViewModel.SheetPresets));
             Check(box != null && box.IsEffectivelyVisible && w.ViewModel.SheetPreset.Length > 0 && Equals(box.SelectedItem, w.ViewModel.SheetPreset),
                   $"2D sheets page shows the preset: box '{box?.SelectedItem}' · active '{w.ViewModel.SheetPreset}' · {w.ViewModel.SheetPresets.Count} presets");
+            SketchChecks(Check, w);
             w.Close();
         }
+        Console.WriteLine(fails == 0 ? "all checks passed" : $"{fails} check(s) failed");
+        return fails == 0 ? 0 : 1;
+    }
+
+    /// <summary>The Molecule sketch, its toolbar and View › Shelves in a real window on the headless platform (which must be
+    /// set up already), driven with the pointer and the keyboard. Also runs alone: --sketchtest. Returns the failures.</summary>
+    internal static int SketchChecks(Action<bool, string> check, Views.MainWindow? open = null)
+    {
+        void Check(bool ok, string what) => check(ok, what);
+        void Step(string s) { if (Environment.GetEnvironmentVariable("CAPS_TRACE") == "1") Console.WriteLine("  · " + s); }
+        // the Molecule sketch in a real window, driven with the pointer and the keyboard as a user does
+        {
+            Step("window");
+            var w = open ?? new Views.MainWindow { Width = 1440, Height = 900 };
+            if (open == null) w.Show();
+            void Pump(int n = 10) { for (var i = 0; i < n; i++) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(10); } }
+            var mv = w.ViewModel;
+            mv.OpenBuilder();
+            Pump(30);
+            var page = w.GetVisualDescendants().OfType<Views.Pages.MoleculePage>().First();
+            var skc = page.GetVisualDescendants().OfType<Views.SketchCanvas>().First();
+            Point At(Avalonia.Visual v, Point p) => v.TranslatePoint(p, w) ?? default;
+            void Click(Point p) { w.MouseMove(p); w.MouseDown(p, Avalonia.Input.MouseButton.Left); w.MouseUp(p, Avalonia.Input.MouseButton.Left); Pump(); }
+            void Press(string name) { var b = Named<Avalonia.Controls.Control>(name); Click(At(b, new Point(b.Bounds.Width / 2, b.Bounds.Height / 2))); }
+            var centre = new Point(skc.Bounds.Width / 2, skc.Bounds.Height / 2);
+            string F() => mv.MolFormula;
+            T Named<T>(string n) where T : Avalonia.Controls.Control => page.GetVisualDescendants().OfType<T>().First(c => c.Name == n);
+
+            Step("1: rings: benzene, then benzene fused on it");
+            // rings: benzene, then benzene fused on its edge twice (naphthalene, then a three-ring arene): C₆H₆, C₁₀H₈, C₁₄H₁₀, one H on every CH
+            Press("ToolRing");
+            Click(At(skc, centre));
+            var benzene = $"{F()} {mv.MolValence} max H {skc.MaxHydrogens}";
+            Click(At(skc, skc.BondPoint(skc.OuterBond(1))));
+            var naph = $"{F()} {mv.MolValence} max H {skc.MaxHydrogens}";
+            Click(At(skc, skc.BondPoint(skc.OuterBond(1))));
+            var three = $"{F()} {mv.MolValence} max H {skc.MaxHydrogens}";
+            Check(benzene == "C₆H₆ ok max H 1" && naph == "C₁₀H₈ ok max H 1" && three == "C₁₄H₁₀ ok max H 1",
+                  $"sketch rings fuse with conjugation: {benzene} · {naph} · {three} · {mv.MolSmiles}");
+            Step("2: undo and redo with the buttons and the k");
+            // undo and redo with the buttons and the keyboard
+            Press("UndoButton");
+            var undone = F();
+            skc.Focus();
+            w.KeyPress(Avalonia.Input.Key.Z, OperatingSystem.IsMacOS() ? Avalonia.Input.RawInputModifiers.Meta | Avalonia.Input.RawInputModifiers.Shift : Avalonia.Input.RawInputModifiers.Control | Avalonia.Input.RawInputModifiers.Shift,
+                       Avalonia.Input.PhysicalKey.Z, "Z");
+            Pump();
+            Check(undone == "C₁₀H₈" && F() == "C₁₄H₁₀", $"sketch undo → {undone}, redo (keys) → {F()}");
+            Step("3: a 5-ring (cyclopentane) from the ring li");
+            // a 5-ring (cyclopentane) from the ring list, on empty space after Clear (choosing a ring picks the Ring tool)
+            Press("ClearButton");
+            Press("ToolCharge");
+            Named<Avalonia.Controls.ComboBox>("RingKind").SelectedIndex = 3;
+            Pump();
+            var ringMode = skc.Mode;
+            Click(At(skc, centre));
+            Check(ringMode == Views.SketchCanvas.Tool.Ring && F() == "C₅H₁₀" && mv.MolValence == "ok", $"5-ring from the ring list (tool {ringMode}): {F()} {mv.MolValence}");
+            Named<Avalonia.Controls.ComboBox>("RingKind").SelectedIndex = 0;
+            Step("4: bonds: Clear, a double bond from the ord");
+            // bonds: Clear, a double bond from the order keys on empty space (ethene), then two atoms bonded by clicking both
+            Press("ClearButton");
+            var cleared = mv.MolSmiles;
+            Press("Order2");
+            Click(At(skc, centre));
+            var ethene = F();
+            Press("ClearButton");
+            Press("ToolDraw");
+            Click(At(skc, centre - new Point(60, 0)));
+            Click(At(skc, centre + new Point(60, 0)));
+            var twoAtoms = F();
+            Press("Order1");
+            Click(At(skc, skc.AtomPoint(0)));
+            Click(At(skc, skc.AtomPoint(1)));
+            var bonded = F();
+            Press("ToolCut");
+            Click(At(skc, skc.BondPoint(0)));
+            var cut = $"{F()} {skc.AtomCount} atoms {skc.BondCount} bonds";
+            Check(cleared == "" && ethene == "C₂H₄" && twoAtoms == "C₂H₈" && bonded == "C₂H₆" && cut == "C₂H₈ 2 atoms 0 bonds",
+                  $"sketch bonds: clear '{cleared}' · double {ethene} · two atoms {twoAtoms} · click both {bonded} · cut {cut}");
+            Step("5: any element from the periodic table: sel");
+            // any element from the periodic table: selenium on a new atom
+            Press("ClearButton");
+            Press("TableButton");
+            Pump(10);
+            var se = w.GetVisualDescendants().Concat(Avalonia.Controls.TopLevel.GetTopLevel(w)!.GetVisualDescendants()).OfType<Avalonia.Controls.Button>().FirstOrDefault(b => b.Tag is int z && z == 34);
+            if (se == null)
+                foreach (var root in Avalonia.Controls.Primitives.OverlayLayer.GetOverlayLayer(w)?.GetVisualDescendants() ?? [])
+                    if (root is Avalonia.Controls.Button b && b.Tag is int z && z == 34) { se = b; break; }
+            if (se != null && Avalonia.Controls.TopLevel.GetTopLevel(se) is { } popup)
+            {
+                // the table is a popup: its own top level, clicked there
+                var p = se.TranslatePoint(new Point(19, 19), popup) ?? default;
+                popup.MouseMove(p); popup.MouseDown(p, Avalonia.Input.MouseButton.Left); popup.MouseUp(p, Avalonia.Input.MouseButton.Left); Pump();
+            }
+            Press("ToolDraw");
+            Click(At(skc, centre));
+            var seSmiles = mv.MolSmiles;
+            // silicon from its key, bonded to a carbon: methylsilane, hydrogens on both
+            Press("ClearButton");
+            var siKey = page.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().First(b => b.Content as string == "Si");
+            Click(At(siKey, new Point(14, 14)));
+            Click(At(skc, centre));
+            var cKey = page.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().First(b => b.Content as string == "C");
+            Click(At(cKey, new Point(14, 14)));
+            var grow = skc.AtomPoint(0);
+            // carbon chosen, a Si atom clicked: it becomes C (a click on an atom of another element changes it), so drag a bond out instead
+            w.MouseMove(At(skc, grow)); w.MouseDown(At(skc, grow), Avalonia.Input.MouseButton.Left);
+            for (var k = 1; k <= 6; k++) { w.MouseMove(At(skc, grow + new Point(10 * k, 0)), Avalonia.Input.RawInputModifiers.LeftMouseButton); Pump(1); }
+            w.MouseUp(At(skc, grow + new Point(60, 0)), Avalonia.Input.MouseButton.Left); Pump();
+            Check(se != null && seSmiles == "[SeH2]" && mv.MolFormula == "CH₆Si" && mv.MolValence == "ok",
+                  $"periodic table and other elements: Se → {seSmiles} · Si then grown → {mv.MolSmiles} {mv.MolFormula} {mv.MolValence}");
+            Step("6: typing a SMILES in the box with the keyb");
+            // typing a SMILES in the box with the keyboard (text input, as the platform delivers it)
+            var box = page.GetVisualDescendants().OfType<Avalonia.Controls.TextBox>().First(b => b.Watermark?.ToString()?.StartsWith("e.g. C=C") == true);
+            box.Text = "";
+            Click(At(box, new Point(20, box.Bounds.Height / 2)));
+            w.KeyTextInput("CCO");
+            Pump(20);
+            Check(box.IsFocused && mv.MolSmiles == "CCO" && F() == "C₂H₆O" && skc.AtomCount == 3, $"typed SMILES: '{mv.MolSmiles}' → {F()}, sketch {skc.AtomCount} atoms");
+            Step("7: View › Shelves on the Molecule page: the");
+            // View › Shelves on the Molecule page: the Studio comes up with the shelf shown, and the status says so
+            w.ShowShelf("tools", false);
+            w.PickShelf("tools");
+            Pump();
+            Check(mv.IsStudio && w.ShelfStateOf("tools")?.Dock != "hidden" && mv.Status.StartsWith("Shelf Sketch & edit"),
+                  $"View › Shelves from Molecule: Studio {mv.IsStudio} · tools {w.ShelfStateOf("tools")?.Dock} · '{mv.Status}'");
+            if (open == null) w.Close();
+        }
+        return 0;
+    }
+
+    /// <summary>--sketchtest: only the sketch checks.</summary>
+    internal static int RunSketch()
+    {
+        AppSettings.Override = Path.Combine(Path.GetTempPath(), $"caps-sketchtest-{Environment.ProcessId}.json");
+        AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).WithCapsFonts().SetupWithoutStarting();
+        var fails = 0;
+        SketchChecks((ok, what) => { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; });
         Console.WriteLine(fails == 0 ? "all checks passed" : $"{fails} check(s) failed");
         return fails == 0 ? 0 : 1;
     }

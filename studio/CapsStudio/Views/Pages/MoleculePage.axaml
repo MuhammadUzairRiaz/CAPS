@@ -4,7 +4,7 @@
             x:Class="CapsStudio.Views.Pages.MoleculePage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
   <p:PageBase.Styles>
     <!-- element keys: 28 × 28, mono, amber outline when chosen -->
-    <Style Selector="ToggleButton.el">
+    <Style Selector=":is(Button).el">
       <Setter Property="Width" Value="28" />
       <Setter Property="Height" Value="28" />
       <Setter Property="MinWidth" Value="28" />
@@ -21,7 +21,7 @@
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
-    <Style Selector="ToggleButton.el:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector=":is(Button).el:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource Bg2B}" />
       <Setter Property="BorderBrush" Value="{DynamicResource DimB}" />
     </Style>
@@ -44,38 +44,84 @@
 
   <Grid v:Panes.Split="True" ColumnDefinitions="*,360,400">
     <!-- sketch and preview: the tool strip over both -->
-    <Grid Grid.ColumnSpan="2" RowDefinitions="48,*">
-      <Border Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,0">
-        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-          <ToggleButton x:Name="ToolDraw" Classes="tool" IsChecked="True" Click="OnTool" Tag="draw" ToolTip.Tip="Draw: click places an atom, drag grows a bond, click a bond cycles its order">
-            <v:Icon Kind="bond" Size="18" />
-          </ToggleButton>
-          <ToggleButton x:Name="ToolRing" Classes="tool" Click="OnTool" Tag="ring" ToolTip.Tip="Ring: a benzene ring on empty space, on an atom, or fused on a bond">
-            <v:Icon Kind="hex" Size="18" />
-          </ToggleButton>
-          <ToggleButton x:Name="ToolCharge" Classes="tool" Click="OnTool" Tag="charge" ToolTip.Tip="Charge: click an atom for +1, −1, 0">
-            <v:Icon Kind="plus" Size="18" />
-          </ToggleButton>
-          <ToggleButton x:Name="ToolErase" Classes="tool" Click="OnTool" Tag="erase" ToolTip.Tip="Erase an atom or a bond">
-            <v:Icon Kind="scissors" Size="18" />
-          </ToggleButton>
-          <Button Classes="tool" Click="OnClear" ToolTip.Tip="Clear the sketch">
-            <v:Icon Kind="close" Size="18" />
-          </Button>
-          <Border Width="1" Height="22" Background="{DynamicResource LineB}" Margin="8,0" />
-          <StackPanel x:Name="Elements" Orientation="Horizontal" Spacing="4">
-            <ToggleButton Classes="el" Content="C" Tag="6" IsChecked="True" Click="OnElement" />
-            <ToggleButton Classes="el" Content="N" Tag="7" Click="OnElement" />
-            <ToggleButton Classes="el" Content="O" Tag="8" Click="OnElement" />
-            <ToggleButton Classes="el" Content="S" Tag="16" Click="OnElement" />
-            <ToggleButton Classes="el" Content="F" Tag="9" Click="OnElement" />
-            <ToggleButton Classes="el" Content="Cl" Tag="17" Click="OnElement" />
-            <ToggleButton Classes="el" Content="Br" Tag="35" Click="OnElement" />
-            <ToggleButton Classes="el" Content="P" Tag="15" Click="OnElement" />
-            <ToggleButton Classes="el" Content="I" Tag="53" Click="OnElement" />
-            <ToggleButton Classes="el" Content="Si" Tag="14" Click="OnElement" />
+    <Grid Grid.ColumnSpan="2" RowDefinitions="Auto,*">
+      <Border Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,6">
+        <!-- the sketch's tools (the Studio's Sketch & edit set, for 2D): they wrap onto a second line when the window is narrow -->
+        <WrapPanel x:Name="SketchTools" Orientation="Horizontal" ItemSpacing="4" LineSpacing="6" VerticalAlignment="Center">
+          <StackPanel x:Name="ToolButtons" Orientation="Horizontal" Spacing="4">
+            <ToggleButton x:Name="ToolDraw" Classes="tool" IsChecked="True" Click="OnTool" Tag="draw" ToolTip.Tip="Draw: click places an atom (on an atom: a bonded one, or the element changed), drag grows a bond, click a bond cycles its order">
+              <v:Icon Kind="pencil" Size="18" />
+            </ToggleButton>
+            <ToggleButton x:Name="ToolBond" Classes="tool" Click="OnTool" Tag="bond" ToolTip.Tip="Bond: click two atoms to bond them, drag from an atom, or click a bond to give it the order on the right">
+              <v:Icon Kind="bond" Size="18" />
+            </ToggleButton>
+            <ToggleButton x:Name="ToolRing" Classes="tool" Click="OnTool" Tag="ring" ToolTip.Tip="Ring: the ring on the right, on empty space, spiro on an atom, or fused on a bond">
+              <v:Icon Kind="hex" Size="18" />
+            </ToggleButton>
+            <ToggleButton x:Name="ToolCharge" Classes="tool" Click="OnTool" Tag="charge" ToolTip.Tip="Charge: click an atom for +1, −1, 0">
+              <v:Icon Kind="plus" Size="18" />
+            </ToggleButton>
+            <ToggleButton x:Name="ToolMove" Classes="tool" Click="OnTool" Tag="move" ToolTip.Tip="Move: drag an atom; drag empty space to pan">
+              <v:Icon Kind="move" Size="18" />
+            </ToggleButton>
+            <ToggleButton x:Name="ToolCut" Classes="tool" Click="OnTool" Tag="cut" ToolTip.Tip="Cut: click a bond to break it (both atoms stay)">
+              <v:Icon Kind="scissors" Size="18" />
+            </ToggleButton>
+            <ToggleButton x:Name="ToolErase" Classes="tool" Click="OnTool" Tag="erase" ToolTip.Tip="Erase: click an atom (with its bonds) or a bond">
+              <v:Icon Kind="trash" Size="18" />
+            </ToggleButton>
           </StackPanel>
-        </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <Border Width="1" Height="22" Background="{DynamicResource LineB}" Margin="4,0" />
+            <StackPanel x:Name="Orders" Orientation="Horizontal" Spacing="2">
+              <ToggleButton Classes="el" x:Name="Order1" Tag="1" IsChecked="True" Click="OnOrder" ToolTip.Tip="Single bond (Bond tool)"><StackPanel Spacing="2.4" VerticalAlignment="Center" HorizontalAlignment="Center"><Rectangle Width="14" Height="1.6" Fill="{Binding $parent[ContentPresenter].Foreground}" /></StackPanel></ToggleButton>
+              <ToggleButton Classes="el" x:Name="Order2" Tag="2" Click="OnOrder" ToolTip.Tip="Double bond (Bond tool)"><StackPanel Spacing="2.4" VerticalAlignment="Center" HorizontalAlignment="Center"><Rectangle Width="14" Height="1.6" Fill="{Binding $parent[ContentPresenter].Foreground}" /><Rectangle Width="14" Height="1.6" Fill="{Binding $parent[ContentPresenter].Foreground}" /></StackPanel></ToggleButton>
+              <ToggleButton Classes="el" x:Name="Order3" Tag="3" Click="OnOrder" ToolTip.Tip="Triple bond (Bond tool)"><StackPanel Spacing="2.4" VerticalAlignment="Center" HorizontalAlignment="Center"><Rectangle Width="14" Height="1.6" Fill="{Binding $parent[ContentPresenter].Foreground}" /><Rectangle Width="14" Height="1.6" Fill="{Binding $parent[ContentPresenter].Foreground}" /><Rectangle Width="14" Height="1.6" Fill="{Binding $parent[ContentPresenter].Foreground}" /></StackPanel></ToggleButton>
+            </StackPanel>
+            <ComboBox x:Name="RingKind" SelectedIndex="0" MinWidth="128" SelectionChanged="OnRingKind" ToolTip.Tip="The Ring tool's ring">
+              <ComboBoxItem Content="Benzene" />
+              <ComboBoxItem Content="3-ring" />
+              <ComboBoxItem Content="4-ring" />
+              <ComboBoxItem Content="5-ring" />
+              <ComboBoxItem Content="6-ring (saturated)" />
+              <ComboBoxItem Content="7-ring" />
+              <ComboBoxItem Content="8-ring" />
+            </ComboBox>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <Border Width="1" Height="22" Background="{DynamicResource LineB}" Margin="4,0" />
+            <Button x:Name="UndoButton" Classes="tool" Click="OnUndo" IsEnabled="False" ToolTip.Tip="Undo the last sketch edit (⌘Z / Ctrl+Z on the sketch)">
+              <v:Icon Kind="undo" Size="18" />
+            </Button>
+            <Button x:Name="RedoButton" Classes="tool" Click="OnRedo" IsEnabled="False" ToolTip.Tip="Redo (⇧⌘Z / Ctrl+Shift+Z on the sketch)">
+              <v:Icon Kind="redo" Size="18" />
+            </Button>
+            <Button Classes="tool" Click="OnTidy" ToolTip.Tip="Tidy: lay the drawing out again">
+              <v:Icon Kind="wand" Size="18" />
+            </Button>
+            <Button x:Name="ClearButton" Classes="tool" Click="OnClear" ToolTip.Tip="Clear the sketch (Undo brings it back)">
+              <v:Icon Kind="close" Size="18" />
+            </Button>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <Border Width="1" Height="22" Background="{DynamicResource LineB}" Margin="4,0" />
+            <StackPanel x:Name="Elements" Orientation="Horizontal" Spacing="4">
+              <ToggleButton Classes="el" Content="C" Tag="6" IsChecked="True" Click="OnElement" />
+              <ToggleButton Classes="el" Content="H" Tag="1" Click="OnElement" />
+              <ToggleButton Classes="el" Content="N" Tag="7" Click="OnElement" />
+              <ToggleButton Classes="el" Content="O" Tag="8" Click="OnElement" />
+              <ToggleButton Classes="el" Content="S" Tag="16" Click="OnElement" />
+              <ToggleButton Classes="el" Content="F" Tag="9" Click="OnElement" />
+              <ToggleButton Classes="el" Content="Cl" Tag="17" Click="OnElement" />
+              <ToggleButton Classes="el" Content="Br" Tag="35" Click="OnElement" />
+              <ToggleButton Classes="el" Content="P" Tag="15" Click="OnElement" />
+              <ToggleButton Classes="el" Content="I" Tag="53" Click="OnElement" />
+              <ToggleButton Classes="el" Content="Si" Tag="14" Click="OnElement" />
+              <ToggleButton x:Name="OtherElement" Classes="el" Content="" Tag="0" Click="OnElement" IsVisible="False" ToolTip.Tip="The element chosen from the periodic table" />
+            </StackPanel>
+            <Button x:Name="TableButton" Classes="el" Content="…" Click="OnPeriodicTable" ToolTip.Tip="Any element: the periodic table" />
+          </StackPanel>
+        </WrapPanel>
       </Border>
 
       <Grid Grid.Row="1" ColumnDefinitions="*,360">

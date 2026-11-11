@@ -63,6 +63,11 @@
   <Style Selector="TextBlock.ok"><Setter Property="Foreground" Value="{DynamicResource OkB}" /></Style>
   <Style Selector="TextBlock.warn"><Setter Property="Foreground" Value="{DynamicResource WarnB}" /></Style>
   <Style Selector="TextBlock.err"><Setter Property="Foreground" Value="{DynamicResource ErrB}" /></Style>
+  <!-- a flyout that holds a whole table (the Molecule page's periodic table): the theme's 456 px cap would hide half of it -->
+  <Style Selector="FlyoutPresenter.wide">
+    <Setter Property="MaxWidth" Value="1000" />
+    <Setter Property="MaxHeight" Value="800" />
+  </Style>
   <Style Selector="TextBlock.acc"><Setter Property="Foreground" Value="{DynamicResource AccB}" /></Style>
   <Style Selector="TextBlock.sel"><Setter Property="Foreground" Value="{DynamicResource SelB}" /></Style>
 

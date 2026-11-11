@@ -539,6 +539,20 @@ public partial class MainWindow
         ShowShelf(id, st.Dock == "hidden");
     }
 
+    /// <summary>View › Shelves › a shelf. Shelves are the Studio's toolbars, so another page (Molecule, Dynamics…) goes to
+    /// the Studio first; there a hidden or folded shelf opens, and one already open is hidden. The status line says which,
+    /// so the choice never passes without a visible answer.</summary>
+    public void PickShelf(string id)
+    {
+        if (!_shelfState.TryGetValue(id, out var st) || !_shelves.TryGetValue(id, out var s)) return;
+        var wasStudio = _vm.IsStudio;
+        if (!wasStudio) _vm.SetModule(8);
+        if (st.Dock == "hidden") { ShowShelf(id, true); _vm.Status = $"Shelf {s.Title} shown"; }
+        else if (st.Folded) { FoldShelf(id, false); _vm.Status = $"Shelf {s.Title} unfolded"; }
+        else if (!wasStudio) _vm.Status = $"Shelf {s.Title}: it is on the Studio view (shelves are the Studio's toolbars)";
+        else { ShowShelf(id, false); _vm.Status = $"Shelf {s.Title} hidden (View › Shelves shows it again)"; }
+    }
+
     public static readonly string[] ShelfGlyphs = ["pin", "cursor", "atom", "bond", "ring", "ruler", "tag", "eye", "filter", "wand", "layers", "chart", "flask", "cube", "hex"];
 
     /// <summary>Make a shelf (design/boards/ShelfEditor): click tools to put them on the shelf (click one on the shelf to take

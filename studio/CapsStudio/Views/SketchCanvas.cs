@@ -15,7 +15,7 @@ namespace CapsStudio.Views;
 /// atom or a bond. Charge cycles 0, +1, −1. Every edit writes the SMILES (through the core) and raises Edited.</summary>
 public sealed class SketchCanvas : Control
 {
-    public enum Tool { Draw, Ring, Erase, Charge }
+    public enum Tool { Draw, Ring, Erase, Charge, Bond, Cut, Move }
 
     private sealed class A
     {
@@ -28,8 +28,23 @@ public sealed class SketchCanvas : Control
 
     private readonly List<A> _atoms = new();
     private readonly List<B> _bonds = new();
-    public Tool Mode { get; set; } = Tool.Draw;
+    public Tool Mode { get => _mode; set { _mode = value; _pending = -1; InvalidateVisual(); } }
+    private Tool _mode = Tool.Draw;
     public int Element { get; set; } = 6;
+    /// <summary>The Bond tool's order: 1, 2 or 3.</summary>
+    public int BondOrder { get; set; } = 1;
+    /// <summary>The Ring tool's size (3 to 8) and whether a six-ring is benzene (alternating double bonds) or cyclohexane.</summary>
+    public int RingSize { get; set; } = 6;
+    public bool RingAromatic { get; set; } = true;
+    public bool CanUndo => _undo.Count > 0;
+    public bool CanRedo => _redo.Count > 0;
+    /// <summary>Raised when undo or redo becomes possible or impossible.</summary>
+    public event Action? HistoryChanged;
+    private readonly List<string> _undo = new(), _redo = new();
+    private string? _before;                 // the sketch when the pointer went down, pushed when that gesture edits it
+    private int _moveAtom = -1;
+    private int _pending = -1;              // Bond tool: the first of two atoms clicked
+    private bool _panning;
     /// <summary>Raised with the new SMILES after an edit (empty when the sketch is empty).</summary>
     public event Action<string>? Edited;
 
@@ -49,6 +64,14 @@ public sealed class SketchCanvas : Control
     // ---------------------------------------------------------------- model in and out
     /// <summary>Loads a caps_smiles_depict graph (empty string clears) and fits it to the view.</summary>
     public void Load(string json)
+    {
+        if (_atoms.Count > 0) Remember(Snapshot());
+        LoadGraph(json);
+        Fit();
+        InvalidateVisual();
+    }
+
+    private void LoadGraph(string json)
     {
         _atoms.Clear();
         _bonds.Clear();
@@ -71,8 +94,6 @@ public sealed class SketchCanvas : Control
                     _bonds.Add(new B { A = b.GetProperty("a").GetInt32(), B2 = b.GetProperty("b").GetInt32(), Order = b.GetProperty("order").GetInt32(), Dir = b.GetProperty("dir").GetInt32() });
             }
         }
-        Fit();
-        InvalidateVisual();
     }
 
     private void Fit()
@@ -98,19 +119,112 @@ public sealed class SketchCanvas : Control
     private string Graph()
     {
         var atoms = new JsonArray();
-        foreach (var a in _atoms)
+        for (var i = 0; i < _atoms.Count; i++)
+        {
+            var a = _atoms[i];
+            // an element outside the organic subset (Si, Se, a metal …) is written in brackets with its hydrogens counted,
+            // as [SiH4] or [SeH2]: a bare [Se] would mean no hydrogens at all
+            var bracket = a.Bracket || !(a.Z is 5 or 6 or 7 or 8 or 9 or 15 or 16 or 17 or 35 or 53);
+            var hcount = a.Bracket ? a.HCount : bracket ? ImplicitH(i) : a.HCount;
             atoms.Add(new JsonObject
             {
-                ["z"] = a.Z, ["charge"] = a.Charge, ["isotope"] = a.Isotope, ["hcount"] = a.HCount, ["aromatic"] = a.Aromatic,
-                ["bracket"] = a.Bracket, ["chiral"] = a.Chiral, ["map"] = a.Map, ["order"] = new JsonArray(a.Order.Select(v => (JsonNode)v).ToArray()),
+                ["z"] = a.Z, ["charge"] = a.Charge, ["isotope"] = a.Isotope, ["hcount"] = hcount, ["aromatic"] = a.Aromatic,
+                ["bracket"] = bracket, ["chiral"] = a.Chiral, ["map"] = a.Map, ["order"] = new JsonArray(a.Order.Select(v => (JsonNode)v).ToArray()),
             });
+        }
         var bonds = new JsonArray();
         foreach (var b in _bonds) bonds.Add(new JsonObject { ["a"] = b.A, ["b"] = b.B2, ["order"] = b.Order, ["dir"] = b.Dir });
         return new JsonObject { ["atoms"] = atoms, ["bonds"] = bonds }.ToJsonString();
     }
 
+    private static string Sym(int z) => z >= 1 && z <= ViewModels.MainViewModel.Syms.Length ? ViewModels.MainViewModel.Syms[z - 1] : "*";
+
+    private string Snapshot() => JsonSerializer.Serialize(new
+    {
+        atoms = _atoms.Select(a => new[] { a.Z, a.Charge, a.Isotope, a.HCount, a.Chiral, a.Map, a.Aromatic ? 1 : 0, a.Bracket ? 1 : 0 }).ToArray(),
+        xy = _atoms.Select(a => new[] { a.X, a.Y }).ToArray(),
+        order = _atoms.Select(a => a.Order.ToArray()).ToArray(),
+        bonds = _bonds.Select(b => new[] { b.A, b.B2, b.Order, b.Dir }).ToArray(),
+    });
+
+    private void Restore(string snap)
+    {
+        using var js = JsonDocument.Parse(snap);
+        var r = js.RootElement;
+        _atoms.Clear();
+        _bonds.Clear();
+        var xy = r.GetProperty("xy").EnumerateArray().ToList();
+        var ord = r.GetProperty("order").EnumerateArray().ToList();
+        var k = 0;
+        foreach (var a in r.GetProperty("atoms").EnumerateArray())
+        {
+            var v = a.EnumerateArray().Select(x => x.GetInt32()).ToArray();
+            var p = xy[k].EnumerateArray().Select(x => x.GetDouble()).ToArray();
+            _atoms.Add(new A { Z = v[0], Charge = v[1], Isotope = v[2], HCount = v[3], Chiral = v[4], Map = v[5], Aromatic = v[6] != 0, Bracket = v[7] != 0,
+                               X = p[0], Y = p[1], Order = ord[k].EnumerateArray().Select(x => x.GetInt32()).ToList() });
+            k++;
+        }
+        foreach (var b in r.GetProperty("bonds").EnumerateArray())
+        {
+            var v = b.EnumerateArray().Select(x => x.GetInt32()).ToArray();
+            _bonds.Add(new B { A = v[0], B2 = v[1], Order = v[2], Dir = v[3] });
+        }
+    }
+
+    private void Remember(string snap)
+    {
+        _undo.Add(snap);
+        if (_undo.Count > 200) _undo.RemoveAt(0);
+        _redo.Clear();
+        HistoryChanged?.Invoke();
+    }
+
+    /// <summary>Undo (or redo) the last sketch edit.</summary>
+    public void Undo(bool redo = false)
+    {
+        var from = redo ? _redo : _undo;
+        if (from.Count == 0) return;
+        (redo ? _undo : _redo).Add(Snapshot());
+        Restore(from[^1]);
+        from.RemoveAt(from.Count - 1);
+        _hoverAtom = _hoverBond = -1;
+        Emit();
+        HistoryChanged?.Invoke();
+    }
+
+    /// <summary>Clears the sketch (one step back with Undo).</summary>
+    public void Clear()
+    {
+        if (_atoms.Count == 0) return;
+        Remember(Snapshot());
+        _atoms.Clear();
+        _bonds.Clear();
+        Fit();
+        Emit();
+    }
+
+    /// <summary>Lays the drawing out again (the core's 2D depiction of its SMILES), keeping it as one undo step.</summary>
+    public void Tidy(string depictJson)
+    {
+        if (_atoms.Count == 0 || depictJson.Length == 0) return;
+        Remember(Snapshot());
+        LoadGraph(depictJson);
+        Fit();
+        InvalidateVisual();
+    }
+
+    private void Emit()
+    {
+        string smiles;
+        try { smiles = _atoms.Count == 0 ? "" : CapsDocument.SmilesWrite(Graph()); }
+        catch { smiles = ""; }
+        InvalidateVisual();
+        Edited?.Invoke(smiles);
+    }
+
     private void Changed(params int[] touched)
     {
+        if (_before != null) { Remember(_before); _before = null; }
         // an edit next to a stereocentre or a marked double bond drops that stereo (it would no longer mean the same)
         foreach (var i in touched)
             if (i >= 0 && i < _atoms.Count)
@@ -118,11 +232,7 @@ public sealed class SketchCanvas : Control
                 _atoms[i].Chiral = 0;
                 foreach (var b in _bonds) if (b.A == i || b.B2 == i) b.Dir = 0;
             }
-        string smiles;
-        try { smiles = _atoms.Count == 0 ? "" : CapsDocument.SmilesWrite(Graph()); }
-        catch { smiles = ""; }
-        InvalidateVisual();
-        Edited?.Invoke(smiles);
+        Emit();
     }
 
     // ---------------------------------------------------------------- geometry helpers
@@ -226,10 +336,17 @@ public sealed class SketchCanvas : Control
         foreach (var a in _atoms) { a.Order.Clear(); a.Chiral = 0; }
     }
 
-    /// <summary>A benzene ring (Kekulé) through atom `at` or on bond `bond`, or free at (x, y).</summary>
+    /// <summary>A ring of RingSize atoms through atom `at` (spiro), fused on bond `bond`, or free at (x, y). A six-ring with
+    /// RingAromatic on is benzene: Kekulé double bonds, shared with the ring it fuses onto (naphthalene and beyond).</summary>
     private void AddRing(double x, double y, int at, int bond)
     {
+        var n = Math.Clamp(RingSize, 3, 8);
+        var step0 = 2 * Math.PI / n;
+        var apothem = 0.5 / Math.Tan(Math.PI / n);    // bond midpoint to centre, unit bonds
+        var radius = 0.5 / Math.Sin(Math.PI / n);     // atom to centre
         var ids = new List<int>();
+        if (bond >= 0 && (_atoms[_bonds[bond].A].Aromatic || _atoms[_bonds[bond].B2].Aromatic)) Dearomatise(_bonds[bond].A, _bonds[bond].B2);
+        if (at >= 0 && _atoms[at].Aromatic) Dearomatise(at);
         if (bond >= 0)
         {
             var b = _bonds[bond];
@@ -240,58 +357,115 @@ public sealed class SketchCanvas : Control
             var side = _atoms.Sum(a => Math.Sign((a.X - mx) * nx + (a.Y - my) * ny));
             if (side > 0) { nx = -nx; ny = -ny; }
             var len = Math.Sqrt(nx * nx + ny * ny);
-            var cx = mx + nx / len * Math.Sqrt(3) / 2;
-            var cy = my + ny / len * Math.Sqrt(3) / 2;
+            var bl = Math.Sqrt((pb.X - pa.X) * (pb.X - pa.X) + (pb.Y - pa.Y) * (pb.Y - pa.Y));
+            var cx = mx + nx / len * apothem * bl;
+            var cy = my + ny / len * apothem * bl;
+            var r = radius * bl;
             var t0 = Math.Atan2(pa.Y - cy, pa.X - cx);
             var t1 = Math.Atan2(pb.Y - cy, pb.X - cx);
-            var step = Gap(t0 + Math.PI / 3, t1) < 0.1 ? Math.PI / 3 : -Math.PI / 3;
+            var step = Gap(t0 + step0, t1) < 0.1 ? step0 : -step0;
             ids.Add(b.A);
             ids.Add(b.B2);
-            for (var k = 2; k < 6; k++) ids.Add(AddAtomAt(cx + Math.Cos(t0 + k * step), cy + Math.Sin(t0 + k * step)));
+            for (var k = 2; k < n; k++) ids.Add(AddAtomAt(cx + r * Math.Cos(t0 + k * step), cy + r * Math.Sin(t0 + k * step)));
         }
         else if (at >= 0)
         {
             var (dx, dy) = FreeDirection(at);
-            var cx = _atoms[at].X + dx;
-            var cy = _atoms[at].Y + dy;
+            var cx = _atoms[at].X + dx * radius;
+            var cy = _atoms[at].Y + dy * radius;
             var t0 = Math.Atan2(_atoms[at].Y - cy, _atoms[at].X - cx);
             ids.Add(at);
-            for (var k = 1; k < 6; k++) ids.Add(AddAtomAt(cx + Math.Cos(t0 + k * Math.PI / 3), cy + Math.Sin(t0 + k * Math.PI / 3)));
+            for (var k = 1; k < n; k++) ids.Add(AddAtomAt(cx + radius * Math.Cos(t0 + k * step0), cy + radius * Math.Sin(t0 + k * step0)));
         }
         else
         {
-            for (var k = 0; k < 6; k++) ids.Add(AddAtomAt(x + Math.Cos(Math.PI / 6 + k * Math.PI / 3), y + Math.Sin(Math.PI / 6 + k * Math.PI / 3)));
+            var tStart = Math.PI / 2 + Math.PI / n;      // a flat bottom edge
+            for (var k = 0; k < n; k++) ids.Add(AddAtomAt(x + radius * Math.Cos(tStart + k * step0), y + radius * Math.Sin(tStart + k * step0)));
         }
-        // alternate double bonds, keeping a double bond the atoms already have
-        for (var k = 0; k < 6; k++)
+        for (var k = 0; k < n; k++)
         {
             var a = ids[k];
-            var b = ids[(k + 1) % 6];
-            if (!_bonds.Any(x => (x.A == a && x.B2 == b) || (x.A == b && x.B2 == a))) AddBond(a, b, 1);
+            var b = ids[(k + 1) % n];
+            if (!_bonds.Any(q => (q.A == a && q.B2 == b) || (q.A == b && q.B2 == a))) AddBond(a, b, 1);
         }
-        var startOdd = HasDouble(ids[0]) || HasDouble(ids[1]) ? 1 : 0;
-        for (var k = startOdd; k < 6; k += 2)
-        {
-            var a = ids[k];
-            var b = ids[(k + 1) % 6];
-            var bb = _bonds.First(x => (x.A == a && x.B2 == b) || (x.A == b && x.B2 == a));
-            if (!HasDouble(a) && !HasDouble(b)) bb.Order = 2;
-        }
+        if (n == 6 && RingAromatic) KekuleFill(ids);
         Changed(ids.ToArray());
+    }
+
+    /// <summary>Double bonds for a new ring: every ring atom that can still take a double bond gets one. A free atom of the
+    /// new ring looks for an alternating path (single, double, single, …) through the ring bonds to another free atom and the
+    /// path flips, so a ring fused on benzene shifts the old ring's double bonds where it must (naphthalene, anthracene,
+    /// phenanthrene come out fully Kekulé, with one H on each CH). An atom with no partner left (a spiro centre, a ring fused
+    /// on a saturated bond) keeps its hydrogens.</summary>
+    private void KekuleFill(List<int> ids)
+    {
+        var ringBonds = new HashSet<B>();
+        foreach (var r in SmallRings())
+            foreach (var b in _bonds)
+                if (r.Contains(b.A) && r.Contains(b.B2)) ringBonds.Add(b);
+        bool CanTake(int i) => _atoms[i].Z is 6 or 7 && !HasDouble(i) && ImplicitH(i) > 0 && _atoms[i].Charge == 0;
+        B? DoubleOf(int i) => _bonds.FirstOrDefault(b => (b.A == i || b.B2 == i) && b.Order == 2 && ringBonds.Contains(b));
+        int Other(B b, int i) => b.A == i ? b.B2 : b.A;
+        foreach (var start in ids)
+        {
+            if (!CanTake(start)) continue;
+            var seen = new HashSet<int> { start };
+            var path = new List<B>();
+            bool Search(int u)
+            {
+                foreach (var b in _bonds.Where(b => (b.A == u || b.B2 == u) && b.Order == 1 && ringBonds.Contains(b)))
+                {
+                    var v = Other(b, u);
+                    if (!seen.Add(v)) continue;
+                    path.Add(b);
+                    if (CanTake(v)) return true;
+                    if (DoubleOf(v) is { } d && Other(d, v) is var w && seen.Add(w))
+                    {
+                        path.Add(d);
+                        if (Search(w)) return true;
+                        path.RemoveAt(path.Count - 1);
+                    }
+                    path.RemoveAt(path.Count - 1);
+                }
+                return false;
+            }
+            if (Search(start))
+                foreach (var b in path) b.Order = b.Order == 1 ? 2 : 1;
+        }
     }
 
     private bool HasDouble(int i) => _bonds.Any(b => (b.A == i || b.B2 == i) && (b.Order == 2 || b.Order == 4));
 
     /// <summary>An atom at (x, y), or the existing one there (rings fuse onto what is drawn).</summary>
-    private int AddAtomAt(double x, double y)
+    private int AddAtomAt(double x, double y, int z = 6)
     {
         for (var i = 0; i < _atoms.Count; i++)
             if (Math.Abs(_atoms[i].X - x) < 0.2 && Math.Abs(_atoms[i].Y - y) < 0.2) return i;
-        _atoms.Add(new A { Z = 6, X = x, Y = y });
+        _atoms.Add(new A { Z = z, X = x, Y = y });
         return _atoms.Count - 1;
     }
 
+    // ---------------------------------------------------------------- for the self-test (it clicks these points with the pointer)
+    internal int AtomCount => _atoms.Count;
+    internal int BondCount => _bonds.Count;
+    internal Point AtomPoint(int i) => ToScreen(_atoms[i].X, _atoms[i].Y);
+    internal Point BondPoint(int k) { var a = AtomPoint(_bonds[k].A); var b = AtomPoint(_bonds[k].B2); return new Point((a.X + b.X) / 2, (a.Y + b.Y) / 2); }
+    /// <summary>A bond of the outer edge (a ring bond whose atoms have only two neighbours each), for fusing the next ring.</summary>
+    internal int OuterBond(double towardsX) =>
+        Enumerable.Range(0, _bonds.Count).Where(k => Neighbours(_bonds[k].A).Count == 2 && Neighbours(_bonds[k].B2).Count == 2)
+                  .OrderByDescending(k => (_atoms[_bonds[k].A].X + _atoms[_bonds[k].B2].X) * towardsX).FirstOrDefault(-1);
+    internal int MaxHydrogens => _atoms.Count == 0 ? 0 : Enumerable.Range(0, _atoms.Count).Max(ImplicitH);
+
     // ---------------------------------------------------------------- input
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        var cmd = OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control;
+        if (e.Key == Key.Z && e.KeyModifiers == cmd) { Undo(); e.Handled = true; }
+        else if ((e.Key == Key.Z && e.KeyModifiers == (cmd | KeyModifiers.Shift)) || (e.Key == Key.Y && e.KeyModifiers == cmd)) { Undo(redo: true); e.Handled = true; }
+        else if (e.Key == Key.Escape && _pending >= 0) { _pending = -1; InvalidateVisual(); e.Handled = true; }
+    }
+
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
@@ -299,7 +473,10 @@ public sealed class SketchCanvas : Control
         var p = e.GetPosition(this);
         _pressAt = p;
         _dragAt = p;
-        _dragFrom = Mode == Tool.Draw ? AtomAt(p) : -1;
+        _before = Snapshot();
+        _dragFrom = Mode is Tool.Draw or Tool.Bond ? AtomAt(p) : -1;
+        _moveAtom = Mode == Tool.Move ? AtomAt(p) : -1;
+        _panning = Mode == Tool.Move && _moveAtom < 0;
         _dragging = false;
         e.Pointer.Capture(this);
     }
@@ -308,6 +485,16 @@ public sealed class SketchCanvas : Control
     {
         base.OnPointerMoved(e);
         var p = e.GetPosition(this);
+        if (Mode == Tool.Move && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed && (_moveAtom >= 0 || _panning))
+        {
+            var (dx, dy) = ((p.X - _dragAt.X) / _scale, (p.Y - _dragAt.Y) / _scale);
+            if (_moveAtom >= 0) { _atoms[_moveAtom].X += dx; _atoms[_moveAtom].Y += dy; }
+            else _origin = new Point(_origin.X + p.X - _dragAt.X, _origin.Y + p.Y - _dragAt.Y);
+            _dragAt = p;
+            if (Dist(p, _pressAt) > 3) _dragging = true;
+            InvalidateVisual();
+            return;
+        }
         if (_dragFrom >= 0 && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
             _dragAt = p;
@@ -338,6 +525,69 @@ public sealed class SketchCanvas : Control
         var bond = at < 0 ? BondAt(p) : -1;
         switch (Mode)
         {
+            case Tool.Move:
+                // an atom moved: one undo step (the SMILES is the same, so nothing else changes)
+                if (_moveAtom >= 0 && _dragging && _before != null) { Remember(_before); _before = null; }
+                _moveAtom = -1;
+                _panning = false;
+                break;
+            case Tool.Bond:
+                {
+                    var order = Math.Clamp(BondOrder, 1, 3);
+                    if (from >= 0 && _dragging)
+                    {
+                        if (at >= 0 && at != from)
+                        {
+                            var old = _bonds.FirstOrDefault(x => (x.A == from && x.B2 == at) || (x.A == at && x.B2 == from));
+                            if (old != null) SetOrder(old, order); else AddBond(from, at, order);
+                            Changed(from, at);
+                        }
+                        else if (at < 0)
+                        {
+                            var (mx, my) = ToModel(p);
+                            var t = Math.Atan2(my - _atoms[from].Y, mx - _atoms[from].X);
+                            t = Math.Round(t / (Math.PI / 6)) * (Math.PI / 6);
+                            var k = AddAtomAt(_atoms[from].X + Math.Cos(t), _atoms[from].Y + Math.Sin(t), Element);
+                            AddBond(from, k, order);
+                            Changed(from, k);
+                        }
+                    }
+                    else if (at >= 0 && _pending >= 0 && _pending != at && _pending < _atoms.Count)
+                    {
+                        // the second of two clicked atoms: bond them (as the Studio's Draw bond does)
+                        var first = _pending;
+                        _pending = -1;
+                        var old = _bonds.FirstOrDefault(x => (x.A == first && x.B2 == at) || (x.A == at && x.B2 == first));
+                        if (old != null) SetOrder(old, order); else AddBond(first, at, order);
+                        Changed(first, at);
+                    }
+                    else if (at >= 0 && _pending == at)
+                    {
+                        // the same atom twice: a new atom bonded to it
+                        _pending = -1;
+                        var (dx, dy) = FreeDirection(at);
+                        var k = AddAtom(_atoms[at].X + dx, _atoms[at].Y + dy);
+                        AddBond(at, k, order);
+                        Changed(at, k);
+                    }
+                    else if (at >= 0) _pending = at;
+                    else if (bond >= 0) { _pending = -1; SetOrder(_bonds[bond], order); Changed(_bonds[bond].A, _bonds[bond].B2); }
+                    else if (_pending >= 0) _pending = -1;
+                    else
+                    {
+                        // empty space: a two-atom fragment with this bond
+                        var (mx, my) = ToModel(p);
+                        var a0 = AddAtom(mx - 0.5, my);
+                        var a1 = AddAtom(mx + 0.5, my);
+                        AddBond(a0, a1, order);
+                        Changed(a0, a1);
+                    }
+                }
+                break;
+            case Tool.Cut:
+                // cut a bond and keep both atoms (Erase removes atoms too)
+                if (bond >= 0) { var b = _bonds[bond]; _bonds.RemoveAt(bond); _atoms[b.A].Order.Clear(); _atoms[b.B2].Order.Clear(); Changed(b.A, b.B2); }
+                break;
             case Tool.Draw:
                 if (from >= 0 && _dragging)
                 {
@@ -407,8 +657,18 @@ public sealed class SketchCanvas : Control
                 break;
         }
         _dragging = false;
+        _before = null;
         _hoverAtom = AtomAt(p);
         InvalidateVisual();
+    }
+
+    /// <summary>A bond set to an order; an aromatic ring it belongs to is written out as Kekulé first.</summary>
+    private void SetOrder(B b, int order)
+    {
+        if (_atoms[b.A].Aromatic || _atoms[b.B2].Aromatic) Dearomatise(b.A, b.B2);
+        b.Order = order;
+        _atoms[b.A].Order.Clear();
+        _atoms[b.B2].Order.Clear();
     }
 
     /// <summary>An aromatic ring touched by a bond edit is written out as a Kekulé structure.</summary>
@@ -431,7 +691,10 @@ public sealed class SketchCanvas : Control
 
     private static int[] Valences(int z) => z switch
     {
-        5 => [3], 6 => [4], 7 => [3, 5], 8 => [2], 15 => [3, 5], 16 => [2, 4, 6], 9 or 17 or 35 or 53 => [1], _ => [],
+        5 => [3], 6 => [4], 7 => [3, 5], 8 => [2], 15 => [3, 5], 16 => [2, 4, 6], 9 or 17 or 35 or 53 => [1],
+        // outside the SMILES organic subset: their usual valences, so a drawn atom carries its hydrogens (SiH4, GeH4, SnH4,
+        // AsH3, SbH3, SeH2, TeH2, BiH3)
+        14 or 32 or 50 => [4], 33 or 51 or 83 => [3, 5], 34 or 52 => [2, 4, 6], 1 => [1], _ => [],
     };
 
     /// <summary>Hydrogens on atom i as the SMILES reader will give them (for labels).</summary>
@@ -558,7 +821,7 @@ public sealed class SketchCanvas : Control
             if (Labelled(i))
             {
                 var h = ImplicitH(i);
-                var sym = Symbols.TryGetValue(a.Z, out var s) ? s : "*";
+                var sym = Sym(a.Z);
                 var text = sym + (h > 0 ? "H" + (h > 1 ? Sub(h) : "") : "");
                 if (a.Charge != 0) text += a.Charge > 0 ? (a.Charge > 1 ? $"{a.Charge}+" : "+") : (a.Charge < -1 ? $"{-a.Charge}−" : "−");
                 var ft = new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, font, 0.36 * _scale + 3, ElementBrush(a.Z));
@@ -572,6 +835,13 @@ public sealed class SketchCanvas : Control
             }
         }
 
+        // Bond tool: the first atom of a pair, ringed until the second is clicked
+        if (Mode == Tool.Bond && _pending >= 0 && _pending < _atoms.Count)
+        {
+            var c = ToScreen(_atoms[_pending].X, _atoms[_pending].Y);
+            ctx.DrawEllipse(null, new Pen(Tokens.Brush("AccB"), 2), c, 0.34 * _scale, 0.34 * _scale);
+        }
+
         // hover: the atom and what a click will do
         if (_hoverAtom >= 0 && _hoverAtom < _atoms.Count && _dragFrom < 0)
         {
@@ -580,12 +850,15 @@ public sealed class SketchCanvas : Control
             var sel = Tokens.Brush("SelB");
             ctx.DrawEllipse(null, new Pen(sel, 1.5), c, 0.3 * _scale, 0.3 * _scale);
             var h = ImplicitH(_hoverAtom);
-            var sym = Symbols.TryGetValue(a.Z, out var s) ? s : "*";
+            var sym = Sym(a.Z);
             var what = Mode switch
             {
-                Tool.Draw => a.Z != Element ? $"click: make it {(Symbols.TryGetValue(Element, out var e) ? e : "?")}" : "drag to grow",
+                Tool.Draw => a.Z != Element ? $"click: make it {Sym(Element)}" : "drag to grow",
                 Tool.Ring => "click: spiro ring",
                 Tool.Erase => "click: remove",
+                Tool.Bond => _pending >= 0 && _pending != _hoverAtom ? "click: bond to the first atom" : _pending == _hoverAtom ? "click again: a new atom on it" : "click, then another atom: bond them",
+                Tool.Cut => "click a bond to cut it",
+                Tool.Move => "drag to move",
                 _ => "click: charge",
             };
             var hint = new FormattedText($"{sym}{(h > 0 ? "H" + (h > 1 ? Sub(h) : "") : "")} · {what}", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, font, 11, sel);
