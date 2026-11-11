@@ -235,8 +235,8 @@ public partial class MainViewModel
 
     // ---- Grow's own force field
     private int _growFf = -1, _growCharges;
-    public int GrowFfIndex { get => _growFf < 0 ? Field.FfIndex : _growFf; set { _growFf = value; Raise(); } }
-    public int GrowChargeMode { get => _growCharges; set => Set(ref _growCharges, value); }
+    public int GrowFfIndex { get => _growFf < 0 ? Field.FfIndex : _growFf; set { _growFf = value; Raise(); RaiseGrowField(); } }
+    public int GrowChargeMode { get => _growCharges; set { if (Set(ref _growCharges, value)) RaiseGrowField(); } }
 
     /// <summary>Grow › Assign now: Grow's own force field on the structure in the viewer.</summary>
     public async Task AssignGrowFieldNow()

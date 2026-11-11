@@ -62,9 +62,21 @@
           <Border Grid.Column="1" Classes="card" CornerRadius="10">
             <DockPanel>
               <Border DockPanel.Dock="Top" Height="40" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
-                <TextBlock Text="{Binding BundleCsvName}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <Panel>
+                  <TextBlock Text="{Binding BundleCsvName}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                             ToolTip.Tip="{Binding BundleCsvName}" IsVisible="{Binding BundleCsvName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                  <TextBlock Text="Plot data" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                             IsVisible="{Binding BundleCsvName, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+                </Panel>
               </Border>
-              <ScrollViewer HorizontalScrollBarVisibility="Auto"><TextBlock Text="{Binding BundleCsv}" Classes="mono" FontSize="11.5" Margin="16,10" /></ScrollViewer>
+              <Panel>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" IsVisible="{Binding BundleCsv, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                  <TextBlock Text="{Binding BundleCsv}" Classes="mono" FontSize="11.5" Margin="16,10" />
+                </ScrollViewer>
+                <TextBlock Classes="dim" FontSize="11.5" TextWrapping="Wrap" LineHeight="17" Margin="16,12" VerticalAlignment="Top"
+                           IsVisible="{Binding BundleCsv, Converter={x:Static StringConverters.IsNullOrEmpty}}"
+                           Text="No plot data to preview. Add steps in Visualize and tick Include data behind every plot; the first data file shows here." />
+              </Panel>
             </DockPanel>
           </Border>
         </Grid>
@@ -91,7 +103,15 @@
               <TextBlock Text="Reproduce" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
             </Border>
             <StackPanel Margin="16,12" Spacing="8">
-              <Border Background="{DynamicResource Bg0B}" CornerRadius="6" Padding="10,8"><TextBlock Text="{Binding BundleReproduce}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" /></Border>
+              <Border Background="{DynamicResource Bg0B}" CornerRadius="6" Padding="10,8" ToolTip.Tip="{Binding BundleReproduce}">
+                <!-- The command and the bundle file name are separate runs so a line break can only fall
+                     between them, never at the hyphen inside 'name.caps-bundle.zip'. -->
+                <WrapPanel Orientation="Horizontal">
+                  <TextBlock Text="caps reproduce" Classes="mono" FontSize="11.5" Margin="0,0,7,0" />
+                  <TextBlock Text="{Binding BundleFileName}" Classes="mono" FontSize="11.5"
+                             TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                </WrapPanel>
+              </Border>
               <TextBlock Classes="dim" FontSize="11.5" TextWrapping="Wrap" LineHeight="17"
                          Text="Rebuilds the data files from the bundled input and pipeline, then compares their sha256 with provenance.json. Needs the input included." />
             </StackPanel>

@@ -102,7 +102,7 @@
                   <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ModelRow">
                     <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
                       <Grid ColumnDefinitions="*,90,110" Height="30">
-                        <TextBlock Text="{Binding Label}" FontSize="12.5" VerticalAlignment="Center" />
+                        <v:MathView Tex="{Binding Label}" Mode="Prose" FontSize="12.5" VerticalAlignment="Center" HorizontalAlignment="Left" />
                         <TextBlock Grid.Column="1" Text="{Binding A}" Classes="mono" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Right" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="2" Text="{Binding B}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
                       </Grid>
@@ -117,16 +117,24 @@
             <DockPanel>
               <Border DockPanel.Dock="Top" Classes="phead"><TextBlock Text="Options" FontSize="13.5" FontWeight="SemiBold" /></Border>
               <StackPanel Margin="16,12" Spacing="10">
-                <StackPanel Spacing="4"><TextBlock Text="Distribution" Classes="label" /><ComboBox ItemsSource="{Binding PdDistNames}" SelectedIndex="{Binding PdDist}" HorizontalAlignment="Stretch" /></StackPanel>
+                <StackPanel Spacing="4"><TextBlock Text="Distribution" Classes="label" />
+                  <ComboBox ItemsSource="{Binding PdDistNames}" SelectedIndex="{Binding PdDist}" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding}" /></DataTemplate></ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                   <StackPanel Spacing="4" IsVisible="{Binding PdShowNn}"><TextBlock Text="Nₙ" Classes="label" /><NumericUpDown Value="{Binding PdNn}" Minimum="2" Maximum="100000" Increment="1" FormatString="0.#" /></StackPanel>
                   <StackPanel Grid.Column="1" Spacing="4" IsVisible="{Binding PdShowPdi}"><TextBlock Text="Đ" Classes="label" /><NumericUpDown Value="{Binding PdPdi}" Minimum="1.001" Maximum="10" Increment="0.01" FormatString="0.00#" /></StackPanel>
                 </Grid>
                 <StackPanel Spacing="4" IsVisible="{Binding PdIsHistogram}">
-                  <TextBlock Text="Histogram · length:weight (number weights)" Classes="label" />
+                  <TextBlock Text="Histogram · length:weight (number weights)" Classes="label" TextWrapping="Wrap" />
                   <TextBox Text="{Binding PdHistogram}" Classes="mono" FontSize="11.5" Watermark="20:1, 40:3, 60:2" ToolTip.Tip="A measured distribution binned by chain length (repeat units): each chain's length drawn in proportion to the weights" />
                 </StackPanel>
-                <StackPanel Spacing="4"><TextBlock Text="Match" Classes="label" /><ComboBox ItemsSource="{Binding PdMatchNames}" SelectedIndex="{Binding PdMatch}" HorizontalAlignment="Stretch" /></StackPanel>
+                <StackPanel Spacing="4"><TextBlock Text="Match" Classes="label" />
+                  <ComboBox ItemsSource="{Binding PdMatchNames}" SelectedIndex="{Binding PdMatch}" HorizontalAlignment="Stretch" ToolTip.Tip="{Binding PdMatchTip}">
+                    <ComboBox.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding}" /></DataTemplate></ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
                 <TextBlock Classes="dim" TextWrapping="Wrap" Text="One length per chain in Grow; the chain count is Grow's." />
               </StackPanel>
             </DockPanel>

@@ -25,7 +25,7 @@ public sealed class BlendRow : INotifyPropertyChanged
     public decimal Dp { get => _dp; set { _dp = Math.Clamp(Math.Round(value), 2, 2000); Raise(nameof(Dp)); Changed?.Invoke(); } }
     public string ChainsText { get => _chains; set { _chains = value; Raise(nameof(ChainsText)); } }
     private FfEntry? _ff;
-    /// <summary>The component's own force field (Field · by group after the build); the first entry: choose later.</summary>
+    /// <summary>The component's own force field (Force field module, by group, after the build); the first entry: choose later.</summary>
     public FfEntry? ForceField { get => _ff; set { _ff = value; Raise(nameof(ForceField)); } }
     internal double Mass;   // g/mol of one chain
     /// <summary>A chain made in the polymer builder (its units, sequence and shares), in place of a library entry's.</summary>
@@ -64,7 +64,7 @@ public sealed partial class MainViewModel
 
     private List<FfEntry>? _blendFfs;
     /// <summary>A force field per component: "choose later" first, then the library.</summary>
-    public List<FfEntry> BlendForceFields => _blendFfs ??= [new FfEntry("", "Force field: choose later in Field", "", "", "", true), .. Field.Library];
+    public List<FfEntry> BlendForceFields => _blendFfs ??= [new FfEntry("", "Force field: choose later in the Force field module", "", "", "", true), .. Field.Library];
 
     public void AddBlendRow(LibraryEntry? p = null, decimal weight = 50)
     {
@@ -288,7 +288,7 @@ public sealed partial class MainViewModel
                     SetModule(7);   // Field: the typing report of every group
                     return;
                 }
-                Status = "Blend built · choose the remaining components' force fields in Field · by group";
+                Status = "Blend built · choose the remaining components' force fields in the Force field module, under Force fields by group";
             }
             SetModule(8);
         }

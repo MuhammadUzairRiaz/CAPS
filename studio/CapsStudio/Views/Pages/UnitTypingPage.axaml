@@ -5,10 +5,12 @@
             xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
             x:Class="CapsStudio.Views.Pages.UnitTypingPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
   <DockPanel>
-    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+    <!-- the status grows to show a long message (a rules error) in full, wrapped, instead of cutting it off -->
+    <Border DockPanel.Dock="Bottom" MinHeight="28" Padding="22,6" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
       <DockPanel>
-        <TextBlock DockPanel.Dock="Right" Text="{Binding UtCounts}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
-        <TextBlock Text="{Binding UtStatus}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+        <TextBlock DockPanel.Dock="Right" Text="{Binding UtCounts}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" Margin="16,0,0,0" />
+        <TextBlock Text="{Binding UtStatus}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center"
+                   TextWrapping="Wrap" MaxLines="4" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding UtStatus}" />
       </DockPanel>
     </Border>
     <!-- the force field's types -->
@@ -41,7 +43,8 @@
             <Button Classes="small" Content="Back to the rules' type" Click="OnClear" />
           </StackPanel>
         </StackPanel>
-        <ListBox x:Name="Types" ItemsSource="{Binding UtTypes}" SelectedItem="{Binding UtTypeSelected}" DoubleTapped="OnTypeDouble" Margin="8,0,8,8">
+        <TextBlock DockPanel.Dock="Top" Text="{Binding UtTypesHint}" IsVisible="{Binding !UtTypes.Count}" Classes="dim" FontSize="12" TextWrapping="Wrap" Margin="18,12" />
+        <ListBox x:Name="Types" ItemsSource="{Binding UtTypes}" SelectedItem="{Binding UtTypeSelected}" DoubleTapped="OnTypeDouble" Margin="8,0,8,8" IsVisible="{Binding !!UtTypes.Count}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:UtType">
               <Grid ColumnDefinitions="92,58,*" ColumnSpacing="8" ToolTip.Tip="{Binding Name}">
@@ -65,20 +68,30 @@
       </Border>
       <v:MolView x:Name="View" Grid.Row="1" />
       <GridSplitter Grid.Row="2" ResizeDirection="Rows" Background="{DynamicResource LineB}" />
-      <ListBox x:Name="Atoms" Grid.Row="3" ItemsSource="{Binding UtAtoms}" SelectedItem="{Binding UtSelected}">
-        <ListBox.ItemTemplate>
-          <DataTemplate x:DataType="vm:UtAtom">
-            <Grid ColumnDefinitions="60,110,*,150" ColumnSpacing="10">
-              <TextBlock Text="{Binding Label}" FontFamily="{DynamicResource Mono}" FontSize="11.5" VerticalAlignment="Center" />
-              <TextBlock Grid.Column="1" Text="{Binding Role}" FontSize="11.5" VerticalAlignment="Center" />
-              <TextBlock Grid.Column="2" Text="{Binding Neighbours}" FontFamily="{DynamicResource Mono}" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-              <TextBlock Grid.Column="3" Text="{Binding Shown}" FontFamily="{DynamicResource Mono}" FontSize="11.5" VerticalAlignment="Center"
-                         Foreground="{DynamicResource AccB}" IsVisible="{Binding IsHand}" />
-              <TextBlock Grid.Column="3" Text="{Binding Shown}" FontFamily="{DynamicResource Mono}" FontSize="11.5" VerticalAlignment="Center" IsVisible="{Binding !IsHand}" />
-            </Grid>
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
+      <!-- header and rows share fixed columns; the header's left margin is the row's 3 px accent inset plus the item padding,
+           so each heading sits over its cells -->
+      <DockPanel Grid.Row="3">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="60,110,*,150" ColumnSpacing="10" Margin="15,8,12,4">
+          <TextBlock Text="ATOM" Classes="h3" FontSize="10" />
+          <TextBlock Grid.Column="1" Text="UNIT" Classes="h3" FontSize="10" />
+          <TextBlock Grid.Column="2" Text="BONDED TO" Classes="h3" FontSize="10" />
+          <TextBlock Grid.Column="3" Text="TYPE" Classes="h3" FontSize="10" ToolTip.Tip="Accent: given by hand; plain: from the force field's rules" />
+        </Grid>
+        <ListBox x:Name="Atoms" ItemsSource="{Binding UtAtoms}" SelectedItem="{Binding UtSelected}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:UtAtom">
+              <Grid ColumnDefinitions="60,110,*,150" ColumnSpacing="10">
+                <TextBlock Text="{Binding Label}" FontFamily="{DynamicResource Mono}" FontSize="11.5" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding Role}" FontSize="11.5" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{Binding Neighbours}" FontFamily="{DynamicResource Mono}" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="3" Text="{Binding Shown}" FontFamily="{DynamicResource Mono}" FontSize="11.5" VerticalAlignment="Center"
+                           Foreground="{DynamicResource AccB}" IsVisible="{Binding IsHand}" />
+                <TextBlock Grid.Column="3" Text="{Binding Shown}" FontFamily="{DynamicResource Mono}" FontSize="11.5" VerticalAlignment="Center" IsVisible="{Binding !IsHand}" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
     </Grid>
   </DockPanel>
 </p:PageBase>

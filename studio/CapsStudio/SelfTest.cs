@@ -2158,7 +2158,7 @@ internal static class SelfTest
             tdoc.SetSmoothing(3);
             tdoc.SetSmoothing(1);
             vm.OpenTrajectory();
-            Check(vm.IsTrajectory && vm.TrajFrameText.StartsWith("frame 0"), "trajectory player opens: " + vm.TrajFrameText);
+            Check(vm.IsTrajectory && vm.TrajFrameText.StartsWith("frame 1 of "), "trajectory player opens: " + vm.TrajFrameText);
             vm.SetModule(8);
         }
 
@@ -2662,7 +2662,7 @@ internal static class SelfTest
             var tsOk = vm.TsTriads.Count == 3 && vm.TsTriads[0].A == "0.250" && vm.TsDyads.Length == 198 && vm.TsModelPentads.Length == 10;
             vm.TsMeasured = "0.2401, 0.2058, 0.0441, 0.0882, 0.2058, 0.0882, 0.0378, 0.0081, 0.0378, 0.0441";   // Bernoulli P_m = 0.7
             vm.TsFitMeasured();
-            var fitOk = vm.TsFit.Contains("P_m = 0.700", StringComparison.Ordinal) && vm.TsFit.Contains("consistent", StringComparison.Ordinal) && vm.TsPm == 0.7m;
+            var fitOk = vm.TsFit.Contains("Pₘ = 0.700", StringComparison.Ordinal) && vm.TsFit.Contains("consistent", StringComparison.Ordinal) && vm.TsPm == 0.7m;
             vm.TsBuild().GetAwaiter().GetResult();
             vm.OpenBlendPhase();
             var bpOk = vm.BpResults[0].Value == "0.01457" && vm.BpResults[2].Value == "433.9 K" && vm.BpResults[4].Value == "0.0385 · 0.9932" && vm.BpBinodal.Length > 100;

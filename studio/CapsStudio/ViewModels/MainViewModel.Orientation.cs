@@ -25,11 +25,34 @@ public sealed partial class MainViewModel
     public (double X, double Y)[] OrAlongZ { get; private set; } = [];
     public bool OrHasFrames => OrPerFrame.Length > 1;
     public bool OrHasZ => OrAlongZ.Length > 1;
+    private CapsDocument? _orRanOn;   // the structure the curves above were computed for (null: no run yet)
+    /// <summary>What the empty P₂-along-axis plot says: why there is no profile yet, not a fixed "needs a cell".</summary>
+    public string OrAlongNote
+    {
+        get
+        {
+            if (_doc == null) return "Open a structure to see P₂ along " + Analyze.AxisName;
+            var s = _doc.Summary();
+            if (s.CellValid == 0 || !(s.CellA > 0 && s.CellB > 0 && s.CellC > 0)) return "Needs a periodic cell";
+            if (_orRanOn != _doc) return "Run to see P₂ along " + Analyze.AxisName;
+            return "Too few chords for a profile along " + Analyze.AxisName;
+        }
+    }
+
+    /// <summary>A new structure: the last run's curves belong to the old one, so they go.</summary>
+    private void OrDocumentChanged()
+    {
+        if (_orRanOn == null && OrPerFrame.Length == 0 && OrAlongZ.Length == 0) { Raise(nameof(OrAlongNote)); return; }
+        _orRanOn = null; OrPerFrame = []; OrAlongZ = [];
+        Raise(nameof(OrHasFrames)); Raise(nameof(OrHasZ)); Raise(nameof(OrAlongNote));
+        OrChanged?.Invoke();
+    }
     public event Action? OrChanged;
 
     public void OpenOrientation()
     {
         SetModule(52);
+        Raise(nameof(OrAlongNote)); Raise(nameof(OrAlongTitle));
         if (!OrCheck.HasValue) _ = Task.Run(OrientationCheck).ContinueWith(t => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             var (s, chords) = t.IsCompletedSuccessfully ? t.Result : (double.NaN, 0);
@@ -80,7 +103,8 @@ public sealed partial class MainViewModel
         OrPerFrame = curves.FirstOrDefault(c => c.Label == "S per frame") is { } f ? f.X.Zip(f.Y).ToArray() : [];
         OrAlongZ = curves.FirstOrDefault(c => c.Label.StartsWith("P₂")) is { } z ? z.X.Zip(z.Y).ToArray() : [];
         OrStatus = Analyze.Log;
-        Raise(nameof(OrHasFrames)); Raise(nameof(OrHasZ));
+        _orRanOn = _doc;
+        Raise(nameof(OrHasFrames)); Raise(nameof(OrHasZ)); Raise(nameof(OrAlongNote));
         OrChanged?.Invoke();
     }
 }

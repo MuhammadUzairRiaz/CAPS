@@ -110,7 +110,7 @@ public sealed partial class MainViewModel
         sb.Append(_coModel == 1
             ? "Penultimate model (Merz, Alfrey & Goldfinger, J. Polym. Sci. 1, 75 (1946)): the last two units decide the next; r₁′ and r₂′ apply after the other unit."
             : CoHasThird
-                ? "Terminal model of three units (Alfrey & Goldfinger, J. Chem. Phys. 12, 322 (1944)): P(j after i) ∝ f_j / r_ij."
+                ? "Terminal model of three units (Alfrey & Goldfinger, J. Chem. Phys. 12, 322 (1944))."
                 : "Terminal model.");
         if (drift is { Count: > 1 })
         {

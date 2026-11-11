@@ -37,6 +37,8 @@ public sealed class HBarChart : Control
         var mono = new Typeface(Tokens.Mono);
         var dim = Tokens.Brush("DimB");
         var muted = Tokens.Brush("MutedB");
+        double? gx = _guide is double g ? X(g) : null;
+        var values = new (FormattedText Text, double X1, double Y)[_bars.Length];
         for (var i = 0; i < _bars.Length; ++i)
         {
             var (label, value, colour, text) = _bars[i];
@@ -47,16 +49,27 @@ public sealed class HBarChart : Control
             ctx.DrawText(lt, new Point(L - 8 - lt.Width, y + (rowH - lt.Height) / 2));
             var x1 = X(value);
             ctx.FillRectangle(brush, new Rect(L, y + (rowH - bh) / 2, Math.Max(2, x1 - L), bh), 3);
-            var vt = new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, mono, 10.5, Tokens.Brush("TextB"));
-            var inside = x1 + 6 + vt.Width > L + w;
-            ctx.DrawText(vt, new Point(inside ? x1 - 6 - vt.Width : x1 + 6, y + (rowH - vt.Height) / 2));
+            values[i] = (new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, mono, 10.5, Tokens.Brush("TextB")), x1, y);
         }
-        if (_guide is double g)
+        // The guide goes under the value labels, and a label that would sit on it moves clear of it.
+        if (gx is double gl)
         {
             var pen = new Pen(dim, 1, new DashStyle([4, 4], 0));
-            ctx.DrawLine(pen, new Point(X(g), 0), new Point(X(g), b.Height - bottom + 4));
+            ctx.DrawLine(pen, new Point(gl, 0), new Point(gl, b.Height - bottom + 4));
             var gt = new FormattedText(_guideLabel, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, mono, 10, dim);
-            ctx.DrawText(gt, new Point(X(g) - gt.Width / 2, b.Height - bottom + 6));
+            ctx.DrawText(gt, new Point(gl - gt.Width / 2, b.Height - bottom + 6));
+        }
+        const double pad = 6, clear = 4;
+        foreach (var (vt, x1, y) in values)
+        {
+            var right = L + w;
+            var lx = x1 + pad + vt.Width > right ? x1 - pad - vt.Width : x1 + pad;
+            if (gx is double gv && lx < gv + clear && lx + vt.Width > gv - clear)
+            {
+                if (gv + pad + vt.Width <= right) lx = gv + pad;                 // beyond the guide
+                else if (x1 - pad - vt.Width >= L + 2) lx = x1 - pad - vt.Width; // inside the bar
+            }
+            ctx.DrawText(vt, new Point(lx, y + (rowH - vt.Height) / 2));
         }
     }
 }

@@ -257,15 +257,19 @@
             <StackPanel>
               <Border Classes="phead"><TextBlock Text="Flory–Stockmayer check" Classes="h2" VerticalAlignment="Center" /></Border>
               <StackPanel Margin="16,12,16,16" Spacing="10">
-                <Border Classes="inset"><TextBlock Text="α_c = 1 / √( r (f_A − 1)(f_B − 1) )" Classes="mono" FontSize="13" HorizontalAlignment="Center" /></Border>
+                <Border Classes="inset"><v:MathView Tex="\alpha_c=\frac{1}{\sqrt{r\,(f_A-1)(f_B-1)}}" FontSize="15" HorizontalAlignment="Center"
+                                                  ToolTip.Tip="Gel point: the critical extent of reaction, from the stoichiometric ratio r and the functionalities of A and B" /></Border>
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
-                  <TextBlock Text="r" Classes="label" /><TextBlock Grid.Column="1" Text="f_A" Classes="label" /><TextBlock Grid.Column="2" Text="f_B" Classes="label" />
+                  <!-- 'r' has x-height ascent (0.47 em) and f has full ascent (0.72 em); 0.25 x 13 px top margin puts all three on one baseline -->
+                  <v:MathView Tex="r" FontSize="13" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" Margin="0,3.25,0,0" ToolTip.Tip="Stoichiometric ratio of A to B groups (at most 1)" />
+                  <v:MathView Grid.Column="1" Tex="f_A" FontSize="13" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" ToolTip.Tip="Functionality of A: reactive groups per A molecule" />
+                  <v:MathView Grid.Column="2" Tex="f_B" FontSize="13" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" ToolTip.Tip="Functionality of B: reactive groups per B molecule" />
                   <NumericUpDown Grid.Row="1" Value="{Binding RxRatioD}" Minimum="0.01" Maximum="1" Increment="0.05" FormatString="0.##" />
                   <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxFaD}" Minimum="1" Increment="1" FormatString="0.#" />
                   <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding RxFbD}" Minimum="1" Increment="1" FormatString="0.#" />
                 </Grid>
                 <UniformGrid Columns="2">
-                  <Border Classes="inset" Margin="0,0,5,0"><StackPanel Spacing="2"><TextBlock Text="α_c theory" Classes="label" /><TextBlock Text="{Binding RxAlphaC}" Classes="mono acc" FontSize="16" /></StackPanel></Border>
+                  <Border Classes="inset" Margin="0,0,5,0"><StackPanel Spacing="2"><StackPanel Orientation="Horizontal" Spacing="4"><v:MathView Tex="\alpha_c" FontSize="13" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /><TextBlock Text="theory" Classes="label" VerticalAlignment="Center" /></StackPanel><TextBlock Text="{Binding RxAlphaC}" Classes="mono acc" FontSize="16" /></StackPanel></Border>
                   <Border Classes="inset" Margin="5,0,0,0"><StackPanel Spacing="2"><TextBlock Text="simulated gel point" Classes="label" /><TextBlock Text="{Binding RxGelText}" Classes="mono" FontSize="16" /></StackPanel></Border>
                 </UniformGrid>
                 <StackPanel Orientation="Horizontal" Spacing="6">

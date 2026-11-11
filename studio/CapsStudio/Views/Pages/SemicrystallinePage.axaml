@@ -13,7 +13,7 @@
     <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-          <v:SeedPicker DataContext="{Binding ScSeed}" ShowLabel="False" VerticalAlignment="Center" Margin="0,0,10,0" />
+          <v:SeedPicker DataContext="{Binding ScSeed}" ShowLabel="False" InlineLabel="True" VerticalAlignment="Center" Margin="0,0,10,0" />
           <Button Content="Report of the open cell" Click="OnAnalyse" IsEnabled="{Binding Idle}" ToolTip.Tip="Loops, bridges, tails and crystallinity of the open structure's current frame (after MD too)" />
           <Button Content="Colour by phase" Click="OnColour" ToolTip.Tip="The view coloured by the tags crystal and amorphous" />
           <Button Classes="primary" Click="OnBuild" IsEnabled="{Binding Idle}">

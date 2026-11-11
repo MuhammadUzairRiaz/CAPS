@@ -26,7 +26,7 @@ public sealed partial class MainViewModel
         new("PDB", "ATOM/HETATM, CONECT, CRYST1", "yes", "yes"),
         new("XYZ · extended XYZ", "lattice in the comment line", "yes", "yes"),
         new("Tripos mol2", "bond orders, charges, atom types", "yes", "yes"),
-        new("CIF", "crystals, symmetry expanded", "yes", "—"),
+        new("CIF", "crystals, symmetry expanded", "yes", "yes, P 1"),
     ];
     private string _openPath = "", _openTopo = "", _openFormat = "", _openTitle = "", _openAtoms = "", _openFrames = "", _openBonds = "", _openUnits = "", _openMapped = "";
     private bool _openBusy, _openIsDump;

@@ -30,7 +30,7 @@
                 <DataTemplate x:DataType="vm:ExportFormat">
                   <StackPanel Spacing="1" Margin="2,3">
                     <TextBlock Text="{Binding Name}" FontSize="12.5" />
-                    <TextBlock Text="{Binding About}" FontSize="11" Foreground="{DynamicResource DimB}" />
+                    <TextBlock Text="{Binding About}" FontSize="11" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" />
                   </StackPanel>
                 </DataTemplate>
               </ListBox.ItemTemplate>

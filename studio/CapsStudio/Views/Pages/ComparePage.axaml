@@ -33,11 +33,15 @@
                 <StackPanel Orientation="Horizontal" Spacing="5"><Rectangle Width="16" Height="2" Fill="{DynamicResource SelB}" VerticalAlignment="Center" /><TextBlock Text="A" FontSize="11.5" /></StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="5"><Rectangle Width="16" Height="2" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="B" FontSize="11.5" /></StackPanel>
               </StackPanel>
-              <ComboBox ItemsSource="{Binding CompareTables}" SelectedItem="{Binding CompareTableName}" Width="280" />
+              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsVisible="{Binding !!CompareTables.Count}">
+                <TextBlock Text="Overlay" Classes="label" VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{Binding CompareTables}" SelectedItem="{Binding CompareTableName}" Width="280" PlaceholderText="Table to overlay"
+                          ToolTip.Tip="Pipeline table drawn for A and B" />
+              </StackPanel>
+              <TextBlock Text="No table to overlay yet. Add a measuring step in Visualize (Coordination &amp; RDF, histogram …) and its table is drawn here for A and B."
+                         Classes="dim" FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" IsVisible="{Binding !CompareTables.Count}" />
             </DockPanel>
-            <TextBlock DockPanel.Dock="Bottom" Text="Add a measuring step in Visualize (Coordination &amp; RDF, histogram …) to overlay its table." Classes="dim" FontSize="11" TextWrapping="Wrap"
-                       IsVisible="{Binding !CompareTables.Count}" />
-            <v:SciPlot x:Name="ComparePlotView" />
+            <v:SciPlot x:Name="ComparePlotView" IsVisible="{Binding !!CompareTables.Count}" />
           </DockPanel>
           <DockPanel Grid.Column="1">
             <TextBlock DockPanel.Dock="Top" Text="SAME PIPELINE, TWO INPUTS" Classes="h3" Margin="0,4,0,6" />

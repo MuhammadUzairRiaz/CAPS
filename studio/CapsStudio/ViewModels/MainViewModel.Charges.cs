@@ -113,7 +113,7 @@ public partial class MainViewModel
         var c = ((JsonArray)r["counts"]!).Select(x => x!.GetValue<double>()).ToArray();
         ChargeHistogram = c.Select((n, i) => ((e[i] + e[i + 1]) / 2, n)).ToArray();
         ChargeNote = string.Join(" · ", ((JsonArray)r["notes"]!).Select(x => (string?)x ?? ""));
-        ChargeStatus = $"{_doc.Summary().Atoms:N0} atoms · net {net.ToString("0.0e0", inv)} e · {MethodName(_chgMethod)} · shown in the view, not applied";
+        ChargeStatus = $"{_doc.Summary().Atoms:N0} atoms · net {ChargeNet} · {MethodName(_chgMethod)} · shown in the view, not applied";
         if (IsCharges && r["q"] is JsonArray qa) SetChargePreview(qa.Select(x => x!.GetValue<double>()).ToArray());
         Raise(nameof(ChargeTarget)); Raise(nameof(ChargeRange)); Raise(nameof(ChargeTotalTargetD));
         ChargesChanged?.Invoke();

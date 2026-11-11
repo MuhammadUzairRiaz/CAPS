@@ -27,7 +27,7 @@
     <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
       <DockPanel>
         <TextBlock DockPanel.Dock="Right" Text="lattice reference volume = 1 segment" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
-        <TextBlock Text="{Binding BpStatus}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+        <v:MathView Tex="{Binding BpStatus}" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
       </DockPanel>
     </Border>
     <ScrollViewer Margin="22,18">
@@ -59,8 +59,8 @@
                 <StackPanel Grid.Row="3" Spacing="4"><TextBlock Text="Polymer A (for the fit)" Classes="label" /><ComboBox ItemsSource="{Binding BpUnitNames}" SelectedIndex="{Binding BpUnitA}" HorizontalAlignment="Stretch" /></StackPanel>
                 <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4"><TextBlock Text="Polymer B (for the fit)" Classes="label" /><ComboBox ItemsSource="{Binding BpUnitNames}" SelectedIndex="{Binding BpUnitB}" HorizontalAlignment="Stretch" /></StackPanel>
                 <TextBlock Grid.Row="4" Grid.ColumnSpan="2" Text="{Binding BpFitNote}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding BpFitNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                <StackPanel Spacing="4"><TextBlock Text="N_A (segments)" Classes="label" /><NumericUpDown Value="{Binding BpNa}" Minimum="1" Maximum="1000000" Increment="10" FormatString="0" /></StackPanel>
-                <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="N_B (segments)" Classes="label" /><NumericUpDown Value="{Binding BpNb}" Minimum="1" Maximum="1000000" Increment="10" FormatString="0" /></StackPanel>
+                <StackPanel Spacing="4"><v:MathView Tex="N_A (segments)" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" /><NumericUpDown Value="{Binding BpNa}" Minimum="1" Maximum="1000000" Increment="10" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4"><v:MathView Tex="N_B (segments)" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" /><NumericUpDown Value="{Binding BpNb}" Minimum="1" Maximum="1000000" Increment="10" FormatString="0" /></StackPanel>
                 <StackPanel Grid.Row="1" Spacing="4"><TextBlock Text="A" Classes="label" /><NumericUpDown Value="{Binding BpA}" Minimum="-10" Maximum="10" Increment="0.005" FormatString="0.00###" /></StackPanel>
                 <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4"><TextBlock Text="B · K" Classes="label" /><NumericUpDown Value="{Binding BpB}" Minimum="-100000" Maximum="100000" Increment="1" FormatString="0.0##" /></StackPanel>
                 <StackPanel Grid.Row="2" Spacing="4"><TextBlock Text="χ source" Classes="label" />
@@ -85,7 +85,7 @@
                   <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ResultRow">
                     <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
                       <Grid ColumnDefinitions="*,Auto" Height="30">
-                        <TextBlock Text="{Binding Quantity}" FontSize="12.5" VerticalAlignment="Center" />
+                        <v:MathView Tex="{Binding Quantity}" Mode="Prose" FontSize="12.5" HorizontalAlignment="Left" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
                       </Grid>
                     </Border>

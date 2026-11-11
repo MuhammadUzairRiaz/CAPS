@@ -108,11 +108,13 @@ public sealed partial class MainViewModel
                 ExportFileSize = bytes > 1 << 20 ? (bytes / 1048576).ToString("F1", inv) + " MB" : (bytes / 1024).ToString("F0", inv) + " KB";
                 ExportLineCount = ((double?)j["line_count"] ?? 0).ToString("N0", inv) + " lines";
                 string C(string key) => j[key] is JsonNode n ? ((double?)n ?? 0).ToString("N0", inv) : "–";
-                ExportSections.Add(new Row("Atoms", C("atoms") + (j["atom_types"] != null ? " · " + C("atom_types") + " types" : "")));
-                ExportSections.Add(new Row("Bonds", C("bonds") + (j["bond_types"] != null ? " · " + C("bond_types") + " types" : "")));
-                if (j["angles"] != null) ExportSections.Add(new Row("Angles", C("angles") + (j["angle_types"] != null ? " · " + C("angle_types") + " types" : "")));
-                if (j["dihedrals"] != null) ExportSections.Add(new Row("Dihedrals", C("dihedrals") + (j["dihedral_types"] != null ? " · " + C("dihedral_types") + " types" : "")));
-                if (j["impropers"] != null) ExportSections.Add(new Row("Impropers", C("impropers") + (j["improper_types"] != null ? " · " + C("improper_types") + " types" : "")));
+                // "1 type", "12 types": one count-aware suffix for every section row
+                string T(string key) => j[key] is JsonNode t ? " · " + C(key) + (((double?)t ?? 0) == 1 ? " type" : " types") : "";
+                ExportSections.Add(new Row("Atoms", C("atoms") + T("atom_types")));
+                ExportSections.Add(new Row("Bonds", C("bonds") + T("bond_types")));
+                if (j["angles"] != null) ExportSections.Add(new Row("Angles", C("angles") + T("angle_types")));
+                if (j["dihedrals"] != null) ExportSections.Add(new Row("Dihedrals", C("dihedrals") + T("dihedral_types")));
+                if (j["impropers"] != null) ExportSections.Add(new Row("Impropers", C("impropers") + T("improper_types")));
                 foreach (var n in (JsonArray)j["notes"]!) ExportNotes.Add((string?)n ?? "");
             });
         });

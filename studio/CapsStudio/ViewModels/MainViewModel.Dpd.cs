@@ -127,7 +127,9 @@ public sealed partial class MainViewModel
             DpdOrder = D("order").ToString("0.00", inv);
             DpdDomains = r["domains_a"] is null ? "" : string.Format(inv, "{0}: {1:0} domain(s), {2:0} beads each on average, the largest {3:0} % of its cells · {4}: {5:0}, {6:0} beads, {7:0} %",
                 _dpdTypesFirst.Item1, D("domains_a"), D("domain_a_size"), 100 * D("largest_a"), _dpdTypesFirst.Item2, D("domains_b"), D("domain_b_size"), 100 * D("largest_b"));
-            DpdSpacing = D("spacing") > 0 ? $"{D("spacing").ToString("0.0", inv)} r_c · {(D("spacing") * (double)_dpdRc).ToString("0", inv)} Å" : "—";
+            // Plain text, no "r_c": the readout and the status bar are TextBlocks, and Unicode has no subscript c.
+            var spacingRc = D("spacing").ToString("0.0", inv);
+            DpdSpacing = D("spacing") > 0 ? $"{spacingRc} cut-off {(spacingRc == "1.0" ? "radius" : "radii")} · {(D("spacing") * (double)_dpdRc).ToString("0", inv)} Å" : "—";
             DpdKt = $"{D("kT").ToString("0.000", inv)} ± {D("kT_error").ToString("0.000", inv)}";
             var q = ((JsonArray)r["q"]!).Select(x => x!.GetValue<double>()).ToArray();
             var sq = ((JsonArray)r["sq"]!).Select(x => x!.GetValue<double>()).ToArray();

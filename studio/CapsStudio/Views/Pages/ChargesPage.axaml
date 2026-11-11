@@ -91,7 +91,7 @@
                 <Button DockPanel.Dock="Right" Classes="small" Content="Import .chg…" Click="OnImport" VerticalAlignment="Center" />
                 <RadioButton Classes="method" GroupName="chg" IsChecked="{Binding ChargeMethod, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=3}" IsEnabled="{Binding HasChargeFile}"
                              ToolTip.Tip="Import a .chg file first" ToolTip.ShowOnDisabled="True">
-                  <StackPanel><TextBlock Text="RESP or AM1-BCC · imported" FontWeight="SemiBold" FontSize="12.5" /><TextBlock Text="{Binding ChargeFile, StringFormat='external QM or AmberTools · {0}'}" Classes="dim" TextWrapping="Wrap" /></StackPanel>
+                  <StackPanel><TextBlock Text="RESP or AM1-BCC · imported" FontWeight="SemiBold" FontSize="12.5" /><TextBlock Text="external QM or AmberTools" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding !HasChargeFile}" /><TextBlock Text="{Binding ChargeFile, StringFormat='external QM or AmberTools · {0}'}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding HasChargeFile}" /></StackPanel>
                 </RadioButton>
               </DockPanel>
               <TextBlock Text="AM1-BCC needs AmberTools and RESP a quantum-chemistry program; CAPS does not run them — import their per-atom charges (.chg: one per line, or index charge)." Classes="dim" TextWrapping="Wrap" Margin="0,4,0,0" />

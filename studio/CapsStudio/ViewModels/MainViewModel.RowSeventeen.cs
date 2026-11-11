@@ -34,12 +34,14 @@ public partial class MainViewModel
 {
     // ---------------------------------------------------------------- Analyze › Chains (design/boards/ChainStats)
     public bool IsChainStats => _module == 55;
+    // labels and captions are typeset by MathView in Prose mode (_sub lowered, ^sup raised, the UI font kept): Unicode has
+    // no subscript g, and the subscript e (U+2091) is missing from the UI font
     public ResultCell CsBonds { get; } = new("Bonds per chain, n", "backbone bonds");
-    public ResultCell CsRee { get; } = new("⟨R²ₑₑ⟩½", "first to last backbone atom");
-    public ResultCell CsRg { get; } = new("⟨R²g⟩½", "mass-weighted, whole molecules");
-    public ResultCell CsRatio { get; } = new("⟨R²ₑₑ⟩ / ⟨R²g⟩", "6 for an ideal Gaussian chain");
+    public ResultCell CsRee { get; } = new("⟨R^2_ee⟩^{1/2}", "first to last backbone atom");
+    public ResultCell CsRg { get; } = new("⟨R^2_g⟩^{1/2}", "mass-weighted, whole molecules");
+    public ResultCell CsRatio { get; } = new("⟨R^2_ee⟩ / ⟨R^2_g⟩", "6 for an ideal Gaussian chain");
     public ResultCell CsCn { get; } = new("C_n at n = N", "whole backbones");
-    public ResultCell CsCinf { get; } = new("C∞", "extrapolated: C_n = C∞(1 − a/n)");
+    public ResultCell CsCinf { get; } = new(@"C_{\infty}", @"extrapolated: C_n = C_{\infty}(1 − a/n)");
     public (double X, double Y)[] CsCnCurve { get; private set; } = [];
     public (double X, double Y)[] CsReeHist { get; private set; } = [];
     private string _csStatus = "";
@@ -80,30 +82,64 @@ public partial class MainViewModel
     public decimal DcB { get => _dcB; set { if (Set(ref _dcB, Math.Clamp(value, 1, 10000))) Recalculate(); } }
     public decimal DcC { get => _dcC; set { if (Set(ref _dcC, Math.Clamp(value, 1, 10000))) Recalculate(); } }
     public decimal DcTarget { get => _dcTarget; set { if (Set(ref _dcTarget, Math.Clamp(value, 0.01m, 30m))) Recalculate(); } }
-    public int DcSolvent { get => _dcSolvent; set { if (value >= 0 && Set(ref _dcSolvent, value)) Recalculate(); } }   // −1: a list being replaced
+    // The two ComboBoxes bind SelectedItem to DcSolventName / DcBoxSpeciesName, not SelectedIndex to these ints. The page is
+    // built at startup, before any species exist: a SelectedIndex binding pushed 1 and 0 into an empty ComboBox, which kept -1,
+    // and raising the same int again once the names arrived was skipped by the binding (a value equal to the one it last
+    // pushed is not pushed again), so both boxes stayed blank while the numbers used toluene and water. A name goes from null
+    // to "Toluene" when the list fills, a real change, so the binding sets it and the choice shows.
+    public int DcSolvent { get => _dcSolvent; set { if (value >= 0 && Set(ref _dcSolvent, value)) { Raise(nameof(DcSolventName)); Recalculate(); } } }
     public decimal DcN { get => _dcN; set { if (Set(ref _dcN, Math.Clamp(value, 1, 1e9m))) Recalculate(); } }
-    public int DcBoxSpecies { get => _dcBoxSpecies; set { if (value >= 0 && Set(ref _dcBoxSpecies, value)) Recalculate(); } }
+    public int DcBoxSpecies { get => _dcBoxSpecies; set { if (value >= 0 && Set(ref _dcBoxSpecies, value)) { Raise(nameof(DcBoxSpeciesName)); Recalculate(); } } }
+    /// <summary>The solvent shown in the Polymer + solvent card: null until that species exists. Null from the control (its
+    /// items reset) is ignored, so the choice is kept.</summary>
+    public string? DcSolventName
+    {
+        get => DcNameAt(_dcSolvent);
+        set { var i = value == null ? -1 : DcSpeciesNames.IndexOf(value); if (i >= 0) DcSolvent = i; }
+    }
+    /// <summary>The species of the Box for a given N card, as DcSolventName.</summary>
+    public string? DcBoxSpeciesName
+    {
+        get => DcNameAt(_dcBoxSpecies);
+        set { var i = value == null ? -1 : DcSpeciesNames.IndexOf(value); if (i >= 0) DcBoxSpecies = i; }
+    }
+    private string? DcNameAt(int i) => i >= 0 && i < DcSpeciesNames.Count ? DcSpeciesNames[i] : null;
     public ObservableCollection<SpeciesRow> DcSpecies { get; } = new();
     private string _dcVolume = "", _dcPolymer = "", _dcSolventN = "—", _dcFraction = "—", _dcEdge = "—", _dcNewSmiles = "", _dcError = "";
     public string DcVolume { get => _dcVolume; private set => Set(ref _dcVolume, value); }
+    private string _dcVolumeTex = "";
+    /// <summary>DcVolume as MathView Prose TeX, so the exponent is raised in the UI font.</summary>
+    public string DcVolumeTex { get => _dcVolumeTex; private set => Set(ref _dcVolumeTex, value); }
+
+    /// <summary>6.4e-20 → "6.4 × 10^{−20}" for MathView.</summary>
+    private static string SciTex(double v)
+    {
+        if (!(v > 0) || !double.IsFinite(v)) return "—";
+        var e = (int)Math.Floor(Math.Log10(v));
+        var m = v / Math.Pow(10, e);
+        return m.ToString("0.0#", CultureInfo.InvariantCulture) + " × 10^{" + (e < 0 ? "−" : "") + Math.Abs(e).ToString(CultureInfo.InvariantCulture) + "}";
+    }
     public string DcPolymer { get => _dcPolymer; private set => Set(ref _dcPolymer, value); }
     public string DcSolventN { get => _dcSolventN; private set => Set(ref _dcSolventN, value); }
     public string DcFraction { get => _dcFraction; private set => Set(ref _dcFraction, value); }
     public string DcEdge { get => _dcEdge; private set => Set(ref _dcEdge, value); }
     public string DcNewSmiles { get => _dcNewSmiles; set => Set(ref _dcNewSmiles, value ?? ""); }
     public string DcError { get => _dcError; private set => Set(ref _dcError, value); }
-    private string[] _dcNames = [];
-    /// <summary>The species' names; a new list only when they change, with the two choices put back (a replaced list clears a
-    /// ComboBox's selection).</summary>
-    public string[] DcSpeciesNames => _dcNames;
+    /// <summary>The species' names, one list for the life of the page, updated in place; names are unique (AddSpecies), so a
+    /// name maps back to one species.</summary>
+    public ObservableCollection<string> DcSpeciesNames { get; } = new();
     private void RaiseSpeciesNames()
     {
-        var names = DcSpecies.Select(s => s.Name).ToArray();
-        if (names.SequenceEqual(_dcNames)) return;
-        _dcNames = names;
-        Raise(nameof(DcSpeciesNames));
-        Raise(nameof(DcSolvent));
-        Raise(nameof(DcBoxSpecies));
+        var changed = false;
+        for (var i = 0; i < DcSpecies.Count; i++)
+        {
+            var name = DcSpecies[i].Name;
+            if (i >= DcSpeciesNames.Count) { DcSpeciesNames.Add(name); changed = true; }
+            else if (DcSpeciesNames[i] != name) { DcSpeciesNames[i] = name; changed = true; }
+        }
+        while (DcSpeciesNames.Count > DcSpecies.Count) { DcSpeciesNames.RemoveAt(DcSpeciesNames.Count - 1); changed = true; }
+        // the chosen names exist now (null before), so the ComboBoxes are given them
+        if (changed) { Raise(nameof(DcSolventName)); Raise(nameof(DcBoxSpeciesName)); }
     }
 
     public void OpenDensityCalc()
@@ -124,7 +160,10 @@ public partial class MainViewModel
         double mass;
         try { mass = JsonNode.Parse(CapsDocument.SmilesInfo(smiles))!["mass"]!.GetValue<double>(); }
         catch (Exception e) { DcError = $"{smiles}: {e.Message}"; return; }
-        var row = new SpeciesRow { Name = name, Smiles = smiles, Mass = mass, Rho = rho };
+        // the ComboBoxes select by name, so a SMILES added twice gets "(2)", "(3)" to stay a separate choice
+        var unique = name;
+        for (var k = 2; DcSpecies.Any(s => s.Name == unique); k++) unique = $"{name} ({k})";
+        var row = new SpeciesRow { Name = unique, Smiles = smiles, Mass = mass, Rho = rho };
         row.Changed = Recalculate;
         DcSpecies.Add(row);
         RaiseSpeciesNames();
@@ -146,6 +185,7 @@ public partial class MainViewModel
         var v = (double)(_dcA * _dcB * _dcC);          // Å³
         var cm3 = v * 1e-24;
         DcVolume = $"{v.ToString("N0", inv)} Å³ = {Sci(cm3)} cm³";
+        DcVolumeTex = $"{v.ToString("N0", inv)} Å^3 = {SciTex(cm3)} cm^3";
         foreach (var s in DcSpecies)
         {
             var exact = (double)s.Rho * cm3 * Avogadro / s.Mass;
@@ -222,6 +262,8 @@ public partial class MainViewModel
     public string SaTotal { get => _saTotal; private set => Set(ref _saTotal, value); }
     public string SaStatus { get => _saStatus; private set => Set(ref _saStatus, value); }
     private double[] _saArea = [];
+    /// <summary>The document whose atoms carry the last run's exposure values (null until a run, and after leaving the page).</summary>
+    public CapsDocument? SaColoured { get; private set; }
     public event Action? SaChanged;
 
     public void OpenSurfaceArea() { SetModule(57); SaChanged?.Invoke(); }
@@ -258,11 +300,12 @@ public partial class MainViewModel
         }
         else { SaSeries = []; SaSeriesText = ""; }
         SaStatus = $"probe {_saProbe.ToString("0.00", inv)} Å · {(int)_saPoints} points per atom · {sw.Elapsed.TotalSeconds.ToString("0.0", inv)} s · view coloured by exposure";
+        SaColoured = doc;
         RenderRequested?.Invoke();
         SaChanged?.Invoke();
     }
 
-    public void ClearSurfaceColour() { try { _doc?.SetAtomValues(null); } catch { } RenderRequested?.Invoke(); }
+    public void ClearSurfaceColour() { SaColoured = null; try { _doc?.SetAtomValues(null); } catch { } RenderRequested?.Invoke(); }
 
     public void ExportSasaCsv(string path)
     {

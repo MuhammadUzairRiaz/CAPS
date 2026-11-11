@@ -13,7 +13,7 @@
   <DockPanel>
     <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
       <DockPanel>
-        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="16,0,0,0">
           <TextBlock Text="Preview the view as" Classes="muted" VerticalAlignment="Center" />
           <StackPanel Orientation="Horizontal">
             <RadioButton Classes="seg" GroupName="cvd" Content="Normal" IsChecked="{Binding VisionPreview, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
@@ -25,7 +25,7 @@
         <StackPanel Spacing="3">
           <TextBlock Text="Colour-vision check" FontSize="19" FontWeight="SemiBold" />
           <TextBlock Text="Simulated with Machado, Oliveira &amp; Fernandes (2009), severity 1.0 · pairs flagged when ΔE*ab &lt; 12 · the palette and theme in use"
-                     FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+                     FontSize="12.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
         </StackPanel>
       </DockPanel>
     </Border>

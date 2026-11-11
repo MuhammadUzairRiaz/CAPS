@@ -7,7 +7,11 @@
     <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
       <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
     <Style Selector="Button.run"><Setter Property="Width" Value="30" /><Setter Property="Height" Value="30" /><Setter Property="MinHeight" Value="30" /><Setter Property="Padding" Value="0" />
-      <Setter Property="CornerRadius" Value="6" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Margin" Value="0,0,6,0" /></Style>
+      <Setter Property="CornerRadius" Value="6" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Margin" Value="0,0,6,0" />
+      <Setter Property="Background" Value="Transparent" /><Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="VerticalContentAlignment" Value="Stretch" /></Style>
+    <Style Selector="Button.run:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" /><Setter Property="BorderBrush" Value="{DynamicResource TextB}" /><Setter Property="BorderThickness" Value="1" /></Style>
+    <Style Selector="Button.run:pressed /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent" /></Style>
   </p:PageBase.Styles>
   <DockPanel>
     <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
@@ -56,8 +60,12 @@
                               <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                               <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:SweepRun">
-                                  <Button Classes="run" Background="{Binding Fill}" Opacity="{Binding Dim}" ToolTip.Tip="{Binding Tip}" Click="OnRunSquare" Tag="{Binding}">
-                                    <TextBlock Text="{Binding SeedText}" Classes="mono" FontSize="11" Foreground="{DynamicResource AccInkB}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  <Button Classes="run" ToolTip.Tip="{Binding Tip}" Click="OnRunSquare" Tag="{Binding}">
+                                    <Panel>
+                                      <!-- only the fill fades for queued/stopped runs; the seed number stays readable -->
+                                      <Border Background="{Binding Fill}" Opacity="{Binding Dim}" CornerRadius="6" />
+                                      <TextBlock Text="{Binding SeedText}" Classes="mono" FontSize="11" FontWeight="SemiBold" Foreground="{Binding Ink}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Panel>
                                   </Button>
                                 </DataTemplate>
                               </ItemsControl.ItemTemplate>
@@ -86,7 +94,9 @@
               <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="mean ± sd over seeds" /></Border>
               <TextBlock Text="Results by condition" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
             </DockPanel>
-            <Grid DockPanel.Dock="Top" ColumnDefinitions="30*,20*,17*,15*,18*" Margin="0,0,0,4">
+            <!-- Right inset of 16 px on the header and on every row keeps the right-aligned columns out from under the
+                 overlay vertical scrollbar, and the header lines up with the rows. -->
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="30*,20*,17*,15*,18*" Margin="0,0,16,4">
               <TextBlock Text="CONDITION" Classes="h3" /><TextBlock Grid.Column="1" Text="DENSITY (G/CM³)" Classes="h3" HorizontalAlignment="Right" />
               <TextBlock Grid.Column="2" Text="RG (Å)" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="3" Text="TG (K)" Classes="h3" HorizontalAlignment="Right" />
               <TextBlock Grid.Column="4" Text="SEEDS DONE" Classes="h3" HorizontalAlignment="Right" />
@@ -95,7 +105,7 @@
               <ItemsControl ItemsSource="{Binding SweepResults}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:SweepResult">
-                    <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="0,7">
+                    <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="0,7,16,7">
                       <Grid ColumnDefinitions="30*,20*,17*,15*,18*">
                         <TextBlock Text="{Binding Condition}" FontSize="12" />
                         <TextBlock Grid.Column="1" Text="{Binding Density}" Classes="mono" FontSize="12" HorizontalAlignment="Right" />

@@ -119,7 +119,7 @@ public sealed partial class MainViewModel
             TrajPlots[2].Series ??= Pick("Rg (Å)");
             foreach (var p in TrajPlots) if (p.Series != null && !names.Contains(p.Series)) p.Series = names.FirstOrDefault();
             var logRows = (int)(j["log_rows"]?.GetValue<double>() ?? 0);
-            TrajNote = $"Series of {_frames:N0} frames · chain {TrajChain}" + (logRows > 0 ? $" · {logRows:N0} thermo rows from {Path.GetFileName(_trajLog)}" : "");
+            TrajNote = $"Series of {TrajFramesCount} · chain {TrajChain}" + (logRows > 0 ? $" · {logRows:N0} thermo rows from {Path.GetFileName(_trajLog)}" : "");
             Raise(nameof(TrajChainText));
             Raise(nameof(TrajHudTitle));
             Raise(nameof(TrajStatus));
@@ -182,18 +182,21 @@ public sealed partial class MainViewModel
         return k < 0 || _frame >= rows.Count ? null : (double?)rows[_frame]?[k];
     }
 
-    public string TrajFrameText => $"frame {_frame} / {Math.Max(0, _frames - 1)}";
+    /// <summary>"1 frame", "250 frames": the frame count with the right plural.</summary>
+    private string TrajFramesCount => $"{_frames:N0} {(_frames == 1 ? "frame" : "frames")}";
+    /// <summary>The current frame counted from 1, as the chip and footer count frames.</summary>
+    public string TrajFrameText => $"frame {Math.Min(_frame, Math.Max(0, _frames - 1)) + 1} of {Math.Max(1, _frames)}";
     public string TrajTimeText => RowValue("Time (ps)") is double t ? (t >= 1000 ? $"t = {t / 1000:0.000} ns" : $"t = {t:0.00} ps") : "";
     public double? TrajCursor => RowValue("Time (ps)");
     public string TrajReeText => RowValue("Ree (Å)") is double r ? $"R_ee chain {TrajChain} · {r:0.0} Å" : "";
-    public string TrajHudTitle => $"{(_doc != null ? Path.GetFileName(_doc.Path) : Title)} · {_frames:N0} frames";
+    public string TrajHudTitle => $"{(_doc != null ? Path.GetFileName(_doc.Path) : Title)} · {TrajFramesCount}";
     public string TrajStatus
     {
         get
         {
             var s = _doc?.Summary();
             var dtps = _traj?["rows"] is JsonArray rows && rows.Count > 1 ? ((double?)rows[1]?[2] ?? 0) - ((double?)rows[0]?[2] ?? 0) : 0;
-            return $"{s?.Atoms ?? 0:N0} atoms · {_frames:N0} frames" + (dtps > 0 ? $" · {dtps:0.###} ps/frame" : "");
+            return $"{s?.Atoms ?? 0:N0} atoms · {TrajFramesCount}" + (dtps > 0 ? $" · {dtps:0.###} ps/frame" : "");
         }
     }
 }

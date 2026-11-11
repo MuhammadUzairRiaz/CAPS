@@ -18,17 +18,19 @@
 
   <Grid RowDefinitions="Auto,*,32" Margin="0">
     <!-- header -->
-    <Grid ColumnDefinitions="*,Auto" Margin="24,20,24,16">
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Margin="24,20,24,16">
       <StackPanel Spacing="4">
         <TextBlock Text="Validation &amp; benchmarks" FontSize="20" FontWeight="SemiBold" />
-        <TextBlock Text="One command regenerates the tables as Markdown, CSV and LaTeX" Classes="muted" />
+        <TextBlock Text="One command regenerates the tables as Markdown, CSV and LaTeX" Classes="muted" TextWrapping="Wrap" />
+        <Border Classes="chip" Height="28" CornerRadius="6" Padding="10,0" Margin="0,4,0,0" HorizontalAlignment="Left" BorderBrush="{DynamicResource LineB}" BorderThickness="1">
+          <TextBlock Text="{Binding BenchCommand}" Classes="mono" FontSize="12" Foreground="{DynamicResource TextB}" VerticalAlignment="Center"
+                     TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding BenchCommand}" />
+        </Border>
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-        <Border Classes="chip" Height="30" CornerRadius="6" Padding="10,0" BorderBrush="{DynamicResource LineB}" BorderThickness="1">
-          <TextBlock Text="{Binding BenchCommand}" Classes="mono" FontSize="12" Foreground="{DynamicResource TextB}" />
-        </Border>
-        <TextBlock Text="Repeats" Classes="label" VerticalAlignment="Center" Margin="6,0,0,0" />
-        <NumericUpDown Value="{Binding BenchRepeats}" Minimum="1" Maximum="10" Increment="1" FormatString="0" Width="84" IsEnabled="{Binding BenchIdle}" />
+        <TextBlock Text="Repeats" Classes="label" VerticalAlignment="Center" />
+        <NumericUpDown Value="{Binding BenchRepeats}" Minimum="1" Maximum="10" Increment="1" FormatString="0" Width="84" IsEnabled="{Binding BenchIdle}"
+                       VerticalAlignment="Center" VerticalContentAlignment="Center" />
         <CheckBox Content="Quick" IsChecked="{Binding BenchQuick}" IsEnabled="{Binding BenchIdle}" ToolTip.Tip="Shorter runs: a first look, not the paper numbers" />
         <Button Click="OnExport" IsEnabled="{Binding BenchIdle}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="15" VerticalAlignment="Center" /><TextBlock Text="Export for paper" VerticalAlignment="Center" /></StackPanel>
@@ -55,21 +57,23 @@
               <TextBlock Text="Benchmark tables" Classes="h2" VerticalAlignment="Center" />
             </DockPanel>
           </Border>
-          <Grid DockPanel.Dock="Top" ColumnDefinitions="44,190,*,64,84" Margin="26,10,16,4">
-            <TextBlock Grid.Column="1" Text="TABLE" Classes="h3" FontSize="10" />
-            <TextBlock Grid.Column="2" Text="SCOPE" Classes="h3" FontSize="10" />
-            <TextBlock Grid.Column="3" Text="ROWS" Classes="h3" FontSize="10" HorizontalAlignment="Right" Margin="0,0,12,0" />
-            <TextBlock Grid.Column="4" Text="STATUS" Classes="h3" FontSize="10" />
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="44,*,64,84" Margin="29,10,16,4">
+            <TextBlock Grid.Column="1" Text="TABLE AND SCOPE" Classes="h3" FontSize="10" />
+            <TextBlock Grid.Column="2" Text="ROWS" Classes="h3" FontSize="10" HorizontalAlignment="Right" Margin="0,0,12,0" />
+            <TextBlock Grid.Column="3" Text="STATUS" Classes="h3" FontSize="10" />
           </Grid>
           <ListBox x:Name="Tables" ItemsSource="{Binding BenchItems}" SelectedItem="{Binding SelectedBench}" Background="Transparent" Padding="10,0,10,10">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:BenchItem">
-                <Grid ColumnDefinitions="44,190,*,64,84" Height="36" Margin="16,0,6,0">
+                <Grid ColumnDefinitions="44,*,64,84" MinHeight="36" Margin="16,0,6,0">
                   <TextBlock Text="{Binding Id}" Classes="mono" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12.5" FontWeight="Medium" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Grid.Column="2" Text="{Binding Scope}" Classes="muted" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
-                  <TextBlock Grid.Column="3" Text="{Binding RowsText}" Classes="mono" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" />
-                  <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center" Margin="0,6,8,6">
+                    <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="Medium" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
+                    <TextBlock Text="{Binding Scope}" Classes="muted" FontSize="12" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding Scope}" IsVisible="{Binding Scope, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="2" Text="{Binding RowsText}" Classes="mono" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" />
+                  <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <Ellipse Classes="dot" Classes.pass="{Binding IsPass}" Classes.fail="{Binding IsFail}" Classes.running="{Binding IsRunning}" Width="7" Height="7" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding Status}" Classes="state" Classes.pass="{Binding IsPass}" Classes.fail="{Binding IsFail}" Classes.running="{Binding IsRunning}" />
                   </StackPanel>
@@ -95,6 +99,9 @@
                 <TextBlock x:Name="DetailTitle" Classes="h2" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
               </DockPanel>
             </Border>
+            <!-- what the chosen table measures, in full -->
+            <TextBlock DockPanel.Dock="Top" Text="{Binding SelectedBench.Scope, FallbackValue=''}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" Margin="16,12,16,0"
+                       IsVisible="{Binding SelectedBench.Scope, Converter={x:Static StringConverters.IsNotNullOrEmpty}, FallbackValue=False}" />
             <Border DockPanel.Dock="Bottom" Margin="16,0,16,10" Padding="12,10" CornerRadius="8" BorderBrush="{DynamicResource ErrB}" BorderThickness="1"
                     DataContext="{Binding SelectedBench}" IsVisible="{Binding HasFailingRow, FallbackValue=False}">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">

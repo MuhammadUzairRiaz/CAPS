@@ -66,8 +66,8 @@
               <TextBlock Text="ENSEMBLE" Classes="h3" Margin="0,6,0,0" />
               <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
                 <StackPanel Spacing="6"><TextBlock Text="Pressure · atm" Classes="label" /><NumericUpDown Value="{Binding Analyze.TgPressureD}" Minimum="0.001" Increment="1" FormatString="0.###" /></StackPanel>
-                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="τ_T · fs" Classes="label" /><NumericUpDown Value="{Binding Analyze.TgTauTD}" Minimum="1" Increment="10" FormatString="0" /></StackPanel>
-                <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="τ_P · fs" Classes="label" /><NumericUpDown Value="{Binding Analyze.TgTauPD}" Minimum="10" Increment="100" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><v:MathView Tex="τ_T · fs" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" /><NumericUpDown Value="{Binding Analyze.TgTauTD}" Minimum="1" Increment="10" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6"><v:MathView Tex="τ_P · fs" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" /><NumericUpDown Value="{Binding Analyze.TgTauPD}" Minimum="10" Increment="100" FormatString="0" /></StackPanel>
               </Grid>
               <StackPanel Spacing="6"><TextBlock Text="Barostat (Bussi thermostat)" Classes="label" />
                 <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.TgBarostats}" SelectedIndex="{Binding Analyze.TgBarostat}" HorizontalAlignment="Stretch" /></StackPanel>
@@ -106,7 +106,7 @@
             <StackPanel Spacing="8">
               <TextBlock Text="The property against temperature" FontSize="13.5" FontWeight="SemiBold" />
               <Panel Height="340">
-                <v:SciPlot x:Name="Vt" />
+                <v:SciPlot x:Name="Vt" EmptyText="" />
                 <TextBlock IsVisible="{Binding !GtHasPoints}" Classes="dim" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center"
                            Text="Run the cooling scan: the replica means are plotted with their spread and fitted with two lines; the crossing is Tg." />
               </Panel>

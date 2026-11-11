@@ -6,6 +6,8 @@
   <StackPanel Spacing="6">
     <TextBlock x:Name="Label" Text="Seed" Classes="label" />
     <WrapPanel ItemSpacing="8" LineSpacing="4">
+      <!-- in a header or footer, where there is no row above for the label: "Seed" beside the box -->
+      <TextBlock x:Name="InlineSeedLabel" Text="Seed" Classes="label" VerticalAlignment="Center" IsVisible="False" />
       <NumericUpDown Value="{Binding Value}" IsEnabled="{Binding Fixed}" Minimum="1" Maximum="2147483647" Increment="1" FormatString="0"
                      ShowButtonSpinner="False" Width="110" ToolTip.Tip="The same seed gives the same result: same sequence, same chains, same velocities" />
       <CheckBox Content="New each run" IsChecked="{Binding Fresh}" VerticalAlignment="Center"

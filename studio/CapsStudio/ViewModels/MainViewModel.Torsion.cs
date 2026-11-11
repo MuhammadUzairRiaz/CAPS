@@ -86,7 +86,8 @@ public sealed partial class MainViewModel
             return g != null ? $"gauche at ±{Math.Abs(g.Phi):0.0}°" : TorsionRows.FirstOrDefault() is { } t ? $"lowest at {t.Phi:0.0}°" : "";
         }
     }
-    public string TorsionHud => $"{Title} · {_torFf}";
+    // the force field is known only after a scan; until then the chip shows the structure alone, with no dangling separator
+    public string TorsionHud => string.Join(" · ", new[] { Title, _torFf }.Where(s => !string.IsNullOrEmpty(s)));
     public string TorsionPhiText { get; private set; } = "";
     public string TorsionStatus => $"{_doc?.Summary().Atoms ?? 0:N0} atoms · {_doc?.Summary().Bonds ?? 0:N0} bonds";
     public string TorsionCite => _torFf == "UFF" ? "Force field: UFF, Rappé et al., J. Am. Chem. Soc. 114, 10024 (1992)" : _torFf.Length > 0 ? "Force field: " + _torFf + " (CAPS Field)" : "Uses the Field assignment when complete, else UFF";

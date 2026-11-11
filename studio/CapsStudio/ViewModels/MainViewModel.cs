@@ -148,7 +148,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             if (e.PropertyName == nameof(FieldViewModel.RunLine)) Raise(nameof(ForceFieldLine));
             // Pack and Grow follow the Field's force field until they are given their own: their boxes show it
-            if (e.PropertyName == nameof(FieldViewModel.FfIndex)) { if (_packFf < 0) Raise(nameof(PackFfIndex)); if (_growFf < 0) Raise(nameof(GrowFfIndex)); }
+            if (e.PropertyName == nameof(FieldViewModel.FfIndex)) { if (_packFf < 0) Raise(nameof(PackFfIndex)); if (_growFf < 0) { Raise(nameof(GrowFfIndex)); RaiseGrowField(); } }
         };
         Field.Recorder = Record;
     }
@@ -170,6 +170,7 @@ public sealed partial class MainViewModel : ObservableObject
                 NamedSets.Clear(); _selCount = 0; Raise(nameof(SelectedCount)); Raise(nameof(SelectedChip)); Dyads.Clear();
                 QueueSelBar();   // the bar, and the hidden / ghosted counts, of the new document
                 PackDocumentChanged();   // Packing's last result belongs to the structure it made
+                OrDocumentChanged();     // so do Orientation's curves
                 Raise(nameof(DpdHasBeads)); Raise(nameof(DpdViewTitle));   // the DPD page shows its run's beads only while they are the open structure
                 _rxAimDc = true;         // a new structure: the crosslinking panel sets the target again
                 _tagOnly = null;
@@ -483,6 +484,9 @@ public sealed partial class MainViewModel : ObservableObject
         "Equilibrate › Protocol", "Packing › Molecules & regions", "React › Crosslinking", "Force field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render", "Analyze › Visualize", "Export › Data", "Analyze › Batch", "Analyze › Compare", "Analyze › Visualize › Colour by", "Studio › Viewports", "Export › Figure bundle", "Open file", "Analyze › Visualize › Save pipeline", "Builders › Crystal", "", "Builders › Solvation", "Studio › Trajectory", "Studio › Torsion scan", "Studio › Split view", "Studio › Fragment library", "Studio › Macro recorder", "Jobs › Provenance", "Analyze › Mechanics", "Analyze › Scattering", "Analyze › Free volume", "Theory manual", "Project", "Jobs › Sweep", "Builders › Coarse-grained", "React › Template editor", "Settings › Colour vision", "Analyze › Glass transition", "Analyze › Interface", "Analyze › Diffusion", "Studio › Charges", "Studio › Periodic box", "Analyze › Orientation", "Jobs › Recipes", "Export › Figure composer", "Analyze › Chains", "Packing › Density calculator", "Analyze › Surface area", "Studio › Unit cell",
         "Polymer cell › Polydispersity", "Builders › Copolymer", "Analyze › Solvent screen", "Builders › Polymer › Tacticity", "Analyze › Blend phase diagram", "Dynamics › Electrostatics",
         "Studio › Display styles", "Studio › Add hydrogens", "Studio › Model resolution", "Export", "Force field › Type by hand", "Analyze › Adsorption locator", "Analyze › Sorption", "Polymer cell › Mesoscale (DPD)", "Studio › Reader", "Analyze › Study table"];
+    /// <summary>The number of module pages, and a page's place in the top bar ("" for none), for the GUI sweep.</summary>
+    internal static int ModuleCount => Crumbs.Length;
+    internal static string ModuleCrumb(int m) => m >= 0 && m < Crumbs.Length ? Crumbs[m] : "";
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
     /// <summary>Where calculations run (top bar).</summary>
@@ -521,6 +525,7 @@ public sealed partial class MainViewModel : ObservableObject
         [24] = v => v.OpenColourBy(),
         [25] = v => v.OpenViewports(),
         [26] = v => v.OpenBundle(),
+        [27] = v => v.OpenFilePage(),
         [28] = v => v.OpenSavePipeline(),
         [29] = v => v.OpenCrystal(),
         [31] = v => v.OpenSolvation(),
@@ -578,10 +583,29 @@ public sealed partial class MainViewModel : ObservableObject
         [83] = v => v.OpenExchange(),
     };
 
+    /// <summary>Open file reached by the rail, the palette or a sweep rather than the file picker: previews the open
+    /// structure's own file, or shows what the page is for when there is nothing to preview.</summary>
+    public void OpenFilePage()
+    {
+        if (_openPath.Length > 0) return;   // a file is already previewed (PreviewOpen got here first)
+        var path = _doc?.Path ?? "";
+        if (path.Length > 0 && System.IO.File.Exists(path) && !IsReaderFile(path) && !NeedsImport(path)
+            && !path.EndsWith(".capstable", StringComparison.OrdinalIgnoreCase))
+        {
+            PreviewOpen(path);
+            return;
+        }
+        OpenHead.Clear(); OpenColumns.Clear(); OpenTypes.Clear(); OpenNotes.Clear();
+        OpenFormat = "none";
+        OpenTitle = "Open file";
+        OpenNotes.Add("No file chosen yet. Use Open in the top bar, or drop a file on the window, to see its format, first lines and columns here before it is read.");
+    }
+
     public void SetModule(int m, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
     {
         var was = _module;
         if (!Set(ref _module, m, nameof(Module))) return;
+        if (m == 27 && was != 27) _returnModule = was;   // Cancel on Open file goes back to the page it was reached from
         if (!caller.StartsWith("Open", StringComparison.Ordinal) && PageOpeners.TryGetValue(m, out var open))
             Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (_module == m) open(this); });
         if (was is 19 or 20 or 21 && m is not (19 or 20)) SuspendPipeline();   // Render (Visualize › Render) keeps the pipeline
@@ -1545,11 +1569,11 @@ public sealed partial class MainViewModel : ObservableObject
         // charge
         var q = s.HasCharges != 0 ? s.TotalCharge : 0;
         MdPreflight.Add(new CheckRow(string.Format(inv, "Net charge {0:+0.000;−0.000;0.000} e", q), Math.Abs(q) < 1e-3 ? "ok" : "check"));
-        // box against the cut-off
+        // box against the cut-off (plain words, no "r_c": the CheckRow title is a plain TextBlock)
         if (s.CellValid != 0)
         {
             var w = Math.Min(s.CellA, Math.Min(s.CellB, s.CellC));
-            MdPreflight.Add(new CheckRow(string.Format(inv, "Box {0:F1} Å ≥ 2 r_c ({1:F0} Å) in every direction", w, 2 * _relaxCutoff), w >= 2 * _relaxCutoff ? "ok" : "check"));
+            MdPreflight.Add(new CheckRow(string.Format(inv, "Box {0:F1} Å ≥ twice the cut-off ({1:F0} Å) in every direction", w, 2 * _relaxCutoff), w >= 2 * _relaxCutoff ? "ok" : "check"));
         }
         else MdPreflight.Add(new CheckRow("No periodic cell: the run is in vacuum", "check"));
         if (_mdEnsemble >= 2 && s.CellValid == 0) MdPreflight.Add(new CheckRow((_mdEnsemble == 2 ? "NPT" : "NPH") + " needs a periodic cell", "fail"));
@@ -2417,7 +2441,7 @@ public sealed partial class MainViewModel : ObservableObject
     [
         new() { Title = "1 · Random sequential insertion" },
         new() { Title = "2 · Overlap minimisation (L-BFGS)" },
-        new() { Title = "3 · Verify d_min ≥ tolerance" },
+        new() { Title = "3 · Check closest contact ≥ target" },
     ];
     private void SetPackStage(int running, bool failed = false)
     {
@@ -3026,8 +3050,8 @@ public sealed partial class MainViewModel : ObservableObject
         var rmax = Math.Min(12.0, Math.Floor(half));
         EnsureRdfPairs();
         var (ea, eb) = _rdfElements[Math.Clamp(_rdfPair, 0, _rdfElements.Length - 1)];
-        var sampled = s.Atoms > 20000 ? " · 20 000 sampled centres" : "";
-        RdfNote = string.Format(CultureInfo.InvariantCulture, "{0} · {1} · r ≤ {2:F0} Å · 0.2 Å bins · frame {3}{4}",
+        var sampled = s.Atoms > 20000 ? " · 20\u00A0000 sampled centres" : "";
+        RdfNote = string.Format(CultureInfo.InvariantCulture, "{0} · {1} · r\u00A0≤\u00A0{2:F0}\u00A0Å · 0.2\u00A0Å\u00A0bins · frame\u00A0{3}{4}",
             RdfPairs[Math.Clamp(_rdfPair, 0, RdfPairs.Count - 1)], _rdfInter ? "between molecules" : "all pairs", rmax, _frame, sampled);
         if (s.Atoms < 200_000) { RdfCurve = _doc.Rdf(ea, eb, rmax, 0.2, _rdfInter); return; }
         // large cells: off the UI thread

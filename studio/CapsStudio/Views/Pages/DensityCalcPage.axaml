@@ -31,7 +31,7 @@
               <StackPanel Spacing="4" Width="110"><TextBlock Text="a · Å" Classes="label" /><NumericUpDown Value="{Binding DcA}" Minimum="1" Maximum="10000" Increment="1" FormatString="0.###" /></StackPanel>
               <StackPanel Spacing="4" Width="110"><TextBlock Text="b · Å" Classes="label" /><NumericUpDown Value="{Binding DcB}" Minimum="1" Maximum="10000" Increment="1" FormatString="0.###" /></StackPanel>
               <StackPanel Spacing="4" Width="110"><TextBlock Text="c · Å" Classes="label" /><NumericUpDown Value="{Binding DcC}" Minimum="1" Maximum="10000" Increment="1" FormatString="0.###" /></StackPanel>
-              <StackPanel Spacing="4" VerticalAlignment="Bottom"><TextBlock Text="Volume" Classes="label" /><TextBlock Text="{Binding DcVolume}" Classes="mono" FontSize="13" Margin="0,6,0,6" /></StackPanel>
+              <StackPanel Spacing="4" VerticalAlignment="Bottom"><TextBlock Text="Volume" Classes="label" /><v:MathView Mode="Prose" Tex="{Binding DcVolumeTex}" FontSize="13" HorizontalAlignment="Left" Margin="0,6,0,6" ToolTip.Tip="{Binding DcVolume}" /></StackPanel>
             </StackPanel>
           </StackPanel>
         </Border>
@@ -45,8 +45,8 @@
               <TextBlock Text="How many molecules?" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
             </DockPanel>
             <Grid ColumnDefinitions="*,100,110,90,90,100">
-              <TextBlock Text="MOLECULE" Classes="h3" /><TextBlock Grid.Column="1" Text="M (G/MOL)" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="2" Text="Ρ TARGET" Classes="h3" HorizontalAlignment="Right" />
-              <TextBlock Grid.Column="3" Text="N EXACT" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="4" Text="N" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="5" Text="Ρ ACHIEVED" Classes="h3" HorizontalAlignment="Right" />
+              <TextBlock Text="MOLECULE" Classes="h3" /><TextBlock Grid.Column="1" Text="M (G/MOL)" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="2" Text="ρ TARGET" Classes="h3" HorizontalAlignment="Right" />
+              <TextBlock Grid.Column="3" Text="N EXACT" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="4" Text="N" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="5" Text="ρ ACHIEVED" Classes="h3" HorizontalAlignment="Right" />
             </Grid>
             <ItemsControl ItemsSource="{Binding DcSpecies}">
               <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:SpeciesRow">
@@ -61,7 +61,8 @@
               </DataTemplate></ItemsControl.ItemTemplate>
             </ItemsControl>
             <TextBlock Text="{Binding DcError}" Classes="err" TextWrapping="Wrap" />
-            <TextBlock Classes="dim" TextWrapping="Wrap" Text="N = ρ · V · N_A / M, rounded to an integer; ρ achieved uses the rounded N. The water, toluene and ethanol targets are literature densities at 25 °C, used only as inputs: packing at them is a starting point, and the equilibrated density comes from NPT." />
+            <v:MathView Mode="Prose" FontSize="11.5" Foreground="{DynamicResource DimB}" HorizontalAlignment="Left" Tex="N = ρ · V · N_A / M" />
+            <TextBlock Classes="dim" TextWrapping="Wrap" Text="N is rounded to an integer; ρ achieved uses the rounded N. The water, toluene and ethanol targets are literature densities at 25 °C, used only as inputs: packing at them is a starting point, and the equilibrated density comes from NPT." />
           </StackPanel>
         </Border>
         <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
@@ -71,7 +72,7 @@
               <TextBlock Text="{Binding DcPolymer}" Classes="mono" FontSize="12" TextWrapping="Wrap" />
               <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                 <StackPanel Spacing="4"><TextBlock Text="Overall target · g/cm³" Classes="label" /><NumericUpDown Value="{Binding DcTarget}" Minimum="0.01" Maximum="30" Increment="0.01" FormatString="0.00#" /></StackPanel>
-                <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Solvent" Classes="label" /><ComboBox ItemsSource="{Binding DcSpeciesNames}" SelectedIndex="{Binding DcSolvent}" HorizontalAlignment="Stretch" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Solvent" Classes="label" /><ComboBox ItemsSource="{Binding DcSpeciesNames}" SelectedItem="{Binding DcSolventName}" PlaceholderText="Choose a solvent" HorizontalAlignment="Stretch" /></StackPanel>
               </Grid>
               <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding DcSolventN}" Classes="mono" /><TextBlock Text="To add" Classes="muted" /></DockPanel>
               <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding DcFraction}" Classes="mono" /><TextBlock Text="Polymer weight fraction" Classes="muted" /></DockPanel>
@@ -83,10 +84,10 @@
               <TextBlock Text="Box for a given N" FontSize="13.5" FontWeight="SemiBold" />
               <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                 <StackPanel Spacing="4"><TextBlock Text="Molecules" Classes="label" /><NumericUpDown Value="{Binding DcN}" Minimum="1" Maximum="1000000000" Increment="100" FormatString="0" /></StackPanel>
-                <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Species" Classes="label" /><ComboBox ItemsSource="{Binding DcSpeciesNames}" SelectedIndex="{Binding DcBoxSpecies}" HorizontalAlignment="Stretch" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Species" Classes="label" /><ComboBox ItemsSource="{Binding DcSpeciesNames}" SelectedItem="{Binding DcBoxSpeciesName}" PlaceholderText="Choose a species" HorizontalAlignment="Stretch" /></StackPanel>
               </Grid>
               <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding DcEdge}" Classes="mono" FontSize="15" /><TextBlock Text="Cubic box edge" Classes="muted" VerticalAlignment="Center" /></DockPanel>
-              <TextBlock Classes="dim" Text="N_A = 6.02214076 × 10²³ mol⁻¹ (exact, SI 2019)" />
+              <v:MathView Mode="Prose" FontSize="11.5" Foreground="{DynamicResource DimB}" HorizontalAlignment="Left" Tex="N_A = 6.02214076 × 10^{23} mol^{−1} (exact, SI 2019)" />
             </StackPanel>
           </Border>
         </Grid>

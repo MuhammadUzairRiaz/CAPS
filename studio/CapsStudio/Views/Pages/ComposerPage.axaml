@@ -29,10 +29,10 @@
     <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
       <DockPanel>
         <Border DockPanel.Dock="Top" Classes="section">
-          <DockPanel>
-            <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="{Binding ComposerSummary}" MaxWidth="160" TextTrimming="CharacterEllipsis" /></Border>
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
             <TextBlock Text="Figure" Classes="h2" VerticalAlignment="Center" />
-          </DockPanel>
+            <Border Grid.Column="1" Classes="chip" HorizontalAlignment="Right" ToolTip.Tip="{Binding ComposerSummary}"><TextBlock Text="{Binding ComposerSummary}" TextTrimming="CharacterEllipsis" /></Border>
+          </Grid>
         </Border>
         <Border DockPanel.Dock="Bottom" Padding="16,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
           <WrapPanel HorizontalAlignment="Right" ItemSpacing="8" LineSpacing="8">

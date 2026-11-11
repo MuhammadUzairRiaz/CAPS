@@ -65,8 +65,10 @@ public sealed class MathView : Control
     {
         // maths in a serif with italics and Greek; prose in the interface's own font
         var fam = Mode == MathMode.Prose ? GetValue(FontFamilyProperty) : new FontFamily("STIX Two Text, Cambria Math, Cambria, Times New Roman, DejaVu Serif, serif");
-        var lay = new Layout(fam, FontSize, Foreground ?? Brushes.Black);
-        _lines = lay.Lines(Tree(), double.IsInfinity(available.Width) ? double.MaxValue : Math.Max(40, available.Width));
+        var lay = new Layout(fam, FontSize, Foreground ?? Brushes.Black, Mode == MathMode.Prose);
+        // a hanging indent on continuation lines suits long displayed equations, not prose or symbol cells
+        var hang = Mode == MathMode.Tex ? 1.5 * FontSize : 0;
+        _lines = lay.Lines(Tree(), double.IsInfinity(available.Width) ? double.MaxValue : Math.Max(40, available.Width), hang);
         double w = 0, h = 0;
         for (var i = 0; i < _lines.Count; ++i)
         {
@@ -77,7 +79,8 @@ public sealed class MathView : Control
         return new Size(Math.Ceiling(w) + 1, Math.Ceiling(h) + 1);
     }
 
-    private double LineGap => 0.55 * FontSize;
+    // prose lines already carry the font's own line height (Layout's strut), as TextBlock lines do: no extra gap
+    private double LineGap => Mode == MathMode.Prose ? 0 : 0.55 * FontSize;
 
     public override void Render(DrawingContext ctx)
     {
@@ -250,6 +253,14 @@ public sealed class MathView : Control
                     // symbol mode: a word of two or more letters is a name, upright
                     var j = I;
                     while (j < s.Length && char.IsLetter(s[j])) ++j;
+                    // a combining mark (K̄, ṗ written as Unicode) belongs to the letter just before it:
+                    // the letters ahead of that one go out as their own word, the marked letter comes next
+                    if (j < s.Length && IsMark(s[j]))
+                    {
+                        if (j - 1 > I) { var head = s[I..(j - 1)]; I = j - 1; return WordOrLetters(head); }
+                        I = j + 1;
+                        return Marked(c, s[j]);
+                    }
                     var w = s[I..j];
                     I = j;
                     return WordOrLetters(w);
@@ -258,7 +269,11 @@ public sealed class MathView : Control
                 if (char.IsSurrogate(c) && More) { ++I; return new Sym(s.Substring(I - 2, 2), SymKind.Upright); }
                 var str = c.ToString();
                 // a combining mark (K̄, ṗ written as Unicode) stays with its letter
-                if (More && CharUnicodeInfo.GetUnicodeCategory(s[I]) == UnicodeCategory.NonSpacingMark) { str += s[I]; ++I; }
+                if (More && IsMark(s[I]))
+                {
+                    if (char.IsLetter(c)) { var m = s[I]; ++I; return Marked(c, m); }
+                    str += s[I]; ++I;
+                }
                 return c switch
                 {
                     '+' or '−' or '*' or '·' or '×' or '±' => new Sym(c == '*' ? "∗" : str, SymKind.Bin),
@@ -271,6 +286,29 @@ public sealed class MathView : Control
                     _ when char.IsLetter(c) && IsItalicLetter(c) => new Sym(str, SymKind.Italic),
                     _ => new Sym(str, SymKind.Upright),
                 };
+            }
+
+            private static bool IsMark(char c) => CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark;
+
+            // a letter with a combining mark: the marks TeX has accents for are drawn as those accents (K̄ is \bar{K},
+            // ṗ is \dot{p}), so the bar or dot sits over the letter as it does in the equations; any other mark is
+            // composed into the letter
+            private static Node Marked(char letter, char mark)
+            {
+                var kind = IsItalicLetter(letter) ? SymKind.Italic : SymKind.Upright;
+                var accent = mark switch
+                {
+                    '̄' or '̅' => "bar",
+                    '̇' => "dot",
+                    '̈' => "ddot",
+                    '̂' => "hat",
+                    '̃' => "tilde",
+                    '⃗' => "vec",
+                    _ => null,
+                };
+                return accent != null
+                    ? new Accent(accent, new Sym(letter.ToString(), kind))
+                    : new Sym((letter.ToString() + mark).Normalize(), kind);
             }
 
             private Node Command(bool inText)
@@ -439,14 +477,51 @@ public sealed class MathView : Control
     }
 
     // ================================================================ layout
-    private sealed class Layout(FontFamily fam, double baseSize, IBrush brush)
+    private sealed class Layout(FontFamily fam, double baseSize, IBrush brush, bool prose = false)
     {
+        // a prose line sits on the interface font's own line box at the base size (baseline at the font ascent, height
+        // the font's line height), so a Prose MathView label lines up with a TextBlock of the same FontSize beside it.
+        // Glyph boxes keep the nominal heights below, so sub- and superscripts land where they do in the other modes;
+        // a script reaching past the line box still grows the line.
+        private (double a, double d) Strut()
+        {
+            var ft = new FormattedText("Xg", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, _up, baseSize, brush);
+            return (ft.Baseline, Math.Max(0, ft.Height - ft.Baseline));
+        }
+
         private readonly Typeface _up = new(fam);
         private readonly Typeface _it = new(fam, FontStyle.Italic);
         private readonly Typeface _bold = new(fam, FontStyle.Normal, FontWeight.Bold);
+        // the maths symbols a text face lacks (STIX Two Text has no ∞): drawn from a maths face rather than left to
+        // the per-character fallback, which at script sizes turned ∞ into a dash
+        private static readonly Typeface Symbols = new(new FontFamily("STIX Two Math, STIXGeneral, Cambria Math, Segoe UI Symbol, DejaVu Sans, serif"));
+        private static readonly Dictionary<(Typeface, string), bool> Coverage = new();
 
-        private FormattedText Text(string t, double size, bool italic) =>
-            new(t, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, italic ? _it : _up, size, brush);
+        private FormattedText Text(string t, double size, bool italic, bool bold = false) =>
+            new(t, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Face(t, bold ? _bold : italic ? _it : _up), size, brush);
+
+        private static Typeface Face(string t, Typeface want) => Covers(want, t) || !Covers(Symbols, t) ? want : Symbols;
+
+        // whether the face the family resolves to has a glyph for every character of t
+        private static bool Covers(Typeface tf, string t)
+        {
+            lock (Coverage)
+            {
+                if (Coverage.TryGetValue((tf, t), out var known)) return known;
+                var ok = FontManager.Current.TryGetGlyphTypeface(tf, out var g);
+                for (var i = 0; ok && i < t.Length; ++i)
+                {
+                    var c = t[i];
+                    if (char.IsWhiteSpace(c) || CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark) continue;
+                    uint cp = c;
+                    if (char.IsHighSurrogate(c) && i + 1 < t.Length && char.IsLowSurrogate(t[i + 1])) { cp = (uint)char.ConvertToUtf32(c, t[i + 1]); ++i; }
+                    ok = g!.TryGetGlyph(cp, out var id) && id != 0;
+                }
+                if (Coverage.Count > 4096) Coverage.Clear();
+                Coverage[(tf, t)] = ok;
+                return ok;
+            }
+        }
 
         private static double Axis(double s) => 0.25 * s;
 
@@ -458,7 +533,7 @@ public sealed class MathView : Control
             {
                 var (ca, cd) = c switch
                 {
-                    _ when "acemnorsuvwxzıαεικνοπστυω".Contains(c) => (0.47, 0.02),
+                    _ when "acemnorsuvwxzıαεικνοπστυω∞".Contains(c) => (0.47, 0.02),
                     _ when "gpqy".Contains(c) => (0.47, 0.22),
                     _ when "γημρφχψ".Contains(c) => (0.47, 0.22),
                     _ when "βζξ".Contains(c) => (0.72, 0.22),
@@ -480,7 +555,7 @@ public sealed class MathView : Control
         private Box Glyph(string t, double s, bool italic, double padL = 0, double padR = 0, bool bold = false)
         {
             if (t == "∘") s *= 1.6;   // the ring operator is drawn small in text fonts: P° needs a visible ring
-            var ft = bold ? new FormattedText(t, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, _bold, s, brush) : Text(t, s, italic);
+            var ft = Text(t, s, italic, bold);
             var (a, d) = Metrics(t, s);
             var w = ft.WidthIncludingTrailingWhitespace + padL + padR;
             var g = new GlyphBox(ft, w, a, d);
@@ -490,19 +565,21 @@ public sealed class MathView : Control
             return p;
         }
 
-        public List<(Box, double)> Lines(Node root, double maxW)
+        public List<(Box, double)> Lines(Node root, double maxW, double hang)
         {
             var items = root is Seq q ? q.Items : [root];
             var boxes = Spaced(items, baseSize, 0, true);
             var lines = new List<(Box, double)>();
             var cur = new List<Box>();
             double indent = 0;
+            var strut = prose ? Strut() : (0.0, 0.0);
             void Flush(double nextIndent)
             {
                 while (cur.Count > 0 && cur[^1] is SpaceBox) cur.RemoveAt(cur.Count - 1);
                 var h = new HBox();
                 foreach (var b in cur) h.Add(b);
-                if (h.A == 0 && h.D == 0) { h.A = 0.72 * baseSize; h.D = 0.22 * baseSize; }
+                if (prose) { h.A = Math.Max(h.A, strut.Item1); h.D = Math.Max(h.D, strut.Item2); }
+                else if (h.A == 0 && h.D == 0) { h.A = 0.72 * baseSize; h.D = 0.22 * baseSize; }
                 lines.Add((h, indent));
                 cur = new List<Box>();
                 indent = nextIndent;
@@ -520,7 +597,7 @@ public sealed class MathView : Control
                     {
                         var rest = cur.Skip(k + 1).ToList();
                         cur = cur.Take(k).ToList();
-                        Flush(1.5 * baseSize);
+                        Flush(hang);
                         cur = rest;
                     }
                 }

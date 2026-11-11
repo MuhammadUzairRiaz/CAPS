@@ -96,15 +96,13 @@
           <Border Classes="pcard">
             <StackPanel Spacing="8">
               <TextBlock Text="Order, filter, colour" FontSize="13.5" FontWeight="SemiBold" />
-              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="6">
                 <TextBox Text="{Binding StudySort}" Classes="mono" Watermark="order by: Tg, -density" ToolTip.Tip="Columns in priority order; a leading - sorts that column descending; rows without a number go last" />
-                <Button Grid.Column="1" Content="Order" Click="OnSort" />
+                <Button Grid.Column="1" Content="Order" Click="OnSort" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                <TextBox Grid.Row="1" Text="{Binding StudyFilter}" Classes="mono" Watermark="Tg > 300 and density &lt; 1.2" ToolTip.Tip="Show only rows where a condition on the columns holds, for example Tg > 300 and density &lt; 1.2. Operators: &lt; &lt;= &gt; &gt;= == !=, and, or, with the formula functions; empty shows every row" />
+                <Button Grid.Row="1" Grid.Column="1" Content="Filter" Click="OnFilter" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
               </Grid>
-              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                <TextBox Text="{Binding StudyFilter}" Classes="mono" Watermark="show rows where: Tg > 300 and density &lt; 1.2" ToolTip.Tip="A condition on the columns: &lt; &lt;= &gt; &gt;= == !=, and, or, with the formula functions; empty shows every row" />
-                <Button Grid.Column="1" Content="Filter" Click="OnFilter" />
-              </Grid>
-              <TextBlock Text="{Binding StudyFilterText}" Classes="dim" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding StudyFilterText}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding StudyFilterText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBlock Text="Colour cells by" Classes="label" VerticalAlignment="Center" />
                 <ComboBox ItemsSource="{Binding StudyColourNames}" SelectedIndex="{Binding StudyColour}" MinWidth="160" />
@@ -115,10 +113,10 @@
           <Border Classes="pcard">
             <StackPanel Spacing="8">
               <TextBlock Text="New column" FontSize="13.5" FontWeight="SemiBold" />
-              <Grid ColumnDefinitions="*,2*,Auto" ColumnSpacing="6">
-                <TextBox Text="{Binding StudyNewName}" Watermark="name" />
-                <TextBox Grid.Column="1" Text="{Binding StudyNewFormula}" Classes="mono" Watermark="formula, blank to type values" />
-                <Button Grid.Column="2" Content="Add" Click="OnAddColumn" />
+              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="6">
+                <TextBox Grid.ColumnSpan="2" Text="{Binding StudyNewName}" Watermark="name" />
+                <TextBox Grid.Row="1" Text="{Binding StudyNewFormula}" Classes="mono" Watermark="formula, or blank to type values" ToolTip.Tip="A formula over the columns to the left; leave it blank to add an empty column and type the values in" />
+                <Button Grid.Row="1" Grid.Column="1" Content="Add" Click="OnAddColumn" />
               </Grid>
               <TextBlock Classes="dim" TextWrapping="Wrap" Text="Formulas use the columns to their left by name, or [name with spaces]: 1000 / [Tg (K)], ln(D), sqrt(a^2 + b^2), max(x, y). Constants pi, e, R, kB, NA." />
               <TextBlock Text="{Binding StudyError}" Foreground="{DynamicResource ErrB}" TextWrapping="Wrap" IsVisible="{Binding StudyHasError}" />

@@ -116,7 +116,7 @@
                 <Button Classes="small" Click="OnCopyMethods" IsEnabled="{Binding ProjectHasMethods}"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="copy" Size="13" VerticalAlignment="Center" /><TextBlock Text="Copy" VerticalAlignment="Center" /></StackPanel></Button>
                 <Button Classes="small" Click="OnBibtex" IsEnabled="{Binding ProjectHasMethods}"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="BibTeX" VerticalAlignment="Center" /></StackPanel></Button>
               </StackPanel>
-              <TextBlock Text="{Binding ProjectMethodsFor}" FontSize="11.5" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding ProjectMethodsFor}" FontSize="11.5" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,8,0" />
             </DockPanel>
           </StackPanel>
           <ScrollViewer>

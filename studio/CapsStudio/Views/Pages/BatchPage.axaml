@@ -79,30 +79,36 @@
       <!-- across finished inputs -->
       <Grid v:Panes.Split="True" Grid.Row="1" ColumnDefinitions="*,420,320" ColumnSpacing="14" Height="230">
         <Border Classes="card" CornerRadius="10">
-          <StackPanel>
-            <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
               <TextBlock Text="Across finished inputs" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
             </Border>
-            <ItemsControl ItemsSource="{Binding BatchSummary}" Margin="16,8">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:Row">
-                  <Border Padding="0,4" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
-                    <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Key}" FontSize="12" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="12" /></Grid>
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
+            <Panel>
+              <ItemsControl ItemsSource="{Binding BatchSummary}" Margin="16,8">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:Row">
+                    <Border Padding="0,4" BorderBrush="{DynamicResource Bg2B}" BorderThickness="0,0,0,1">
+                      <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Key}" FontSize="12" Foreground="{DynamicResource MutedB}" /><TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="12" /></Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="Mean and s.d. of each column appear here once inputs finish." IsVisible="{Binding !BatchSummary.Count}"
+                         Classes="dim" FontSize="12" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,8" />
+            </Panel>
+          </DockPanel>
         </Border>
         <Border Grid.Column="1" Classes="card" CornerRadius="10">
           <DockPanel>
             <Border DockPanel.Dock="Top" Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
               <DockPanel>
-                <ComboBox DockPanel.Dock="Right" Width="200" ItemsSource="{Binding BatchColumns}" SelectedItem="{Binding BatchMetricName}" VerticalAlignment="Center" />
+                <ComboBox DockPanel.Dock="Right" Width="200" ItemsSource="{Binding BatchColumns}" SelectedItem="{Binding BatchMetricName}" VerticalAlignment="Center"
+                          PlaceholderText="Metric (after a run)" IsEnabled="{Binding BatchColumns.Count}" ToolTip.Tip="The column plotted per input; the choices are the table's columns, filled once an input finishes" />
+                <TextBlock DockPanel.Dock="Right" Text="Metric" Classes="label" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <TextBlock Text="Per input" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
               </DockPanel>
             </Border>
-            <v:SciPlot x:Name="BatchPlot" Margin="10,6" />
+            <v:SciPlot x:Name="BatchPlot" Margin="10,6" EmptyText="no finished inputs yet" />
           </DockPanel>
         </Border>
         <Border Grid.Column="2" Classes="card" CornerRadius="10">
@@ -111,8 +117,16 @@
               <TextBlock Text="Where results go" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
             </Border>
             <StackPanel Margin="16,10" Spacing="6">
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><TextBlock Text="Table" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="batch/results.csv next to the inputs" Classes="mono" FontSize="11.5" TextAlignment="Right" TextWrapping="Wrap" /></Grid>
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><TextBlock Text="Pipeline" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="batch/pipeline.json · sha256 per row" Classes="mono" FontSize="11.5" TextAlignment="Right" TextWrapping="Wrap" /></Grid>
+              <StackPanel Spacing="2">
+                <TextBlock Text="Table" Classes="muted" FontSize="12.5" />
+                <TextBlock Text="batch/results.csv" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+                <TextBlock Text="Saved next to the inputs" Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Spacing="2">
+                <TextBlock Text="Pipeline" Classes="muted" FontSize="12.5" />
+                <TextBlock Text="batch/pipeline.json" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+                <TextBlock Text="Its SHA-256 is stored in every table row" Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
+              </StackPanel>
               <TextBlock Text="{Binding BatchOut}" Classes="mono" FontSize="11" Foreground="{DynamicResource OkB}" TextWrapping="Wrap" />
               <TextBlock Classes="dim" FontSize="11.5" TextWrapping="Wrap" Text="The steps are the ones in Analyze › Visualize; each input opens on its own, the file is never changed." />
             </StackPanel>

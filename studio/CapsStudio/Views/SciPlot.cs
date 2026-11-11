@@ -406,6 +406,9 @@ public sealed class SciPlot : Control
         public double FTick, FLabel, FLegend, TickLen, Gap;
         public double FrameW, TickW, LineScale, MarkerR, MarkerW, Cap;
         public bool Compact, Print;
+        /// <summary>A legend with no free place inside the axes gets room outside them (beside or below); null: inside.</summary>
+        public LegendBox? OutLegend;
+        public Point OutLegendAt;
         public double PX(double v) => X.Map(v, L, L + W);
         public double PY(double v) => Y.Map(v, T + H, T);
         public double PY2(double v) => Y2!.Map(v, T + H, T);
@@ -489,7 +492,141 @@ public sealed class SciPlot : Control
         f.B = f.Gap + f.FTick * 1.3 + f.Gap + f.FLabel * 1.35 + (print ? 1 : 2);
         f.W = size.Width - f.L - f.R;
         f.H = size.Height - f.T - f.B;
-        return f.W < 40 || f.H < 30 ? null : f;
+        if (f.W < 40 || f.H < 30) return null;
+        if (!compact) ReserveLegend(g, fig, f);
+        return f;
+    }
+
+    // ------------------------------------------------------------------ legend placement
+    /// <summary>The legend's rows and the size of its box.</summary>
+    private sealed record LegendBox(SciSeries[] Entries, string[] Notes, double Sample, double RowH, double Pad, double W, double H);
+
+    private static LegendBox? MeasureLegend(ISciSink g, SciFigure fig, Frame f, double room)
+    {
+        var entries = fig.Series.Where(s => s.X.Length > 0 && s.Legend && s.Name.Length > 0).ToArray();
+        var notes = fig.Notes.Where(n => n.Length > 0).ToArray();
+        if (fig.YBand is { Label.Length: > 0 } ybl) entries = [.. entries, new SciSeries(ybl.Label, [], []) { Colour = 1, Kind = SciKind.Line, Width = 6 }];
+        if (fig.XBand is { Label.Length: > 0 } xbl) entries = [.. entries, new SciSeries(xbl.Label, [], []) { Colour = 0, Kind = SciKind.Line, Width = 6 }];
+        foreach (var gd in fig.Guides.Where(gd => gd.Label.Length > 0 && double.IsFinite(gd.Y))) entries = [.. entries, new SciSeries(gd.Label, [], []) { Colour = -1, Kind = SciKind.Dashed, Width = 1 }];   // a guide is named in the legend, not on its line
+        if (entries.Length == 0 && notes.Length == 0) return null;
+        var sample = f.Print ? 14.0 : 22.0;
+        var rowH = f.FLegend * (f.Print ? 1.3 : 1.45);
+        var pad = f.Print ? 2.0 : 6.0;
+        var lw = Math.Max(entries.Select(e => sample + 5 + RichWidth(g, e.Name, f.FLegend)).DefaultIfEmpty(0).Max(), notes.Select(n => RichWidth(g, n, f.FLegend)).DefaultIfEmpty(0).Max());
+        var boxW = Math.Min(room - 8, lw + 2 * pad);
+        var boxH = (entries.Length + notes.Length) * rowH + 2 * pad - (rowH - f.FLegend * 1.2);
+        return new LegendBox(entries, notes, sample, rowH, pad, boxW, boxH);
+    }
+
+    /// <summary>Places a legend may take inside the axes: the four corners first (top right, top left, bottom right, bottom
+    /// left), then steps along each edge, ranked by how near a corner they are.</summary>
+    private static List<(Point At, double Rank)> LegendSpots(Frame f, double boxW, double boxH, bool edges)
+    {
+        var inset = f.TickLen + (f.Print ? 1.5 : 3);
+        double x0 = f.L + inset, x1 = f.L + f.W - boxW - inset, y0 = f.T + inset, y1 = f.T + f.H - boxH - inset;
+        var spots = new List<(Point, double)> { (new Point(x1, y0), 0), (new Point(x0, y0), 0.01), (new Point(x1, y1), 0.02), (new Point(x0, y1), 0.03) };
+        if (!edges) return spots;
+        const int n = 12;
+        for (var k = 1; k < n; ++k)
+        {
+            var t = k / (double)n;
+            var rank = 1 + Math.Min(t, 1 - t);
+            double x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t;
+            if (x1 > x0) { spots.Add((new Point(x, y0), rank)); spots.Add((new Point(x, y1), rank + 0.001)); }
+            if (y1 > y0) { spots.Add((new Point(x1, y), rank + 0.002)); spots.Add((new Point(x0, y), rank + 0.003)); }
+        }
+        return spots;
+    }
+
+    /// <summary>The points a line from a to b passes, every few pixels (a legend should not sit on a line either).</summary>
+    private static void AddSegment(List<Point> to, Point a, Point b, Frame f)
+    {
+        var d = b - a;
+        var n = (int)Math.Min(40, Math.Sqrt(d.X * d.X + d.Y * d.Y) / (f.Print ? 2 : 5));
+        for (var k = 1; k < n; ++k) to.Add(a + d * (k / (double)n));
+    }
+
+    /// <summary>How much a legend at r would hide: data points under it, vertical marks and horizontal guides through it, and
+    /// labels it would cover.</summary>
+    private static int LegendCost(Rect r, List<Point> pts, double[] vLines, double[] hLines, List<Rect> keepOut)
+    {
+        r = r.Inflate(3);
+        return pts.Count(r.Contains) + vLines.Count(x => x >= r.Left && x <= r.Right) * 25 + hLines.Count(y => y >= r.Top && y <= r.Bottom) * 8
+            + keepOut.Count(k => k.Intersects(r)) * 200;
+    }
+
+    private static double[] MarkLines(SciFigure fig, Frame f) =>
+        fig.Marks.Where(m => double.IsFinite(m.X) && (!fig.XLog || m.X > 0)).Select(m => f.PX(m.X)).Where(px => px >= f.L && px <= f.L + f.W).ToArray();
+
+    private static double[] GuideLines(SciFigure fig, Frame f) =>
+        fig.Guides.Select(gd => gd.Y).Concat(fig.RefY is double rv ? new[] { rv } : Array.Empty<double>()).Where(y => double.IsFinite(y) && (!fig.YLog || y > 0))
+            .Select(f.PY).Where(py => py >= f.T - 0.5 && py <= f.T + f.H + 0.5).ToArray();
+
+    /// <summary>Where a labelled point's label goes: right of the point when it fits, else left; above when it fits, else below.</summary>
+    private static (Point At, bool Right, bool Up, Rect Box) PointLabel(ISciSink g, Frame f, Point pt, string label)
+    {
+        var lw = RichWidth(g, label, f.FLegend);
+        var right = pt.X + 7 + lw < f.L + f.W - 2;
+        var up = pt.Y - f.FLegend * 1.4 > f.T + 2;
+        var at = new Point(right ? pt.X + 7 : pt.X - 7, up ? pt.Y - 4 : pt.Y + 4);
+        return (at, right, up, new Rect(right ? at.X : at.X - lw, up ? at.Y - f.FLegend * 1.25 : at.Y, lw, f.FLegend * 1.25));
+    }
+
+    /// <summary>When the legend has no free place inside the axes (a dome or a curve that crosses every corner and edge), the
+    /// frame gives up room for it beside or below the plot, whichever keeps more of the plot, so it never hides the data.</summary>
+    private static void ReserveLegend(ISciSink g, SciFigure fig, Frame f)
+    {
+        var lb = MeasureLegend(g, fig, f, f.W);
+        if (lb == null || lb.W <= 0) return;
+        // the data as they will be drawn, sampled along their lines
+        var pts = new List<Point>();
+        var keepOut = new List<Rect>();
+        foreach (var s in fig.Series.Where(s => s.X.Length > 0))
+        {
+            if (s.Right && f.Y2 == null) continue;
+            var baseY = f.PY(f.Y.Log ? Math.Pow(10, f.Y.Lo) : Math.Clamp(0, f.Y.Lo, f.Y.Hi));
+            Point? prev = null;
+            for (var i = 0; i < Math.Min(s.X.Length, s.Y.Length); ++i)
+            {
+                if (!Ok(fig, s.X[i], s.Y[i], s.Right)) { prev = null; continue; }
+                var p = new Point(f.PX(s.X[i]), s.Right ? f.PY2(s.Y[i]) : f.PY(s.Y[i]));
+                pts.Add(p);
+                if (s.Kind == SciKind.Bars) AddSegment(pts, p, new Point(p.X, baseY), f);
+                else if (prev is { } q && s.Kind != SciKind.Markers) AddSegment(pts, q, p, f);
+                prev = p;
+            }
+        }
+        foreach (var p in fig.Points.Where(p => Ok(fig, p.X, p.Y, false)))
+        {
+            var pt = new Point(f.PX(p.X), f.PY(p.Y));
+            pts.Add(pt);
+            if (p.Label.Length > 0) keepOut.Add(PointLabel(g, f, pt, p.Label).Box);
+        }
+        var vLines = MarkLines(fig, f);
+        var hLines = GuideLines(fig, f);
+        if (lb.H <= f.H - 8 && LegendSpots(f, lb.W, lb.H, true).Any(sp => LegendCost(new Rect(sp.At, new Size(lb.W, lb.H)), pts, vLines, hLines, keepOut) == 0)) return;
+
+        var edge = f.Print ? 1.0 : 4.0;
+        var side = lb.W + edge;   // the old right margin stays between the frame and the legend
+        var down = lb.H + (f.Print ? 3 : 8);
+        var keepW = lb.H <= f.H && f.W - side >= Math.Max(f.Print ? 60 : 120, 0.55 * f.W) ? (f.W - side) / f.W : 0;
+        var keepH = lb.W <= f.W && f.H - down >= Math.Max(f.Print ? 45 : 90, 0.55 * f.H) ? (f.H - down) / f.H : 0;
+        if (keepW <= 0 && keepH <= 0) return;   // no room either way: the legend stays inside, where it hides least
+        f.OutLegend = lb;
+        if (keepH >= keepW)
+        {
+            var oldB = f.B;
+            f.H -= down;
+            f.B += down;
+            f.OutLegendAt = new Point(f.L + (f.W - lb.W) / 2, f.T + f.H + oldB + (f.Print ? 2 : 4));
+        }
+        else
+        {
+            var oldR = f.R;
+            f.W -= side;
+            f.R += side;
+            f.OutLegendAt = new Point(f.L + f.W + oldR, f.T);
+        }
     }
 
     private static Frame? ComputeHeat(ISciSink g, SciFigure fig, SciHeat hm, Size size, Frame f)
@@ -553,9 +690,7 @@ public sealed class SciPlot : Control
             var text = fig?.Empty ?? EmptyText;
             _xinv = _yinv = null;
             if (text.Length == 0 || b.Width < 20 || b.Height < 14) return;
-            var size = Compact ? 9.5 : 11.5;
-            var w = g.Measure(text, size, false, false);
-            g.Text(text, new Point((b.Width - w) / 2, (b.Height - g.Metrics(size).Height) / 2), size, false, false, st.Soft);
+            DrawEmpty(g, text, b.Size, Compact ? 9.5 : 11.5, st.Soft);
             return;
         }
         double L = f.L, T = f.T, fw = f.W, fh = f.H;
@@ -578,15 +713,46 @@ public sealed class SciPlot : Control
         var f = Compute(g, fig, size, compact, st.Print, st.BasePt);
         if (f == null)
         {
-            if (fig.Empty.Length > 0)
-            {
-                var sz = st.Print ? 8 : 11.5;
-                g.Text(fig.Empty, new Point((size.Width - g.Measure(fig.Empty, sz, false, false)) / 2, (size.Height - g.Metrics(sz).Height) / 2), sz, false, false, st.Soft);
-            }
+            if (fig.Empty.Length > 0) DrawEmpty(g, fig.Empty, size, st.Print ? 8 : 11.5, st.Soft);
             return false;
         }
         Draw(g, fig, f, st);
         return true;
+    }
+
+    /// <summary>The empty-state hint, word-wrapped to the plot's width and centred as a block, so a long hint in a narrow
+    /// card stays inside it. A word still wider than the room steps the font down (not below 7) before it is placed.</summary>
+    private static void DrawEmpty(ISciSink g, string text, Size area, double size, Color c)
+    {
+        var pad = Math.Min(12, area.Width * 0.06);
+        var room = Math.Max(1, area.Width - 2 * pad);
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length == 0) return;
+        var space = g.Measure(" ", size, false, false);
+        while (size > 7 && words.Max(wd => g.Measure(wd, size, false, false)) > room)
+        {
+            size = Math.Max(7, size - 0.5);
+            space = g.Measure(" ", size, false, false);
+        }
+        var lines = new List<string>();
+        var line = words[0];
+        var lw = g.Measure(line, size, false, false);
+        foreach (var wd in words.Skip(1))
+        {
+            var ww = g.Measure(wd, size, false, false);
+            if (lw + space + ww <= room) { line += " " + wd; lw += space + ww; }
+            else { lines.Add(line); line = wd; lw = ww; }
+        }
+        lines.Add(line);
+        var lh = g.Metrics(size).Height;
+        var y = (area.Height - lh * lines.Count) / 2;
+        if (y < 0) y = 0;   // more lines than fit: keep the first ones visible rather than centring them off the top
+        foreach (var l in lines)
+        {
+            var w = g.Measure(l, size, false, false);
+            g.Text(l, new Point(Math.Max(pad, (area.Width - w) / 2), y), size, false, false, c);
+            y += lh;
+        }
     }
 
     private static readonly double[] Dash53 = [5, 3], Dash43 = [4, 3], Dash23 = [2, 3], Dash33 = [3, 3], Dot = [1, 2.5];
@@ -738,12 +904,9 @@ public sealed class SciPlot : Control
             Marker(g, pt, compact ? 3 : f.MarkerR * 1.25, st.Colour(p.Colour), false, false, st.Bg, f.MarkerW);
             if (p.Label.Length > 0)
             {
-                var lw = RichWidth(g, p.Label, f.FLegend);
-                var right = pt.X + 7 + lw < L + w - 2;
-                var up = pt.Y - f.FLegend * 1.4 > T + 2;
-                var at = new Point(right ? pt.X + 7 : pt.X - 7, up ? pt.Y - 4 : pt.Y + 4);
+                var (at, right, up, labelBox) = PointLabel(g, f, pt, p.Label);
                 DrawRich(g, p.Label, f.FLegend, ink, at, right ? 0 : 1, up ? 1 : 0);
-                keepOut.Add(new Rect(right ? at.X : at.X - lw, up ? at.Y - f.FLegend * 1.25 : at.Y, lw, f.FLegend * 1.25));
+                keepOut.Add(labelBox);
             }
             drawn.Add((new SciSeries("", [], []) { Kind = SciKind.Markers }, [pt]));
         }
@@ -768,49 +931,45 @@ public sealed class SciPlot : Control
         DrawAxes(g, fig, f, st, f.Y2 != null);
         if (compact) return;   // a card's figure is too small for a legend: the card says what it shows
 
-        // legend in the corner with the fewest data points under it
-        var entries = series.Where(s => s.Legend && s.Name.Length > 0).ToArray();
-        var notes = fig.Notes.Where(n => n.Length > 0).ToArray();
-        if (fig.YBand is { Label.Length: > 0 } ybl) entries = [.. entries, new SciSeries(ybl.Label, [], []) { Colour = 1, Kind = SciKind.Line, Width = 6 }];
-        if (fig.XBand is { Label.Length: > 0 } xbl) entries = [.. entries, new SciSeries(xbl.Label, [], []) { Colour = 0, Kind = SciKind.Line, Width = 6 }];
-        foreach (var gd in fig.Guides.Where(gd => gd.Label.Length > 0 && double.IsFinite(gd.Y))) entries = [.. entries, new SciSeries(gd.Label, [], []) { Colour = -1, Kind = SciKind.Dashed, Width = 1 }];   // a guide is named in the legend, not on its line
-        if (entries.Length == 0 && notes.Length == 0) return;
-        var sample = f.Print ? 14.0 : 22.0;
-        var rowH = f.FLegend * (f.Print ? 1.3 : 1.45);
-        var pad = f.Print ? 2.0 : 6.0;
-        var lw2 = Math.Max(entries.Select(e => sample + 5 + RichWidth(g, e.Name, f.FLegend)).DefaultIfEmpty(0).Max(), notes.Select(n => RichWidth(g, n, f.FLegend)).DefaultIfEmpty(0).Max());
-        var boxW = Math.Min(w - 8, lw2 + 2 * pad);
-        var boxH = (entries.Length + notes.Length) * rowH + 2 * pad - (rowH - f.FLegend * 1.2);
-        if (boxH > h - 8) return;
-        var inset = f.TickLen + (f.Print ? 1.5 : 3);
-        var corners = new[] { new Point(L + w - boxW - inset, T + inset), new Point(L + inset, T + inset), new Point(L + w - boxW - inset, T + h - boxH - inset), new Point(L + inset, T + h - boxH - inset) };
-        // the points and the lines between them, every few pixels (a legend should not sit on a line either)
-        var allPts = new List<Point>();
-        foreach (var (s, pts) in drawn)
+        // legend where it hides no data: a free corner, else a free place along an edge, else (when the frame reserved room
+        // for it) outside the axes, else the place that hides least
+        var lb = f.OutLegend ?? MeasureLegend(g, fig, f, w);
+        if (lb == null) return;
+        var (entries, notes, sample, rowH, pad, boxW, boxH) = (lb.Entries, lb.Notes, lb.Sample, lb.RowH, lb.Pad, lb.W, lb.H);
+        Rect box;
+        var hides = false;
+        if (f.OutLegend != null) box = new Rect(f.OutLegendAt, new Size(boxW, boxH));
+        else
         {
-            for (var i = 0; i < pts.Count; ++i)
+            if (boxH > h - 8) return;
+            // the points and the lines between them, every few pixels (a legend should not sit on a line either)
+            var allPts = new List<Point>();
+            foreach (var (s, pts) in drawn)
             {
-                allPts.Add(pts[i]);
-                if (i == 0 || s.Kind == SciKind.Markers) continue;
-                var d = pts[i] - pts[i - 1];
-                var n = (int)Math.Min(40, Math.Sqrt(d.X * d.X + d.Y * d.Y) / (f.Print ? 2 : 5));
-                for (var k = 1; k < n; ++k) allPts.Add(pts[i - 1] + d * (k / (double)n));
+                for (var i = 0; i < pts.Count; ++i)
+                {
+                    allPts.Add(pts[i]);
+                    if (i > 0 && s.Kind != SciKind.Markers) AddSegment(allPts, pts[i - 1], pts[i], f);
+                }
             }
+            var markLines = MarkLines(fig, f);
+            var guideLines = GuideLines(fig, f);
+            int Cost(Point c) => LegendCost(new Rect(c, new Size(boxW, boxH)), allPts, markLines, guideLines, keepOut);
+            var best = LegendSpots(f, boxW, boxH, false).Select(sp => (sp.At, sp.Rank, C: Cost(sp.At))).OrderBy(c => c.C).ThenBy(c => c.Rank).First();
+            if (best.C > 0)
+            {
+                var edge = LegendSpots(f, boxW, boxH, true).Skip(4).Select(sp => (sp.At, sp.Rank, C: Cost(sp.At))).OrderBy(c => c.C).ThenBy(c => c.Rank).FirstOrDefault();
+                if (edge.Rank > 0 && edge.C < best.C) best = edge;
+            }
+            box = new Rect(best.At, new Size(boxW, boxH));
+            hides = best.C > 0;
         }
-        var markLines = fig.Marks.Where(m => double.IsFinite(m.X) && (!fig.XLog || m.X > 0)).Select(m => f.PX(m.X)).ToArray();
-        int Cost(Point c)
-        {
-            var r = new Rect(c, new Size(boxW, boxH)).Inflate(3);
-            return allPts.Count(r.Contains) + markLines.Count(x => x >= r.Left && x <= r.Right) * 25 + keepOut.Count(k => k.Intersects(r)) * 200;
-        }
-        var at0 = corners.OrderBy(Cost).First();
-        var box = new Rect(at0, new Size(boxW, boxH));
         if (!f.Print)   // on screen a box keeps the legend readable over a dense monitor
         {
             g.Rect(box, st.Bg, 0.88, null, 0);
             g.Rect(box, null, 0, st.Rule, 0.8);
         }
-        else if (Cost(at0) > 0) g.Rect(box.Inflate(1), st.Bg, 0.85, null, 0);   // in print no frame; a light backing only where data run under it
+        else if (hides) g.Rect(box.Inflate(1), st.Bg, 0.85, null, 0);   // in print no frame; a light backing only where data run under it
         var y = box.Top + pad + f.FLegend * 0.6;
         foreach (var e in entries)
         {

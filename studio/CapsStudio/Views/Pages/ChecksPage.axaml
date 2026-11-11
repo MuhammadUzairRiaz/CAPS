@@ -4,6 +4,14 @@
             x:Class="CapsStudio.Views.Pages.ChecksPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
   <p:PageBase.Styles>
     <Style Selector="TextBox.warn"><Setter Property="BorderBrush" Value="{DynamicResource WarnB}" /><Setter Property="Foreground" Value="{DynamicResource WarnB}" /></Style>
+    <!-- the mass cell: one field border (the spinner's), the inner text box fits inside it with no border of its own,
+         so it matches the element box beside it; the focus line still lands on the outer edge -->
+    <Style Selector="NumericUpDown.cell">
+      <Setter Property="Padding" Value="6,0" /><Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="NumericUpDown.cell /template/ TextBox#PART_TextBox">
+      <Setter Property="MinHeight" Value="0" /><Setter Property="BorderThickness" Value="0" />
+    </Style>
   </p:PageBase.Styles>
   <p:PageBase.Resources>
     <DataTemplate x:Key="CheckItem" x:DataType="vm:FileCheckRow">
@@ -44,7 +52,8 @@
           <TextBlock Text="ATOM TYPES" Classes="h3" />
           <TextBlock Classes="dim" TextWrapping="Wrap" Text="The element of each type, and its mass. An amber element differs from the one its mass points to. Apply sets every atom of the type (the type and its label are kept; undo with ⌘Z); assign the force field again afterwards." />
         </StackPanel>
-        <Grid DockPanel.Dock="Top" ColumnDefinitions="60,*,90,100,110,Auto" ColumnSpacing="10" Margin="0,0,0,4">
+        <!-- header and rows share fixed columns (the last one holds Apply in the rows), so each heading sits over its cells -->
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="60,*,90,100,110,72" ColumnSpacing="10" Margin="0,0,0,4">
           <TextBlock Text="TYPE" Classes="h3" /><TextBlock Grid.Column="1" Text="LABEL" Classes="h3" /><TextBlock Grid.Column="2" Text="ATOMS" Classes="h3" HorizontalAlignment="Right" />
           <TextBlock Grid.Column="3" Text="ELEMENT" Classes="h3" /><TextBlock Grid.Column="4" Text="MASS (g/mol)" Classes="h3" />
         </Grid>
@@ -52,14 +61,14 @@
           <ItemsControl ItemsSource="{Binding TypeRows}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:AtomTypeRow">
-                <Grid ColumnDefinitions="60,*,90,100,110,Auto" ColumnSpacing="10" Margin="0,2">
+                <Grid ColumnDefinitions="60,*,90,100,110,72" ColumnSpacing="10" Margin="0,2">
                   <TextBlock Text="{Binding Type}" Classes="mono" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding Label}" Classes="mono" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                   <TextBlock Grid.Column="2" Text="{Binding Count}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                  <TextBox Grid.Column="3" Text="{Binding Element}" Classes="mono" Height="28" MinHeight="28" Padding="6,2" ToolTip.Tip="{Binding MismatchTip}"
+                  <TextBox Grid.Column="3" Text="{Binding Element}" Classes="mono" Padding="6,0" VerticalContentAlignment="Center" ToolTip.Tip="{Binding MismatchTip}"
                            Classes.warn="{Binding Mismatch}" />
-                  <NumericUpDown Grid.Column="4" Value="{Binding Mass}" Minimum="0" Increment="0.001" FormatString="0.0###" ShowButtonSpinner="False" Height="28" MinHeight="28" />
-                  <Button Grid.Column="5" Classes="small" Content="Apply" Click="OnApplyType" Tag="{Binding}" />
+                  <NumericUpDown Grid.Column="4" Value="{Binding Mass}" Minimum="0" Increment="0.001" FormatString="0.0###" ShowButtonSpinner="False" Classes="cell" />
+                  <Button Grid.Column="5" Classes="small" Content="Apply" Click="OnApplyType" Tag="{Binding}" HorizontalAlignment="Left" VerticalAlignment="Center" />
                 </Grid>
               </DataTemplate>
             </ItemsControl.ItemTemplate>

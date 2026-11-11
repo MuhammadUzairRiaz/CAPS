@@ -20,6 +20,22 @@ public sealed class ManualPage : ObservableObject
     public string[] Cites { get; init; } = [];
     public string Source { get; init; } = "";
     public string Tested { get; init; } = "";
+    /// <summary>Tested split into its tests (joined by " · " in the manual), one per line, with zero-width break chances after a
+    /// dot or slash before a letter and between camel-case words, so a long test name wraps at a word, never inside one.</summary>
+    public string[] TestedLines => Array.ConvertAll(
+        Tested.Split(" · ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries), WithBreakChances);
+    private static string WithBreakChances(string s)
+    {
+        var b = new System.Text.StringBuilder(s.Length + 8);
+        for (int i = 0; i < s.Length; i++)
+        {
+            char c = s[i];
+            if (i > 0 && char.IsUpper(c) && char.IsLower(s[i - 1])) b.Append('​');
+            b.Append(c);
+            if ((c == '.' || c == '/') && i + 1 < s.Length && char.IsLetter(s[i + 1])) b.Append('​');
+        }
+        return b.ToString();
+    }
     public string Deviation { get; init; } = "";
     public string[] Engines { get; init; } = [];
     private bool _on;

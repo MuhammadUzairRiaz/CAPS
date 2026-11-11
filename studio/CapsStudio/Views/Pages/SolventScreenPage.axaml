@@ -75,24 +75,35 @@
                 </DockPanel>
               </Border>
               <StackPanel Margin="16,8,16,10">
-                <Grid ColumnDefinitions="*,70,58,48,88,22,64,22,140" Height="28">
-                  <TextBlock Text="SOLVENT" Classes="h3" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="1" Text="V (cm³/mol)" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="2" Text="δ (MPa½)" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="3" Text="χ" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="4" Text="PREDICTED" Classes="h3" Margin="14,0,0,0" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="6" Text="χ CONTACT" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Center" ToolTip.Tip="χ by pair contacts (GAFF2) at this temperature, from its χ(T) fit" />
-                  <TextBlock Grid.Column="8" Text="{Binding SsKnownHeader}" Classes="h3" Margin="10,0,0,0" VerticalAlignment="Center" />
+                <!-- fixed widths for the name and number columns; only KNOWN stretches, so the solvent name can never be squeezed out.
+                     Units sit under their symbol so the narrow number columns keep a gap between headers. -->
+                <Grid ColumnDefinitions="88,58,50,42,84,20,56,20,*" MinHeight="34" Margin="0,0,0,4">
+                  <TextBlock Text="SOLVENT" Classes="h3" VerticalAlignment="Bottom" />
+                  <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" ToolTip.Tip="Molar volume of the solvent, cm³/mol">
+                    <TextBlock Text="V" Classes="h3" HorizontalAlignment="Right" />
+                    <TextBlock Text="cm³/mol" FontSize="10.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Right" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Bottom" ToolTip.Tip="Hildebrand solubility parameter of the solvent, MPa½">
+                    <TextBlock Text="δ" Classes="h3" HorizontalAlignment="Right" />
+                    <TextBlock Text="MPa½" FontSize="10.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Right" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="3" Text="χ" Classes="h3" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+                  <TextBlock Grid.Column="4" Text="PREDICTED" Classes="h3" Margin="12,0,0,0" VerticalAlignment="Bottom" />
+                  <StackPanel Grid.Column="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" ToolTip.Tip="χ by pair contacts (GAFF2) at this temperature, from its χ(T) fit">
+                    <TextBlock Text="χ" Classes="h3" HorizontalAlignment="Right" />
+                    <TextBlock Text="CONTACT" Classes="h3" HorizontalAlignment="Right" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="8" Text="{Binding SsKnownHeader}" Classes="h3" Margin="10,0,0,0" VerticalAlignment="Bottom" TextWrapping="Wrap" />
                 </Grid>
                 <ItemsControl ItemsSource="{Binding SsRows}">
                   <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:SolventRow">
                     <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
-                      <Grid ColumnDefinitions="*,70,58,48,88,22,64,22,140" Height="31">
-                        <TextBlock Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center" />
+                      <Grid ColumnDefinitions="88,58,50,42,84,20,56,20,*" MinHeight="31">
+                        <TextBlock Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" />
                         <TextBlock Grid.Column="1" Text="{Binding V}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="2" Text="{Binding Delta}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="3" Text="{Binding Chi}" Classes="mono" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="4" Text="{Binding Predicted}" FontSize="12" Margin="14,0,0,0" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="4" Text="{Binding Predicted}" FontSize="12" Margin="12,0,0,0" VerticalAlignment="Center" />
                         <Panel Grid.Column="5" VerticalAlignment="Center" HorizontalAlignment="Center">
                           <v:Icon Kind="check" Size="14" Foreground="{DynamicResource OkB}" IsVisible="{Binding Agrees}" />
                           <v:Icon Kind="alert" Size="14" Foreground="{DynamicResource WarnB}" IsVisible="{Binding Mismatch}" />
@@ -102,7 +113,7 @@
                           <v:Icon Kind="check" Size="14" Foreground="{DynamicResource OkB}" IsVisible="{Binding AgreesC}" />
                           <v:Icon Kind="alert" Size="14" Foreground="{DynamicResource WarnB}" IsVisible="{Binding MismatchC}" />
                         </Panel>
-                        <TextBlock Grid.Column="8" Text="{Binding Known}" FontSize="12" Margin="10,0,0,0" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Known}" />
+                        <TextBlock Grid.Column="8" Text="{Binding Known}" FontSize="12" Margin="10,5,0,5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextWrapping="Wrap" ToolTip.Tip="{Binding Known}" />
                       </Grid>
                     </Border>
                   </DataTemplate></ItemsControl.ItemTemplate>

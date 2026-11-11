@@ -19,11 +19,12 @@
                       BorderThickness="2" BorderBrush="{DynamicResource LineB}" Classes.picked="{Binding Selected}" CornerRadius="8" ClipToBounds="True"
                       ToolTip.Tip="Use this background for the export">
                 <DockPanel>
-                  <Border DockPanel.Dock="Bottom" Height="34" Padding="12,0" Background="{DynamicResource Bg1B}">
-                    <DockPanel>
-                      <TextBlock DockPanel.Dock="Right" Text="{Binding Use}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Classes.sel="{Binding Selected}" />
-                    </DockPanel>
+                  <Border DockPanel.Dock="Bottom" MinHeight="34" Padding="12,6" Background="{DynamicResource Bg1B}">
+                    <!-- Two lines: the name, then the hint under it with the full card width, wrapping on a narrow card instead of trimming -->
+                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" Classes.sel="{Binding Selected}" />
+                      <TextBlock Text="{Binding Use}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" />
+                    </StackPanel>
                   </Border>
                   <Viewbox Stretch="Uniform">
                     <Panel Width="440" Height="{Binding Height}">

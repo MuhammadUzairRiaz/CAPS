@@ -172,11 +172,15 @@
           <Border Classes="phead"><TextBlock Text="Constraints &amp; restraints" Classes="h2" VerticalAlignment="Center" /></Border>
           <StackPanel Grid.Row="1" Margin="16,12,16,8" Spacing="8">
             <Border Classes="choice" IsEnabled="{Binding !Relaxing}">
-              <Grid ColumnDefinitions="Auto,*,Auto,70" ColumnSpacing="8">
+              <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="6">
                 <v:Icon Kind="pin" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
-                <CheckBox Grid.Column="1" Content="Hold a molecule in place" IsChecked="{Binding HoldOn}" FontWeight="SemiBold" ToolTip.Tip="Its atoms feel no force and do not move (an interface's surface is molecule 1)" />
-                <TextBlock Grid.Column="2" Text="molecule" Classes="dim" VerticalAlignment="Center" />
-                <NumericUpDown Grid.Column="3" Value="{Binding HoldPick}" Minimum="1" Increment="1" FormatString="0" ShowButtonSpinner="False" />
+                <CheckBox Grid.Column="1" IsChecked="{Binding HoldOn}" ToolTip.Tip="Its atoms feel no force and do not move (an interface's surface is molecule 1)">
+                  <TextBlock Text="Hold a molecule in place" FontWeight="SemiBold" TextWrapping="Wrap" />
+                </CheckBox>
+                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="28,0,0,0">
+                  <TextBlock Text="molecule" Classes="dim" VerticalAlignment="Center" />
+                  <NumericUpDown Width="70" VerticalAlignment="Center" Value="{Binding HoldPick}" Minimum="1" Increment="1" FormatString="0" ShowButtonSpinner="False" />
+                </StackPanel>
               </Grid>
             </Border>
             <Border Classes="choice" IsEnabled="{Binding !Relaxing}">
@@ -221,22 +225,23 @@
         <Grid RowDefinitions="38,*">
           <Border Classes="phead"><TextBlock Text="Stop when any is met" Classes="h2" VerticalAlignment="Center" /></Border>
           <StackPanel Grid.Row="1" Margin="16,12,16,16" Spacing="10" IsEnabled="{Binding !Relaxing}">
-            <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
-              <TextBlock Text="|F|max below (kcal/mol/Å)" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
-              <NumericUpDown Grid.Column="1" Value="{Binding RelaxFtolD}" Minimum="0.001" Maximum="100" Increment="0.05" FormatString="0.###" TextAlignment="Right" />
+            <Grid ColumnDefinitions="*,100" ColumnSpacing="10">
+              <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}"
+                         ToolTip.Tip="|F|max below (kcal/mol/Å)"><Run Text="|F|max below" /><LineBreak /><Run Text="(kcal/mol/Å)" /></TextBlock>
+              <NumericUpDown Grid.Column="1" VerticalAlignment="Center" Value="{Binding RelaxFtolD}" Minimum="0.001" Maximum="100" Increment="0.05" FormatString="0.###" TextAlignment="Right" />
             </Grid>
-            <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
-              <TextBlock Text="Iterations (per stage)" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
-              <NumericUpDown Grid.Column="1" Value="{Binding RelaxIterationsD}" Minimum="10" Maximum="1000000" Increment="1000" FormatString="0" TextAlignment="Right" />
+            <Grid ColumnDefinitions="*,100" ColumnSpacing="10">
+              <TextBlock Text="Iterations (per stage)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+              <NumericUpDown Grid.Column="1" VerticalAlignment="Center" Value="{Binding RelaxIterationsD}" Minimum="10" Maximum="1000000" Increment="1000" FormatString="0" TextAlignment="Right" />
             </Grid>
-            <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
-              <TextBlock Text="ΔE per step below (relative)" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
-              <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.RelaxEtols}" SelectedIndex="{Binding RelaxEtolIndex}" HorizontalAlignment="Stretch"
+            <Grid ColumnDefinitions="*,100" ColumnSpacing="10">
+              <TextBlock Text="ΔE per step below (relative)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+              <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.RelaxEtols}" SelectedIndex="{Binding RelaxEtolIndex}" HorizontalAlignment="Stretch" VerticalAlignment="Center"
                         ToolTip.Tip="A stage also stops when the energy changes by less than this fraction per step (1e-8: the force criterion decides)" />
             </Grid>
-            <Grid ColumnDefinitions="*,120" ColumnSpacing="10" IsVisible="{Binding RelaxBox}">
-              <TextBlock Text="Box stress below (atm)" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
-              <NumericUpDown Grid.Column="1" Value="{Binding RelaxPressureTolD}" Minimum="1" Maximum="100000" Increment="10" FormatString="0" TextAlignment="Right"
+            <Grid ColumnDefinitions="*,100" ColumnSpacing="10" IsVisible="{Binding RelaxBox}">
+              <TextBlock Text="Box stress below (atm)" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+              <NumericUpDown Grid.Column="1" VerticalAlignment="Center" Value="{Binding RelaxPressureTolD}" Minimum="1" Maximum="100000" Increment="10" FormatString="0" TextAlignment="Right"
                              ToolTip.Tip="The box relaxation stops when the pressure is this close to its target" />
             </Grid>
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">

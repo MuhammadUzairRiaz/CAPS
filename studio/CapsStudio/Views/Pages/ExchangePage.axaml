@@ -13,7 +13,7 @@
     <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-          <v:SeedPicker DataContext="{Binding ExSeed}" ShowLabel="False" VerticalAlignment="Center" Margin="0,0,10,0" />
+          <v:SeedPicker DataContext="{Binding ExSeed}" ShowLabel="False" InlineLabel="True" VerticalAlignment="Center" Margin="0,0,10,0" />
           <Button Content="Copy as command" Click="OnCopyCommand" ToolTip.Tip="The same run as caps exchange runs it" />
           <Button Content="Stop" Click="OnCancel" IsVisible="{Binding ExRunning}" />
           <Button Classes="primary" Click="OnRun" IsEnabled="{Binding Idle}">

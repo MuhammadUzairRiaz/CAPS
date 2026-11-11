@@ -11,9 +11,16 @@ namespace CapsStudio.Views.Pages;
 public partial class ChainStatsPage : PageBase
 {
     private MainViewModel? _hooked;
+    private const string CnHint = "Press Run to compute the characteristic ratio";
+    private const string ReeHint = "Press Run to see the end-to-end distance distribution";
     public ChainStatsPage()
     {
         AvaloniaXamlLoader.Load(this);
+        // Until a run has filled them, the two charts say what to do instead of showing a blank card.
+        var cnPlot = this.FindControl<SciPlot>("Cn")!;
+        var reePlot = this.FindControl<SciPlot>("Ree")!;
+        cnPlot.EmptyText = CnHint;
+        reePlot.EmptyText = ReeHint;
         DataContextChanged += (_, _) =>
         {
             if (DataContext is not MainViewModel vm || vm == _hooked) return;
@@ -21,8 +28,14 @@ public partial class ChainStatsPage : PageBase
             vm.CsChanged += () =>
             {
                 Show(vm);
-                this.FindControl<SciPlot>("Cn")!.Figure = ViewModels.PageFigures.ChainCnStats(vm.CsCnCurve);
-                this.FindControl<SciPlot>("Ree")!.Figure = ViewModels.PageFigures.EndToEnd(vm.CsReeHist);
+                // The shared figure builders carry an empty hint of "", which would draw nothing at all:
+                // an empty curve gets the page's own hint instead.
+                // After a run that gave no curve (no chain long enough), say so rather than asking for another run.
+                var ran = vm.CsStatus.Length > 0 && !vm.Analyze.Working;
+                cnPlot.EmptyText = ran ? "No sub-chain curve from this run" : CnHint;
+                reePlot.EmptyText = ran ? "No end-to-end distances from this run" : ReeHint;
+                cnPlot.Figure = vm.CsCnCurve.Length > 1 ? ViewModels.PageFigures.ChainCnStats(vm.CsCnCurve) : null;
+                reePlot.Figure = vm.CsReeHist.Length > 1 ? ViewModels.PageFigures.EndToEnd(vm.CsReeHist) : null;
             };
         };
     }

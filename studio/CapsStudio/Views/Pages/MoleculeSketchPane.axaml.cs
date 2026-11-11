@@ -90,7 +90,7 @@ public partial class MoleculeSketchPane : PageBase
     /// <summary>The element to draw with: its key checked (an element from the table gets the spare key).</summary>
     public void ChooseElement(int z)
     {
-        var keys = this.FindControl<StackPanel>("Elements")!.Children.OfType<ToggleButton>().ToList();
+        var keys = this.FindControl<Panel>("Elements")!.Children.OfType<ToggleButton>().ToList();
         var other = this.FindControl<ToggleButton>("OtherElement")!;
         var key = keys.FirstOrDefault(k => k != other && k.Tag as string == z.ToString(System.Globalization.CultureInfo.InvariantCulture));
         if (key == null)

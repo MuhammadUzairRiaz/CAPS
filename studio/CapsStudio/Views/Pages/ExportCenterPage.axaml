@@ -49,6 +49,11 @@
         </StackPanel>
         <DockPanel>
           <TextBlock DockPanel.Dock="Top" Text="CHECKED BEFORE WRITING" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.8" Foreground="{DynamicResource MutedB}" Margin="0,0,0,6" />
+          <!-- empty state: no checks when the export failed (no force field) or has not run yet -->
+          <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,4,0,0" IsVisible="{Binding !EngineChecks.Count}">
+            <TextBlock Text="No checks yet. They run once every atom has a force field type: assign one in the Force field step." Classes="dim" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding EngineHasError}" />
+            <TextBlock Text="No checks yet. They appear here once the files are prepared." Classes="dim" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding !EngineHasError}" />
+          </StackPanel>
           <ScrollViewer VerticalScrollBarVisibility="Auto">
           <ItemsControl ItemsSource="{Binding EngineChecks}">
             <ItemsControl.ItemTemplate>
@@ -109,14 +114,15 @@
               <CheckBox Grid.Column="1" Content="Hybrid" IsChecked="{Binding EngineHybrid}" VerticalAlignment="Center"
                         ToolTip.Tip="Write every style as 'hybrid STYLE', each coefficient line naming its style (moltemplate's layout)" />
             </Grid>
-            <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="8" IsVisible="{Binding EngineNative}">
-              <StackPanel Spacing="4"><TextBlock Text="Electrostatics" Classes="muted" FontSize="11.5" />
-                <ComboBox ItemsSource="{x:Static vm:MainViewModel.EngineCoulombModes}" SelectedIndex="{Binding EngineCoulomb}" HorizontalAlignment="Stretch"
-                          ToolTip.Tip="Automatic: PPPM when the force field is long-range and the cell periodic" /></StackPanel>
-              <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Cut-off (Å, 0 = own)" Classes="muted" FontSize="11.5" />
+            <!-- electrostatics on its own row, cut-off and k-space under it: a third of the card clipped their labels -->
+            <StackPanel Spacing="4" IsVisible="{Binding EngineNative}"><TextBlock Text="Electrostatics" Classes="muted" FontSize="11.5" />
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.EngineCoulombModes}" SelectedIndex="{Binding EngineCoulomb}" HorizontalAlignment="Stretch"
+                        ToolTip.Tip="Automatic: PPPM when the force field is long-range and the cell periodic" /></StackPanel>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding EngineNative}">
+              <StackPanel Spacing="4"><TextBlock Text="Cut-off (Å, 0 = own)" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
                 <NumericUpDown Value="{Binding EngineCutoffD}" Minimum="0" Maximum="50" Increment="1" FormatString="0.#" ToolTip.Tip="0: the force field's own cut-off" /></StackPanel>
-              <StackPanel Grid.Column="2" Spacing="4" IsVisible="{Binding EngineKspaceVisible}"><TextBlock Text="k-space accuracy" Classes="muted" FontSize="11.5" />
-                <TextBox Text="{Binding EngineKspaceText}" Classes="mono" FontSize="12" /></StackPanel>
+              <StackPanel Grid.Column="1" Spacing="4" IsVisible="{Binding EngineKspaceVisible}"><TextBlock Text="k-space accuracy" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                <TextBox Text="{Binding EngineKspaceText}" Classes="mono" FontSize="12" ToolTip.Tip="Relative force accuracy of the k-space solver, between 0 and 1 (CAPS uses 1E-4 unless changed)" /></StackPanel>
             </Grid>
             <StackPanel Spacing="4">
               <TextBlock Text="LAMMPS units" Classes="muted" FontSize="11.5" />

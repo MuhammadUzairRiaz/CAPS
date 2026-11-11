@@ -12,7 +12,8 @@
           </Button>
         </StackPanel>
         <StackPanel Spacing="3">
-          <TextBlock Text="{Binding OpenTitle}" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding OpenTitle}" FontSize="19" FontWeight="SemiBold" IsVisible="{Binding OpenTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <TextBlock Text="Open a file" FontSize="19" FontWeight="SemiBold" IsVisible="{Binding OpenTitle, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
           <TextBlock Text="Format detected from the content, columns mapped to named properties, topology joined from the data file" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
         </StackPanel>
       </DockPanel>
@@ -23,10 +24,25 @@
           <DockPanel>
             <Border DockPanel.Dock="Top" Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
               <DockPanel>
-                <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Foreground="{DynamicResource OkB}"><Run Text="detected: " /><Run Text="{Binding OpenFormat}" /></TextBlock></Border>
-                <TextBlock FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"><Run Text="{Binding OpenFileName}" /><Run Text=" · first lines" Foreground="{DynamicResource MutedB}" FontWeight="Normal" /></TextBlock>
+                <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center" IsVisible="{Binding OpenFormat, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"><TextBlock Foreground="{DynamicResource OkB}"><Run Text="detected: " /><Run Text="{Binding OpenFormat}" /></TextBlock></Border>
+                <Panel VerticalAlignment="Center">
+                  <TextBlock FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding OpenPath}"
+                             IsVisible="{Binding OpenFileName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"><Run Text="{Binding OpenFileName}" /><Run Text=" · first lines" Foreground="{DynamicResource MutedB}" FontWeight="Normal" /></TextBlock>
+                  <TextBlock Text="First lines" FontSize="13" FontWeight="SemiBold"
+                             IsVisible="{Binding OpenFileName, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+                </Panel>
               </DockPanel>
             </Border>
+            <StackPanel DockPanel.Dock="Top" Margin="16,14" Spacing="10" IsVisible="{Binding !OpenHead.Count}">
+              <TextBlock Text="Reading the file…" Classes="dim" FontSize="12" IsVisible="{Binding OpenBusy}" />
+              <StackPanel Spacing="10" IsVisible="{Binding OpenIdle}">
+                <TextBlock Text="No file chosen yet. Pick a structure or trajectory and its format, first lines, columns and types show here before anything is read in."
+                           Classes="dim" FontSize="12" TextWrapping="Wrap" />
+                <Button Classes="small" HorizontalAlignment="Left" Click="OnChoose">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="folder" Size="12" VerticalAlignment="Center" /><TextBlock Text="Choose a file…" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+              </StackPanel>
+            </StackPanel>
             <ScrollViewer HorizontalScrollBarVisibility="Auto" Padding="0,6">
               <ItemsControl ItemsSource="{Binding OpenHead}">
                 <ItemsControl.ItemTemplate>
@@ -45,7 +61,7 @@
           <StackPanel>
             <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
               <DockPanel>
-                <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Text="write: the same list, except CIF" Foreground="{DynamicResource MutedB}" /></Border>
+                <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Text="writes every one, CIF as P 1" Foreground="{DynamicResource MutedB}" /></Border>
                 <TextBlock Text="Formats CAPS reads" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
               </DockPanel>
             </Border>

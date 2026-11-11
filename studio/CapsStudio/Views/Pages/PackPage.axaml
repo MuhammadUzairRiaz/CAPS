@@ -209,17 +209,14 @@
               <Border Classes="phead"><TextBlock Text="Objective" Classes="h2" VerticalAlignment="Center" /></Border>
               <StackPanel Margin="16,12,16,16" Spacing="12">
                 <Border Classes="inset" Padding="14,12">
-                  <StackPanel Spacing="4">
-                    <TextBlock Text="f = Σ(i&lt;j) max(0, d_tol² − |x_i − x_j|²)²" Classes="mono" FontSize="13" />
-                    <TextBlock Text="  + Σ(i) w · g_region(x_i)" Classes="mono" FontSize="13" />
-                  </StackPanel>
+                  <v:MathView Tex="f=\sum_{i&lt;j}\max\left(0,\,d_{\mathrm{tol}}^{2}-\lvert\mathbf{x}_{i}-\mathbf{x}_{j}\rvert^{2}\right)^{2}+\sum_{i}w\,g_{\mathrm{region}}(\mathbf{x}_{i})" FontSize="15" HorizontalAlignment="Left" />
                 </Border>
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <v:Icon Kind="link" Size="13" Foreground="{DynamicResource DimB}" VerticalAlignment="Top" />
                   <TextBlock Text="Overlap penalty after Martínez et al., J. Comput. Chem. 30, 2157 (2009). Rigid bodies: centre of mass + rotation, analytic gradients." Classes="dim" TextWrapping="Wrap" MaxWidth="480" />
                 </StackPanel>
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
-                  <TextBlock Text="Tolerance d_tol" Classes="label" /><TextBlock Grid.Column="1" Text="Optimiser" Classes="label" /><TextBlock Grid.Column="2" Text="Neighbour list" Classes="label" />
+                  <StackPanel Orientation="Horizontal" Spacing="4"><TextBlock Text="Tolerance" Classes="label" VerticalAlignment="Center" /><v:MathView Tex="d_{\mathrm{tol}}" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></StackPanel><TextBlock Grid.Column="1" Text="Optimiser" Classes="label" /><TextBlock Grid.Column="2" Text="Neighbour list" Classes="label" />
                   <TextBox Grid.Row="1" Text="{Binding PackTolText}" IsReadOnly="True" Classes="mono" ToolTip.Tip="Set with the tolerance line of the input" />
                   <TextBox Grid.Row="1" Grid.Column="1" Text="L-BFGS (m = 10)" IsReadOnly="True" />
                   <TextBox Grid.Row="1" Grid.Column="2" Text="Cell list, threaded" IsReadOnly="True" />
@@ -295,19 +292,19 @@
               <Border Classes="phead"><TextBlock Text="Guarantee" Classes="h2" VerticalAlignment="Center" /></Border>
               <StackPanel Grid.Row="1" Margin="14,12" Spacing="10">
                 <UniformGrid Columns="2">
-                  <Border Classes="inset" Margin="0,0,5,5"><StackPanel Spacing="2"><TextBlock Text="d_min now" Classes="label" /><TextBlock Text="{Binding PackDmin}" Classes="mono acc" FontSize="16" /></StackPanel></Border>
+                  <Border Classes="inset" Margin="0,0,5,5"><StackPanel Spacing="2"><TextBlock Classes="label" ToolTip.Tip="Closest atom-atom distance between molecules in the cell now"><Run Text="d" /><Run Text="min" BaselineAlignment="Subscript" FontSize="9" /><Run Text=" now" /></TextBlock><TextBlock Text="{Binding PackDmin}" Classes="mono acc" FontSize="16" /></StackPanel></Border>
                   <Border Classes="inset" Margin="5,0,0,5"><StackPanel Spacing="2"><TextBlock Text="target" Classes="label" /><TextBlock Text="{Binding PackTolText}" Classes="mono" FontSize="16" /></StackPanel></Border>
                   <Border Classes="inset" Margin="0,5,5,0"><StackPanel Spacing="2"><TextBlock Text="in violation" Classes="label" /><TextBlock Text="{Binding PackBad}" Classes="mono" FontSize="16" /></StackPanel></Border>
                   <Border Classes="inset" Margin="5,5,0,0"><StackPanel Spacing="2"><TextBlock Text="round" Classes="label" /><TextBlock Text="{Binding PackLoop}" Classes="mono" FontSize="16" /></StackPanel></Border>
                 </UniformGrid>
-                <TextBlock Text="Fails loudly if d_min is not met: a cell below tolerance is never written." Classes="dim" TextWrapping="Wrap" />
+                <TextBlock Text="Fails loudly if the closest contact stays below the target: a cell below tolerance is never written." Classes="dim" TextWrapping="Wrap" />
                 <TextBlock Text="STAGES" Classes="h3" Margin="0,4,0,0" />
                 <ItemsControl ItemsSource="{Binding PackStages}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:PackStageRow">
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="0,2">
                         <Ellipse Width="7" Height="7" Fill="{Binding Brush}" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
                         <TextBlock Grid.Column="2" Text="{Binding State}" Classes="mono" FontSize="11" Foreground="{Binding Brush}" />
                       </Grid>
                     </DataTemplate>

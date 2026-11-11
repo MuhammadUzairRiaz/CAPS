@@ -297,20 +297,20 @@
             </Border>
             <Border Classes="pcard">
               <StackPanel Spacing="8">
-                <TextBlock Text="Calibrate σ and ε against density and T_g" Classes="ctitle" />
+                <v:MathView Tex="\mathbf{Calibrate σ and ε against density and T}_\mathbf{g}" Mode="Prose" FontSize="13.5" HorizontalAlignment="Left" />
                 <StackPanel Spacing="3"><TextBlock Text="Fits" Classes="label" />
                   <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="…" Tag="file:CgwFits" Click="OnPickFile" /><TextBlock Text="{Binding CgwFits}" Classes="cell path" ToolTip.Tip="{Binding CgwFits}" VerticalAlignment="Center" /></DockPanel></StackPanel>
                 <StackPanel Spacing="3"><TextBlock Text="History (created when missing)" Classes="label" />
                   <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="…" Tag="save:CgwHistory" Click="OnPickFile" /><TextBlock Text="{Binding CgwHistory}" Classes="cell path" ToolTip.Tip="{Binding CgwHistory}" VerticalAlignment="Center" /></DockPanel></StackPanel>
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
-                  <StackPanel Spacing="3"><TextBlock Text="s_σ of the run reported" Classes="label" /><NumericUpDown Value="{Binding CgwSSigma}" Minimum="0.1" Maximum="10" Increment="0.01" FormatString="0.0000" /></StackPanel>
-                  <StackPanel Grid.Column="1" Spacing="3"><TextBlock Text="s_ε of the run reported" Classes="label" /><NumericUpDown Value="{Binding CgwSEps}" Minimum="0.01" Maximum="100" Increment="0.01" FormatString="0.0000" /></StackPanel>
+                  <StackPanel Spacing="3"><v:MathView Tex="s_σ of the run reported" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" /><NumericUpDown Value="{Binding CgwSSigma}" Minimum="0.1" Maximum="10" Increment="0.01" FormatString="0.0000" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="3"><v:MathView Tex="s_ε of the run reported" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" /><NumericUpDown Value="{Binding CgwSEps}" Minimum="0.01" Maximum="100" Increment="0.01" FormatString="0.0000" /></StackPanel>
                   <StackPanel Grid.Row="1" Spacing="3"><TextBlock Text="Its density (g/cm³)" Classes="label" /><NumericUpDown Value="{Binding CgwDensity}" Minimum="0" Maximum="10" Increment="0.01" FormatString="0.000" /></StackPanel>
-                  <StackPanel Grid.Row="1" Grid.Column="1" Spacing="3"><TextBlock Text="Its T_g (K)" Classes="label" /><NumericUpDown Value="{Binding CgwTg}" Minimum="0" Maximum="3000" Increment="1" FormatString="0.0" /></StackPanel>
+                  <StackPanel Grid.Row="1" Grid.Column="1" Spacing="3"><v:MathView Tex="Its T_g (K)" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" /><NumericUpDown Value="{Binding CgwTg}" Minimum="0" Maximum="3000" Increment="1" FormatString="0.0" /></StackPanel>
                   <StackPanel Grid.Row="2" Spacing="3"><TextBlock Text="Target density (g/cm³)" Classes="label" /><NumericUpDown Value="{Binding CgwTargetDensity}" Minimum="0" Maximum="10" Increment="0.01" FormatString="0.000" /></StackPanel>
-                  <StackPanel Grid.Row="2" Grid.Column="1" Spacing="3"><TextBlock Text="Target T_g (K)" Classes="label" /><NumericUpDown Value="{Binding CgwTargetTg}" Minimum="0" Maximum="3000" Increment="1" FormatString="0.0" /></StackPanel>
+                  <StackPanel Grid.Row="2" Grid.Column="1" Spacing="3"><v:MathView Tex="Target T_g (K)" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" /><NumericUpDown Value="{Binding CgwTargetTg}" Minimum="0" Maximum="3000" Increment="1" FormatString="0.0" /></StackPanel>
                 </Grid>
-                <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="T_g from a scan…" Tag="tg" Click="OnTgScan" ToolTip.Tip="A cooling scan: 'T density' per line (in.cg_tg writes one)" />
+                <DockPanel><Button DockPanel.Dock="Right" Classes="small" Tag="tg" Click="OnTgScan" ToolTip.Tip="A cooling scan: 'T density' per line (in.cg_tg writes one)"><v:MathView Tex="T_g from a scan…" Mode="Prose" FontSize="12" VerticalAlignment="Center" /></Button>
                   <TextBlock Text="{Binding CgwTgFile}" Classes="cell path" ToolTip.Tip="{Binding CgwTgFile}" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></DockPanel>
                 <Button Click="OnCalibrate" IsEnabled="{Binding CgwIdle}" HorizontalAlignment="Right" Content="Next scale factors" />
                 <TextBlock Text="{Binding CgwCalNext}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource AccB}" TextWrapping="Wrap" />
@@ -445,9 +445,9 @@
               <StackPanel Spacing="6">
                 <TextBlock Text="Entanglement length (beads) by estimator" Classes="ctitle" />
                 <Grid ColumnDefinitions="1.2*,45,55,60,55,60,85,60,85,80,50">
-                  <TextBlock Text="SYSTEM" Classes="h3" /><TextBlock Grid.Column="1" Text="N" Classes="h3" /><TextBlock Grid.Column="2" Text="CHAINS" Classes="h3" /><TextBlock Grid.Column="3" Text="L_pp Å" Classes="h3" />
-                  <TextBlock Grid.Column="4" Text="a_pp Å" Classes="h3" /><TextBlock Grid.Column="5" Text="S-coil" Classes="h3" /><TextBlock Grid.Column="6" Text="mod S-coil" Classes="h3" /><TextBlock Grid.Column="7" Text="S-kink" Classes="h3" />
-                  <TextBlock Grid.Column="8" Text="mod S-kink" Classes="h3" /><TextBlock Grid.Column="9" Text="M_e g/mol" Classes="h3" /><TextBlock Grid.Column="10" Text="Z" Classes="h3" />
+                  <TextBlock Text="SYSTEM" Classes="h3" /><TextBlock Grid.Column="1" Text="N" Classes="h3" /><TextBlock Grid.Column="2" Text="CHAINS" Classes="h3" /><v:MathView Grid.Column="3" Tex="\mathbf{L}_\mathbf{pp} \mathbf{Å}" Mode="Prose" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" />
+                  <v:MathView Grid.Column="4" Tex="\mathbf{a}_\mathbf{pp} \mathbf{Å}" Mode="Prose" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" /><TextBlock Grid.Column="5" Text="S-coil" Classes="h3" /><TextBlock Grid.Column="6" Text="mod S-coil" Classes="h3" /><TextBlock Grid.Column="7" Text="S-kink" Classes="h3" />
+                  <TextBlock Grid.Column="8" Text="mod S-kink" Classes="h3" /><v:MathView Grid.Column="9" Tex="\mathbf{M}_\mathbf{e} \mathbf{g/mol}" Mode="Prose" FontSize="11" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" /><TextBlock Grid.Column="10" Text="Z" Classes="h3" />
                 </Grid>
                 <ItemsControl ItemsSource="{Binding CgwPpaTable}">
                   <ItemsControl.ItemTemplate>
@@ -462,7 +462,7 @@
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <TextBlock Text="{Binding CgwPpaMulti}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
-                <TextBlock Text="M_e and Z from the modified S-coil N_e (Hoy, Foteinopoulou &amp; Kröger 2009)." FontSize="11" Foreground="{DynamicResource DimB}" />
+                <v:MathView Tex="M_e and Z from the modified S-coil N_e (Hoy, Foteinopoulou &amp; Kröger 2009)." Mode="Prose" FontSize="11" Foreground="{DynamicResource DimB}" HorizontalAlignment="Left" />
               </StackPanel>
             </Border>
           </Grid>

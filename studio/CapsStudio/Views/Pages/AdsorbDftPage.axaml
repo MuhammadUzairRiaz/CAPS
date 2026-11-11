@@ -20,7 +20,7 @@
         </StackPanel>
         <StackPanel Spacing="3">
           <TextBlock Text="DFT adsorption set" FontSize="19" FontWeight="SemiBold" />
-          <TextBlock Text="E_bind = E(complex) − E(slab) − E(molecule): the three written with identical settings" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+          <v:MathView Tex="E_bind = E(complex) − E(slab) − E(molecule): the three written with identical settings" Mode="Prose" FontSize="12.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" />
         </StackPanel>
       </DockPanel>
     </Border>

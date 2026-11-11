@@ -763,9 +763,9 @@
             <Button Classes="tool" Height="28" MinHeight="28" Padding="6,0" Click="OnElementPicker" ToolTip.Tip="Any element: the periodic table (for new atoms; then pick atoms and choose it here)"><TextBlock Text="…" FontSize="12" /></Button>
             <Rectangle Classes="vsep" />
             <TextBlock Text="Bond" Classes="dim" VerticalAlignment="Center" Margin="4,0,2,0" />
-            <Button Classes="tool" Height="28" MinHeight="28" Padding="6,0" Click="OnBondOrder" Tag="1" ToolTip.Tip="The bond between the two picked atoms: single"><TextBlock Text="—" FontSize="13" /></Button>
-            <Button Classes="tool" Height="28" MinHeight="28" Padding="6,0" Click="OnBondOrder" Tag="2" ToolTip.Tip="… double"><TextBlock Text="=" FontSize="14" /></Button>
-            <Button Classes="tool" Height="28" MinHeight="28" Padding="6,0" Click="OnBondOrder" Tag="3" ToolTip.Tip="… triple"><TextBlock Text="≡" FontSize="14" /></Button>
+            <Button Classes="tool" Height="28" MinHeight="28" Padding="6,0" Click="OnBondOrder" Tag="1" ToolTip.Tip="The bond between the two picked atoms: single"><StackPanel Spacing="2.4" VerticalAlignment="Center" HorizontalAlignment="Center"><Rectangle Width="14" Height="1.6" Fill="{DynamicResource TextB}" /></StackPanel></Button>
+            <Button Classes="tool" Height="28" MinHeight="28" Padding="6,0" Click="OnBondOrder" Tag="2" ToolTip.Tip="… double"><StackPanel Spacing="2.4" VerticalAlignment="Center" HorizontalAlignment="Center"><Rectangle Width="14" Height="1.6" Fill="{DynamicResource TextB}" /><Rectangle Width="14" Height="1.6" Fill="{DynamicResource TextB}" /></StackPanel></Button>
+            <Button Classes="tool" Height="28" MinHeight="28" Padding="6,0" Click="OnBondOrder" Tag="3" ToolTip.Tip="… triple"><StackPanel Spacing="2.4" VerticalAlignment="Center" HorizontalAlignment="Center"><Rectangle Width="14" Height="1.6" Fill="{DynamicResource TextB}" /><Rectangle Width="14" Height="1.6" Fill="{DynamicResource TextB}" /><Rectangle Width="14" Height="1.6" Fill="{DynamicResource TextB}" /></StackPanel></Button>
             <Button Classes="tool" Height="28" MinHeight="28" Padding="6,0" Click="OnBreakBond" ToolTip.Tip="Break the bond between the two picked atoms"><local:Icon Kind="scissors" Size="15" /></Button>
             <Rectangle Classes="vsep" />
             <TextBlock Text="Geometry" Classes="dim" VerticalAlignment="Center" Margin="4,0,2,0" />
@@ -1037,7 +1037,8 @@
               </StackPanel>
             </Border>
             <!-- Empty state -->
-            <TextBlock Classes="dim" HorizontalAlignment="Center" VerticalAlignment="Center" Text="Draw on the left or type a SMILES: the molecule appears here, with the Studio's tools">
+            <TextBlock Classes="dim" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" Margin="24,0" MaxWidth="420"
+                       Text="Draw on the left or type a SMILES: the molecule appears here, with the Studio's tools">
               <TextBlock.IsVisible>
                 <MultiBinding Converter="{x:Static BoolConverters.And}">
                   <Binding Path="NoDocument" />
@@ -3210,11 +3211,11 @@
         <Grid RowDefinitions="Auto,*,Auto" Margin="22,16,22,0">
           <!-- header -->
           <Grid ColumnDefinitions="*,Auto">
-            <StackPanel Spacing="3">
-              <TextBlock FontSize="20" FontWeight="SemiBold">
+            <StackPanel Spacing="3" Margin="0,0,16,0">
+              <TextBlock FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis">
                 <Run Text="Analyze · " /><Run Text="{Binding Analyze.SourceText}" />
               </TextBlock>
-              <TextBlock Classes="muted" Text="Properties with their uncertainty and method, compared against experiment, ready for the paper tables" />
+              <TextBlock Classes="muted" TextWrapping="Wrap" Text="Properties with their uncertainty and method, compared against experiment, ready for the paper tables" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
               <StackPanel Spacing="3">
@@ -3402,7 +3403,7 @@
                       <NumericUpDown Grid.Row="5" Value="{Binding Analyze.CreepEqD}" Minimum="0" Increment="10" FormatString="0.#" />
                     </Grid>
                     <TextBlock Text="{Binding Analyze.CreepText}" Classes="mono" FontSize="11" />
-                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="The stressed axis holds −σ as its pressure, the others 1 atm (Berendsen per axis): over the first few τ_p the cell follows the barostat, after that the polymer creeps — at nanosecond times, so far less than in a test." />
+                    <TextBlock Classes="dim" TextWrapping="Wrap"><Run Text="The stressed axis holds −σ as its pressure, the others 1 atm (Berendsen per axis). Over the first few τ" /><Run Text="p" BaselineAlignment="Subscript" FontSize="9" /><Run Text=" the cell follows the barostat; after that the polymer creeps, on nanosecond times, so far less than in a test." /></TextBlock>
                   </StackPanel>
                   <StackPanel Spacing="6" IsVisible="{Binding Analyze.ConfChip.IsOn}">
                     <TextBlock Text="CONFORMER SEARCH" Classes="h3" Margin="0,6,0,0" />
@@ -3520,9 +3521,13 @@
             </Grid>
           </Grid>
 
-          <TextBlock Grid.Row="2" Classes="dim" Margin="0,0,0,10">
-            <Run Text="{Binding Analyze.RunInfo}" /><Run Text=" · hover a card for its method · experiment ranges from data/reference/polymers.json" />
-          </TextBlock>
+          <!-- the run summary and its separator show only after a run, so the note never starts with a stray dot -->
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Classes="dim" IsVisible="{Binding Analyze.RunInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <Run Text="{Binding Analyze.RunInfo}" /><Run Text=" · " />
+            </TextBlock>
+            <TextBlock Classes="dim" Text="hover a card for its method · experiment ranges from data/reference/polymers.json" />
+          </StackPanel>
         </Grid>
       </Border>
 
@@ -3545,16 +3550,20 @@
               </StackPanel>
               <StackPanel Spacing="3">
                 <TextBlock Text="Charges" Classes="dim" />
-                <ComboBox Width="170" ItemsSource="{x:Static vm:FieldViewModel.ChargeModes}" SelectedIndex="{Binding Field.ChargeMode}" />
+                <ComboBox Width="270" ItemsSource="{x:Static vm:FieldViewModel.ChargeModes}" SelectedIndex="{Binding Field.ChargeMode}" />
               </StackPanel>
               <StackPanel Spacing="3">
                 <TextBlock Text="Water" Classes="dim" />
                 <ComboBox Width="190" ItemsSource="{Binding Field.WaterChoices}" SelectedIndex="{Binding Field.WaterModelIndex}" ToolTip.Tip="{Binding Field.WaterTip}" />
               </StackPanel>
+              <!-- the actions wrap as one group, never one button alone on a line of its own -->
+              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
               <Button Classes="primary" Content="Assign · retype all" Click="OnFieldAssign" IsEnabled="{Binding HasDocument}" VerticalAlignment="Bottom" />
               <Button Content="The file's own" Click="OnFieldUseFile" IsVisible="{Binding Field.CanUseFileForceField}" VerticalAlignment="Bottom"
                       ToolTip.Tip="The force field the topology file carries (an AMBER prmtop): its types, charges, Lennard-Jones table, bonds, angles, torsions and 1-4 scaling exactly as written — nothing typed or estimated" />
               <ToggleButton Content="By group" IsChecked="{Binding Field.GroupMode}" IsEnabled="{Binding HasDocument}" VerticalAlignment="Bottom"
+                            MinHeight="36" Padding="14,0" CornerRadius="6" FontSize="13" FontWeight="Medium" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                            Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1"
                             ToolTip.Tip="A force field per group of molecules (a filler and its matrix, each component of a blend), or a literature potential (Tersoff, EAM …) for a crystal; the cross pairs by the rule you choose" />
               <Button Content="Type by hand…" Click="OnUnitTyping" IsEnabled="{Binding HasDocument}" VerticalAlignment="Bottom"
                       ToolTip.Tip="The repeat unit as head, body and tail (a copolymer's units and junctions) in 3D: give any atom its type by hand, then apply to the whole structure" />
@@ -3570,6 +3579,7 @@
               </Button>
               <Button Content="Clear" Click="OnFieldClear" IsEnabled="{Binding Field.Assigned}" VerticalAlignment="Bottom"
                       ToolTip.Tip="End the assignment and restore the file's own types and charges" />
+              </StackPanel>
             </WrapPanel>
           </Grid>
 
@@ -4050,20 +4060,23 @@
 
     <!-- Status bar (lib.py statusbar): counts on the left, what the mouse does and the renderer on the right -->
     <Border Grid.Row="3" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="14,0">
-      <Grid ColumnDefinitions="Auto,*,Auto">
-        <StackPanel Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
+      <!-- the short mouse hint keeps its own width; the status message takes the rest, trimmed with its full text in a tooltip.
+           At 1440 px both read in full: the hint is kept short (the full mouse map is in its tooltip) and the renderer side says FP64. -->
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
           <TextBlock Text="{Binding StatusCounts}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
           <TextBlock Text="{Binding DisplayStatus}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
           <TextBlock Text="{Binding StatusSelection}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
           <TextBlock Text="{Binding StatusCell}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
         </StackPanel>
         <TextBlock Grid.Column="1" Text="{Binding Status}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center"
-                   Margin="18,0" TextTrimming="CharacterEllipsis" />
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
+                   Margin="16,0" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Status}" />
+        <TextBlock Grid.Column="2" Text="{Binding MouseHint}" ToolTip.Tip="{Binding MouseHintTip}"
+                   Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,16,0" />
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
           <TextBlock Text="{Binding AutoCleanText}" IsVisible="{Binding AutoCleanOn}" Classes="mono" FontSize="11" Foreground="{DynamicResource AccB}" />
           <TextBlock Text="{Binding HAutoText}" IsVisible="{Binding HAutopilotOn}" Classes="mono" FontSize="11" Foreground="{DynamicResource AccB}" ToolTip.Tip="H autopilot: after each sketch edit hydrogens are added where missing and removed where surplus" />
-          <TextBlock Text="double-click molecule · ⌥ drag box · hold right: ring · ⇧ drag pans" ToolTip.Tip="Click picks (⇧ click adds) · double-click: the molecule · ⌥ double-click: the same type · ⌥ drag: a box · drag turns · ⇧ or right drag pans · hold the right button: the ring · H hides · ⌥H shows all · Esc clears" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
-          <TextBlock Text="Double precision" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
+          <TextBlock Text="FP64" ToolTip.Tip="Double precision (64-bit floating point)" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
           <TextBlock x:Name="RenderStat" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
         </StackPanel>
       </Grid>

@@ -236,8 +236,25 @@ void step_colour_coding(PipelineState& st, const Json& p, StepStatus& out) {
       if (lighten && st.system.atoms[i].element == 1) c = lerp_rgb(c, 0xFFFFFF, 0.55);
       st.colour[i] = c;
     }
-    for (auto& [x, c] : col)
-      if (L.entries.size() < 24) L.entries.push_back({prop == "Element" ? std::string(element(int(x)).symbol) : fmt("%g", x), c});
+    // a numeric type reads by its name when the document has one (Type 2 → ca), as the histogram and selection steps do
+    const bool by_type = prop == "Type" || prop == "Particle Type" || prop == "ParticleType";
+    std::map<int, std::string> type_name;
+    std::map<std::string, int> name_uses;
+    if (by_type) {
+      for (const auto& a : st.system.atoms) if (a.type > 0 && !a.name.empty() && !type_name.count(a.type)) type_name[a.type] = a.name;
+      for (const auto& t : st.system.types) if (!t.label.empty()) type_name[t.type] = t.label;
+      for (const auto& [x, c] : col) { (void)c; auto it = type_name.find(int(x)); if (it != type_name.end()) ++name_uses[it->second]; }
+    }
+    for (auto& [x, c] : col) {
+      if (L.entries.size() >= 24) break;
+      std::string label = prop == "Element" ? std::string(element(int(x)).symbol) : fmt("%g", x);
+      if (by_type) {
+        auto it = type_name.find(int(x));
+        // two types sharing one name keep their numbers so the legend stays unambiguous
+        if (it != type_name.end()) label = name_uses[it->second] > 1 ? fmt("%g", x) + " " + it->second : it->second;
+      }
+      L.entries.push_back({label, c});
+    }
     out.summary = std::to_string(distinct.size()) + " values · categorical";
   } else {
     double lo = 1e300, hi = -1e300;

@@ -12,7 +12,8 @@
     <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-          <v:SeedPicker DataContext="{Binding AdsSeed}" ShowLabel="False" VerticalAlignment="Center" Margin="0,0,10,0" />
+          <v:SeedPicker DataContext="{Binding AdsSeed}" ShowLabel="False" InlineLabel="True" VerticalAlignment="Center" Margin="0,0,10,0"
+                        ToolTip.Tip="Random seed of the Monte Carlo run" />
           <Button Content="Cancel" Click="OnCancel" IsVisible="{Binding AdsRunning}" />
           <Button Classes="primary" Click="OnRun" IsEnabled="{Binding Idle}">
             <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Locate" VerticalAlignment="Center" /></StackPanel>
@@ -44,6 +45,12 @@
                 <Button DockPanel.Dock="Right" Classes="small" Content="Add" Click="OnAdd" />
                 <TextBlock Text="Adsorbates" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
               </DockPanel>
+              <Grid ColumnDefinitions="*,90,Auto" ColumnSpacing="8">
+                <TextBlock Text="SMILES" Classes="label" />
+                <TextBlock Grid.Column="1" Text="Molecules" Classes="label" ToolTip.Tip="Number of molecules of this adsorbate" />
+                <!-- spacer matching the remove button, so the captions line up with the boxes below -->
+                <Button Grid.Column="2" Classes="small" Content="×" Opacity="0" IsHitTestVisible="False" Focusable="False" Height="0" MinHeight="0" />
+              </Grid>
               <ItemsControl ItemsSource="{Binding AdsRows}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:AdsorbateRow">

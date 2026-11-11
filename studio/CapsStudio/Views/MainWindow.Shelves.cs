@@ -68,7 +68,7 @@ public partial class MainWindow
             if (e.PropertyName != nameof(MainViewModel.HasDocument) || !_vm.HasDocument || _vm.Settings.ShelfHintShown) return;
             _vm.Settings.ShelfHintShown = true;
             _vm.Settings.Save();
-            DispatcherTimer.RunOnce(() => _vm.Status = "Tool shelves: drag the small tab at the left of a toolbar to move it (dock on any edge of the view or float), click it to fold · workspaces at the top", TimeSpan.FromSeconds(1.5));
+            DispatcherTimer.RunOnce(() => _vm.Status = "Drag a toolbar's left tab to move it, click to fold", TimeSpan.FromSeconds(1.5));
         };
         _vm.AddCommand(new PaletteCommand { Title = "Make a shelf…", Id = "shelf.make", Icon = "pin", Section = "View", Keywords = "toolbar custom tools", Run = () => _ = MakeShelfDialog() });
         _vm.AddCommand(new PaletteCommand { Title = "Reset this workspace's shelves", Id = "shelf.reset", Icon = "layers", Section = "View", Keywords = "toolbar layout default", Run = ResetWorkspace });

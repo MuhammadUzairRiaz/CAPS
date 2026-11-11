@@ -64,28 +64,36 @@
                             ToolTip.Tip="Bonded forces every Δt/2 or Δt/4, non-bonded every Δt: Δt 2 fs with ×4 keeps the C–H stretches at 0.5 fs. With the Bussi thermostat or none" />
                   <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding MdDtD}" Minimum="0.1" Maximum="5" Increment="0.25" FormatString="0.##" />
                 </Grid>
-                <Grid ColumnDefinitions="2*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
                   <TextBlock Text="Bond constraints" Classes="label" />
                   <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.ConstraintChoices}" SelectedIndex="{Binding MdConstraints}" HorizontalAlignment="Stretch"
                             IsEnabled="{Binding MdConstraintsAllowed}" ToolTip.ShowOnDisabled="True"
-                            ToolTip.Tip="SHAKE/RATTLE hold bonds at the force field's length, so the fastest vibrations are gone and Δt can be 2 fs. Each constraint removes one degree of freedom from the temperature; its forces are in the pressure. The alternative to r-RESPA" />
+                            ToolTip.Tip="SHAKE/RATTLE hold bonds at the force field's length, so the fastest vibrations are gone and Δt can be 2 fs. Each constraint removes one degree of freedom from the temperature; its forces are in the pressure. The alternative to r-RESPA">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" /></DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
                   <TextBlock Grid.Column="1" Text="Solver" Classes="label" />
                   <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.ConstraintSolvers}" SelectedIndex="{Binding MdConstraintSolver}" HorizontalAlignment="Stretch"
-                            IsEnabled="{Binding MdHasConstraints}"
-                            ToolTip.Tip="How the positions are put back on the constraints each step: SHAKE (iterative, as LAMMPS fix shake) or LINCS (Hess et al. 1997, as GROMACS); both give the same trajectory to the tolerance, velocities by RATTLE. Equilibrate uses the same choice" />
+                            IsEnabled="{Binding MdHasConstraints}" ToolTip.ShowOnDisabled="True"
+                            ToolTip.Tip="How the positions are put back on the constraints each step: SHAKE (iterative, as LAMMPS fix shake) or LINCS (Hess et al. 1997, as GROMACS); both give the same trajectory to the tolerance, velocities by RATTLE. Equilibrate uses the same choice">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" /></DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
                 </Grid>
                 <CheckBox Classes="toggle" Content="Double precision (pair terms too)" IsChecked="{Binding MdDoublePrecision}"
                           ToolTip.Tip="Off: plain pair terms in single precision with SIMD, sums in double (mixed, as GROMACS; caps md's default); on: everything in double (--precision double). Equilibrate uses the same choice" />
                 <CheckBox Classes="toggle" Content="Heavier hydrogens (3.024 u)" IsChecked="{Binding MdHmr}"
                           ToolTip.Tip="Hydrogen mass repartitioning: each hydrogen takes mass from the atom it is bonded to, so the total mass and every equilibrium average stay the same while hydrogens move slower. With bonds to hydrogen held, Δt can go to 3 fs (measured on polystyrene; 4 fs does not hold the energy). Equilibrate uses it too" />
                 <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding MdHasThermostat}">
-                  <TextBlock Text="Thermostat" Classes="label" /><TextBlock Grid.Column="1" Text="T (K)" Classes="label" /><TextBlock Grid.Column="2" Text="τ_T (fs)" Classes="label" />
+                  <TextBlock Text="Thermostat" Classes="label" /><TextBlock Grid.Column="1" Text="T (K)" Classes="label" /><v:MathView Grid.Column="2" Tex="τ_T (fs)" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" />
                   <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.Thermostats}" SelectedIndex="{Binding MdThermostat}" HorizontalAlignment="Stretch" />
                   <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding MdTempD}" Minimum="1" Maximum="5000" Increment="10" FormatString="0.#" />
                   <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding MdTauTD}" Minimum="1" Increment="10" FormatString="0" />
                 </Grid>
                 <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding MdHasBarostat}">
-                  <TextBlock Text="Barostat" Classes="label" /><TextBlock Grid.Column="1" Text="P (atm)" Classes="label" /><TextBlock Grid.Column="2" Text="τ_P (fs)" Classes="label" />
+                  <TextBlock Text="Barostat" Classes="label" /><TextBlock Grid.Column="1" Text="P (atm)" Classes="label" /><v:MathView Grid.Column="2" Tex="τ_P (fs)" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" />
                   <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.Barostats}" SelectedIndex="{Binding MdBarostat}" HorizontalAlignment="Stretch"
                             IsEnabled="{Binding MdCanChooseBarostat}" ToolTip.Tip="NPH uses the Berendsen barostat: stochastic cell rescaling needs a thermostat" ToolTip.ShowOnDisabled="True" />
                   <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding MdPressureD}" Increment="1" FormatString="0.##" />
@@ -110,7 +118,7 @@
             <StackPanel>
               <Border Classes="phead"><TextBlock Text="Interactions" Classes="h2" VerticalAlignment="Center" /></Border>
               <Grid Margin="16,12,16,16" ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
-                <TextBlock Text="Electrostatics" Classes="label" /><TextBlock Grid.Column="1" Text="r_c (Å)" Classes="label" /><TextBlock Grid.Column="2" Text="{Binding ElecParamLabel}" Classes="label" />
+                <TextBlock Text="Electrostatics" Classes="label" /><v:MathView Grid.Column="1" Tex="r_c (Å)" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" /><TextBlock Grid.Column="2" Text="{Binding ElecParamLabel}" Classes="label" />
                 <ComboBox Grid.Row="1" SelectedIndex="{Binding SetElectrostatics}" HorizontalAlignment="Stretch"
                           ToolTip.Tip="The same choice as Settings › Force fields and Dynamics › Electrostatics: it applies to Relax, Dynamics, Equilibrate and Analyze">
                   <ComboBoxItem Content="Damped shifted force" /><ComboBoxItem Content="Particle-mesh Ewald" />

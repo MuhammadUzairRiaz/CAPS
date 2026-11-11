@@ -17,9 +17,14 @@
             <Border Classes="section">
               <StackPanel Spacing="10">
                 <TextBlock Text="LAYOUT" Classes="h3" />
-                <ListBox ItemsSource="{x:Static vm:MainViewModel.ViewportLayouts}" SelectedIndex="{Binding ViewportLayout}" Classes="seg">
-                  <ListBox.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ListBox.ItemsPanel>
-                </ListBox>
+                <Border Classes="seg">
+                  <UniformGrid Rows="1">
+                    <RadioButton Classes="seg" GroupName="vplayout" Content="1" ToolTip.Tip="One view" HorizontalAlignment="Stretch" IsChecked="{Binding ViewportLayout, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+                    <RadioButton Classes="seg" GroupName="vplayout" Content="2 × 1" ToolTip.Tip="Two views side by side" HorizontalAlignment="Stretch" IsChecked="{Binding ViewportLayout, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+                    <RadioButton Classes="seg" GroupName="vplayout" Content="2 × 2" ToolTip.Tip="Four views in a grid" HorizontalAlignment="Stretch" IsChecked="{Binding ViewportLayout, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
+                    <RadioButton Classes="seg" GroupName="vplayout" Content="1 + 3" ToolTip.Tip="One large view and three small ones" HorizontalAlignment="Stretch" IsChecked="{Binding ViewportLayout, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=3}" />
+                  </UniformGrid>
+                </Border>
                 <CheckBox Classes="toggle" Content="Link zoom and pan across ortho views" IsChecked="{Binding ViewportLinkZoom}" />
                 <TextBlock Text="The selection is shared: an atom picked in one view is ringed in all." Classes="dim" TextWrapping="Wrap" />
               </StackPanel>

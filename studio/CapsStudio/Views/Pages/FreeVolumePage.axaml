@@ -54,7 +54,7 @@
               <StackPanel Spacing="5">
                 <TextBlock Text="{Binding FvFfv.Label}" FontSize="12" Foreground="{DynamicResource MutedB}" />
                 <TextBlock Text="{Binding FvFfv.Value}" Classes="mono" FontSize="20" />
-                <TextBlock Text="{Binding FvFfv.Caption}" FontSize="11" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" />
+                <v:MathView Tex="{x:Static vm:MainViewModel.FvFfvTex}" FontSize="12" Foreground="{DynamicResource DimB}" HorizontalAlignment="Left" ToolTip.Tip="{Binding FvFfv.Caption}" />
               </StackPanel>
             </Border>
             <Border Classes="pcard" Padding="14,12" Margin="5,0,0,0">
@@ -83,11 +83,23 @@
                                ToolTip.Tip="Surface points per atom for the accessible area" />
                 <TextBlock Text="Pore network" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
               </DockPanel>
-              <TextBlock Text="{Binding PnClusters}" FontSize="12.5" />
-              <TextBlock Text="{Binding PnDiameters}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
-              <TextBlock Text="{Binding PnVolume}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
-              <TextBlock Text="{Binding PnSurface}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
-              <TextBlock Text="{Binding PnNote}" FontSize="11" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding PnClusters}" FontSize="12.5" TextWrapping="Wrap"
+                         IsVisible="{Binding PnClusters, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              <StackPanel Spacing="3">
+                <TextBlock Text="Pore diameters (LCD, PLD, Dif) · Å" FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap"
+                           ToolTip.Tip="Largest included sphere, pore-limiting diameter overall and along a, b, c, and the largest sphere along the free path" />
+                <TextBlock Text="{Binding PnDiameters}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Spacing="3">
+                <TextBlock Text="Pore volume (channels, pockets) · % and cm³/g" FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding PnVolume}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Spacing="3">
+                <TextBlock Text="Surface area (accessible, non-accessible) · Å², m²/cm³, m²/g" FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding PnSurface}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+              </StackPanel>
+              <TextBlock Text="{Binding PnNote}" FontSize="11" Foreground="{DynamicResource DimB}" TextWrapping="Wrap"
+                         IsVisible="{Binding PnNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
               <TextBlock FontSize="11.5" Foreground="{DynamicResource DimB}" TextWrapping="Wrap"
                          Text="Where the probe's centre can go, joined across the cell's faces: a cluster that meets its own image is a channel, one that does not is a pocket. PLD is the widest probe that still passes along an axis (Willems et al. 2012)." />
             </StackPanel>

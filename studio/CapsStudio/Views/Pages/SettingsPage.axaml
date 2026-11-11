@@ -123,16 +123,19 @@
               <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="14">
                 <Slider Minimum="80" Maximum="150" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding SetScale}" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="1" Text="{Binding ScaleText}" Classes="mono" VerticalAlignment="Center" Width="48" TextAlignment="Right" />
-                <Border Grid.Column="2" Classes="chip" VerticalAlignment="Center"><TextBlock Text="Ctrl + / Ctrl −" Classes="mono" Foreground="{DynamicResource MutedB}" /></Border>
+                <Border Grid.Column="2" Classes="chip" VerticalAlignment="Center"><TextBlock Text="⌘ + / ⌘ −" Classes="mono" Foreground="{DynamicResource MutedB}" /></Border>
               </Grid>
             </StackPanel>
             <StackPanel Spacing="10">
               <TextBlock Text="Element and category palette" Classes="h2" />
+              <!-- cards fill the column up to 520 px and shrink with it; the capped grid column keeps them left-aligned -->
+              <Grid>
+              <Grid.ColumnDefinitions><ColumnDefinition Width="*" MaxWidth="520" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
               <ItemsControl ItemsSource="{Binding PaletteChoices}">
                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:PaletteChoice">
-                    <Button Classes="tile" Padding="14,10" Click="OnPalette" Tag="{Binding Index}" MaxWidth="520" HorizontalAlignment="Left" Width="520">
+                    <Button Classes="tile" Padding="14,10" Click="OnPalette" Tag="{Binding Index}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
                       <StackPanel Orientation="Horizontal" Spacing="14">
                         <ItemsControl ItemsSource="{Binding Swatches}" VerticalAlignment="Center">
                           <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
@@ -146,6 +149,7 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
+              </Grid>
               <TextBlock x:Name="PaletteNote" Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left"
                          Text="Atoms, molecule and chain colours follow the palette in the view, the builder preview and exported figures. The monochrome palette separates elements by lightness alone, so figures read in greyscale." />
               <StackPanel Spacing="8" Margin="0,8,0,0">
@@ -575,11 +579,11 @@
 
     <!-- footer -->
     <Border Grid.Row="1" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="16,0">
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBlock VerticalAlignment="Center" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}">
-          <Run Text="Settings saved to " /><Run Text="{Binding SettingsPath}" />
-        </TextBlock>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <TextBlock Margin="0,0,6,0" VerticalAlignment="Center" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" Text="Settings saved to" />
+        <TextBlock Grid.Column="1" Margin="0,0,16,0" VerticalAlignment="Center" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}"
+                   Text="{Binding SettingsPath}" TextTrimming="PathSegmentEllipsis" ToolTip.Tip="{Binding SettingsPath}" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
           <Button Classes="link" Content="Export" Click="OnExport" FontSize="11.5" />
           <TextBlock Text="·" Classes="dim" VerticalAlignment="Center" />
           <Button Classes="link" Content="Import" Click="OnImport" FontSize="11.5" />

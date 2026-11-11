@@ -8,7 +8,8 @@
     <Style Selector="ListBox.cats ListBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg3B}" /></Style>
     <Style Selector="ListBox.tiles ListBoxItem"><Setter Property="Padding" Value="0" /><Setter Property="Margin" Value="0,0,12,12" /><Setter Property="CornerRadius" Value="10" />
       <Setter Property="BorderThickness" Value="1.5" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" /><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="ClipToBounds" Value="True" /></Style>
-    <Style Selector="ListBox.tiles ListBoxItem:selected /template/ ContentPresenter"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="Background" Value="{DynamicResource Bg1B}" /></Style>
+    <!-- the selected tile keeps its full 1.5 px outline (the app-wide list rule would turn it into a 3 px left bar and lift the content); only the colour changes -->
+    <Style Selector="ListBox.tiles ListBoxItem:selected /template/ ContentPresenter"><Setter Property="BorderThickness" Value="1.5" /><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="Background" Value="{DynamicResource Bg1B}" /></Style>
   </p:PageBase.Styles>
   <DockPanel>
     <Border DockPanel.Dock="Bottom" Height="28" Padding="14,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
@@ -22,7 +23,8 @@
         <DockPanel>
           <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,8">
             <Button Classes="small" HorizontalAlignment="Left" Click="OnBack"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="undo" Size="13" VerticalAlignment="Center" /><TextBlock Text="Studio" VerticalAlignment="Center" /></StackPanel></Button>
-            <TextBox Text="{Binding FragmentQuery}" Watermark="Search name, SMILES, use or SMARTS ([OX2H], C(=O)O)" FontSize="12" />
+            <TextBox Text="{Binding FragmentQuery}" Watermark="Name, SMILES or SMARTS" FontSize="12"
+                     ToolTip.Tip="Search by name, SMILES, use or a SMARTS pattern, e.g. [OX2H] or C(=O)O" />
           </StackPanel>
           <ListBox Classes="cats" ItemsSource="{Binding FragmentCategories}" Background="Transparent" SelectionChanged="OnCategory" x:Name="Cats">
             <ListBox.ItemTemplate>
@@ -41,24 +43,38 @@
           <TextBlock Text="{Binding FragmentTitle}" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center" />
           <Border Classes="chip" VerticalAlignment="Center"><TextBlock Text="{Binding FragmentCountText}" Foreground="{DynamicResource MutedB}" /></Border>
         </StackPanel>
-        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,8,0,12">
-          <TextBox x:Name="NewName" Width="160" Watermark="Name" FontSize="12" />
-          <TextBox x:Name="NewSmiles" Width="260" Watermark="SMILES with * points, e.g. *C(=O)O*" FontSize="12" FontFamily="{DynamicResource Mono}" />
-          <Button Classes="small" Content="Add to My fragments" Click="OnAddMine" />
-          <Button Classes="small" Content="From the selection" Click="OnFromSelection" ToolTip.Tip="The atoms selected in Studio and their hydrogens, each bond leaving them an attachment point *" />
+        <!-- Two rows so the inputs stretch with the column and the buttons never run under the detail panel. -->
+        <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,8,0,12">
+          <Grid ColumnDefinitions="*,2*" ColumnSpacing="8">
+            <TextBox x:Name="NewName" MinWidth="80" Watermark="Name" FontSize="12" />
+            <TextBox x:Name="NewSmiles" Grid.Column="1" MinWidth="140" Watermark="SMILES with * points, e.g. *C(=O)O*" FontSize="12" FontFamily="{DynamicResource Mono}"
+                     ToolTip.Tip="SMILES with * attachment points, e.g. *C(=O)O*" />
+          </Grid>
+          <WrapPanel ItemSpacing="8" LineSpacing="8">
+            <Button Classes="small" Content="Add to My fragments" Click="OnAddMine" />
+            <Button Classes="small" Content="From the selection" Click="OnFromSelection" ToolTip.Tip="The atoms selected in Studio and their hydrogens, each bond leaving them an attachment point *" />
+          </WrapPanel>
         </StackPanel>
-        <ListBox Classes="tiles" ItemsSource="{Binding FragmentTiles}" SelectedItem="{Binding SelectedFragment}" Background="Transparent" DoubleTapped="OnTileDouble">
-          <ListBox.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate></ListBox.ItemsPanel>
+        <!-- Tiles flow at a fixed width (154 px card + 12 px gap) instead of a fixed four columns, so a card is always wide
+             enough for one long word such as Tetrafluoroethylene and the column decides how many fit per row. -->
+        <ListBox Classes="tiles" ItemsSource="{Binding FragmentTiles}" SelectedItem="{Binding SelectedFragment}" Background="Transparent" DoubleTapped="OnTileDouble"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+          <ListBox.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" ItemWidth="166" /></ItemsPanelTemplate></ListBox.ItemsPanel>
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:FragmentItem">
               <StackPanel>
                 <Border Height="110" Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
                   <v:MolView Smiles="{Binding SmilesH}" DrawStyle="0" IsHitTestVisible="False" />
                 </Border>
-                <StackPanel Margin="12,10" Spacing="3">
-                  <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Text="{Binding Smiles}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Text="{Binding Meta}" FontSize="11" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" />
+                <StackPanel Margin="10,10" Spacing="3">
+                  <!-- Every title gets room for exactly two lines (Height = 2 x LineHeight) so all cards keep the same height.
+                       Wrap breaks between words first and splits a word only when it is wider than the card on its own line,
+                       so a long single word such as Hexamethoxymethylmelamine runs onto the second line instead of being cut.
+                       A name that still needs more than two lines is trimmed, with the full name in the tooltip. -->
+                  <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" LineHeight="17" Height="34" MaxLines="2"
+                             TextWrapping="Wrap" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" />
+                  <TextBlock Text="{Binding Smiles}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Smiles}" />
+                  <TextBlock Text="{Binding Meta}" FontSize="11" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Meta}" />
                 </StackPanel>
               </StackPanel>
             </DataTemplate>

@@ -11,7 +11,7 @@
     <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-          <v:SeedPicker DataContext="{Binding DpdSeed}" ShowLabel="False" VerticalAlignment="Center" Margin="0,0,10,0" />
+          <v:SeedPicker DataContext="{Binding DpdSeed}" ShowLabel="False" InlineLabel="True" VerticalAlignment="Center" Margin="0,0,10,0" />
           <Button Content="Cancel" Click="OnCancel" IsVisible="{Binding DpdRunning}" />
           <Button Classes="primary" Click="OnRun" IsEnabled="{Binding Idle}">
             <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Run DPD" VerticalAlignment="Center" /></StackPanel>
@@ -26,7 +26,7 @@
     <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
       <TextBlock Text="{Binding DpdProgress}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
     </Border>
-    <Grid v:Panes.Split="True" ColumnDefinitions="340,*" ColumnSpacing="14" Margin="22,18">
+    <Grid v:Panes.Split="True" ColumnDefinitions="360,*" ColumnSpacing="14" Margin="22,18">
       <ScrollViewer>
         <StackPanel Spacing="14">
           <Border Classes="pcard">
@@ -35,22 +35,24 @@
                 <Button DockPanel.Dock="Right" Classes="small" Content="Add" Click="OnAddSpecies" />
                 <TextBlock Text="Species" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
               </DockPanel>
-              <Grid ColumnDefinitions="*,120,80,Auto" ColumnSpacing="8">
+              <!-- The header and every row share one column grid: Name takes what is left, the button column is a fixed 30 px
+                   in both, so the labels sit over their inputs. -->
+              <Grid ColumnDefinitions="*,96,72,30" ColumnSpacing="8">
                 <TextBlock Text="Name" Classes="label" /><TextBlock Grid.Column="1" Text="Beads" Classes="label" /><TextBlock Grid.Column="2" Text="Molecules" Classes="label" />
               </Grid>
               <ItemsControl ItemsSource="{Binding DpdSpecies}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:DpdSpeciesRow">
-                    <Grid ColumnDefinitions="*,120,80,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" Margin="0,0,0,6">
-                      <TextBox Text="{Binding Name}" />
+                    <Grid ColumnDefinitions="*,96,72,30" RowDefinitions="Auto,Auto" ColumnSpacing="8" Margin="0,0,0,6">
+                      <TextBox Text="{Binding Name}" MinWidth="0" ToolTip.Tip="{Binding Name}" />
                       <TextBox Grid.Column="1" Text="{Binding Sequence}" Classes="mono" Watermark="A5B5" ToolTip.Tip="One letter per bead type (A–Z); A5B5 = five A then five B; a branch in parentheses hangs off the bead before it: A10(B4)A10 a graft, A(B3)(B3)(B3) a star" />
-                      <NumericUpDown Grid.Column="2" Value="{Binding Count}" Minimum="1" FormatString="0" />
-                      <Button Grid.Column="3" Classes="small" Content="×" Click="OnRemoveSpecies" />
+                      <NumericUpDown Grid.Column="2" Value="{Binding Count}" Minimum="1" FormatString="0" ShowButtonSpinner="False" MinWidth="0" />
+                      <Button Grid.Column="3" Classes="small" Content="×" Width="30" Padding="0" HorizontalContentAlignment="Center" Click="OnRemoveSpecies" ToolTip.Tip="Remove this species" />
                       <Grid Grid.Row="1" Grid.ColumnSpan="4" ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,4,0,0"
                             IsVisible="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).DpdHasRegions}">
                         <TextBox Text="{Binding Region}" Classes="mono" Watermark="outside every region" ToolTip.Tip="The region its molecules start in (a name from Regions of the start); empty: the space no region claims" />
                         <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.DpdOrients}" SelectedIndex="{Binding Orient}" HorizontalAlignment="Stretch"
-                                  ToolTip.Tip="Amphiphiles: the first bead (the head) on the region's surface and the rest along the normal, 0.7 r_c apart, into the region or out of it" />
+                                  ToolTip.Tip="Amphiphiles: the first bead (the head) on the region's surface and the rest along the normal, 0.7 cut-off radii apart, into the region or out of it" />
                       </Grid>
                     </Grid>
                   </DataTemplate>
@@ -73,9 +75,9 @@
                         <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:DpdRegionRow.Shapes}" SelectedIndex="{Binding Shape}" HorizontalAlignment="Stretch" />
                         <TextBox Grid.Column="2" Text="{Binding Centre}" Classes="mono" ToolTip.Tip="The centre as fractions of the box edge: x y z" />
                         <Button Grid.Column="3" Classes="small" Content="×" Click="OnRemoveRegion" />
-                        <TextBlock Grid.Row="1" Text="Radius · r_c" Classes="label" IsVisible="{Binding !IsSlab}" />
-                        <TextBlock Grid.Row="1" Text="Thickness · r_c" Classes="label" IsVisible="{Binding IsSlab}" />
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="Inner · r_c" Classes="label" IsVisible="{Binding HasInner}" />
+                        <v:MathView Grid.Row="1" Tex="Radius · r_c" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" IsVisible="{Binding !IsSlab}" />
+                        <v:MathView Grid.Row="1" Tex="Thickness · r_c" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" IsVisible="{Binding IsSlab}" />
+                        <v:MathView Grid.Row="1" Grid.Column="1" Tex="Inner · r_c" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" IsVisible="{Binding HasInner}" />
                         <TextBlock Grid.Row="1" Grid.Column="1" Text="Axis" Classes="label" IsVisible="{Binding !HasInner}" />
                         <TextBlock Grid.Row="1" Grid.Column="2" Text="Priority" Classes="label" />
                         <NumericUpDown Grid.Row="2" Value="{Binding Radius}" Increment="0.5" FormatString="0.##" IsVisible="{Binding !IsSlab}" />
@@ -92,7 +94,7 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
               <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
-                <TextBlock Text="Box edge · r_c (0: from ρ)" Classes="label" VerticalAlignment="Center" />
+                <v:MathView Tex="Box edge · r_c (0: from ρ)" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" VerticalAlignment="Center" />
                 <NumericUpDown Grid.Column="1" Value="{Binding DpdBox}" Minimum="0" Increment="1" FormatString="0.#" ToolTip.Tip="A box of this edge; with regions it fixes where they sit. 0: the beads and ρ size it" />
               </Grid>
               <TextBlock Classes="dim" TextWrapping="Wrap" Text="Droplet, rod (across the box), slab, shell and tube; a species named to a region starts there, a region no species names stays empty (a void, a filler). With regions the start above is not used." />
@@ -122,7 +124,7 @@
             <StackPanel Spacing="8">
               <TextBlock Text="Run" FontSize="13.5" FontWeight="SemiBold" />
               <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
-                <TextBlock Text="Steps (dt 0.04)" Classes="label" /><TextBlock Grid.Column="1" Text="Density ρ" Classes="label" /><TextBlock Grid.Column="2" Text="r_c · Å" Classes="label" />
+                <TextBlock Text="Steps (dt 0.04)" Classes="label" /><TextBlock Grid.Column="1" Text="Density ρ" Classes="label" /><v:MathView Grid.Column="2" Tex="r_c · Å" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" />
                 <NumericUpDown Grid.Row="1" Value="{Binding DpdSteps}" Minimum="100" Increment="5000" FormatString="0" />
                 <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding DpdDensity}" Minimum="1" Maximum="10" Increment="1" FormatString="0.#" />
                 <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding DpdRc}" Minimum="1" Maximum="50" Increment="0.5" FormatString="0.00" ToolTip.Tip="The length a bead's cut-off stands for, for the view (6.46 Å: three waters per bead)" />
@@ -134,7 +136,10 @@
                                ToolTip.Tip="Repeats of the template across the box" />
               </Grid>
               <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
-                <TextBlock Text="Chain stiffness k_θ (kT) · k_θ (1 + cos θ) at each middle bead" Classes="label" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                  <v:MathView Tex="Chain stiffness k_θ (kT)" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" />
+                  <v:MathView Tex="k_θ (1 + cos θ) at each middle bead" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" />
+                </StackPanel>
                 <NumericUpDown Grid.Column="1" Value="{Binding DpdAngleK}" Minimum="0" Maximum="50" Increment="1" FormatString="0.#"
                                ToolTip.Tip="0: flexible chains; a few kT: semiflexible (rigid rods, liquid-crystalline blocks)" />
               </Grid>
@@ -202,7 +207,7 @@
                 <StackPanel Spacing="4">
                   <TextBlock Text="Domains at the end" FontSize="13.5" FontWeight="SemiBold" />
                   <TextBlock Text="{Binding DpdDomains}" Classes="mono" TextWrapping="Wrap" />
-                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Cells about r_c wide where one type outnumbers the other, joined through their faces (periodic): one domain holding nearly all of its type's cells is a continuous phase." />
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Cells about one cut-off radius wide where one type outnumbers the other, joined through their faces (periodic): one domain holding nearly all of its type's cells is a continuous phase." />
                 </StackPanel>
               </Border>
               <TextBlock Text="{Binding DpdNote}" Classes="dim" TextWrapping="Wrap" />

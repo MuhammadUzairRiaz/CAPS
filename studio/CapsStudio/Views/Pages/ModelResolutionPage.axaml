@@ -28,11 +28,11 @@
               <StackPanel Spacing="10">
                 <TextBlock Text="THIS DOCUMENT" Classes="h3" />
                 <Border Classes="seg">
-                  <UniformGrid Columns="3">
-                    <RadioButton Classes="seg" GroupName="mres" Content="All-atom" IsChecked="{Binding MrResolution, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
-                    <RadioButton Classes="seg" GroupName="mres" Content="United-atom" IsChecked="{Binding MrResolution, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" />
-                    <RadioButton Classes="seg" GroupName="mres" Content="Coarse-grained" IsChecked="{Binding MrResolution, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
-                  </UniformGrid>
+                  <Grid ColumnDefinitions="4*,5*,6*">
+                    <RadioButton Classes="seg" GroupName="mres" Content="All-atom" Padding="8,0" IsChecked="{Binding MrResolution, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
+                    <RadioButton Grid.Column="1" Classes="seg" GroupName="mres" Content="United-atom" Padding="8,0" IsChecked="{Binding MrResolution, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=1}" />
+                    <RadioButton Grid.Column="2" Classes="seg" GroupName="mres" Content="Coarse-grained" Padding="8,0" IsChecked="{Binding MrResolution, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=2}" />
+                  </Grid>
                 </Border>
                 <TextBlock Classes="dim" TextWrapping="Wrap" Text="All-atom is the default. Changing resolution is a conversion that creates a new document; the original stays." />
               </StackPanel>
@@ -64,17 +64,18 @@
       </DockPanel>
     </Border>
     <Grid Margin="18" RowDefinitions="*,Auto" RowSpacing="14">
-      <Grid v:Panes.Split="True" ColumnDefinitions="*,*,*" ColumnSpacing="12">
+      <!-- the three headers share one row height, so a caption that wraps to two lines keeps the views level -->
+      <Grid v:Panes.Split="True" ColumnDefinitions="*,*,*" ColumnSpacing="12" Grid.IsSharedSizeScope="True">
         <DockPanel>
-          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,0,0,8"><TextBlock Text="All-atom" FontWeight="SemiBold" /><TextBlock Text="{Binding MrAaCaption}" Classes="dim" VerticalAlignment="Center" /></StackPanel>
+          <Grid DockPanel.Dock="Top" Margin="2,0,0,8"><Grid.RowDefinitions><RowDefinition Height="Auto" SharedSizeGroup="MrHead" /></Grid.RowDefinitions><DockPanel VerticalAlignment="Top"><TextBlock DockPanel.Dock="Left" Text="All-atom" FontWeight="SemiBold" VerticalAlignment="Top" Margin="0,0,8,0" /><TextBlock Text="{Binding MrAaCaption}" Classes="dim" VerticalAlignment="Top" Margin="0,1.5,0,0" TextWrapping="Wrap" /></DockPanel></Grid>
           <Border Classes="pcard" ClipToBounds="True"><Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="Aa" /></Panel></Border>
         </DockPanel>
         <DockPanel Grid.Column="1">
-          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,0,0,8"><TextBlock Text="United-atom" FontWeight="SemiBold" /><TextBlock Text="{Binding MrUaCaption}" Classes="dim" VerticalAlignment="Center" /></StackPanel>
+          <Grid DockPanel.Dock="Top" Margin="2,0,0,8"><Grid.RowDefinitions><RowDefinition Height="Auto" SharedSizeGroup="MrHead" /></Grid.RowDefinitions><DockPanel VerticalAlignment="Top"><TextBlock DockPanel.Dock="Left" Text="United-atom" FontWeight="SemiBold" VerticalAlignment="Top" Margin="0,0,8,0" /><TextBlock Text="{Binding MrUaCaption}" Classes="dim" VerticalAlignment="Top" Margin="0,1.5,0,0" TextWrapping="Wrap" /></DockPanel></Grid>
           <Border Classes="pcard" ClipToBounds="True"><Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="Ua" /></Panel></Border>
         </DockPanel>
         <DockPanel Grid.Column="2">
-          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="2,0,0,8"><TextBlock Text="Coarse-grained" FontWeight="SemiBold" /><TextBlock Text="{Binding MrCgCaption}" Classes="dim" VerticalAlignment="Center" /></StackPanel>
+          <Grid DockPanel.Dock="Top" Margin="2,0,0,8"><Grid.RowDefinitions><RowDefinition Height="Auto" SharedSizeGroup="MrHead" /></Grid.RowDefinitions><DockPanel VerticalAlignment="Top"><TextBlock DockPanel.Dock="Left" Text="Coarse-grained" FontWeight="SemiBold" VerticalAlignment="Top" Margin="0,0,8,0" /><TextBlock Text="{Binding MrCgCaption}" Classes="dim" VerticalAlignment="Top" Margin="0,1.5,0,0" TextWrapping="Wrap" /></DockPanel></Grid>
           <Border Classes="pcard" ClipToBounds="True"><Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="Cg" /></Panel></Border>
         </DockPanel>
       </Grid>
@@ -84,17 +85,17 @@
             <Border DockPanel.Dock="Right" Classes="chip ok"><TextBlock Text="mass conserved" /></Border>
             <TextBlock Text="{Binding MrTitle}" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
           </DockPanel>
-          <Grid ColumnDefinitions="170,*,*,*" Height="28">
+          <Grid ColumnDefinitions="130,*,*,*" Height="28">
             <TextBlock Grid.Column="1" Text="ALL-ATOM" Classes="h3" VerticalAlignment="Center" /><TextBlock Grid.Column="2" Text="UNITED-ATOM" Classes="h3" VerticalAlignment="Center" /><TextBlock Grid.Column="3" Text="COARSE-GRAINED" Classes="h3" VerticalAlignment="Center" />
           </Grid>
           <ItemsControl ItemsSource="{Binding MrRows}">
             <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ResolutionRow">
               <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
-                <Grid ColumnDefinitions="170,*,*,*" Height="28">
-                  <TextBlock Text="{Binding Quantity}" FontSize="12.5" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="1" Text="{Binding AllAtom}" Classes="mono" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Grid.Column="2" Text="{Binding UnitedAtom}" Classes="mono" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Grid.Column="3" Text="{Binding Coarse}" Classes="mono" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <Grid ColumnDefinitions="130,*,*,*" MinHeight="28">
+                  <TextBlock Text="{Binding Quantity}" FontSize="12.5" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4,10,4" />
+                  <TextBlock Grid.Column="1" Text="{Binding AllAtom}" Classes="mono" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4,10,4" />
+                  <TextBlock Grid.Column="2" Text="{Binding UnitedAtom}" Classes="mono" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4,10,4" />
+                  <TextBlock Grid.Column="3" Text="{Binding Coarse}" Classes="mono" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,4" />
                 </Grid>
               </Border>
             </DataTemplate></ItemsControl.ItemTemplate>

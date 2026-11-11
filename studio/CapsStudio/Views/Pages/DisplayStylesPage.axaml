@@ -104,16 +104,16 @@
         </StackPanel>
         <Border Classes="pcard" Padding="16,10">
           <StackPanel Spacing="0">
-            <Grid ColumnDefinitions="*,*,*" Height="30">
+            <Grid ColumnDefinitions="112,*,1.5*" ColumnSpacing="8" Height="30" Margin="4,0">
               <TextBlock Text="ATOMS IN VIEW" Classes="h3" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="DEFAULT" Classes="h3" VerticalAlignment="Center" /><TextBlock Grid.Column="2" Text="DETAIL" Classes="h3" VerticalAlignment="Center" />
             </Grid>
             <ItemsControl ItemsSource="{Binding DsAuto}">
               <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:AutoStyleRow">
                 <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Classes.now="{Binding Now}" CornerRadius="4">
-                  <Grid ColumnDefinitions="*,*,*" Height="32" Margin="4,0">
-                    <TextBlock Text="{Binding Atoms}" Classes="mono" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="1" Text="{Binding Default}" FontSize="12.5" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="2" Text="{Binding Detail}" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                  <Grid ColumnDefinitions="112,*,1.5*" ColumnSpacing="8" MinHeight="32" Margin="4,0">
+                    <TextBlock Text="{Binding Atoms}" Classes="mono" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Atoms}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Default}" FontSize="12.5" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    <TextBlock Grid.Column="2" Text="{Binding Detail}" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,6" />
                   </Grid>
                 </Border>
               </DataTemplate></ItemsControl.ItemTemplate>

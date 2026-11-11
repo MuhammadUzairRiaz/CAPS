@@ -200,7 +200,7 @@ public sealed partial class MainViewModel
     {
         foreach (var x in ProjectDocs) x.Selected = x == d;
         ProjectRefs.Clear();
-        if (d?.Manifest == null) { ProjectMethods = ""; ProjectMethodsFor = d == null ? "" : d.Name + " has no provenance (FILE.provenance.json) yet"; return; }
+        if (d?.Manifest == null) { ProjectMethods = ""; ProjectMethodsFor = d == null ? "" : $"{d.Name} has no provenance ({d.Name}.provenance.json) yet"; return; }
         var a = d.Manifest.ToJsonString();
         var replicas = new JsonArray();
         foreach (var o in ProjectDocs.Where(o => o != d && o.Manifest != null))

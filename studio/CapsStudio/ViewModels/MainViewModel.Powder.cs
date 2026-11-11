@@ -14,7 +14,14 @@ public sealed partial class MainViewModel
 {
     public static readonly string[] PowderAnodes = ["Cu Kα", "Mo Kα", "Co Kα", "Fe Kα", "Cr Kα", "Ag Kα"];
     private static readonly string[] PowderAnodeIds = ["Cu", "Mo", "Co", "Fe", "Cr", "Ag"];
-    public static readonly string[] PowderProfiles = ["Pseudo-Voigt from size and instrument (Thompson–Cox–Hastings)", "Gaussian", "Lorentzian"];
+    public static readonly string[] PowderProfiles = ["Pseudo-Voigt (Thompson–Cox–Hastings)", "Gaussian", "Lorentzian"];
+    /// <summary>The full wording of each profile, shown as the dropdown's tooltip (the labels above stay short enough for the card).</summary>
+    private static readonly string[] PowderProfileTips =
+    [
+        "Pseudo-Voigt whose Gaussian and Lorentzian widths come from the crystallite size, the strain and the instrument (Thompson, Cox and Hastings)",
+        "Gaussian peaks from the crystallite size, the strain and the instrument",
+        "Lorentzian peaks from the crystallite size, the strain and the instrument",
+    ];
     private static readonly string[] PowderProfileIds = ["tch", "gaussian", "lorentzian"];
     private bool _powderView, _powderRunning, _powKa2 = true, _powAllFrames;
     private int _powAnode, _powProfile;
@@ -25,7 +32,8 @@ public sealed partial class MainViewModel
     public bool QView { get => !_powderView; set => PowderView = !value; }
     public bool PowderRunning { get => _powderRunning; private set { if (Set(ref _powderRunning, value)) RaiseBusy(); } }
     public int PowAnode { get => _powAnode; set => Set(ref _powAnode, Math.Clamp(value, 0, PowderAnodes.Length - 1)); }
-    public int PowProfile { get => _powProfile; set => Set(ref _powProfile, Math.Clamp(value, 0, PowderProfiles.Length - 1)); }
+    public int PowProfile { get => _powProfile; set { if (Set(ref _powProfile, Math.Clamp(value, 0, PowderProfiles.Length - 1))) Raise(nameof(PowProfileTip)); } }
+    public string PowProfileTip => PowderProfileTips[_powProfile];
     public bool PowKa2 { get => _powKa2; set => Set(ref _powKa2, value); }
     public bool PowAllFrames { get => _powAllFrames; set => Set(ref _powAllFrames, value); }
     public decimal PowFromD { get => (decimal)_powFrom; set => Set(ref _powFrom, Math.Clamp((double)value, 0.5, 170)); }

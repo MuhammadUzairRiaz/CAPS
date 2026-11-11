@@ -8,7 +8,10 @@ namespace CapsStudio.ViewModels;
 public sealed partial class MainViewModel
 {
     public bool IsFreeVolume => _module == 40;
-    public ResultCell FvFfv { get; } = new("Fractional free volume", "Bondi: 1 − 1.3 V_w/V");
+    /// <summary>Plain-text form of the Bondi formula (tooltip, copy); the card shows <see cref="FvFfvTex"/> typeset.</summary>
+    public ResultCell FvFfv { get; } = new("Fractional free volume", "Bondi: FFV = 1 − 1.3 Vw/V, Vw the van der Waals volume of the atoms, V the cell volume");
+    /// <summary>The Bondi fractional free volume, typeset by MathView on the Free volume card.</summary>
+    public const string FvFfvTex = @"\text{Bondi:}\;\mathrm{FFV}=1-1.3\,V_{\mathrm{w}}/V";
     public ResultCell FvAccessible { get; } = new("Accessible to probe", "probe 1.4 Å");
     private decimal _fvProbe = 1.4m, _fvGrid = 0.5m;
     private int _fvCount = 40;

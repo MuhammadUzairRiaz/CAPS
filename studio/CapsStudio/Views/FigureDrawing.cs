@@ -121,11 +121,20 @@ public static class FigureDrawing
             {
                 ("x", cy, sy * sp, -sy * cp, 0xE07A5F), ("y", 0, cp, sp, 0x7DC884), ("z", sy, -cy * sp, cy * cp, 0x5B8DEF),
             };
-            foreach (var a in axes.OrderBy(a => a.Z))
+            var dirs = axes.Select(ax => (ax.X, ax.Y)).ToArray();
+            foreach (var (a, i) in axes.Select((ax, k) => (ax, k)).OrderBy(q => q.ax.Z))
             {
+                var brush = new SolidColorBrush(C(a.Col));
+                var origin = new Point(cx, cyy);
                 var end = new Point(cx + a.X * len, cyy - a.Y * len);
-                ctx.DrawLine(new Pen(new SolidColorBrush(C(a.Col)), 2 * u, lineCap: PenLineCap.Round), new Point(cx, cyy), end);
-                var t = Text(a.Name, Mono, FontWeight.SemiBold, 10 * u, new SolidColorBrush(C(a.Col)));
+                var t = Text(a.Name, Mono, FontWeight.SemiBold, 10 * u, brush);
+                if (TripodView.IsEndOn(a.X, a.Y))
+                {
+                    TripodView.DrawEndOnMarker(ctx, origin, a.Z, brush, 2.5 * u, 1.4 * u);
+                    ctx.DrawText(t, TripodView.EndOnLabelAt(dirs, i, origin, new Size(t.Width, t.Height), 5 * u));
+                    continue;
+                }
+                ctx.DrawLine(new Pen(brush, 2 * u, lineCap: PenLineCap.Round), origin, end);
                 ctx.DrawText(t, new Point(end.X + (a.X >= 0 ? 2 * u : -2 * u - t.Width), end.Y - t.Height / 2 - (a.Y >= 0 ? 3 * u : -3 * u)));
             }
         }
@@ -503,14 +512,62 @@ public sealed class TripodView : Control
         {
             ("x", cy, sy * sp, -sy * cp, "#E07A5F"), ("y", 0, cp, sp, "#7DC884"), ("z", sy, -cy * sp, cy * cp, "#5B8DEF"),
         };
-        foreach (var a in axes.OrderBy(a => a.Z))
+        var dirs = axes.Select(ax => (ax.X, ax.Y)).ToArray();
+        foreach (var (a, i) in axes.Select((ax, k) => (ax, k)).OrderBy(q => q.ax.Z))
         {
             var brush = new SolidColorBrush(Color.Parse(a.Col));
+            var t = new FormattedText(a.N, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface(Tokens.Mono), 10, brush);
+            if (IsEndOn(a.X, a.Y))
+            {
+                // an axis pointing at (or away from) the viewer projects onto the origin: mark it there and put its
+                // label in the quadrant the other two axes leave empty, clear of their lines
+                DrawEndOnMarker(ctx, c, a.Z, brush, 2.5, 1.4);
+                var at = EndOnLabelAt(dirs, i, c, new Size(t.Width, t.Height), 5);
+                ctx.DrawText(t, new Point(Math.Clamp(at.X, 0, Math.Max(0, Bounds.Width - t.Width)), Math.Clamp(at.Y, 0, Math.Max(0, Bounds.Height - t.Height))));
+                continue;
+            }
             var end = new Point(c.X + a.X * len, c.Y - a.Y * len);
             ctx.DrawLine(new Pen(brush, 2, lineCap: PenLineCap.Round), c, end);
-            var t = new FormattedText(a.N, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface(Tokens.Mono), 10, brush);
             ctx.DrawText(t, new Point(end.X + (a.X >= 0 ? 2 : -2 - t.Width), end.Y - t.Height / 2));
         }
+    }
+
+    /// <summary>True when an axis's projection is too short to carry a line and a label (it points at or away from the viewer).</summary>
+    internal static bool IsEndOn(double x, double y) => x * x + y * y < 0.15 * 0.15;
+
+    /// <summary>An end-on axis at the origin: a ring with a dot when it points at the viewer (z &gt; 0, drawn on top),
+    /// a ring with a cross when it points away.</summary>
+    internal static void DrawEndOnMarker(DrawingContext ctx, Point c, double z, IBrush brush, double r, double stroke)
+    {
+        var pen = new Pen(brush, stroke);
+        ctx.DrawEllipse(null, pen, c, r, r);
+        if (z >= 0) ctx.DrawEllipse(brush, null, c, r * 0.4, r * 0.4);
+        else
+        {
+            var k = r * 0.7;
+            ctx.DrawLine(pen, new Point(c.X - k, c.Y - k), new Point(c.X + k, c.Y + k));
+            ctx.DrawLine(pen, new Point(c.X - k, c.Y + k), new Point(c.X + k, c.Y - k));
+        }
+    }
+
+    /// <summary>Top-left corner for the label of end-on axis i: opposite the sum of the other axes' screen directions
+    /// (the empty quadrant), far enough from the origin that the text box clears the marker and the lines.</summary>
+    internal static Point EndOnLabelAt(IReadOnlyList<(double X, double Y)> dirs, int i, Point c, Size text, double gap)
+    {
+        double sx = 0, sy = 0;
+        for (int k = 0; k < dirs.Count; ++k)
+        {
+            if (k == i || IsEndOn(dirs[k].X, dirs[k].Y)) continue;
+            var n = Math.Sqrt(dirs[k].X * dirs[k].X + dirs[k].Y * dirs[k].Y);
+            sx += dirs[k].X / n;
+            sy -= dirs[k].Y / n;   // screen y grows downwards
+        }
+        var len = Math.Sqrt(sx * sx + sy * sy);
+        double dx = len > 1e-6 ? -sx / len : -Math.Sqrt(0.5), dy = len > 1e-6 ? -sy / len : -Math.Sqrt(0.5);
+        // distance from the origin to the text box's edge along (dx, dy), plus the gap
+        var reach = Math.Min(Math.Abs(dx) > 1e-6 ? text.Width / 2 / Math.Abs(dx) : double.MaxValue,
+                             Math.Abs(dy) > 1e-6 ? text.Height / 2 / Math.Abs(dy) : double.MaxValue) + gap;
+        return new Point(c.X + dx * reach - text.Width / 2, c.Y + dy * reach - text.Height / 2);
     }
 }
 

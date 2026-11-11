@@ -153,6 +153,9 @@
     <Setter Property="Foreground" Value="{DynamicResource MutedB}" />
     <Setter Property="FontSize" Value="12" />
     <Setter Property="FontWeight" Value="Normal" />
+    <!-- the global Button rule centres content, but a type selector skips ToggleButton: centre both here -->
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="Button.tool:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.tool:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource Bg2B}" />
@@ -511,6 +514,8 @@
     <Setter Property="Padding" Value="10,0" />
     <Setter Property="FontSize" Value="12" />
     <Setter Property="Margin" Value="0,0,6,6" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="ToggleButton.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource Bg3B}" />
@@ -645,6 +650,12 @@
   </Style>
 
   <!-- scroll bars, tooltips, progress -->
+  <!-- every list row keeps the 3 px accent-bar inset, transparent until selected, so selecting a row never shifts its columns.
+       Set on the item (the presenter template-binds it), so a list that gives its items their own border (tiles, hosts) still wins. -->
+  <Style Selector="ListBoxItem">
+    <Setter Property="BorderThickness" Value="3,0,0,0" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
   <!-- a selected list row: a raised surface with an accent bar, its text as readable as the rest (not ink on accent) -->
   <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected:focus /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource Bg3B}" />

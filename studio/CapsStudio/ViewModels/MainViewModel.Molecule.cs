@@ -49,6 +49,7 @@ public sealed partial class MainViewModel
                 Document = null;
                 Title = "";
                 RaiseProject();
+                RequestProperties();   // the Structure panel no longer shows the structure that waits in the project
             }
         }
         else if (was == 9 && m != 9)

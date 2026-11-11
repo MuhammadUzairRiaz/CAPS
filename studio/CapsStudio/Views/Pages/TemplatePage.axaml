@@ -12,16 +12,18 @@
   <DockPanel>
     <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
       <DockPanel>
-        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-          <ComboBox ItemsSource="{Binding TemplateNames}" SelectedItem="{Binding TemplateName}" Width="220" />
-          <Button Click="OnImport"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Import template" VerticalAlignment="Center" /></StackPanel></Button>
-          <Button Click="OnTest" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Reactive sites and matches within the capture distance on the open structure"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Test on the structure" VerticalAlignment="Center" /></StackPanel></Button>
+        <!-- The title gets whatever the controls leave: the two longest button labels are short (their tooltips say the rest),
+             the picker is a little narrower, and the title and subtitle trim with an ellipsis and a tooltip in a narrow window. -->
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="16,0,0,0">
+          <ComboBox ItemsSource="{Binding TemplateNames}" SelectedItem="{Binding TemplateName}" Width="200" ToolTip.Tip="{Binding TemplateName}" />
+          <Button Click="OnImport" ToolTip.Tip="Import a template from a file"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Import" VerticalAlignment="Center" /></StackPanel></Button>
+          <Button Click="OnTest" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Test on the open structure: reactive sites and matches within the capture distance"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Test" VerticalAlignment="Center" /></StackPanel></Button>
           <Button Content="Use in React" Click="OnUse" />
           <Button Classes="primary" Click="OnSave"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="14" VerticalAlignment="Center" /><TextBlock Text="Save template" VerticalAlignment="Center" /></StackPanel></Button>
         </StackPanel>
-        <StackPanel Spacing="3">
-          <TextBlock Text="{Binding TemplateTitle}" FontSize="19" FontWeight="SemiBold" />
-          <TextBlock Text="Atom-mapped pre/post templates used by CAPS React" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        <StackPanel Spacing="3" VerticalAlignment="Center">
+          <TextBlock Text="{Binding TemplateTitle}" FontSize="19" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding TemplateTitle}" />
+          <TextBlock Text="Atom-mapped pre/post templates used by CAPS React" FontSize="12.5" Foreground="{DynamicResource MutedB}" TextTrimming="CharacterEllipsis" ToolTip.Tip="Atom-mapped pre/post templates used by CAPS React" />
         </StackPanel>
       </DockPanel>
     </Border>

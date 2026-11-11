@@ -64,11 +64,17 @@ public partial class MainViewModel
         }
         return a;
     }
-    public string[] PdMatchNames { get; } = ["draw, then report the sample", "best of 100 draws (closest Đ)"];
+    public string[] PdMatchNames { get; } = ["single draw", "best of 100 draws"];
+    private static readonly string[] PdMatchTips =
+    [
+        "Draw the lengths once, then report the sample as drawn",
+        "Draw 100 samples and keep the one whose Đ is closest to the target",
+    ];
+    public string PdMatchTip => PdMatchTips[_pdMatch];
     private int _pdDist, _pdMatch, _pdSeed = 2026;
     private decimal _pdNn = 40, _pdPdi = 1.10m;
     public int PdDist { get => _pdDist; set { if (Set(ref _pdDist, Math.Clamp(value, 0, 5))) { Raise(nameof(PdShowPdi)); Raise(nameof(PdIsHistogram)); Raise(nameof(PdShowNn)); PdRecompute(); } } }
-    public int PdMatch { get => _pdMatch; set { if (Set(ref _pdMatch, Math.Clamp(value, 0, 1))) PdRecompute(); } }
+    public int PdMatch { get => _pdMatch; set { if (Set(ref _pdMatch, Math.Clamp(value, 0, 1))) { Raise(nameof(PdMatchTip)); PdRecompute(); } } }
     public decimal PdNn { get => _pdNn; set { if (Set(ref _pdNn, Math.Clamp(value, 2, 100000))) PdRecompute(); } }
     public decimal PdPdi { get => _pdPdi; set { if (Set(ref _pdPdi, Math.Clamp(value, 1.001m, 10))) PdRecompute(); } }
     public bool PdShowPdi => _pdDist is 0 or 4;
@@ -122,10 +128,10 @@ public partial class MainViewModel
             _pdSampleNn = D(s, "nn");
             _pdSamplePdi = D(s, "pdi");
             PdRows.Clear();
-            PdRows.Add(new("Nₙ", D(t, "nn").ToString("0.#", Inv), _pdSampleNn.ToString("0.0", Inv)));
-            PdRows.Add(new("Mₙ (g/mol)", Thin(D(t, "mn")), Thin(D(s, "mn"))));
-            PdRows.Add(new("Mw (g/mol)", Thin(D(t, "mw")), Thin(D(s, "mw"))));
-            PdRows.Add(new("Đ = Mw/Mₙ", D(t, "pdi").ToString("0.00", Inv), _pdSamplePdi.ToString("0.000", Inv), true));
+            PdRows.Add(new("N_n", D(t, "nn").ToString("0.#", Inv), _pdSampleNn.ToString("0.0", Inv)));
+            PdRows.Add(new("M_n (g/mol)", Thin(D(t, "mn")), Thin(D(s, "mn"))));
+            PdRows.Add(new("M_w (g/mol)", Thin(D(t, "mw")), Thin(D(s, "mw"))));
+            PdRows.Add(new("Đ = M_w/M_n", D(t, "pdi").ToString("0.00", Inv), _pdSamplePdi.ToString("0.000", Inv), true));
             PdRows.Add(new("Shortest · longest", "—", $"{D(s, "min"):0} · {D(s, "max"):0}"));
             PdTitle = PdDistNames[_pdDist] + " distribution";
             var k = D(r, "k");
@@ -183,7 +189,7 @@ public partial class MainViewModel
     {
         Raise(nameof(GrowPolydisperse)); Raise(nameof(GrowDispersityChip)); Raise(nameof(GrowDispersityText)); Raise(nameof(GrowLengthsText));
     }
-    /// <summary>Called by Grow: the spec with the per-chain lengths (and P_m) when set; null keeps Grow's own path.</summary>
+    /// <summary>Called by Grow: the spec with the per-chain lengths (and Pₘ) when set; null keeps Grow's own path.</summary>
     private string? GrowSpecWithStatistics(string? spec)
     {
         var poly = _growChainDp != null && _growChainDp.Length == _growChains;
@@ -200,7 +206,7 @@ public partial class MainViewModel
         {
             var (kind, pm, a, b) = _growStereo!.Value;
             if (kind == 1) { sj["p_mr"] = a; sj["p_rm"] = b; sj["stereo"] = $"first-order Markov, P(r after m) {a:0.###}, P(m after r) {b:0.###}"; }
-            else { sj["pm"] = pm; sj["stereo"] = $"Bernoulli, P_m {pm:0.###}"; }
+            else { sj["pm"] = pm; sj["stereo"] = $"Bernoulli, Pₘ {pm:0.###}"; }
         }
         return sj.ToJsonString();
     }
@@ -252,6 +258,19 @@ public partial class MainViewModel
     public (double X, double Y)[] CoCurve { get; private set; } = [];
     public double CoF1Model { get; private set; }
     public double? CoAzeotrope { get; private set; }
+    /// <summary>The Mayo-Lewis copolymer equation (terminal model), typeset beside the table; its value is <see cref="CoMayoLewisValue"/>.</summary>
+    public const string CoMayoLewisTex = @"F_1=\frac{r_1f_1^2+f_1f_2}{r_1f_1^2+2f_1f_2+r_2f_2^2}";
+    /// <summary>The azeotropic feed of the terminal model, typeset; its value is <see cref="CoAzeotropeValue"/>.</summary>
+    public const string CoAzeotropeTex = @"\text{azeotrope:}\;f_1=\frac{1-r_2}{2-r_1-r_2}";
+    /// <summary>The three-unit terminal model's propagation rule, typeset when a third monomer is added.</summary>
+    public const string CoThreeUnitTex = @"P(j\,|\,i)\propto\frac{f_j}{r_{ij}}";
+    public string CoMayoLewisValue => double.IsFinite(CoF1Model) ? "= " + CoF1Model.ToString("0.000", Inv) : "";
+    public string CoAzeotropeValue => CoAzeotrope is double z ? "= " + z.ToString("0.000", Inv) : "";
+    /// <summary>The binary terminal model's equations apply (two units, last-unit model; with drift, at the starting feed).</summary>
+    public bool CoShowMayoLewis => !CoHasThird && _coModel == 0;
+    public bool CoShowAzeotrope => CoShowMayoLewis && CoAzeotrope != null;
+    public bool CoShowNoAzeotrope => CoShowMayoLewis && CoAzeotrope == null;
+    public string CoNoAzeotropeText => "No azeotrope: no feed between 0 and 1 gives a copolymer of the same composition.";
     public event Action? CoChanged;
     private CapsDocument? _coDoc;
     public CapsDocument? CoDoc { get => _coDoc; private set => Set(ref _coDoc, value); }
@@ -314,10 +333,10 @@ public partial class MainViewModel
             CoRows.Add(new($"Mean run, {a}", D(r, "run_a").ToString("0.00", Inv), D(ch, "run_a").ToString("0.00", Inv)));
             CoRows.Add(new($"Mean run, {b}", D(r, "run_b").ToString("0.00", Inv), D(ch, "run_b").ToString("0.00", Inv)));
             CoRows.Add(new("Longest run", "—", D(ch, "longest").ToString("0", Inv)));
-            var az = CoAzeotrope is double z
-                ? $"Azeotrope at f₁ = (1 − r₂)/(2 − r₁ − r₂) = {z:0.000}."
-                : "No azeotrope: F₁ ≠ f₁ at every feed (one ratio above 1, the other below).";
-            CoNote = $"Mayo–Lewis: F₁ = (r₁f₁² + f₁f₂) / (r₁f₁² + 2f₁f₂ + r₂f₂²) = {CoF1Model:0.000}. {az} Low-conversion model: composition drift is not included. Mayo & Lewis, J. Am. Chem. Soc. 66, 1594 (1944).";
+            // the equations are typeset on the page (CoMayoLewisTex, CoAzeotropeTex with their values); the note keeps the prose
+            CoNote = "Terminal model (Mayo & Lewis, J. Am. Chem. Soc. 66, 1594 (1944)) at low conversion: composition drift is not included.";
+            Raise(nameof(CoMayoLewisValue)); Raise(nameof(CoAzeotropeValue));
+            Raise(nameof(CoShowMayoLewis)); Raise(nameof(CoShowAzeotrope)); Raise(nameof(CoShowNoAzeotrope));
             CoTitle = $"{CoName} · {_coDp} units";
             CoStatus = $"{_coDp} units · {D(ch, "a"):0} {a} · {D(ch, "b"):0} {b}";
             CoFooter = $"sequence from the terminal model, seed {_coSeed}";
@@ -513,7 +532,7 @@ public partial class MainViewModel
     public event Action? TsChanged;
     /// <summary>Grow's stereo model once applied: kind 0 Bernoulli (pm), 1 Markov (a = P(r after m), b = P(m after r)).</summary>
     private (int Kind, double Pm, double A, double B)? _growStereo;
-    public string GrowStereoText => _growStereo is { } g ? g.Kind == 1 ? $"Markov · P(r|m) {g.A:0.###} · P(m|r) {g.B:0.###}" : $"Bernoulli · P_m {g.Pm:0.###}" : "";
+    public string GrowStereoText => _growStereo is { } g ? g.Kind == 1 ? $"Markov · P(r|m) {g.A:0.###} · P(m|r) {g.B:0.###}" : $"Bernoulli · Pₘ {g.Pm:0.###}" : "";
     public bool GrowHasStereo => _growStereo != null;
 
     public void OpenTacticityStats() { SetModule(62); _ = TsBuild(); }
@@ -571,8 +590,8 @@ public partial class MainViewModel
             TsLabel = pm > 0.9 ? "isotactic" : pm < 0.1 ? "syndiotactic" : "atactic";
             TsStatus = _tsModel == 1
                 ? $"{GrowShortName} · DP {_tsDp} · P(r|m) = {_tsPmr:0.##} · P(m|r) = {_tsPrm:0.##}"
-                : $"{GrowShortName} · DP {_tsDp} · P_m = {_tsPm:0.##}";
-            // the first eight units framed in the view
+                : $"{GrowShortName} · DP {_tsDp} · Pₘ = {_tsPm:0.##}";
+            // the first eight units (the page cuts its own eight-unit document from TsDoc for the close-up)
             var res = doc.AtomResidues();
             TsFirstUnits = Enumerable.Range(0, res.Length).Where(i => res[i] >= 1 && res[i] <= 8).ToArray();
             TsChanged?.Invoke();
@@ -593,7 +612,7 @@ public partial class MainViewModel
         var b = f["bernoulli"];
         var mk = f["markov"];
         var ok = Math.Abs(D(f, "mm_rr") - D(f, "mr2_4")) < 0.1 * Math.Max(1e-6, D(f, "mr2_4"));
-        TsFit = string.Format(Inv, "Bernoulli: P_m = {0:0.000} (rms {1:0.0000}). Markov: P(r|m) = {2:0.000}, P(m|r) = {3:0.000} (rms {4:0.0000}). Test mm·rr = {5:0.0000} vs (mr/2)² = {6:0.0000}: {7}",
+        TsFit = string.Format(Inv, "Bernoulli: Pₘ = {0:0.000} (rms {1:0.0000}). Markov: P(r|m) = {2:0.000}, P(m|r) = {3:0.000} (rms {4:0.0000}). Test mm·rr = {5:0.0000} vs (mr/2)² = {6:0.0000}: {7}",
             D(b, "pm"), D(f, "bernoulli_rms"), D(mk, "p_mr"), D(mk, "p_rm"), D(f, "markov_rms"), D(f, "mm_rr"), D(f, "mr2_4"),
             ok ? "Bernoulli is consistent." : "Bernoulli fails; use the Markov values.");
         if (ok) { _tsModel = 0; _tsPm = (decimal)Math.Round(D(b, "pm"), 3); }

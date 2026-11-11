@@ -29,7 +29,9 @@
               <DataTemplate x:DataType="vm:ManualNavItem">
                 <Panel>
                   <TextBlock Text="{Binding Text}" IsVisible="{Binding IsGroup}" Classes="h3" Margin="12,10,12,4" />
-                  <Button Classes="navitem" Classes.on="{Binding Page.On}" Content="{Binding Text}" IsVisible="{Binding !IsGroup}" Click="OnPage" Tag="{Binding Page}" />
+                  <Button Classes="navitem" Classes.on="{Binding Page.On}" IsVisible="{Binding !IsGroup}" Click="OnPage" Tag="{Binding Page}" ToolTip.Tip="{Binding Text}">
+                    <TextBlock Text="{Binding Text}" TextTrimming="CharacterEllipsis" />
+                  </Button>
                 </Panel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
@@ -43,13 +45,20 @@
         <Border Classes="pcard">
           <StackPanel Spacing="8">
             <TextBlock Text="Implementation" FontSize="13.5" FontWeight="SemiBold" />
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
               <TextBlock Text="Source" FontSize="12" Foreground="{DynamicResource MutedB}" />
               <TextBlock Grid.Column="1" Text="{Binding ManualCurrent.Source}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
-              <TextBlock Grid.Row="1" Text="Tested by" FontSize="12" Foreground="{DynamicResource MutedB}" />
-              <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ManualCurrent.Tested}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
-              <TextBlock Grid.Row="2" Text="Deviation from the paper" FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" MaxWidth="90" />
-              <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ManualDeviation}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextB}" Classes.warnish="{Binding ManualHasDeviation}" />
+              <!-- test names are long dotted identifiers: label above, one test per line across the card's full width -->
+              <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="Tested by" FontSize="12" Foreground="{DynamicResource MutedB}" />
+              <ItemsControl Grid.Row="2" Grid.ColumnSpan="2" ItemsSource="{Binding ManualCurrent.TestedLines}" Margin="0,-4,0,0">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <TextBlock Text="{Binding}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" Margin="0,1" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Grid.Row="3" Text="Deviation from the paper" FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" MaxWidth="90" />
+              <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ManualDeviation}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextB}" Classes.warnish="{Binding ManualHasDeviation}" />
             </Grid>
           </StackPanel>
         </Border>
@@ -103,7 +112,7 @@
           </StackPanel>
         </Border>
         <StackPanel>
-          <Grid ColumnDefinitions="16*,50*,34*" Margin="0,0,0,6">
+          <Grid ColumnDefinitions="16*,50*,34*" ColumnSpacing="8" Margin="0,0,0,6">
             <TextBlock Text="SYMBOL" Classes="h3" /><TextBlock Grid.Column="1" Text="MEANING" Classes="h3" /><TextBlock Grid.Column="2" Text="CAPS SETTING" Classes="h3" />
           </Grid>
           <ItemsControl ItemsSource="{Binding ManualSymbols}">

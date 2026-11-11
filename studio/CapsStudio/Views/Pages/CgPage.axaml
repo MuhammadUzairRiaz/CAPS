@@ -82,7 +82,7 @@
               <Border Classes="section" Padding="16,14">
                 <StackPanel Spacing="6">
                   <TextBlock Text="WHICH MODEL" Classes="h3" />
-                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Kremer–Grest: generic beads on springs — no chemistry, just what every flexible chain does (entanglement, reptation). Use it for polymer physics, or map it to a polymer by σ, T and the bead mass." />
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Kremer–Grest: generic beads on springs with no chemistry, just what every flexible chain does (entanglement, reptation). Use it for polymer physics, or map it to a polymer by σ, T and the bead mass." />
                   <TextBlock Classes="dim" TextWrapping="Wrap" Text="MARTINI: about four heavy atoms per bead, bead types from a published table (polar, apolar, charged …). Use it for mixtures, membranes and interfaces where transferable chemistry matters." />
                   <TextBlock Classes="dim" TextWrapping="Wrap" Text="From a polymer: your polymer's own beads (one per repeat unit, backbone + side group, or n backbone atoms), their bonds and angles taken from an all-atom melt of it. Use it to reach long times and big cells for one specific polymer, and backmap to atoms afterwards." />
                 </StackPanel>
@@ -102,7 +102,7 @@
                     </Grid>
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                       <StackPanel Spacing="6"><TextBlock Text="Density · g/cm³" Classes="label" /><NumericUpDown Value="{Binding MpDensity}" Minimum="0.3" Maximum="3" Increment="0.02" FormatString="0.00" ToolTip.Tip="The melt's real density at that temperature (a handbook value); the reference is compressed to it" /></StackPanel>
-                      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Temperature · K" Classes="label" /><NumericUpDown Value="{Binding MpTemp}" Minimum="50" Maximum="2000" Increment="10" FormatString="0" ToolTip.Tip="k_B T of the Boltzmann inversion (and the repulsion's ε)" /></StackPanel>
+                      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Temperature · K" Classes="label" /><NumericUpDown Value="{Binding MpTemp}" Minimum="50" Maximum="2000" Increment="10" FormatString="0" ToolTip.Tip="Sets kT for the Boltzmann inversion (and the repulsion's ε = kT)" /></StackPanel>
                     </Grid>
                     <Grid ColumnDefinitions="*,90,90" ColumnSpacing="8">
                       <CheckBox Content="Refine the pair by iterative Boltzmann inversion" IsChecked="{Binding MpIbi}"
@@ -110,9 +110,9 @@
                       <NumericUpDown Grid.Column="1" Value="{Binding MpIbiIterations}" Minimum="1" Maximum="50" Increment="1" FormatString="0 'iter.'" IsVisible="{Binding MpIbi}" ShowButtonSpinner="False" />
                       <NumericUpDown Grid.Column="2" Value="{Binding MpIbiPs}" Minimum="1" Maximum="500" Increment="5" FormatString="0 'ps each'" IsVisible="{Binding MpIbi}" ShowButtonSpinner="False" />
                     </Grid>
-                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="CAPS grows the chains, compresses them to the density with its built-in force field, maps them and inverts: bonds and angles r₀ = ⟨r⟩, k = k_B T / (2 var) (Tschöp et al. 1998); a repulsive WCA per bead pair with σ where the non-bonded g(r) reaches 1/e (where −k_B T ln g = k_B T) — or, refined by iterative Boltzmann inversion, a tabulated pair matching the mapped g(r) (Reith et al. 2003). For better statistics, run the all-atom cell first and map its trajectory:" />
+                    <v:MathView Mode="Prose" FontSize="11.5" Foreground="{DynamicResource DimB}" HorizontalAlignment="Left" Tex="CAPS grows the chains, compresses them to the density with its built-in force field, maps them and inverts: bonds and angles r₀ = ⟨r⟩, k = k_B T / (2 var) (Tschöp et al. 1998); a repulsive WCA per bead pair with σ where the non-bonded g(r) reaches 1/e (where −k_B T ln g = k_B T), or, refined by iterative Boltzmann inversion, a tabulated pair matching the mapped g(r) (Reith et al. 2003). For better statistics, run the all-atom cell first and map its trajectory:" />
                     <Button Classes="small" HorizontalAlignment="Left" Content="Map the open all-atom structure (every frame)" Click="OnMapOpen" IsEnabled="{Binding HasDocument}"
-                            ToolTip.Tip="The structure open in the Studio — a grown cell, or its trajectory after Dynamics — mapped with the beads chosen above" />
+                            ToolTip.Tip="The structure open in the Studio (a grown cell, or its trajectory after Dynamics), mapped with the beads chosen above" />
                     <TextBlock Text="{Binding MpLog}" Classes="dim mono" FontSize="11.5" TextWrapping="Wrap" />
                   </StackPanel>
                 </Border>
@@ -160,12 +160,15 @@
                   <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                     <StackPanel Spacing="6"><TextBlock Text="Bending k_θ · ε" Classes="label" /><NumericUpDown Value="{Binding CgKTheta}" Minimum="0" Maximum="50" Increment="0.25" FormatString="0.00" /></StackPanel>
                     <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Units" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.CgUnitModes}" SelectedIndex="{Binding CgUnits}" HorizontalAlignment="Stretch"
-                      ToolTip.Tip="Reduced: LAMMPS units lj. Real: the same model mapped onto a polymer by your σ, temperature (ε = k_B T) and bead mass, written in LAMMPS units real" /></StackPanel>
+                      ToolTip.Tip="Reduced: LAMMPS units lj. Real: the same model mapped onto a polymer by your σ, temperature (ε = kT) and bead mass, written in LAMMPS units real" /></StackPanel>
                   </Grid>
-                  <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" IsVisible="{Binding CgMapped}">
-                    <StackPanel Spacing="6"><TextBlock Text="σ · Å" Classes="label" /><NumericUpDown Value="{Binding CgSigma}" Minimum="0.5" Maximum="50" Increment="0.1" FormatString="0.00" /></StackPanel>
-                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="T · K (ε = k_B T)" Classes="label" /><NumericUpDown Value="{Binding CgTemp}" Minimum="1" Maximum="5000" Increment="1" FormatString="0.#" /></StackPanel>
-                    <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Bead mass · g/mol" Classes="label" /><NumericUpDown Value="{Binding CgMass}" Minimum="1" Maximum="100000" Increment="1" FormatString="0.##" /></StackPanel>
+                  <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="6" IsVisible="{Binding CgMapped}">
+                    <TextBlock Text="σ · Å" Classes="label" VerticalAlignment="Bottom" />
+                    <v:MathView Grid.Column="1" Tex="T · K (ε = k_B T)" Mode="Prose" FontSize="11.5" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" VerticalAlignment="Bottom" />
+                    <TextBlock Grid.Column="2" Text="Bead mass · g/mol" Classes="label" VerticalAlignment="Bottom" />
+                    <NumericUpDown Grid.Row="1" Value="{Binding CgSigma}" Minimum="0.5" Maximum="50" Increment="0.1" FormatString="0.00" />
+                    <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding CgTemp}" Minimum="1" Maximum="5000" Increment="1" FormatString="0.#" />
+                    <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding CgMass}" Minimum="1" Maximum="100000" Increment="1" FormatString="0.##" />
                   </Grid>
                   <TextBlock Text="{Binding CgMapText}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding CgMapped}" />
                   <Border Padding="10,8" CornerRadius="6" Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1">

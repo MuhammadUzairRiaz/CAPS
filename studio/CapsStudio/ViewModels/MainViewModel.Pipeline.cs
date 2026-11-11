@@ -121,10 +121,21 @@ public sealed partial class MainViewModel
     // ---------------------------------------------------------------- the force field in Grow and Pack
     private bool _growAssignFf = true, _pipeAutoFf;
     /// <summary>Assign Grow's own force field choice as soon as growing finishes (Pack has its own).</summary>
-    public bool GrowAssignField { get => _growAssignFf; set => Set(ref _growAssignFf, value); }
-    public string GrowFieldLine => !Field.Assigned ? (_growAssignFf ? "Assigned when growing finishes" : "Not assigned: choose one in the Force field step")
+    public bool GrowAssignField { get => _growAssignFf; set { if (Set(ref _growAssignFf, value)) RaiseGrowField(); } }
+    public string GrowFieldLine => !Field.Assigned ? (_growAssignFf ? GrowPlannedFieldText : "Not assigned: choose one in the Force field step")
         : Field.Complete ? $"{Field.ForceFieldName}: every atom typed, every term found"
         : $"{Field.ForceFieldName}: {Field.UntypedText}, {Field.MissingText}";
+    /// <summary>What the toggle will do: the chosen force field and charge model, named (the toggle itself says when).</summary>
+    private string GrowPlannedFieldText
+    {
+        get
+        {
+            var i = GrowFfIndex;
+            if (i < 0 || i >= Field.Library.Count) return "Choose a force field above to assign to the grown cell";
+            var q = _growCharges >= 0 && _growCharges < FieldViewModel.ChargeModes.Length ? FieldViewModel.ChargeModes[_growCharges] : FieldViewModel.ChargeModes[0];
+            return $"{Field.Library[i].Name} goes on the grown cell. Charges: {q}";
+        }
+    }
     public bool GrowFieldOk => Field.Assigned && Field.Complete;
     public bool GrowFieldWarn => Field.Assigned && !Field.Complete;
 

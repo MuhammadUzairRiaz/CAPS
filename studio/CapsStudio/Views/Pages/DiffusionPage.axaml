@@ -68,10 +68,14 @@
                 <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Viscosity η · mPa·s" Classes="label" /><NumericUpDown Value="{Binding DfEta}" Minimum="0.001" Maximum="1000000" Increment="0.1" FormatString="0.###" /></StackPanel>
                 <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="T · K" Classes="label" /><NumericUpDown Value="{Binding DfT}" Minimum="1" Maximum="5000" Increment="10" FormatString="0" /></StackPanel>
               </Grid>
-              <TextBlock Text="D∞ = D_PBC + k_B T ξ / (6π η L) · ξ = 2.837297" Classes="mono" FontSize="12" />
+              <v:MathView Tex="D_{\infty}=D_{\mathrm{PBC}}+\frac{k_{B}T\,\xi}{6\pi\eta L},\qquad \xi=2.837297" FontSize="14" HorizontalAlignment="Left"
+                          ToolTip.Tip="Yeh–Hummer correction for a cubic periodic box; ξ is the cubic-lattice constant" />
               <DockPanel>
                 <TextBlock DockPanel.Dock="Right" Text="{Binding DfCorrectionText}" Classes="mono" FontSize="13" />
-                <TextBlock Text="Correction k_B T ξ / 6πηL" Classes="muted" FontSize="12" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <TextBlock Text="Correction" Classes="muted" FontSize="12" VerticalAlignment="Center" />
+                  <v:MathView Tex="k_{B}T\,\xi/(6\pi\eta L)" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                </StackPanel>
               </DockPanel>
               <TextBlock Classes="dim" TextWrapping="Wrap" Text="L defaults to the edge of a cube with the cell's volume. η is the solvent's or melt's shear viscosity at T: a measured value, or Analyze › Dynamics › Viscosity (Green–Kubo), which fills it in here when it runs." />
               <TextBlock Text="Yeh &amp; Hummer, J. Phys. Chem. B 108, 15873 (2004)." FontSize="11.5" Foreground="{DynamicResource MutedB}" FontStyle="Italic" />

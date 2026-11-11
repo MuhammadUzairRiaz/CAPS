@@ -11,7 +11,7 @@
     <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-          <v:SeedPicker DataContext="{Binding SorbSeed}" ShowLabel="False" VerticalAlignment="Center" Margin="0,0,10,0" />
+          <v:SeedPicker DataContext="{Binding SorbSeed}" ShowLabel="False" InlineLabel="True" VerticalAlignment="Center" Margin="0,0,10,0" />
           <Button Content="Cancel" Click="OnCancel" IsVisible="{Binding SorbRunning}" />
           <Button Classes="primary" Click="OnRun" IsEnabled="{Binding Idle}">
             <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Compute" VerticalAlignment="Center" /></StackPanel>
@@ -47,24 +47,25 @@
                 <TextBlock Grid.Column="1" Text="trials" Classes="label" VerticalAlignment="Center" IsVisible="{Binding SorbFlex}" />
                 <NumericUpDown Grid.Column="2" Value="{Binding SorbTrialsD}" Minimum="1" Maximum="64" Increment="2" FormatString="0" IsVisible="{Binding SorbFlex}" />
               </Grid>
-              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Typed with the structure's force field (the Field assignment, else the built-in one); rigid unless it bends. The structure is the host: a polymer or rubber cell, a filler, a porous crystal — held fixed." />
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Typed with the structure's force field (the Field assignment, else the built-in one); rigid unless it bends. The structure is the host: a polymer or rubber cell, a filler or a porous crystal, held fixed." />
             </StackPanel>
           </Border>
           <Border Classes="pcard">
             <StackPanel Spacing="8">
               <TextBlock Text="Conditions" FontSize="13.5" FontWeight="SemiBold" />
-              <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
                 <TextBlock Text="T (K)" Classes="label" /><TextBlock Grid.Column="1" Text="Widom insertions" Classes="label" />
                 <NumericUpDown Grid.Row="1" Value="{Binding SorbTD}" Minimum="1" Increment="10" FormatString="0" />
                 <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding SorbInsertD}" Minimum="0" Increment="50000" FormatString="0" />
-                <TextBlock Grid.Row="2" Text="GCMC pressures (kPa)" Classes="label" /><TextBlock Grid.Row="2" Grid.Column="1" Text="Steps per pressure" Classes="label" />
-                <TextBox Grid.Row="3" Text="{Binding SorbPressures}" Classes="mono" Watermark="blank: Widom only"
+                <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="GCMC pressures (kPa)" Classes="label" Margin="0,4,0,0" />
+                <TextBox Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding SorbPressures}" Classes="mono" Watermark="blank: Widom only" TextWrapping="Wrap"
                          ToolTip.Tip="kPa: a list (10, 50, 100) or a log sweep: 0.1..1000 x8 gives 8 pressures evenly spaced in log p" />
-                <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding SorbStepsD}" Minimum="1000" Increment="100000" FormatString="0" />
+                <TextBlock Grid.Row="4" Text="Steps per pressure" Classes="label" Margin="0,4,0,0" />
+                <NumericUpDown Grid.Row="5" Value="{Binding SorbStepsD}" Minimum="1000" Increment="100000" FormatString="0" />
               </Grid>
               <CheckBox Content="Density map of the sorbate (where it sits in the host)" IsChecked="{Binding SorbMapOn}"
                         ToolTip.Tip="The sorbed molecules' centres over each pressure's production steps, on a 24 × 24 × 24 grid of the cell" />
-              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Widom: random places and orientations of one molecule, ⟨e^(−βΔU)⟩ (Widom 1963). GCMC: insertions, deletions, moves and rotations at an ideal-gas reservoir's pressure (Frenkel &amp; Smit 2002); the first quarter of each run equilibrates." />
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Widom: random places and orientations of one molecule, averaging the Boltzmann factor of each insertion's energy (Widom 1963). GCMC: insertions, deletions, moves and rotations at an ideal-gas reservoir's pressure (Frenkel &amp; Smit 2002); the first quarter of each run equilibrates." />
             </StackPanel>
           </Border>
           <Border Classes="pcard">
@@ -93,7 +94,8 @@
                 <TextBlock Text="Solubility coefficient S" Classes="label" /><TextBlock Grid.Column="1" Text="{Binding SorbS}" Classes="mono" />
                 <TextBlock Grid.Row="1" Text="Henry constant" Classes="label" /><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SorbHenry}" Classes="mono" />
                 <TextBlock Grid.Row="2" Text="Excess chemical potential" Classes="label" /><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SorbMu}" Classes="mono" />
-                <TextBlock Grid.Row="3" Text="⟨e^(−βΔU)⟩" Classes="label" /><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SorbW}" Classes="mono" />
+                <v:MathView Grid.Row="3" Tex="\langle e^{-\beta\Delta U}\rangle" FontSize="12" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" VerticalAlignment="Center"
+                            ToolTip.Tip="Widom average: the Boltzmann factor of the test molecule's insertion energy, averaged over all insertions" /><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SorbW}" Classes="mono" />
               </Grid>
               <TextBlock Text="{Binding SorbIg}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding SorbHasIg}"
                          ToolTip.Tip="A bending molecule's insertions are weighed against the same growth with nothing around it: μ_ex = −kT ln(⟨W⟩ / ⟨W⟩ alone)" />
@@ -104,8 +106,8 @@
               <TextBlock Text="Isotherm (GCMC)" FontSize="13.5" FontWeight="SemiBold" />
               <v:SciPlot x:Name="Iso" Height="240" />
               <Grid ColumnDefinitions="*,*,*,*,*">
-                <TextBlock Text="P (KPA)" Classes="h3" /><TextBlock Grid.Column="1" Text="PER CELL" Classes="h3" /><TextBlock Grid.Column="2" Text="MOL/KG" Classes="h3" />
-                <TextBlock Grid.Column="3" Text="CM³(STP)/CM³" Classes="h3" /><TextBlock Grid.Column="4" Text="Q_ST (KCAL/MOL)" Classes="h3" />
+                <TextBlock Text="P (kPa)" Classes="h3" /><TextBlock Grid.Column="1" Text="PER CELL" Classes="h3" /><TextBlock Grid.Column="2" Text="mol/kg" Classes="h3" />
+                <TextBlock Grid.Column="3" Text="cm³(STP)/cm³" Classes="h3" /><TextBlock Grid.Column="4" Text="Qₛₜ (kcal/mol)" Classes="h3" />
               </Grid>
               <ItemsControl ItemsSource="{Binding SorbRows}">
                 <ItemsControl.ItemTemplate>
@@ -125,8 +127,8 @@
             <StackPanel Spacing="8">
               <TextBlock Text="{Binding SorbSpeciesTitle}" FontSize="13.5" FontWeight="SemiBold" />
               <Grid ColumnDefinitions="1.6*,*,*,1.3*,*,*">
-                <TextBlock Text="GAS" Classes="h3" /><TextBlock Grid.Column="1" Text="Y" Classes="h3" /><TextBlock Grid.Column="2" Text="S (WIDOM)" Classes="h3" />
-                <TextBlock Grid.Column="3" Text="PER CELL" Classes="h3" /><TextBlock Grid.Column="4" Text="SELECTIVITY" Classes="h3" /><TextBlock Grid.Column="5" Text="Q_ST" Classes="h3" />
+                <TextBlock Text="GAS" Classes="h3" /><TextBlock Grid.Column="1" Text="y" Classes="h3" /><TextBlock Grid.Column="2" Text="S (WIDOM)" Classes="h3" />
+                <TextBlock Grid.Column="3" Text="PER CELL" Classes="h3" /><TextBlock Grid.Column="4" Text="SELECTIVITY" Classes="h3" /><TextBlock Grid.Column="5" Text="Qₛₜ" Classes="h3" ToolTip.Tip="Isosteric heat per gas, kcal/mol" />
               </Grid>
               <ItemsControl ItemsSource="{Binding SorbSpeciesRows}">
                 <ItemsControl.ItemTemplate>
@@ -139,7 +141,7 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Selectivity (x_i/x_1)/(y_i/y_1): the adsorbed phase's share against the gas's. S from Widom is each gas alone at infinite dilution; the loadings are the competition at that pressure. Q_st per gas from the multicomponent fluctuations (kcal/mol). The isotherm plot draws the gases' mol/kg." />
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Selectivity (xᵢ/x₁)/(yᵢ/y₁): the adsorbed phase's share against the gas's. S from Widom is each gas alone at infinite dilution; the loadings are the competition at that pressure. Qₛₜ per gas from the multicomponent fluctuations (kcal/mol). The isotherm plot draws the gases' mol/kg." />
             </StackPanel>
           </Border>
           <Border Classes="pcard" IsVisible="{Binding SorbHasHeld}">

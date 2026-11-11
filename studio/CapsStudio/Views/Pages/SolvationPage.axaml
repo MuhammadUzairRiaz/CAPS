@@ -33,10 +33,12 @@
 
     <Grid v:Panes.Split="True" ColumnDefinitions="*,420">
       <DockPanel>
-        <Border DockPanel.Dock="Bottom" Height="28" Padding="14,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+        <!-- The box summary is docked first so it is measured first and keeps its full width; the fixed Packing note takes
+             what is left and trims, with the full text on hover. -->
+        <Border DockPanel.Dock="Bottom" MinHeight="28" Padding="14,4" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
           <DockPanel>
-            <TextBlock DockPanel.Dock="Right" Text="Packing: CAPS Pack (insertion → L-BFGS → verification)" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding SolvBoxText}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />
+            <TextBlock DockPanel.Dock="Left" Text="{Binding SolvBoxText}" ToolTip.Tip="{Binding SolvBoxText}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,12,0" />
+            <TextBlock Text="Packing: CAPS Pack (insertion → L-BFGS → verification)" ToolTip.Tip="Packing: CAPS Pack (insertion → L-BFGS → verification)" FontSize="11.5" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis" />
           </DockPanel>
         </Border>
         <Panel>
@@ -62,13 +64,12 @@
             </DockPanel>
           </Border>
           <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
-            <WrapPanel HorizontalAlignment="Right" ItemSpacing="8" LineSpacing="8">
-              <v:SeedPicker DataContext="{Binding SolvSeed}" ShowLabel="False" VerticalAlignment="Center" Margin="0,0,10,0" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
               <Button Content="Cancel" Click="OnCancel" />
               <Button Classes="primary" Click="OnSolvate" IsEnabled="{Binding SolvIdle}">
                 <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="flask" Size="15" VerticalAlignment="Center" /><TextBlock Text="Solvate" VerticalAlignment="Center" /></StackPanel>
               </Button>
-            </WrapPanel>
+            </StackPanel>
           </Border>
           <ScrollViewer>
             <StackPanel>
@@ -135,6 +136,14 @@
                     <TextBlock DockPanel.Dock="Right" Text="{Binding SolvCounts}" Classes="mono" FontSize="12" />
                     <TextBlock Text="Counts (from free volume)" Foreground="{DynamicResource MutedB}" FontSize="12.5" />
                   </DockPanel>
+                </StackPanel>
+              </Border>
+
+              <!-- run -->
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="RUN" Classes="h3" />
+                  <v:SeedPicker DataContext="{Binding SolvSeed}" ToolTip.Tip="Where solvent molecules and ions are inserted: a fixed seed packs the same box every time" />
                 </StackPanel>
               </Border>
 

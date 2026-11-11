@@ -132,7 +132,7 @@ public static class PageFigures
     // ------------------------------------------------------------------ Pack
     public static SciFigure PackPenalty(IReadOnlyList<(double X, double Y)> c) => new()
     {
-        XLabel = "packing round", YLabel = "overlap penalty / arb. units", YLog = true, XMin = 0, XWhole = true, Empty = "",
+        XLabel = "packing round", YLabel = "overlap penalty / arb. units", YLog = true, XMin = 0, XWhole = true, Empty = "no packing run yet: press Pack to see the overlap penalty fall",
         Series = c.Count > 1 ? [S("", c.Where(p => p.Y > 0).ToArray(), Auto(c.Count)) with { Legend = false }] : [],
     };
 
@@ -305,11 +305,11 @@ public static class PageFigures
     };
     public static SciFigure SasaSeries((double X, double Y)[] p) => new()
     {
-        XLabel = "frame", YLabel = "SASA / Å²", Empty = "", Series = p.Length > 1 ? [S("", p, Auto(p.Length)) with { Legend = false }] : [],
+        XLabel = "frame", YLabel = "SASA / Å²", Empty = "press Run to compute the SASA over the frames", Series = p.Length > 1 ? [S("", p, Auto(p.Length)) with { Legend = false }] : [],
     };
     public static SciFigure SasaConvergence((double X, double Y)[] p) => new()
     {
-        XLabel = "points per atom", YLabel = "SASA / Å²", Empty = "", Series = p.Length > 1 ? [S("", p, SciKind.LineMarkers) with { Legend = false }] : [],
+        XLabel = "points per atom", YLabel = "SASA / Å²", Empty = "press Run to see the SASA converge with the point count", Series = p.Length > 1 ? [S("", p, SciKind.LineMarkers) with { Legend = false }] : [],
     };
     public static SciFigure RecipeTemperature((double X, double Y)[] p) => new()
     {
@@ -323,7 +323,7 @@ public static class PageFigures
     };
     public static SciFigure Torsion((double X, double Y)[] p) => new()
     {
-        XLabel = "dihedral *φ* / deg", YLabel = Energy, Empty = "",
+        XLabel = "dihedral *φ* / deg", YLabel = Energy, Empty = "press Run scan to see the energy profile",
         Series = p.Length > 1 ? [S("", p, SciKind.LineMarkers) with { Legend = false }] : [],
     };
 
@@ -363,7 +363,9 @@ public static class PageFigures
     /// <summary>A quantity of the trajectory against time, the current frame's time marked.</summary>
     public static SciFigure TrajectorySeries(string series, (double X, double Y)[] pts, double? cursor, int k) => new()
     {
-        XLabel = Time, YLabel = series.Length > 0 ? Title(series) : "value", Empty = "",
+        XLabel = Time, YLabel = series.Length > 0 ? Title(series) : "value",
+        // a 1-frame file gives one point: no curve to draw, so the plot says why instead of staying blank
+        Empty = series.Length == 0 ? "pick a quantity to plot" : pts.Length == 0 ? "no values for this quantity" : "one frame only: a plot needs two or more",
         Series = pts.Length > 1 ? [S("", pts, Auto(pts.Length), TrajColours[k % TrajColours.Length]) with { Legend = false }] : [],
         Marks = cursor is double c && pts.Length > 1 ? [new SciMark(c, "")] : [],
     };
@@ -477,13 +479,23 @@ public static class PageFigures
     };
 
     // ------------------------------------------------------------------ polymer-statistics pages
-    public static SciFigure Electrostatics((double X, double Y)[] curve, double rc, double tol, bool pme) => new()
+    /// <summary>erfc(βr) on a log axis, so the tolerance it reaches at the cut-off (1e-3 … 1e-8) is visible: the
+    /// tolerance as a dashed guide named in the legend, the cut-off as a mark, and their crossing as a point. β comes from
+    /// the tolerance under both methods (PME and damped shifted force), so the guide is drawn for both.</summary>
+    public static SciFigure Electrostatics((double X, double Y)[] curve, double rc, double tol, bool pme)
     {
-        XLabel = "*r* / Å", YLabel = "erfc(*βr*)", YMin = 0, Empty = "",
-        Series = curve.Length > 1 ? [S("", curve) with { Legend = false }] : [],
-        Marks = [new SciMark(rc, "*r*_{c}")],
-        Points = pme ? [new SciPoint(rc, tol, "", 5)] : [],
-    };
+        var tolOk = double.IsFinite(tol) && tol > 0;
+        var pts = curve.Where(p => p.Y > 0 && double.IsFinite(p.Y)).ToArray();
+        return new()
+        {
+            XLabel = "*r* / Å", YLabel = "erfc(*βr*)", YLog = true, YMax = 1, YMin = tolOk ? tol / 100 : null,
+            Empty = "set a cut-off and a tolerance to see the real-space term",
+            Series = pts.Length > 1 ? [S("", pts) with { Legend = false }] : [],
+            Marks = [new SciMark(rc, "*r*_{c}")],
+            Guides = tolOk ? [new SciGuide(tol, $"tolerance 10^{{{F(Math.Round(Math.Log10(tol)), "0").Replace("-", "−")}}}")] : [],
+            Points = tolOk ? [new SciPoint(rc, tol, "", 5)] : [],
+        };
+    }
     public static SciFigure BlendPhase((double X, double Y)[] binodal, (double X, double Y)[] spinodal, (double X, double Y)? critical, double tNow) => new()
     {
         XLabel = "*φ*_{A} (volume fraction of polymer A)", YLabel = Temperature, XMin = 0, XMax = 1, Empty = "",

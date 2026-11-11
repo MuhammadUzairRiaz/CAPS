@@ -9,11 +9,14 @@ using CapsStudio.Interop;
 
 namespace CapsStudio.ViewModels;
 
-public sealed record RecipeItem(string Name, string Detail, string? Path, string Text)
+/// <summary>A recipe in the list. Renamed: a copy made before Duplicate renamed its copies, whose `name:` still said the
+/// original; Text carries the name set to the file's stem, and the file is left as it is until it is saved.</summary>
+public sealed record RecipeItem(string Name, string Detail, string? Path, string Text, bool Renamed = false)
 {
     public bool IsTemplate => Path == null;
 }
-public sealed record RecipeStageChip(string Name, string Summary, bool Ok);
+/// <summary>A step of the pipeline: Name is the label shown (MD, Equilibrate), Key the YAML key it stands for (md, equilibrate).</summary>
+public sealed record RecipeStageChip(string Name, string Summary, bool Ok, string Key);
 public sealed record ScheduleRow(string Number, string Ensemble, string T, string P, string Ps);
 /// <summary>One setting of a recipe step in the per-step form: its dotted key (polymer.dp) and value as YAML writes it.</summary>
 public sealed class RecipeField : ObservableObject
@@ -42,8 +45,16 @@ public partial class MainViewModel
     public RecipeItem? SelectedRecipe
     {
         get => _recipe;
-        set { if (Set(ref _recipe, value) && value != null) { _recipeText = value.Text; Raise(nameof(RecipeText)); _recipeDirty = false; CheckRecipeText(); } }
+        set
+        {
+            if (!Set(ref _recipe, value)) return;
+            Raise(nameof(RecipeTitle));
+            if (value != null) { _recipeText = value.Text; Raise(nameof(RecipeText)); _recipeDirty = value.Renamed; CheckRecipeText(); }
+        }
     }
+    /// <summary>The page header: the file being edited (its stem, as the list shows it), so a copy reads as the copy even
+    /// when its `name:` field still says the original; a template shows its list name.</summary>
+    public string RecipeTitle => _recipe?.Path is { } p ? Path.GetFileNameWithoutExtension(p) : _recipe?.Name ?? RecipeName;
     public string RecipeText { get => _recipeText; set { if (Set(ref _recipeText, value ?? "")) { _recipeDirty = true; CheckRecipeText(); } } }
     public string RecipeName { get => _recipeName; private set => Set(ref _recipeName, value); }
     public string RecipeValid { get => _recipeValid; private set => Set(ref _recipeValid, value); }
@@ -51,7 +62,9 @@ public partial class MainViewModel
     public string RecipeSha { get => _recipeSha; private set => Set(ref _recipeSha, value); }
     public string RecipeProtocol { get => _recipeProtocol; private set { Set(ref _recipeProtocol, value); Raise(nameof(RecipeHasSchedule)); } }
     public bool RecipeHasSchedule => _recipeProtocol.Length > 0;
-    public string RecipePathText => _recipe?.Path is { } p ? RecentFiles.Tilde(p) + (_recipeDirty ? " · edited" : "") : "template · Duplicate to keep your own";
+    public string RecipePathText => _recipe?.Path is { } p
+        ? RecentFiles.Tilde(p) + (!_recipeDirty ? "" : _recipe.Renamed && _recipeText == _recipe.Text ? " · name set to match the file, Save to keep it" : " · edited")
+        : "template · Duplicate to keep your own";
     public (double X, double Y)[] RecipeT { get; private set; } = [];
     public (double X, double Y)[] RecipeP { get; private set; } = [];
     public event Action? RecipeChanged;
@@ -83,7 +96,11 @@ public partial class MainViewModel
                 foreach (var f in Directory.GetFiles(RecipesFolder, "*.y*ml").OrderBy(f => f))
                 {
                     var text = File.ReadAllText(f);
-                    Recipes.Add(new RecipeItem(Path.GetFileNameWithoutExtension(f), StepsText(text) + " · yours", f, text));
+                    var stem = Path.GetFileNameWithoutExtension(f);
+                    // a copy written by the old Duplicate kept the original's name: line; show it named after its file
+                    var renamed = IsStaleCopy(stem, text);
+                    if (renamed) text = RenameRecipeText(text, stem);
+                    Recipes.Add(new RecipeItem(stem, StepsText(text) + " · yours", f, text, renamed));
                 }
         }
         catch { /* an unreadable folder: templates only */ }
@@ -112,9 +129,13 @@ public partial class MainViewModel
         RecipeOk = r["ok"]?.GetValue<bool>() == true;
         RecipeValid = RecipeOk ? "Pipeline valid" : (string?)r["error"] ?? "invalid";
         RecipeName = (string?)r["name"] ?? "recipe";
+        Raise(nameof(RecipeTitle));
         RecipeSha = (string?)r["sha256"] ?? "";
         foreach (var st in (JsonArray)r["stages"]!)
-            RecipeStages.Add(new RecipeStageChip(Cap((string)st!["name"]!), (string?)st["summary"] ?? "", st["ok"]?.GetValue<bool>() == true));
+        {
+            var key = (string)st!["name"]!;
+            RecipeStages.Add(new RecipeStageChip(StepLabel(key), (string?)st["summary"] ?? "", st["ok"]?.GetValue<bool>() == true, key));
+        }
         RecipeProtocol = (string?)r["protocol"] ?? "";
         // the schedule: T (and P for NPT steps) against time, and the table
         var t = new System.Collections.Generic.List<(double, double)>();
@@ -145,11 +166,14 @@ public partial class MainViewModel
 
     private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
+    /// <summary>The label of a recipe step: acronyms in capitals (md is MD), every other key with its first letter capitalised.</summary>
+    private static string StepLabel(string key) => key switch { "md" => "MD", "dft" => "DFT", "cbmc" => "CBMC", _ => Cap(key) };
+
     // ---- the per-step form (design/boards/RecipeEditor "Step 3 · Equilibrate"): a step's settings as fields; an edit
     // rewrites only that step's block of the YAML (the rest of the text, comments included, stays as written)
     public ObservableCollection<RecipeField> RecipeFields { get; } = new();
     private string _recipeStep = "";
-    public string RecipeStepTitle => _recipeStep.Length == 0 ? "" : $"Step · {Cap(_recipeStep)}";
+    public string RecipeStepTitle => _recipeStep.Length == 0 ? "" : $"Step · {StepLabel(_recipeStep)}";
     public bool HasRecipeStep => _recipeStep.Length > 0 && RecipeFields.Count > 0;
 
     public void SelectRecipeStep(string name)
@@ -159,7 +183,8 @@ public partial class MainViewModel
         try
         {
             var j = JsonNode.Parse(CapsDocument.YamlToJson(_recipeText)) as JsonObject;
-            var key = name.ToLowerInvariant();
+            // a chip passes its label (MD); the text passes the YAML key (md)
+            var key = RecipeStages.FirstOrDefault(c => c.Name == name || c.Key == name)?.Key ?? name.ToLowerInvariant();
             if (j?[key] is JsonNode node)
             {
                 _recipeStep = key;
@@ -196,7 +221,7 @@ public partial class MainViewModel
             if (check == null) throw new InvalidOperationException("the edit does not read back");
             f.Original = f.Value;
             RecipeText = text;
-            Status = $"{Cap(_recipeStep)} · {f.Key} = {f.Value}";
+            Status = $"{StepLabel(_recipeStep)} · {f.Key} = {f.Value}";
             return true;
         }
         catch (Exception e) { Status = $"Could not set {f.Key}: {e.Message}"; f.Value = f.Original; return false; }
@@ -271,16 +296,50 @@ public partial class MainViewModel
         {
             Directory.CreateDirectory(RecipesFolder);
             var path = UniquePath(RecipeName + "_copy");
-            File.WriteAllText(path, _recipeText);
+            // the copy is named after its file, so its runs and the header say the copy, not the original
+            File.WriteAllText(path, RenameRecipeText(_recipeText, Path.GetFileNameWithoutExtension(path)));
             LoadRecipes(path);
             Status = $"Duplicated as {Path.GetFileName(path)}";
         }
         catch (Exception e) { Status = "Could not duplicate: " + e.Message; }
     }
 
+    /// <summary>The recipe text with its top-level `name:` line set to name (comments and every other line kept as written);
+    /// a recipe without one gets it after its `recipe:` line, or at the top.</summary>
+    internal static string RenameRecipeText(string text, string name)
+    {
+        var lines = text.Replace("\r\n", "\n").Split('\n').ToList();
+        var line = "name: " + YamlFlow(JsonValue.Create(name));
+        var at = lines.FindIndex(l => l.StartsWith("name:", StringComparison.Ordinal));
+        if (at >= 0) lines[at] = line;
+        else
+        {
+            var r = lines.FindIndex(l => l.StartsWith("recipe:", StringComparison.Ordinal));
+            lines.Insert(r >= 0 ? r + 1 : 0, line);
+        }
+        return string.Join("\n", lines);
+    }
+
+    /// <summary>True for a file named like a copy (base_copy, base_copy_2) whose top-level `name:` is still base: what
+    /// Duplicate wrote before it renamed the copy. Any other mismatch is the user's own choice and is kept.</summary>
+    internal static bool IsStaleCopy(string stem, string text)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(stem, @"^(?<base>.+)_copy(_\d+)?$");
+        if (!m.Success) return false;
+        var line = text.Replace("\r\n", "\n").Split('\n').FirstOrDefault(l => l.StartsWith("name:", StringComparison.Ordinal));
+        if (line == null) return false;
+        var v = line[5..];
+        var hash = v.IndexOf(" #", StringComparison.Ordinal);
+        if (hash >= 0) v = v[..hash];
+        v = v.Trim().Trim('"', '\'');
+        return v.Length > 0 && v != stem && SafeStem(v) == m.Groups["base"].Value;
+    }
+
+    private static string SafeStem(string name) => string.Concat(name.Select(c => char.IsLetterOrDigit(c) || c is '_' or '-' ? c : '_'));
+
     private static string UniquePath(string name)
     {
-        var stem = string.Concat(name.Select(c => char.IsLetterOrDigit(c) || c is '_' or '-' ? c : '_'));
+        var stem = SafeStem(name);
         var path = Path.Combine(RecipesFolder, stem + ".yaml");
         for (var k = 2; File.Exists(path); ++k) path = Path.Combine(RecipesFolder, $"{stem}_{k}.yaml");
         return path;

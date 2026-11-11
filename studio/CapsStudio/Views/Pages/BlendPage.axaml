@@ -54,7 +54,7 @@
           </Border>
           <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
             <WrapPanel HorizontalAlignment="Right" ItemSpacing="8" LineSpacing="8">
-              <v:SeedPicker DataContext="{Binding BlendSeed}" ShowLabel="False" VerticalAlignment="Center" Margin="0,0,10,0" />
+              <v:SeedPicker DataContext="{Binding BlendSeed}" ShowLabel="False" InlineLabel="True" VerticalAlignment="Center" Margin="0,0,10,0" />
               <Button Content="Cancel" Click="OnCancel" />
               <Button Classes="primary" Click="OnBuild" IsEnabled="{Binding BlendIdle}">
                 <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="grow" Size="15" VerticalAlignment="Center" /><TextBlock Text="Build blend" VerticalAlignment="Center" /></StackPanel>
@@ -105,7 +105,7 @@
                           </Grid>
                           <ComboBox Margin="16,0,0,0" HorizontalAlignment="Stretch" ItemsSource="{Binding $parent[p:BlendPage].((vm:MainViewModel)DataContext).BlendForceFields}"
                                     SelectedItem="{Binding ForceField}"
-                                    ToolTip.Tip="This component's own force field: after the build Field assigns one per component (by group), the pairs between components by the mixing rule chosen there" />
+                                    ToolTip.Tip="This component's own force field: after the build the Force field module assigns one per component (by group), the pairs between components by the mixing rule chosen there" />
                           <StackPanel Orientation="Horizontal" Spacing="6" Margin="16,0,0,0" IsVisible="{Binding $parent[p:BlendPage].((vm:MainViewModel)DataContext).BlendByVolume}">
                             <TextBlock Text="density g/cm³" Classes="label" VerticalAlignment="Center" />
                             <NumericUpDown Value="{Binding Density}" Minimum="0.3" Maximum="5" Increment="0.01" FormatString="0.000" Width="110" ShowButtonSpinner="False"

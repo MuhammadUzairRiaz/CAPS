@@ -76,6 +76,14 @@ public sealed partial class MainViewModel
     public int UtUntyped => UtAtoms.Count(a => a.IsUntyped);
     public string UtCounts => $"{UtAtoms.Count} atoms · {UtAtoms.Count(a => a.IsHand)} by hand · {UtUntyped} untyped";
     public event Action? UtChanged;
+    /// <summary>Why the rules could not type the example ("" when they ran), kept so the status line says it.</summary>
+    private string _utRulesError = "";
+    /// <summary>Shown in place of the type list when it is empty: no force field, no types read, or nothing matches.</summary>
+    public string UtTypesHint =>
+        _utAllTypes.Count == 0 ? "No types loaded. Choose a force field with named types in Field, then Rebuild example."
+        : _utFilter.Trim().Length > 0 ? $"No {(_utSel != null ? _utSel.Element + " " : "")}type matches \"{_utFilter.Trim()}\"."
+        : _utSel != null ? $"{UtFfName} has no {_utSel.Element} type."
+        : "Pick an atom in the view or the table to see its types.";
 
     /// <summary>Opens the page for the force field chosen in Field and the polymer the structure was grown from (or the
     /// polymer builder's units).</summary>
@@ -147,9 +155,14 @@ public sealed partial class MainViewModel
         UtAtoms.Clear();
         _utAllTypes.Clear();
         UtTypes.Clear();
+        _utRulesError = "";
+        Raise(nameof(UtTypesHint));
         var ff = Field.FfIndex >= 0 && Field.FfIndex < Field.Library.Count ? Field.Library[Field.FfIndex] : null;
         if (ff == null || ff.Id == "uff") { UtStatus = "Choose a force field with named types in Field first (UFF types itself)"; return; }
         UtFfName = ff.Label;
+        // the force field's types from its own file, so the list is there even when its rules cannot type the example
+        _utAllTypes.AddRange(ForceFieldTypes(ff.File));
+        FilterUtTypes();
         JsonObject spec;
         // the polymer of the open structure (its history says which chain it was built from: Grow, a surface film, a
         // nanostructure's matrix), else the one sent to Grow, else the Polymer builder's
@@ -209,11 +222,66 @@ public sealed partial class MainViewModel
     /// <summary>The force field's own rules on the example (what they cannot type stays for the hand).</summary>
     public void AutoTypeUnitExample()
     {
-        if (_utDoc == null) return;
+        if (_utDoc == null || Field.FfIndex < 0 || Field.FfIndex >= Field.Library.Count) return;
         var ff = Field.Library[Field.FfIndex];
-        try { _utDoc.FieldAssign(ff.File, null, 0); }
-        catch (Exception e) { UtStatus = "The rules could not type the example (" + e.Message + "): give the types by hand"; }
+        if (ff.Id == "uff") { UtStatus = "Choose a force field with named types in Field first (UFF types itself)"; return; }
+        if (ff.Label != UtFfName)
+        {   // the force field was changed in Field since the example was built: its types, not the old ones
+            UtFfName = ff.Label;
+            _utAllTypes.Clear();
+            _utAllTypes.AddRange(ForceFieldTypes(ff.File));
+        }
+        _utRulesError = "";
+        // only the types are read from the example, so its charges are the automatic ones (the force field's own where its
+        // types carry them, else Gasteiger): asking for per-type charges fails on GAFF, GAFF2 and other libraries without them
+        try { _utDoc.FieldAssign(ff.File, null, FieldViewModel.CoreChargesOf(0)); }
+        catch (Exception e) { _utRulesError = ReadableRulesError(e.Message, ff.Label); }
         LoadUnitRows();
+    }
+
+    /// <summary>A core typing error as a sentence for the status line: no quoted option keywords, no advice about charge
+    /// modes the page does not offer, no trailing stop.</summary>
+    internal static string ReadableRulesError(string raw, string ffName)
+    {
+        var m = raw.Replace("\"", "").Replace("'", "").Trim().TrimEnd('.');
+        var semi = m.IndexOf(';');
+        if (semi > 0) m = m[..semi].TrimEnd();
+        var k = m.IndexOf("has no charge for type", StringComparison.Ordinal);
+        if (k >= 0) return $"{ffName} gives no charge for type {m[(k + "has no charge for type".Length)..].Trim()}";
+        if (m.StartsWith("types not in ", StringComparison.Ordinal)) return $"some atoms got types {ffName} does not list ({m[(m.IndexOf(':') + 1)..].Trim()})";
+        return m.Length > 160 ? m[..157].TrimEnd() + "..." : m;
+    }
+
+    private static readonly Dictionary<string, List<UtType>> UtTypeCache = new();
+
+    /// <summary>Every atom type of a library force field, read from its file (caps-forcefield JSON, "atom_types"); a file
+    /// that extends another (OPLS-UA on OPLS-AA) gets its base's types first, its own replacing those of the same name.
+    /// Empty when the file cannot be read.</summary>
+    private static List<UtType> ForceFieldTypes(string path, int depth = 0)
+    {
+        if (depth > 4 || string.IsNullOrEmpty(path)) return [];
+        lock (UtTypeCache) if (UtTypeCache.TryGetValue(path, out var hit)) return hit;
+        var list = new List<UtType>();
+        try
+        {
+            if (!File.Exists(path) || JsonNode.Parse(File.ReadAllText(path)) is not JsonObject j) return list;
+            if ((string?)j["extends"] is { Length: > 0 } ext)
+                list.AddRange(ForceFieldTypes(Path.GetFullPath(Path.IsPathRooted(ext) ? ext : Path.Combine(Path.GetDirectoryName(path) ?? "", ext)), depth + 1));
+            if (j["atom_types"] is JsonArray at)
+                foreach (var t in at.OfType<JsonObject>())
+                {
+                    var name = (string?)t["name"] ?? "";
+                    if (name.Length == 0) continue;
+                    var type = new UtType(name, (string?)t["element"] ?? "",
+                                          t["charge"] is JsonValue q && q.TryGetValue<double>(out var qv) ? qv.ToString("+0.000;−0.000", CultureInfo.InvariantCulture) : "",
+                                          (string?)t["description"] ?? "");
+                    var k = list.FindIndex(x => x.Name == name);
+                    if (k >= 0) list[k] = type; else list.Add(type);
+                }
+        }
+        catch (Exception) { list.Clear(); }
+        lock (UtTypeCache) UtTypeCache[path] = list;
+        return list;
     }
 
     private void LoadUnitRows()
@@ -221,15 +289,20 @@ public sealed partial class MainViewModel
         if (_utDoc == null) return;
         var hand = UtAtoms.Where(a => a.IsHand).ToDictionary(a => a.Index, a => a.Assigned);
         UtAtoms.Clear();
-        var rep = _utDoc.FieldReport();
+        // after a failed assignment the example holds no field, or an earlier one: no rule types from it
+        var rep = _utRulesError.Length > 0 ? "" : _utDoc.FieldReport();
         var types = new List<string>();
         if (rep.Length > 0 && JsonNode.Parse(rep) is JsonObject r)
         {
             if (r["atoms"] is JsonArray aa) foreach (var a in aa) types.Add((string?)a?["type"] ?? "");
-            if (_utAllTypes.Count == 0 && r["fftypes"] is JsonArray ft)
+            // the assigned force field's types (with any the assignment added) replace the ones read from its file
+            if (r["fftypes"] is JsonArray { Count: > 0 } ft)
+            {
+                _utAllTypes.Clear();
                 foreach (var t in ft.OfType<JsonObject>())
                     _utAllTypes.Add(new UtType((string?)t["name"] ?? "", (string?)t["el"] ?? "",
                                                t["q"] is JsonValue q ? ((double)q).ToString("+0.000;−0.000", CultureInfo.InvariantCulture) : "", (string?)t["desc"] ?? ""));
+            }
         }
         var s = _utDoc.Summary();
         var lastRes = 1L;
@@ -259,8 +332,11 @@ public sealed partial class MainViewModel
         }
         FilterUtTypes();
         RaiseUt();
-        UtStatus = UtUntyped == 0 ? "Every atom of the example has a type: change any by hand, then apply to the structure"
-                                  : $"{UtUntyped} atoms of the example have no type from the rules: pick each and give it one";
+        UtStatus = _utRulesError.Length > 0
+                       ? $"The rules could not type the example: {_utRulesError}. {UtUntyped} atoms need a type by hand" +
+                         (_utAllTypes.Count == 0 ? ", and no types of the force field could be read" : "")
+                 : UtUntyped == 0 ? "Every atom of the example has a type: change any by hand, then apply to the structure"
+                 : $"{UtUntyped} atoms of the example have no type from the rules: pick each and give it one";
     }
 
     private void RaiseUt() { Raise(nameof(UtCounts)); Raise(nameof(UtUntyped)); Raise(nameof(UtHighlights)); UtChanged?.Invoke(); }
@@ -279,6 +355,7 @@ public sealed partial class MainViewModel
             UtTypes.Add(t);
             if (UtTypes.Count >= 400) break;
         }
+        Raise(nameof(UtTypesHint));
     }
 
     /// <summary>The atom picked in the example's 3D view.</summary>
@@ -313,7 +390,15 @@ public sealed partial class MainViewModel
         try
         {
             // the structure in this force field (its rules first; what they leave is filled from the example)
-            try { _doc.FieldAssign(ff.File, null, 0); } catch { /* untyped atoms are fine here: the example types them */ }
+            // charges as chosen in Field; when the force field has none for that choice (GAFF has no per-type charges), the
+            // automatic ones, so the rules still type what they can. Untyped atoms are fine here: the example types them.
+            var charges = FieldViewModel.CoreChargesOf(Field.ChargeMode);
+            try { _doc.FieldAssign(ff.File, null, charges); }
+            catch (Exception) when (charges != FieldViewModel.CoreChargesOf(0))
+            {
+                try { _doc.FieldAssign(ff.File, null, FieldViewModel.CoreChargesOf(0)); } catch (Exception) { }
+            }
+            catch (Exception) { }
             var types = new JsonArray(UtAtoms.OrderBy(a => a.Index).Select(a => (JsonNode)a.Type).ToArray());
             var (complete, report) = _doc.FieldTypeByExample(_utDoc, types.ToJsonString());
             var r = JsonNode.Parse(report) as JsonObject;

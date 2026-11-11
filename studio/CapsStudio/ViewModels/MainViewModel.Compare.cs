@@ -49,6 +49,26 @@ public sealed partial class MainViewModel
     private static string CompareName(string p) => p.Length == 0 ? "choose a file" :
         $"{System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(p))}/{System.IO.Path.GetFileName(p)}";
 
+    /// <summary>The row label for a global attribute of the pipeline result, with its unit in the display units, and the
+    /// factor that takes the core value (g/cm³, Å³) to them. The keys stay as the core names them: Batch and overlay.py
+    /// look attributes up by those names. Counts and step attributes keep their own names.</summary>
+    private static (string Label, double Factor) CompareMetric(string key)
+    {
+        (string, double) With(string name, string coreUnit)
+        {
+            var (f, u) = DisplayUnits.For(coreUnit);
+            return ($"{name} ({u})", f);
+        }
+        return key switch
+        {
+            "Density" => With("Density", "g/cm³"),
+            "Mass" => ("Mass (g/mol)", 1),
+            "CellVolume" => With("Cell volume", "Å³"),
+            "TotalCharge" => ("Total charge (e)", 1),
+            _ => (key, 1),
+        };
+    }
+
     public void OpenCompare()
     {
         SetModule(23);
@@ -101,12 +121,15 @@ public sealed partial class MainViewModel
         var skip = new[] { "SourceFrame", "Timestep", "Selected" };
         foreach (var k in A.Keys.Concat(B.Keys).Distinct().Where(k => !skip.Contains(k)))
         {
+            var (label, factor) = CompareMetric(k);
             var hasA = A.TryGetValue(k, out var a) && double.IsFinite(a);
             var hasB = B.TryGetValue(k, out var b) && double.IsFinite(b);
+            a *= factor;
+            b *= factor;
             string F(double v) => Math.Abs(v) >= 1000 || Math.Abs(v - Math.Round(v)) < 1e-9 ? v.ToString("0.###", inv) : v.ToString("G4", inv);
             var diff = hasA && hasB ? b - a : double.NaN;
             var rel = hasA && hasB && Math.Abs(a) > 1e-12 ? Math.Abs(diff / a) : 0;
-            CompareRows.Add(new CompareRow(k, hasA ? F(a) : "—", hasB ? F(b) : "—", double.IsFinite(diff) ? (diff >= 0 ? "+" : "") + F(diff) : "—",
+            CompareRows.Add(new CompareRow(label, hasA ? F(a) : "—", hasB ? F(b) : "—", double.IsFinite(diff) ? (diff >= 0 ? "+" : "") + F(diff) : "—",
                                            Tokens.Brush(rel > 0.1 ? "WarnB" : "MutedB")));
         }
         // data tables both sides have

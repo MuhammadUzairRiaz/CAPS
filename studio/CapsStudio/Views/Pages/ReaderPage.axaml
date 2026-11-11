@@ -11,14 +11,26 @@
     <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-          <ToggleButton Content="Follow" IsChecked="{Binding ReaderFollow}" ToolTip.Tip="Re-read the file every 2 s while it grows (a run still writing its log) and keep the end in view" />
+          <ToggleButton Content="Follow" IsChecked="{Binding ReaderFollow}" IsEnabled="{Binding ReaderPath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                        ToolTip.Tip="Re-read the file every 2 s while it grows (a run still writing its log) and keep the end in view" />
           <ToggleButton Content="Wrap" IsChecked="{Binding ReaderWrap}" />
-          <Button Content="Reload" Click="OnReload" />
-          <Button Content="Open another…" Click="OnOpen" />
+          <Button Content="Reload" Click="OnReload" IsEnabled="{Binding ReaderPath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <Button Content="Open another…" Click="OnOpen" IsVisible="{Binding ReaderPath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <Button Content="Open a file…" Click="OnOpen" Classes="primary" IsVisible="{Binding ReaderPath, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
         </StackPanel>
         <StackPanel Spacing="3">
-          <TextBlock Text="{Binding ReaderName}" FontSize="19" FontWeight="SemiBold" />
-          <TextBlock Text="{Binding ReaderInfo}" FontSize="12.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="Reader" FontSize="19" FontWeight="SemiBold" />
+            <TextBlock Text="·" FontSize="19" Foreground="{DynamicResource MutedB}" />
+            <TextBlock Text="{Binding ReaderName}" FontSize="19" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ReaderPath}"
+                       IsVisible="{Binding ReaderPath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="No file open" FontSize="19" Foreground="{DynamicResource MutedB}"
+                       IsVisible="{Binding ReaderPath, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+          </StackPanel>
+          <TextBlock Text="{Binding ReaderInfo}" FontSize="12.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap"
+                     IsVisible="{Binding ReaderPath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <TextBlock Text="Text outputs: LAMMPS logs and inputs, GROMACS .mdp and .xvg, CSV and notes, with the numbers in them as tables" FontSize="12.5"
+                     Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" IsVisible="{Binding ReaderPath, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
         </StackPanel>
       </DockPanel>
     </Border>
@@ -31,8 +43,18 @@
           <Button Grid.Column="3" Content="↓" Click="OnNext" ToolTip.Tip="Next match (Enter)" />
         </Grid>
         <Border Classes="pcard" Padding="0">
-          <TextBox x:Name="Body" Text="{Binding ReaderText}" IsReadOnly="True" AcceptsReturn="True" Classes="mono" FontSize="12" BorderThickness="0"
-                   Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+          <Grid>
+            <TextBox x:Name="Body" Text="{Binding ReaderText}" IsReadOnly="True" AcceptsReturn="True" Classes="mono" FontSize="12" BorderThickness="0"
+                     Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+            <!-- nothing read yet: say so and how to open a file, instead of an empty box -->
+            <StackPanel Spacing="10" MaxWidth="420" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24"
+                        IsVisible="{Binding ReaderPath, Converter={x:Static StringConverters.IsNullOrEmpty}}">
+              <TextBlock Text="No file open in the Reader" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" />
+              <TextBlock Classes="dim" TextWrapping="Wrap" TextAlignment="Center"
+                         Text="The open structure is not shown here. Use the button below, or File › Read a log or table…, to read a LAMMPS log or input, a GROMACS .mdp or .xvg, a CSV or a text note. Its text appears here and its numbers as tables on the right." />
+              <Button Content="Open a file…" Click="OnOpen" Classes="primary" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Grid>
         </Border>
       </DockPanel>
       <ScrollViewer Grid.Column="1">
@@ -64,7 +86,12 @@
             </StackPanel>
           </Border>
           <Border Classes="pcard" IsVisible="{Binding !ReaderHasTables}">
-            <TextBlock Classes="dim" TextWrapping="Wrap" Text="No table of numbers in this file. A LAMMPS log, a GROMACS .xvg or a CSV shows its columns here to plot." />
+            <StackPanel>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="No table of numbers in this file. A LAMMPS log, a GROMACS .xvg or a CSV shows its columns here to plot."
+                         IsVisible="{Binding ReaderPath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="No file open. A LAMMPS log, a GROMACS .xvg or a CSV shows its columns here to plot once it is read."
+                         IsVisible="{Binding ReaderPath, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+            </StackPanel>
           </Border>
         </StackPanel>
       </ScrollViewer>

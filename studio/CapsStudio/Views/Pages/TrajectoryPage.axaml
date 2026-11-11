@@ -44,8 +44,20 @@
         <!-- timeline -->
         <Border DockPanel.Dock="Bottom" Padding="18,12" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
           <StackPanel Spacing="10">
-            <DockPanel>
-              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+            <!-- transport, readout and options each get their own column: the readout keeps a reserved width, and the
+                 options wrap onto a second line when the viewport column is too narrow, so nothing is drawn over it -->
+            <Grid ColumnDefinitions="Auto,Auto,*">
+              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Classes="tool" Click="OnPrev" ToolTip.Tip="Previous frame (←)"><v:Icon Kind="undo" Size="18" /></Button>
+                <Button Classes="play" Click="OnPlay" ToolTip.Tip="Play / pause (Space)"><v:Icon Kind="{Binding PlayIcon}" Size="18" /></Button>
+                <Button Classes="tool" Click="OnNext" ToolTip.Tip="Next frame (→)"><v:Icon Kind="redo" Size="18" /></Button>
+              </StackPanel>
+              <StackPanel Grid.Column="1" MinWidth="120" Margin="12,0,16,0" Spacing="1" VerticalAlignment="Center">
+                <TextBlock Text="{Binding TrajFrameText}" Classes="mono" FontSize="13" />
+                <TextBlock Text="{Binding TrajTimeText}" Classes="mono" FontSize="12" Foreground="{DynamicResource MutedB}"
+                           IsVisible="{Binding TrajTimeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              </StackPanel>
+              <WrapPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" ItemSpacing="8" LineSpacing="6">
                 <Border Classes="seg">
                   <StackPanel Orientation="Horizontal">
                     <RadioButton Classes="seg" Content="0.5×" GroupName="speed" IsChecked="{Binding TrajSpeed, Converter={x:Static v:IntEqualsConverter.Instance}, ConverterParameter=0}" />
@@ -61,17 +73,10 @@
                 <Button Classes="small" Click="OnMovie">
                   <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="Export movie" VerticalAlignment="Center" /></StackPanel>
                 </Button>
-              </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Classes="tool" Click="OnPrev" ToolTip.Tip="Previous frame (←)"><v:Icon Kind="undo" Size="18" /></Button>
-                <Button Classes="play" Click="OnPlay" ToolTip.Tip="Play / pause (Space)"><v:Icon Kind="{Binding PlayIcon}" Size="18" /></Button>
-                <Button Classes="tool" Click="OnNext" ToolTip.Tip="Next frame (→)"><v:Icon Kind="redo" Size="18" /></Button>
-                <TextBlock Text="{Binding TrajFrameText}" Classes="mono" FontSize="13" VerticalAlignment="Center" Margin="10,0,0,0" />
-                <TextBlock Text="{Binding TrajTimeText}" Classes="mono" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
-              </StackPanel>
-            </DockPanel>
+              </WrapPanel>
+            </Grid>
             <Panel>
-              <Slider Minimum="0" Maximum="{Binding FrameMax}" Value="{Binding Frame}" TickFrequency="1" IsSnapToTickEnabled="True" />
+              <Slider Minimum="0" Maximum="{Binding FrameMax}" Value="{Binding Frame}" TickFrequency="1" IsSnapToTickEnabled="True" IsVisible="{Binding HasFrames}" />
               <v:MarkerStrip x:Name="Markers" Height="8" VerticalAlignment="Bottom" IsHitTestVisible="False" Margin="10,0" />
             </Panel>
           </StackPanel>

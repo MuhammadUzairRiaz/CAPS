@@ -3,7 +3,9 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views"
              x:Class="CapsStudio.Views.StructurePicker" x:DataType="vm:MainViewModel">
-  <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HasDocument}">
+  <!-- A WrapPanel, not a single-line StackPanel: on pages whose header toolbar is wide (Relax,
+       Dynamics) the "Keep the original" option moves to its own line instead of being clipped. -->
+  <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="6" IsVisible="{Binding HasDocument}">
     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
       <v:Icon Kind="cube" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
       <TextBlock Text="Structure" Classes="muted" FontSize="12" VerticalAlignment="Center" />
@@ -20,7 +22,9 @@
         </DataTemplate>
       </ComboBox.ItemTemplate>
     </ComboBox>
-    <CheckBox x:Name="ResultBox" Content="Keep the original: result in a new structure" IsChecked="{Binding ResultAsNew}" VerticalAlignment="Center"
-              ToolTip.Tip="The run works on a copy (force field kept) that joins the project; the structure you started from is left as it is" />
-  </StackPanel>
+    <CheckBox x:Name="ResultBox" IsChecked="{Binding ResultAsNew}" VerticalAlignment="Center"
+              ToolTip.Tip="The run works on a copy (force field kept) that joins the project; the structure you started from is left as it is">
+      <TextBlock Text="Keep the original: result in a new structure" TextWrapping="Wrap" VerticalAlignment="Center" />
+    </CheckBox>
+  </WrapPanel>
 </UserControl>

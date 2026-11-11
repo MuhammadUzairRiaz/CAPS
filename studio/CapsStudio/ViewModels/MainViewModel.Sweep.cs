@@ -16,7 +16,7 @@ public sealed class SweepRun : ObservableObject
     public string Path { get; init; } = "";
     public string Condition => $"{Tacticity} · DP {Dp}";
     private string _status = "queued", _detail = "";
-    public string Status { get => _status; set { if (Set(ref _status, value)) { Raise(nameof(Fill)); Raise(nameof(Dim)); Raise(nameof(Tip)); } } }
+    public string Status { get => _status; set { if (Set(ref _status, value)) { Raise(nameof(Fill)); Raise(nameof(Dim)); Raise(nameof(Ink)); Raise(nameof(Tip)); } } }
     public string Detail { get => _detail; set { if (Set(ref _detail, value)) Raise(nameof(Tip)); } }
     public double Density { get; set; } = double.NaN;
     /// <summary>Set by the worker when the run ends; applied on the UI side after the sweep (no dispatcher round-trip).</summary>
@@ -27,6 +27,8 @@ public sealed class SweepRun : ObservableObject
     public string SeedText => Seed.ToString(CultureInfo.InvariantCulture);
     public IBrush Fill => Tokens.Brush(_status switch { "done" => "OkB", "running" => "AccB", "failed" => "ErrB", _ => "DimB" });
     public double Dim => _status is "queued" or "stopped" ? 0.45 : 1.0;
+    /// <summary>Seed-number ink: light text on the faded queued/stopped squares, accent ink on the solid ones.</summary>
+    public IBrush Ink => Tokens.Brush(_status is "queued" or "stopped" ? "TextB" : "AccInkB");
     public string Tip => $"{Condition} · seed {Seed}: {_status}" + (_detail.Length > 0 ? " · " + _detail : "");
 }
 

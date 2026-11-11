@@ -7,7 +7,9 @@
     <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
       <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
     <Style Selector="Border.stage"><Setter Property="Background" Value="{DynamicResource Bg2B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
-      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="8" /><Setter Property="Padding" Value="10,8" /><Setter Property="Margin" Value="0,0,8,8" /><Setter Property="Width" Value="170" /></Style>
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="8" /><Setter Property="Padding" Value="10,7" /></Style>
+    <Style Selector="Button.stagebtn"><Setter Property="Padding" Value="0" /><Setter Property="MinHeight" Value="0" /><Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="HorizontalContentAlignment" Value="Stretch" /></Style>
     <Style Selector="Border.stage.bad"><Setter Property="BorderBrush" Value="{DynamicResource ErrB}" /><Setter Property="Background" Value="{DynamicResource ErrBgB}" /></Style>
     <Style Selector="ListBox.recipes ListBoxItem"><Setter Property="Padding" Value="10,7" /><Setter Property="CornerRadius" Value="7" /></Style>
   </p:PageBase.Styles>
@@ -23,7 +25,7 @@
           <Button Classes="primary" Click="OnRun" IsEnabled="{Binding RecipeOk}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Run" VerticalAlignment="Center" /></StackPanel></Button>
         </StackPanel>
         <StackPanel Spacing="3">
-          <TextBlock Text="{Binding RecipeName, StringFormat='Recipe · {0}'}" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding RecipeTitle, StringFormat='Recipe · {0}'}" FontSize="19" FontWeight="SemiBold" />
           <TextBlock Text="A reusable chain of steps; every run of it is logged with the recipe hash" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
         </StackPanel>
       </DockPanel>
@@ -61,15 +63,16 @@
                 <TextBlock Text="Pipeline" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
               </DockPanel>
               <ItemsControl ItemsSource="{Binding RecipeStages}">
-                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:RecipeStageChip">
-                    <Button Classes="ghost" Padding="0" Click="OnStage" Tag="{Binding Name}" ToolTip.Tip="Edit this step's settings">
+                    <Button Classes="ghost stagebtn" Click="OnStage" Tag="{Binding Name}" ToolTip.Tip="Edit this step's settings">
                       <Border Classes="stage" Classes.bad="{Binding !Ok}">
-                        <StackPanel Spacing="2">
-                          <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold" />
-                          <TextBlock Text="{Binding Summary}" Classes="dim" TextWrapping="Wrap" />
-                        </StackPanel>
+                        <Grid ColumnDefinitions="96,*" ColumnSpacing="10">
+                          <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"
+                                     TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name, StringFormat='{}{0}: edit this step’s settings'}" />
+                          <TextBlock Grid.Column="1" Text="{Binding Summary}" Classes="dim" TextWrapping="Wrap" VerticalAlignment="Center" />
+                        </Grid>
                       </Border>
                     </Button>
                   </DataTemplate>
