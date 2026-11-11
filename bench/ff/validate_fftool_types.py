@@ -33,6 +33,8 @@ def same(a, b):
     if a not in by_name or b not in by_name:
         return False
     ta, tb = by_name[a], by_name[b]
+    if a in tb.get("aliases", []):  # a split of the file's type (convert_fftool.py --split: clandp-des's CO2C for CO2)
+        return ta.get("charge") == tb.get("charge") and lj.get(a) == lj.get(b)
     return ta.get("charge") == tb.get("charge") and ta.get("equivalence") == tb.get("equivalence") and lj.get(a) == lj.get(b)
 
 
@@ -124,7 +126,7 @@ if "--list" in sys.argv:
 for name, bad in deviating:
     print(f"  deviation {name}: {len(bad)} atoms differ; the file: {deviations[name]}")
 for (e, g), k in equivalent.items():
-    print(f"  equivalent names: {e} as {g} on {k} atoms (the same class, charge and Lennard-Jones)")
+    print(f"  equivalent names: {e} as {g} on {k} atoms (the same class, charge and Lennard-Jones, or {g} a split of {e})")
 for (e, g), k in confusion.most_common(int(arg("--show", "40"))):
     print(f"  {e:>6} → {g:<6} {k}")
 for name, why in failed[:8]:

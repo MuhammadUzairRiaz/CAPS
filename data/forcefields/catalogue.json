@@ -408,11 +408,11 @@
    "status": "validated",
    "file": "clandp-des.json",
    "counts": {
-    "atom_types": 47,
-    "pairs": 47,
+    "atom_types": 48,
+    "pairs": 48,
     "bonds": 16,
     "angles": 30,
-    "dihedrals": 44,
+    "dihedrals": 46,
     "impropers": 6
    },
    "typing": {
