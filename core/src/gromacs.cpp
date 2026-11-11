@@ -704,9 +704,11 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
     const double v[9] = {c.a[0], c.b[1], c.c[2], c.a[1], c.a[2], c.b[0], c.b[2], c.c[0], c.c[1]};
     for (int k = 0; k < 9; ++k) box[k] = v[k] / 10;
   } else {
-    // a box 2 r_c larger than the molecule, the molecule centred
+    // a box 2 r_c larger than the molecule, the molecule centred; never narrower than 2 (r_c + 0.2 nm) + 0.01 nm, as the
+    // .mdp's pair list reaches r_c + 0.2 nm and GROMACS needs it under half the box (a flat or linear molecule: phenol,
+    // acetonitrile, water)
     for (int k = 0; k < 3; ++k) {
-      box[k] = (hi[k] - lo[k] + 2 * e.cutoff + 2) / 10;
+      box[k] = std::max((hi[k] - lo[k] + 2 * e.cutoff + 2) / 10, 2 * (e.cutoff / 10 + 0.2) + 0.01);
       shift[k] = box[k] * 5 - 0.5 * (lo[k] + hi[k]);
     }
   }
