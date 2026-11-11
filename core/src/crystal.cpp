@@ -344,6 +344,54 @@ std::vector<Bond> crystal_bonds(const System& s) {
   return out;
 }
 
+namespace {
+// Makes every finite molecule of a periodic structure whole, in place, and leaves periodic networks as placed. Walking
+// the image bonds (each with its bond vector d) from a root atom gives every atom of the component a position p_j =
+// p_i + d. A finite molecule (one chain of a polymer melt, one unit of a molecular crystal, a guest in a framework)
+// closes every ring at the same position, so the walk is consistent and p is the molecule whole. A component that
+// meets one of its own atoms again one lattice vector away (a framework, a layer, an endless crystal chain), or holds
+// an atom bonded to its own image, is periodic: no choice of images makes it whole, so its positions stay as read.
+// Using the stored bond vectors rather than the minimum image also stays right in a cell narrower than twice a bond.
+void make_finite_molecules_whole(System& s) {
+  const auto ib = image_bonds(s);
+  const size_t n = s.atoms.size();
+  std::vector<std::vector<std::pair<uint32_t, Vec3>>> nb(n);
+  std::vector<char> self_image(n, 0);
+  for (const auto& b : ib) {
+    if (b.i == b.j) { self_image[b.i] = 1; continue; }
+    nb[b.i].push_back({b.j, b.d});
+    nb[b.j].push_back({b.i, b.d * -1.0});
+  }
+  std::vector<Vec3> p(n);
+  std::vector<char> seen(n, 0);
+  std::vector<uint32_t> stack, members;
+  for (uint32_t root = 0; root < n; ++root) {
+    if (seen[root]) continue;
+    seen[root] = 1;
+    p[root] = s.atoms[root].pos;
+    stack.assign(1, root);
+    members.clear();
+    bool periodic = false;
+    while (!stack.empty()) {
+      const uint32_t i = stack.back();
+      stack.pop_back();
+      members.push_back(i);
+      periodic = periodic || self_image[i];
+      for (const auto& [j, d] : nb[i]) {
+        const Vec3 q = p[i] + d;
+        if (!seen[j]) {
+          seen[j] = 1, p[j] = q, stack.push_back(j);
+        } else if (norm(q - p[j]) > 1e-3) {
+          periodic = true;   // met again one lattice vector away
+        }
+      }
+    }
+    if (!periodic)
+      for (uint32_t i : members) s.atoms[i].pos = p[i];
+  }
+}
+}  // namespace
+
 // Adds O–H to under-coordinated oxygens (S, Se), M–OH to cations bonded to oxygen in the bulk and H to under-coordinated
 // covalent network atoms of `s`, on the free vertices of the atom's own bulk polyhedron fitted to its surviving bonds
 // (outward_of(position) and room breaking ties). An O site two cations both lost is put back once, bridging them.
@@ -1124,8 +1172,13 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
   // a CIF numbers no molecules: they follow the perceived bonds (a network is one, a molecular crystal one per unit,
   // a polymer cell one per chain); mol = 1 above is only a placeholder
   s.has_mol = false;
-  s.unwrapped = true;   // one periodic network: positions stay as placed (never "made whole")
   s.bonds = crystal_bonds(s);
+  // A CIF holds fractional coordinates wrapped into the cell, so a finite molecule that crosses a cell face arrives cut
+  // in pieces. Each finite molecule is made whole here along its image bonds (Rg, end-to-end vectors and C_n are only
+  // defined on whole chains); a periodic network keeps its positions as placed, since no choice of images makes it
+  // whole. This is per molecule, so guests in a framework are made whole while the framework stays as read.
+  make_finite_molecules_whole(s);
+  s.unwrapped = true;
   std::map<int, int> count;
   for (const auto& a : s.atoms) count[a.element]++;
   s.notes.insert(s.notes.begin(), std::to_string(ops.size()) + " symmetry operations · " + std::to_string(s.atoms.size()) + " atoms in the " +

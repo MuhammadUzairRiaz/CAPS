@@ -9,7 +9,7 @@ namespace CapsStudio.ViewModels;
 public partial class MainViewModel
 {
     public static readonly string[] QeqKernels = ["Ohno–Klopman shielding", "Slater ns densities (original QEq)"];
-    private int _qeqKernel;
+    private int _qeqKernel = 1;   // Slater by default, as the core (qeq.hpp)
     private bool _qeqEwald, _qeqHydrogen;
     private string _qeqBounds = "";
     private decimal _qeqCutoff = 10;

@@ -13,9 +13,11 @@
 //  Solution     simulated annealing (Kirkpatrick et al., Science 220, 671 (1983)) of a molecule's position, orientation and
 //               torsions in a cell and space group against the measured pattern in direct space (David, Shankland &
 //               Shankland, Chem. Commun. 931 (1998)): the profile Rwp with the scale and background solved at every trial
-//               (refine.hpp), moves that bring heavy atoms of different molecules (or a molecule and its own lattice
-//               images) within a contact distance refused; the peak profile first fitted to the data (Pawley, cell fixed).
-//               Throws when no packing free of such contacts is found.
+//               (refine.hpp), moves that bring atoms of different molecules (or a molecule and its own lattice images)
+//               closer than a fraction of their van der Waals contact (Bondi radii, hydrogens included; a polar H and an
+//               acceptor may come to a hydrogen-bond distance) refused; the peak profile first fitted to the data (Pawley,
+//               cell fixed). Throws when the molecules' van der Waals volume does not fit the cell (packing coefficient
+//               above 1; Kitaigorodskii: 0.65 to 0.77 in organic crystals) or no packing free of such contacts is found.
 #pragma once
 
 #include <array>
@@ -74,7 +76,9 @@ struct SolveOptions {
   RefineOptions refine;              // radiation, wavelength, profile (U V W X Y, zero), background, range
   int steps = 6000;                  // annealing moves in all, shared among the restarts
   double t_start = 0.05, t_end = 1e-4;   // Rwp² "temperatures"
-  double contact = 2.0;              // Å, the closest two heavy atoms of different molecules (or lattice images) may come
+  double contact = 2.0;              // Å, a floor on the closest two heavy atoms of different molecules (or lattice images) may
+                                     // come; the only limit for a pair with a metal atom (coordination distances)
+  double vdw_fraction = 0.75;        // other pairs: at least this fraction of the Bondi radius sum (H included)
   bool torsions = true;
   int restarts = 2;
   // the peak profile (refine's U V W X Y and zero shift) fitted to the data by a Pawley fit in the cell before the

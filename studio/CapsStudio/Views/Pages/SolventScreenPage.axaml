@@ -29,7 +29,7 @@
     </Border>
     <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
       <DockPanel>
-        <TextBlock DockPanel.Dock="Right" Text="χ ≈ V(Δδ)²/RT + 0.34" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+        <v:MathView DockPanel.Dock="Right" Tex="{x:Static vm:MainViewModel.SsChiShortTex}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
         <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
           <TextBlock Text="{Binding SsStatus}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
           <TextBlock Text="{Binding SsContactProgress}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
@@ -54,7 +54,7 @@
             <DockPanel>
               <Border DockPanel.Dock="Top" Classes="phead"><TextBlock Text="How χ is estimated" FontSize="13.5" FontWeight="SemiBold" /></Border>
               <StackPanel Margin="16,12" Spacing="8">
-                <TextBlock Text="χ ≈ Vₛ (δₛ − δₚ)² / RT + 0.34" Classes="mono" FontSize="13" />
+                <v:MathView Tex="{x:Static vm:MainViewModel.SsChiTex}" FontSize="13" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Left" />
                 <TextBlock Text="{Binding SsExample}" Classes="mono" FontSize="12" Foreground="{DynamicResource MutedB}" />
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,4,0,0">
                   <StackPanel Spacing="4"><TextBlock Text="δ of the polymer · MPa½" Classes="label" /><NumericUpDown Value="{Binding SsDelta}" Minimum="5" Maximum="60" Increment="0.1" FormatString="0.0" /></StackPanel>

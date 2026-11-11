@@ -266,8 +266,8 @@
         </StackPanel>
       </ScrollViewer>
 
-      <Grid Grid.Column="1" RowDefinitions="*,250" RowSpacing="16">
-        <Border Classes="card" ClipToBounds="True">
+      <Grid Grid.Column="1" RowDefinitions="*,Auto" RowSpacing="16">
+        <Border Classes="card" ClipToBounds="True" MinHeight="260">
           <Grid RowDefinitions="38,*">
             <Border Classes="phead">
               <DockPanel>
@@ -280,14 +280,14 @@
             <Decorator Grid.Row="1" x:Name="ViewSlot" />
           </Grid>
         </Border>
-        <Grid Grid.Row="1" ColumnDefinitions="*,300" ColumnSpacing="16">
+        <Grid Grid.Row="1" ColumnDefinitions="*,300" ColumnSpacing="16" MinHeight="250">
           <Border Classes="card">
             <Grid RowDefinitions="38,*">
               <Border Classes="phead"><TextBlock Text="Convergence" Classes="h2" VerticalAlignment="Center" /></Border>
               <v:SciPlot Grid.Row="1" x:Name="ConvPlot" Margin="10,6,12,8" />
             </Grid>
           </Border>
-          <Border Grid.Column="1" Classes="card">
+          <Border Grid.Column="1" Classes="card" ClipToBounds="True">
             <Grid RowDefinitions="38,*">
               <Border Classes="phead"><TextBlock Text="Guarantee" Classes="h2" VerticalAlignment="Center" /></Border>
               <StackPanel Grid.Row="1" Margin="14,12" Spacing="10">

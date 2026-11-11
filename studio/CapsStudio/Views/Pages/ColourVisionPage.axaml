@@ -69,11 +69,9 @@
           <Border Classes="vcard">
             <StackPanel>
               <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
-                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                  <TextBlock Text="Pairs that become hard to tell apart ·" Classes="h2" />
-                  <TextBlock Text="{Binding VisionSummary}" Classes="h2" />
-                </StackPanel>
+                <TextBlock Text="Pairs that become hard to tell apart" Classes="h2" VerticalAlignment="Center" />
               </Border>
+              <TextBlock Text="{Binding VisionSummary}" FontSize="12.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" Margin="16,12,16,2" />
               <Grid ColumnDefinitions="150,130,*,70" Margin="16,10,16,4" IsVisible="{Binding HasVisionPairs}">
                 <TextBlock Text="PALETTE" Classes="h3" /><TextBlock Grid.Column="1" Text="VISION" Classes="h3" />
                 <TextBlock Grid.Column="2" Text="PAIR" Classes="h3" /><TextBlock Grid.Column="3" Text="ΔE*ab" Classes="h3" HorizontalAlignment="Right" />
@@ -109,7 +107,7 @@
                 </StackPanel>
                 <TextBlock Grid.Row="1" Text="Status" Classes="muted" />
                 <TextBlock Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" FontSize="12.5"
-                           Text="Every status also has a word (done, running, failed) and, in checks, an icon — colour is never the only cue." />
+                           Text="Every status also has a word (done, running, failed) and, in checks, an icon, so colour is never the only cue." />
                 <TextBlock Grid.Row="2" Text="Elements" Classes="muted" />
                 <TextBlock Grid.Row="2" Grid.Column="1" TextWrapping="Wrap" FontSize="12.5"
                            Text="Element symbols on hover, in the inspector and as view labels (Appearance › Labels); the monochrome palette separates elements by lightness for greyscale figures." />

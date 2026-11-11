@@ -57,7 +57,7 @@ TEST(QEq, PeriodicCrystals) {
 }
 
 // A cell narrower than twice the cut-off keeps the whole cut-off: quartz's unit cell (narrowest width 4.25 Å) takes the
-// Ewald sum by default (Si +3.15 e, as the 3×3×3 supercell); without Ewald the tapered kernel runs over every image
+// Ewald sum by default (Si about +1.3 e, as the 3×3×3 supercell); without Ewald the tapered kernel runs over every image
 // within 10 Å, so the unit cell and the supercell agree, and a molecule in a 12 Å box matches the molecule alone
 TEST(QEq, NarrowCellsKeepTheCutoff) {
   const System x = read_cif(kCrystals + "alpha-quartz.cif");
@@ -76,7 +76,7 @@ TEST(QEq, NarrowCellsKeepTheCutoff) {
   EXPECT_NEAR(r.cutoff, 10.0, 1e-9);
   EXPECT_GT(r.alpha, 0.0);   // Ewald on by default for a cell periodic along a, b and c
   for (size_t i = 0; i < q.size(); ++i)
-    if (x.atoms[i].element == 14) EXPECT_NEAR(q[i], 3.15, 0.05);
+    if (x.atoms[i].element == 14) EXPECT_NEAR(q[i], 1.26, 0.03);
   QEqOptions o;
   o.ewald = false;
   QEqReport r1;
@@ -86,7 +86,7 @@ TEST(QEq, NarrowCellsKeepTheCutoff) {
   EXPECT_EQ(r1.alpha, 0.0);
   for (size_t i = 0; i < q3.size(); ++i) EXPECT_NEAR(q3[i], q1[i % x.atoms.size()], 1e-6);
   for (size_t i = 0; i < q1.size(); ++i)
-    if (x.atoms[i].element == 14) EXPECT_GT(q1[i], 3.0);   // a 2.1 Å minimum-image cut-off gave +0.38 e
+    if (x.atoms[i].element == 14) EXPECT_GT(q1[i], 0.8);   // a 2.1 Å minimum-image cut-off gave +0.38 e
 
   System m = build_molecule("C[Si](C)(C)O[Si](C)(C)C").system;
   m.cell.a = {0, 0, 0}, m.cell.b = {0, 0, 0}, m.cell.c = {0, 0, 0};
@@ -158,4 +158,28 @@ TEST(Charges, AverageScaleNeutralise) {
     adjust_charges(s, q3, nz, 0);
     EXPECT_NEAR(std::accumulate(q3.begin(), q3.end(), 0.0), 0.25, 1e-12);
   }
+}
+
+// Ewald charges must not depend on the real-space cut-off. The Ohno kernel's difference from 1/r falls as −a²/(2r³)
+// with a per element pair, so summed over a 3D lattice it grew like ln r_c (quartz Si +3.0 e at 6 Å, +5.2 e at 20 Å);
+// switched off over a fixed 5–7 Å it settles. The Slater default settles by itself, at Si +1.26 e, and the image sum
+// without Ewald comes to the same charges
+TEST(QEq, ChargesIndependentOfTheCutoff) {
+  const System x = read_cif(kCrystals + "alpha-quartz.cif");
+  auto si_charge = [&](const char* kernel, double rc, bool ewald) {
+    QEqOptions o;
+    o.kernel = kernel, o.cutoff = rc, o.ewald = ewald, o.ewald_auto = false, o.tolerance = 1e-10;
+    const auto q = qeq_charges(x, o);
+    for (size_t i = 0; i < q.size(); ++i)
+      if (x.atoms[i].element == 14) return q[i];
+    return 0.0;
+  };
+  EXPECT_EQ(QEqOptions{}.kernel, "slater");
+  for (const char* k : {"slater", "ohno"}) {
+    const double s10 = si_charge(k, 10, true);
+    EXPECT_NEAR(si_charge(k, 14, true), s10, 0.01) << k;
+    EXPECT_NEAR(si_charge(k, 20, true), s10, 0.01) << k;
+    EXPECT_NEAR(si_charge(k, 20, false), s10, 0.2) << k;
+  }
+  EXPECT_NEAR(si_charge("slater", 10, true), 1.2553, 0.005);
 }

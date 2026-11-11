@@ -6,6 +6,7 @@
 #include <cmath>
 #include <map>
 
+#include "caps/analysis.hpp"
 #include "caps/crystal.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/mechanics.hpp"
@@ -580,4 +581,71 @@ TEST(Crystal, PolymerBrushOnSilanols) {
   for (const auto& a : s.atoms) if (a.mol == 1) top = std::max(top, a.pos[2]);
   for (const auto& a : s.atoms) if (a.mol != 1 && a.element == 6) EXPECT_GT(a.pos[2], top - 1.0);
   std::printf("brush: %d of %d sites grafted, sigma %.2f /nm2 on %.1f nm2\n", rep.grafted, rep.sites, rep.sigma, rep.area);
+}
+
+// A CIF stores fractional coordinates wrapped into the cell, so a polymer melt written to CIF arrives with its chains
+// cut at the cell faces. The reader makes each finite molecule whole along its image bonds (Rg, C_n need whole chains);
+// a periodic network (quartz, diamond, a polymer crystal's endless chains) stays as placed, also with guests beside it.
+TEST(Crystal, CifFiniteMoleculesAreMadeWholeNetworksStay) {
+  auto longest_bond = [](const System& s) {
+    double l = 0;
+    for (const auto& b : s.bonds) l = std::max(l, norm(s.atoms[b.j].pos - s.atoms[b.i].pos));
+    return l;
+  };
+  auto inside = [](const System& s, size_t from, size_t to) {
+    for (size_t i = from; i < to; ++i) {
+      const Vec3 f = s.cell.to_fractional(s.atoms[i].pos);
+      for (int k = 0; k < 3; ++k)
+        if (f[k] < -1e-6 || f[k] >= 1 + 1e-6) return false;
+    }
+    return true;
+  };
+  const System melt = read_lammps_data(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
+  const std::string path = ::testing::TempDir() + "caps_ps_melt_roundtrip.cif";
+  write_cif(melt, path);
+  const System s = read_cif(path);
+  ASSERT_EQ(s.atoms.size(), melt.atoms.size());
+  EXPECT_TRUE(s.unwrapped);
+  EXPECT_LT(longest_bond(s), 2.0);   // every chain whole as read (the 33 A cell cuts many of them in the file)
+  for (const char* f : {"alpha-quartz.cif", "diamond.cif", "graphite.cif", "polymers/natural-rubber.cif"}) {
+    const System c = read_cif(kCrystals + f);
+    EXPECT_TRUE(inside(c, 0, c.atoms.size())) << f;   // networks stay as placed, inside the cell
+  }
+  // a water molecule straddling the cell face in the sodalite cage at the origin: the guest is made whole, the framework
+  // stays as placed
+  System z = read_cif(kCrystals + "zeolite-sod.cif");
+  const size_t nf = z.atoms.size();
+  Atom a = z.atoms[0];
+  const double r = 0.9572, th = 104.52 * M_PI / 180;   // TIP3P geometry
+  for (const auto& [el, p] : std::vector<std::pair<int, Vec3>>{{8, {0.2, 0.2, 0.2}},
+                                                               {1, {0.2 - r, 0.2, 0.2}},
+                                                               {1, {0.2 - r * std::cos(th), 0.2 - r * std::sin(th), 0.2}}}) {
+    a.element = el, a.pos = p, a.name = el == 8 ? "Ow" : "Hw";
+    z.atoms.push_back(a);
+  }
+  z.bonds.clear();
+  const std::string zpath = ::testing::TempDir() + "caps_sod_water.cif";
+  write_cif(z, zpath);
+  const System w = read_cif(zpath);
+  ASSERT_EQ(w.atoms.size(), nf + 3);
+  // the water O: the O nearest the first H through the cell (a framework O is over 2 A away from it)
+  size_t h1 = w.atoms.size(), ow = w.atoms.size();
+  for (size_t i = 0; i < w.atoms.size() && h1 == w.atoms.size(); ++i) if (w.atoms[i].element == 1) h1 = i;
+  ASSERT_LT(h1, w.atoms.size());
+  double best = 1e9;
+  for (size_t i = 0; i < w.atoms.size(); ++i)
+    if (w.atoms[i].element == 8) {
+      const double d = norm(w.cell.minimum_image(w.atoms[i].pos - w.atoms[h1].pos));
+      if (d < best) best = d, ow = i;
+    }
+  int hs = 0;
+  for (size_t i = 0; i < w.atoms.size(); ++i) {
+    if (w.atoms[i].element == 1) {
+      ++hs;
+      EXPECT_LT(norm(w.atoms[i].pos - w.atoms[ow].pos), 1.0);   // both H whole with their O, as stored
+    } else if (i != ow) {
+      EXPECT_TRUE(inside(w, i, i + 1)) << i;   // the framework stays as placed
+    }
+  }
+  EXPECT_EQ(hs, 2);
 }

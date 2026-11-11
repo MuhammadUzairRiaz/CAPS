@@ -24,7 +24,8 @@ public sealed record ResultRow(string Quantity, string Value);
 /// statistics behind what Grow builds, and the small analytic models beside them, each saying what it assumes.</summary>
 public partial class MainViewModel
 {
-    private static string Thin(double v, string f = "#,0") => v.ToString(f, Inv).Replace(",", " ");
+    // invariant thousands comma (1,300), the same form the status bar uses ({0:N0} invariant)
+    private static string Thin(double v, string f = "#,0") => v.ToString(f, Inv);
     private string? DefaultCleanForceField() =>
         CleanChoices.FirstOrDefault(c => c.File != null && Path.GetFileNameWithoutExtension(c.File) == _settings.ForceField)?.File
         ?? CleanChoices.FirstOrDefault(c => c.File != null)?.File;
@@ -265,6 +266,10 @@ public partial class MainViewModel
     public double? CoAzeotrope { get; private set; }
     /// <summary>The Mayo-Lewis copolymer equation (terminal model), typeset beside the table; its value is <see cref="CoMayoLewisValue"/>.</summary>
     public const string CoMayoLewisTex = @"F_1=\frac{r_1f_1^2+f_1f_2}{r_1f_1^2+2f_1f_2+r_2f_2^2}";
+    /// <summary>Hildebrand estimate of the Flory-Huggins χ on the Solvent screen page (V_s solvent molar volume, δ solubility parameters).</summary>
+    public const string SsChiTex = @"\chi\approx\frac{V_s(\delta_s-\delta_p)^2}{RT}+0.34";
+    /// <summary>Short form of <see cref="SsChiTex"/> for the Solvent screen footer.</summary>
+    public const string SsChiShortTex = @"\chi\approx\frac{V(\Delta\delta)^2}{RT}+0.34";
     /// <summary>The azeotropic feed of the terminal model, typeset; its value is <see cref="CoAzeotropeValue"/>.</summary>
     public const string CoAzeotropeTex = @"\text{azeotrope:}\;f_1=\frac{1-r_2}{2-r_1-r_2}";
     /// <summary>The three-unit terminal model's propagation rule, typeset when a third monomer is added.</summary>

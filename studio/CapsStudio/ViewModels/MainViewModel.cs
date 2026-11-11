@@ -490,6 +490,9 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The number of module pages, and a page's place in the top bar ("" for none), for the GUI sweep.</summary>
     internal static int ModuleCount => Crumbs.Length;
     internal static string ModuleCrumb(int m) => m >= 0 && m < Crumbs.Length ? Crumbs[m] : "";
+    /// <summary>True for an index with no page: out of range, or a retired slot kept as "" so later indices stay
+    /// stable (30, the removed biomolecule builder). Studio (8) has no crumb but is a page.</summary>
+    internal static bool IsRetiredModule(int m) => m != 8 && ModuleCrumb(m).Length == 0;
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : ModuleCrumb(_module);
     /// <summary>Where calculations run (top bar).</summary>
@@ -607,6 +610,7 @@ public sealed partial class MainViewModel : ObservableObject
     public void SetModule(int m, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
     {
         var was = _module;
+        if (IsRetiredModule(m)) m = 8;   // a retired slot has no page; showing it left a blank panel and no title, so go to the Studio
         if (!Set(ref _module, m, nameof(Module))) return;
         if (m == 27 && was != 27) _returnModule = was;   // Cancel on Open file goes back to the page it was reached from
         if (!caller.StartsWith("Open", StringComparison.Ordinal) && PageOpeners.TryGetValue(m, out var open))

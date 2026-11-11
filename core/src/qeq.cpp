@@ -264,10 +264,23 @@ Built build(const System& s, const QEqOptions& o, QEqReport& R, bool coulomb_onl
     const double x = r / rc;
     return 1 + x * x * x * x * (-35 + x * (84 + x * (-70 + x * 20)));
   };
+  // The Ohno–Klopman form 1/√(r² + a²) meets J at r = 0 and 1/r far away, but its difference from 1/r falls only as
+  // −a²/(2r³), an artefact of the interpolation (the true shielding of overlapping densities dies exponentially, as the
+  // Slater kernel shows). a differs per element pair, so in a neutral 3D lattice Σ q_i q_j a_ij²/r³ does not cancel and
+  // grows like ln r_c: quartz Si went +3.0, +3.2, +4.2, +5.2 e at 6, 10, 16, 20 Å. So the difference is switched to
+  // zero over a fixed 5–7 Å (the same smooth step as the taper), and the kernel is Ohno inside 5 Å and plain Coulomb
+  // past 7 Å, whatever the cut-off; a cut-off below 7 Å scales the window down with it.
+  const double sw_off = std::min(7.0, rc), sw_on = sw_off * 5.0 / 7.0;
+  auto ohno_switch = [&](double r) {
+    if (r <= sw_on) return 1.0;
+    if (r >= sw_off) return 0.0;
+    const double x = (r - sw_on) / (sw_off - sw_on);
+    return 1 + x * x * x * x * (-35 + x * (84 + x * (-70 + x * 20)));
+  };
   auto kernel = [&](size_t i, size_t j, double r) {   // eV
     if (o.kernel == "ohno") {
       const double a = 0.5 * kCoul * (1 / B.J[i] + 1 / B.J[j]);
-      return kCoul / std::sqrt(r * r + a * a);
+      return kCoul / r + ohno_switch(r) * (kCoul / std::sqrt(r * r + a * a) - kCoul / r);
     }
     if (slater) return tables.at(std::minmax(s.atoms[i].element, s.atoms[j].element)).at(r);
     return kCoul / r;
@@ -337,7 +350,7 @@ Built build(const System& s, const QEqOptions& o, QEqReport& R, bool coulomb_onl
               const double r2 = dot(d, d);
               if (r2 >= rc2 || r2 < 1e-12) continue;   // r ≈ 0: the atom itself
               const double r = std::sqrt(r2);
-              const double v = ewald ? kCoul * std::erfc(alpha * r) / r + (kernel(i, im.j, r) - kCoul / r) * (o.kernel == "ohno" ? taper(r) : 1.0)
+              const double v = ewald ? kCoul * std::erfc(alpha * r) / r + (kernel(i, im.j, r) - kCoul / r)
                                      : taper(r) * kernel(i, im.j, r);
               if (acc[im.j] == 0.0) touched.push_back(im.j);
               acc[im.j] += v;
@@ -626,7 +639,7 @@ std::vector<double> qeq_charges(const System& s, const QEqOptions& o, QEqReport*
     R.notes.push_back("conjugate gradients did not converge fully");
     R.converged = false;
   }
-  // QEq charges stay within a few e (quartz Si about +3.2); far beyond that the hardness matrix is close to singular
+  // QEq charges stay within a few e (quartz Si +1.26 with the Slater kernel, +4.5 with Ohno); far beyond that the hardness matrix is close to singular
   // (with the Slater kernel, λ too large), and the solve, however small its residual, is no answer
   double qmax = 0;
   for (double x : q) qmax = std::max(qmax, std::fabs(x));

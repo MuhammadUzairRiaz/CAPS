@@ -9,6 +9,11 @@
 #include <vector>
 
 #include "caps/mechanics.hpp"
+#include "caps/analysis.hpp"
+#include "caps/crystal.hpp"
+#include "caps/spacegroup.hpp"
+#include "caps/ffdef.hpp"
+#include "caps/typing.hpp"
 #include "caps/grow.hpp"
 #include "caps/relax.hpp"
 #include "caps/uff.hpp"
@@ -658,4 +663,29 @@ TEST(Mechanics, SlidingFrictionOfALjFilm) {
   const auto props = friction_properties(r);
   EXPECT_EQ(props[0].id, "friction");
   std::printf("friction: shear stress %.1f MPa (no-slip estimate ~50), normal %.1f MPa, mu %.2f, <T> %.1f K\n", r.shear_stress, r.normal_stress, r.mu, tm);
+}
+
+// A shell model's density counts each ion once: the force field splits the O2- mass between core (14.3991) and shell
+// (1.5999), so the sum of the particle masses is the formula mass. Counting the shell as a second O (its element's mass)
+// gave MgO 5.01 g/cm3 instead of 4 x 40.304 / (N_A a^3) = 3.58 at a = 4.212 A, and sound speeds sqrt(1.4) too low.
+TEST(Mechanics, ShellModelDensityCountsEachIonOnce) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/catlow1976-mgo.json");
+  CrystalSpec spec;
+  spec.space_group = "F m -3 m";
+  spec.a = spec.b = spec.c = 4.212;
+  spec.sites = {{"Mg1", 12, {0, 0, 0}}, {"O1", 8, {0.5, 0.5, 0.5}}};
+  System s = build_crystal(spec);
+  s.bonds = perceive_bonds(s);
+  std::string ch = "types";
+  prepare_for_forcefield(s, def, ch);
+  ASSERT_EQ(s.atoms.size(), 12u);   // 4 Mg, 4 O cores, 4 O shells
+  const TypingResult tr = assign_types(s, def);
+  ASSERT_EQ(tr.untyped, 0);
+  StaticElasticOptions o;
+  o.field = std::make_shared<const ForceField>(parameterize(s, def, tr.types, ch, nullptr, false));
+  const ElasticResult r = static_elastic({s}, o);
+  const double rho = 4 * (24.305 + 15.999) / 6.02214076e23 / (std::pow(4.212, 3) * 1e-24);
+  EXPECT_NEAR(r.density, rho, 1e-3);
+  EXPECT_NEAR(r.density, 3.58, 0.01);
+  EXPECT_GT(r.C[0][0], 0);
 }

@@ -4062,9 +4062,10 @@
 
     <!-- Status bar (lib.py statusbar): counts on the left, what the mouse does and the renderer on the right -->
     <Border Grid.Row="3" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="14,0">
-      <!-- the short mouse hint keeps its own width; the status message takes the rest, trimmed with its full text in a tooltip.
-           At 1440 px both read in full: the hint is kept short (the full mouse map is in its tooltip) and the renderer side says FP64. -->
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+      <!-- the status message is what changed, so it keeps its own width (up to MaxWidth, then trimmed with the full text in a tooltip);
+           the fixed mouse hint takes what is left and trims first, its tooltip carries the full mouse map. With a structure loaded at
+           1440 px the readouts on the left leave too little room for both, and the message is the one the user has not read yet. -->
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
           <TextBlock Text="{Binding StatusCounts}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
           <TextBlock Text="{Binding DisplayStatus}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
@@ -4072,8 +4073,8 @@
           <TextBlock Text="{Binding StatusCell}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" IsVisible="{Binding HasDocument}" />
         </StackPanel>
         <TextBlock Grid.Column="1" Text="{Binding Status}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center"
-                   Margin="16,0" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Status}" />
-        <TextBlock Grid.Column="2" Text="{Binding MouseHint}" ToolTip.Tip="{Binding MouseHintTip}"
+                   Margin="16,0" MaxWidth="440" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Status}" />
+        <TextBlock Grid.Column="2" Text="{Binding MouseHint}" ToolTip.Tip="{Binding MouseHintTip}" TextTrimming="CharacterEllipsis"
                    Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,16,0" />
         <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
           <TextBlock Text="{Binding AutoCleanText}" IsVisible="{Binding AutoCleanOn}" Classes="mono" FontSize="11" Foreground="{DynamicResource AccB}" />

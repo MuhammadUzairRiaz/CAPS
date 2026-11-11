@@ -80,7 +80,7 @@
         <StackPanel>
           <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
             <DockPanel>
-              <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Text="lmp -in STEM.in" Classes="mono" /></Border>
+              <Border DockPanel.Dock="Right" Classes="chip" VerticalAlignment="Center"><TextBlock Text="{Binding EngineStem, StringFormat='lmp -in {0}.in'}" Classes="mono" /></Border>
               <TextBlock Text="LAMMPS" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
             </DockPanel>
           </Border>

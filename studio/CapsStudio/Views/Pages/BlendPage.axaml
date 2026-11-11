@@ -86,7 +86,13 @@
                         <StackPanel Spacing="3">
                           <Grid ColumnDefinitions="Auto,*,64,56,Auto" ColumnSpacing="6">
                             <Border Width="10" Height="10" CornerRadius="5" Background="{Binding Dot}" VerticalAlignment="Center" />
-                            <ComboBox Grid.Column="1" ItemsSource="{Binding $parent[p:BlendPage].((vm:MainViewModel)DataContext).BlendLibrary}" SelectedItem="{Binding Polymer}" HorizontalAlignment="Stretch">
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding $parent[p:BlendPage].((vm:MainViewModel)DataContext).BlendLibrary}" SelectedItem="{Binding Polymer}" HorizontalAlignment="Stretch"
+                                      ToolTip.Tip="{Binding Polymer.Name}">
+                              <ComboBox.SelectionBoxItemTemplate>
+                                <DataTemplate x:DataType="vm:LibraryEntry">
+                                  <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                              </ComboBox.SelectionBoxItemTemplate>
                               <ComboBox.ItemTemplate>
                                 <DataTemplate x:DataType="vm:LibraryEntry">
                                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">

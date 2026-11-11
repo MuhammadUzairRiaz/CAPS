@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "caps/crystal.hpp"
+#include "caps/elements.hpp"
 #include "caps/molecule.hpp"
 #include "caps/powder_index.hpp"
 #include "caps/spacegroup.hpp"
@@ -100,4 +101,39 @@ TEST(PowderIndex, SolvesASyntheticMolecularCrystal) {
   std::printf("Rwp %.4f after %d moves (%d accepted, %d torsions)\n", r.rwp, r.steps, r.accepted, r.torsions);
   EXPECT_LT(r.rwp, 0.05);
   EXPECT_EQ(r.crystal.atoms.size(), truth.atoms.size());
+  // no two atoms of different molecules (or lattice images) closer than 0.75 of their Bondi sum, hydrogens included
+  const size_t n = mol.atoms.size();
+  double worst = 1e9;
+  for (size_t i = 0; i < r.crystal.atoms.size(); ++i)
+    for (size_t j = i; j < r.crystal.atoms.size(); ++j)
+      for (int l0 = -1; l0 <= 1; ++l0)
+        for (int l1 = -1; l1 <= 1; ++l1)
+          for (int l2 = -1; l2 <= 1; ++l2) {
+            if (i / n == j / n && !l0 && !l1 && !l2) continue;
+            const Vec3 v = r.crystal.atoms[j].pos + cell.a * double(l0) + cell.b * double(l1) + cell.c * double(l2) - r.crystal.atoms[i].pos;
+            const double rs = element(r.crystal.atoms[i].element).vdw + element(r.crystal.atoms[j].element).vdw;
+            worst = std::min(worst, norm(v) / rs);
+          }
+  std::printf("closest intermolecular contact: %.3f of the Bondi sum\n", worst);
+  EXPECT_GE(worst, 0.75 - 1e-6);
+}
+
+// Four ethanes in a 92 A^3 cell (23 A^3 each, against a van der Waals volume of about 45 A^3) cannot pack: solve refuses
+// the cell by its packing coefficient before any annealing instead of returning interpenetrating molecules
+TEST(PowderIndex, SolveRefusesACellTooSmallForTheMolecules) {
+  System mol = build_molecule("CC").system;
+  const std::array<double, 6> cp{7.4, 4.93, 2.534, 90, 90, 90};
+  const System pe = read_cif(std::string(CAPS_SOURCE_DIR) + "/data/crystals/polymers/pe-orthorhombic.cif");
+  const MeasuredPattern d = synthetic(pe, 10, 60, 0.01);
+  SolveOptions o;
+  o.space_group = "P 21/c";
+  o.steps = 50, o.fit_profile = false;
+  try {
+    solve_structure(d, mol, cp, o);
+    FAIL() << "a cell too small for four ethanes was accepted";
+  } catch (const std::invalid_argument& e) {
+    const std::string m = e.what();
+    std::printf("%s\n", m.c_str());
+    EXPECT_NE(m.find("no packing fits"), std::string::npos);
+  }
 }

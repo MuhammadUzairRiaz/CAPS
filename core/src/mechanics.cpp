@@ -34,6 +34,20 @@ constexpr int VA[6] = {0, 1, 2, 1, 0, 0}, VB[6] = {0, 1, 2, 2, 2, 1}, VW[6] = {0
 
 M3 identity() { return {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}}; }
 
+// The mass of the cell in g/mol for the density and the sound speeds: the force field's per-atom masses when it has them.
+// In an adiabatic shell model the ion's mass is split between its core and its massless-ish shell (Mitchell & Fincham,
+// J. Phys.: Condens. Matter 5, 1031 (1993); e.g. O core 14.3991 + shell 1.5999 = 15.999), so the sum over particles is
+// the sum over ions. The structure's element masses would count every shell as a second whole ion.
+double cell_mass(const ForceField* ff, const System& s) {
+  if (ff && ff->mass.size() == s.atoms.size()) {
+    double m = 0;
+    for (double x : ff->mass) m += x;
+    if (m > 0) return m;
+  }
+  return s.total_mass();
+}
+
+
 M3 mul(const M3& a, const M3& b) {
   M3 c{};
   for (int i = 0; i < 3; ++i)
@@ -261,12 +275,13 @@ ElasticResult static_elastic(const std::vector<System>& configs, const StaticEla
   ro.max_iterations = o.max_iterations;
   int unconverged = 0;
   std::map<std::string, int> stops;
-  double asym = 0;
+  double asym = 0, mass0 = 0;
   for (size_t q = 0; q < configs.size(); ++q) {
     const System& s = configs[q];
     if (!s.cell.valid()) throw std::invalid_argument("elastic constants need a periodic cell");
     const ForceField ff = o.field ? *o.field : default_forcefield(s);
     if (ff.atom_type.size() != s.atoms.size()) throw FieldError("the force field does not match the structure");
+    if (q == 0) mass0 = cell_mass(&ff, s);
     Evaluator ev(ff, o.energy);
     std::vector<double> x = positions(s), f;
     const double steps = 13.0 * configs.size();
@@ -325,7 +340,7 @@ ElasticResult static_elastic(const std::vector<System>& configs, const StaticEla
   res.prestress = pre;
   res.asymmetry = asym;
   res.configurations = int(n);
-  res.density = configs[0].total_mass() / kNAvo / (configs[0].cell.volume() * 1e-24);
+  res.density = mass0 / kNAvo / (configs[0].cell.volume() * 1e-24);
   isotropic_averages(res);
   res.method = "static strain (Theodorou & Suter 1986): each configuration minimised at fixed cell (L-BFGS, |F| < " + fmt(o.ftol, 2) +
                " kcal/mol/Å, pair set frozen at the minimum), ±" + fmt(o.strain, 2) + " pure strain in each Voigt component, atoms re-minimised, C_IJ = Δσ_I/Δε_J; " +
@@ -422,7 +437,7 @@ ElasticResult fluctuation_elastic(const Trajectory& t, const std::vector<size_t>
     res.prestress[v] = m * kGPa - (v < 3 ? natoms * kT / vmean * kGPa : 0.0);   // total stress: virial minus kinetic pressure
   }
   res.configurations = int(n);
-  res.density = t.topology.total_mass() / kNAvo / (vmean * 1e-24);
+  res.density = cell_mass(o.ff, t.topology) / kNAvo / (vmean * 1e-24);
   isotropic_averages(res);
   res.method = "stress fluctuations at constant volume (Lutsko 1989): ⟨Born⟩ − (V/kT) cov(σ) + NkT/V over " + std::to_string(n) +
                " frames at " + fmt(o.temperature, 4) + " K; Born term by central differences (±" + fmt(o.strain, 2) +
@@ -947,7 +962,7 @@ ElasticResult fluctuation_run(System& s, const FluctuationRunOptions& o) {
     res.prestress[v] = m / n * kGPa - (v < 3 ? kin : 0.0);
   }
   res.configurations = static_cast<int>(n);
-  res.density = s.cell.valid() ? s.total_mass() / kNAvo / (s.cell.volume() * 1e-24) : 0;
+  res.density = s.cell.valid() ? cell_mass(&ff, s) / kNAvo / (s.cell.volume() * 1e-24) : 0;
   isotropic_averages(res);
   res.method = "stress fluctuations on the fly (Lutsko 1989; Clavier et al. 2017): NVT at " + fmt(o.temperature, 4) + " K (" + to_string(o.thermostat) +
                "), " + fmt(o.equilibrate_ps, 4) + " ps equilibration, " + fmt(o.ps, 5) + " ps sampled with the virial stress at every step and the Born term every " +

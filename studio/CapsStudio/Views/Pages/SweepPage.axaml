@@ -128,14 +128,14 @@
               <TextBlock Text="Parameters" FontSize="13.5" FontWeight="SemiBold" />
               <StackPanel Spacing="6"><TextBlock Text="Polymer" Classes="label" /><ComboBox ItemsSource="{Binding SweepPolymers}" SelectedItem="{Binding SweepPolymer}" HorizontalAlignment="Stretch" /></StackPanel>
               <StackPanel Spacing="6">
-                <TextBlock Text="tacticity" Classes="label" />
+                <TextBlock Text="Tacticity" Classes="label" />
                 <StackPanel Orientation="Horizontal" Spacing="14">
                   <CheckBox Content="isotactic" IsChecked="{Binding SweepIso}" /><CheckBox Content="syndiotactic" IsChecked="{Binding SweepSyn}" /><CheckBox Content="atactic" IsChecked="{Binding SweepAta}" />
                 </StackPanel>
               </StackPanel>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                <StackPanel Spacing="6"><TextBlock Text="dp" Classes="label" /><TextBox Text="{Binding SweepDps}" Classes="mono" /></StackPanel>
-                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="seed" Classes="label" /><TextBox Text="{Binding SweepSeeds}" Classes="mono" /></StackPanel>
+                <StackPanel Spacing="6"><TextBlock Text="Chain length · DP" Classes="label" TextTrimming="CharacterEllipsis" ToolTip.Tip="Degree of polymerisation: repeat units per chain. One or more values, separated by commas" /><TextBox Text="{Binding SweepDps}" Classes="mono" ToolTip.Tip="Degree of polymerisation: repeat units per chain. One or more values, separated by commas" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Seeds" Classes="label" TextTrimming="CharacterEllipsis" ToolTip.Tip="Random seeds for building the cells. One or more values, separated by commas; each seed gives an independent cell" /><TextBox Text="{Binding SweepSeeds}" Classes="mono" ToolTip.Tip="Random seeds for building the cells. One or more values, separated by commas; each seed gives an independent cell" /></StackPanel>
               </Grid>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                 <StackPanel Spacing="6"><TextBlock Text="Chains per cell" Classes="label" /><NumericUpDown Value="{Binding SweepChains}" Minimum="1" Maximum="500" Increment="1" FormatString="0" ShowButtonSpinner="False" /></StackPanel>

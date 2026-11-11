@@ -52,7 +52,14 @@ Vec3 centroid(const std::vector<Vec3>& P) {
   return c * (1.0 / double(std::max<size_t>(1, P.size())));
 }
 
-// The fixed host atoms binned (bins at least rc/2 wide, two either side), and the pair model
+// The fixed host atoms binned (bins at least rc/2 wide, two either side), and the pair model.
+// A cut-off wider than half the cell's narrowest width reaches more than one periodic image of an atom, and the
+// minimum image then drops pairs inside the cut-off (a shorter cut-off instead would bias the Henry constant and the
+// loadings). So past that width every image within the cut-off counts: the host's images are ghost copies binned in
+// space (a sorbate atom folded into the cell meets them at plain distances), and sorbate pairs are lattice sums over
+// the translations T with |d + T| < rc. The energy per cell of the periodic system is then
+// E = sum_i u_host(i) + 1/2 sum_{i,j} sum_T' u(r_ij + T) (Allen & Tildesley, Computer Simulation of Liquids, sec. 1.5),
+// so a molecule also meets its own images: 1/2 sum_{k,q} sum_{T != 0} u(r_kq + T), see own().
 struct Host {
   const System& s;
   const PairModel& pm;
@@ -61,12 +68,25 @@ struct Host {
   int nb[3] = {1, 1, 1};
   std::vector<std::vector<uint32_t>> bins;
   std::vector<std::vector<int>> stencil;
+  bool images = false;
+  double w[3] = {0, 0, 0}, wmin = 0;   // the cell's widths across each pair of faces (Å), and the narrowest
+  Vec3 rec[3];                         // fractional height of a separation d across faces k: dot(rec[k], d)
+  std::vector<Vec3> gpos;              // the host's images within the cut-off of the cell
+  std::vector<uint32_t> gatom;         // ... and the atom each copies
+  Vec3 glo{0, 0, 0};
+  double gw[3] = {1, 1, 1};
+  int gn[3] = {1, 1, 1};
+  std::vector<std::vector<uint32_t>> gbins;
   Host(const System& sys, const PairModel& p, size_t n_host) : s(sys), pm(p) {
     const Cell& c = sys.cell;
     ortho = std::fabs(c.a[1]) + std::fabs(c.a[2]) + std::fabs(c.b[0]) + std::fabs(c.b[2]) + std::fabs(c.c[0]) + std::fabs(c.c[1]) < 1e-9;
     L[0] = c.a[0], L[1] = c.b[1], L[2] = c.c[2];
-    const double V = c.volume();
-    const double w[3] = {V / norm(cross(c.b, c.c)), V / norm(cross(c.c, c.a)), V / norm(cross(c.a, c.b))};
+    const double V = c.volume(), det = dot(c.a, cross(c.b, c.c));
+    w[0] = V / norm(cross(c.b, c.c)), w[1] = V / norm(cross(c.c, c.a)), w[2] = V / norm(cross(c.a, c.b));
+    rec[0] = cross(c.b, c.c) * (1.0 / det), rec[1] = cross(c.c, c.a) * (1.0 / det), rec[2] = cross(c.a, c.b) * (1.0 / det);
+    wmin = std::min({w[0], w[1], w[2]});
+    images = p.cutoff() > 0.5 * wmin;
+    if (images) build_images(n_host);
     for (int d = 0; d < 3; ++d) nb[d] = std::max(1, int(std::floor(2 * w[d] / p.cutoff())));
     bins.resize(size_t(nb[0] * nb[1] * nb[2]));
     for (uint32_t i = 0; i < n_host; ++i) bins[size_t(bin_of(sys.atoms[i].pos))].push_back(i);
@@ -85,6 +105,89 @@ struct Host {
               for (int k : offs(2, cc)) stencil[size_t((a * nb[1] + b) * nb[2] + cc)].push_back((i * nb[1] + j) * nb[2] + k);
         }
   }
+  void build_images(size_t n_host) {
+    const double rc = pm.cutoff();
+    double per_pair = 1;   // a bounded budget: a cut-off many times the cell's width needs millions of images
+    for (int d = 0; d < 3; ++d) per_pair *= 1 + 2 * rc / w[d];
+    const double est = per_pair * double(n_host);
+    if (est > 4e6 || per_pair > 2e5) {
+      char b[320];
+      std::snprintf(b, sizeof b, "sorption: a %.1f Å cut-off in a cell %.2f Å across needs about %.0f periodic images; use a shorter cut-off or a larger cell",
+                    rc, wmin, std::max(est, per_pair));
+      throw std::invalid_argument(b);
+    }
+    int n[3];
+    double reach[3];
+    for (int d = 0; d < 3; ++d) n[d] = int(std::ceil(rc / w[d])), reach[d] = rc / w[d];
+    for (uint32_t a = 0; a < n_host; ++a) {
+      Vec3 f = s.cell.to_fractional(s.atoms[a].pos);
+      for (int d = 0; d < 3; ++d) f[size_t(d)] -= std::floor(f[size_t(d)]);
+      for (int i = -n[0]; i <= n[0]; ++i)
+        for (int j = -n[1]; j <= n[1]; ++j)
+          for (int k = -n[2]; k <= n[2]; ++k) {
+            const Vec3 g{f[0] + i, f[1] + j, f[2] + k};
+            bool keep = true;   // within the cut-off of the cell (a point in it is at most rc / w away across each pair of faces)
+            for (int d = 0; d < 3 && keep; ++d) keep = g[size_t(d)] > -reach[d] && g[size_t(d)] < 1 + reach[d];
+            if (keep) gpos.push_back(s.cell.to_cartesian(g)), gatom.push_back(a);
+          }
+    }
+    // bins at least rc wide over the images' box; a point outside the box searches the bins at its edge
+    Vec3 hi{-1e30, -1e30, -1e30};
+    glo = {1e30, 1e30, 1e30};
+    for (const auto& q : gpos)
+      for (size_t d = 0; d < 3; ++d) glo[d] = std::min(glo[d], q[d]), hi[d] = std::max(hi[d], q[d]);
+    if (gpos.empty()) glo = {0, 0, 0};
+    for (int d = 0; d < 3; ++d) {
+      const double ext = gpos.empty() ? 0 : hi[size_t(d)] - glo[size_t(d)];
+      gn[d] = std::clamp(int(std::floor(ext / rc)), 1, 64);
+      gw[d] = std::max(rc, ext / gn[d]);
+    }
+    gbins.assign(size_t(gn[0] * gn[1] * gn[2]), {});
+    for (uint32_t g = 0; g < gpos.size(); ++g) {
+      int id[3];
+      gbin(gpos[g], id);
+      gbins[size_t((id[0] * gn[1] + id[1]) * gn[2] + id[2])].push_back(g);
+    }
+  }
+  void gbin(const Vec3& p, int id[3]) const {
+    for (int d = 0; d < 3; ++d) id[d] = std::clamp(int(std::floor((p[size_t(d)] - glo[size_t(d)]) / gw[d])), 0, gn[d] - 1);
+  }
+  // pm.energy of atoms ta and tb over the lattice translations T with |d + T| inside the cut-off; skip0: T = 0 left out
+  double lattice_sum(uint32_t ta, uint32_t tb, const Vec3& d, bool skip0) const {
+    const double rc = pm.cutoff();
+    const Cell& c = s.cell;
+    int lo[3], hi[3];
+    for (int t = 0; t < 3; ++t) {
+      const double f = dot(rec[t], d);   // (f + i) w_t must lie within ±rc
+      lo[t] = int(std::ceil(-rc / w[t] - f)), hi[t] = int(std::floor(rc / w[t] - f));
+    }
+    double e = 0;
+    for (int i = lo[0]; i <= hi[0]; ++i)
+      for (int j = lo[1]; j <= hi[1]; ++j)
+        for (int k = lo[2]; k <= hi[2]; ++k) {
+          if (skip0 && i == 0 && j == 0 && k == 0) continue;
+          const Vec3 r = d + c.a * double(i) + c.b * double(j) + c.c * double(k);
+          e += pm.energy(ta, tb, dot(r, r));
+        }
+    return e;
+  }
+  // two sorbate atoms (force-field indices ta, tb) a separation d apart, every image within the cut-off
+  double pair(uint32_t ta, uint32_t tb, const Vec3& d) const {
+    if (images) return lattice_sum(ta, tb, d, false);
+    const Vec3 m = mi(d);
+    return pm.energy(ta, tb, dot(m, m));
+  }
+  // a molecule (atoms tpl at P) with its own periodic images, each pair of images once; 0 while the cut-off reaches
+  // one image only
+  double own(const std::vector<uint32_t>& tpl, const std::vector<Vec3>& P) const {
+    if (!images) return 0;
+    double e = 0;
+    for (size_t k = 0; k < tpl.size(); ++k) {
+      e += 0.5 * lattice_sum(tpl[k], tpl[k], Vec3{0, 0, 0}, true);
+      for (size_t q = k + 1; q < tpl.size(); ++q) e += lattice_sum(tpl[k], tpl[q], P[q] - P[k], true);
+    }
+    return e;
+  }
   Vec3 mi(Vec3 d) const {
     if (!ortho) return s.cell.minimum_image(d);
     for (int k = 0; k < 3; ++k) d[size_t(k)] -= L[k] * std::round(d[size_t(k)] / L[k]);
@@ -99,6 +202,19 @@ struct Host {
   // one atom (force-field index t) at p with the host
   double atom(uint32_t t, const Vec3& p) const {
     double e = 0;
+    if (images) {
+      const Vec3 q = s.cell.wrap(p);
+      int id[3];
+      gbin(q, id);
+      for (int a = std::max(0, id[0] - 1); a <= std::min(gn[0] - 1, id[0] + 1); ++a)
+        for (int b = std::max(0, id[1] - 1); b <= std::min(gn[1] - 1, id[1] + 1); ++b)
+          for (int c = std::max(0, id[2] - 1); c <= std::min(gn[2] - 1, id[2] + 1); ++c)
+            for (uint32_t g : gbins[size_t((a * gn[1] + b) * gn[2] + c)]) {
+              const Vec3 d = gpos[g] - q;
+              e += pm.energy(t, gatom[g], dot(d, d));
+            }
+      return e;
+    }
     for (int bn : stencil[size_t(bin_of(p))])
       for (uint32_t b : bins[size_t(bn)]) {
         const Vec3 d = mi(s.atoms[b].pos - p);
@@ -118,10 +234,7 @@ struct Host {
   double between(const std::vector<uint32_t>& tp, const std::vector<Vec3>& P, const std::vector<uint32_t>& tq, const std::vector<Vec3>& Q) const {
     double e = 0;
     for (size_t k = 0; k < tp.size(); ++k)
-      for (size_t q = 0; q < tq.size(); ++q) {
-        const Vec3 d = mi(Q[q] - P[k]);
-        e += pm.energy(tp[k], tq[q], dot(d, d));
-      }
+      for (size_t q = 0; q < tq.size(); ++q) e += pair(tp[k], tq[q], Q[q] - P[k]);
     return e;
   }
 };
@@ -299,19 +412,26 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
   if (o.temperature <= 0) throw std::invalid_argument("sorption: T > 0");
   if (o.flexible && o.trials < 1) throw std::invalid_argument("sorption: at least one trial per growth step");
   const size_t nh = size_t(o.template_first_atom);
-  double rc = o.cutoff;
-  {
-    const double V = s.cell.volume();
-    const double wmin = std::min({V / norm(cross(s.cell.b, s.cell.c)), V / norm(cross(s.cell.c, s.cell.a)), V / norm(cross(s.cell.a, s.cell.b))});
-    if (rc > 0.5 * wmin - 1e-6) {
-      rc = 0.5 * wmin - 1e-6;
-      char b[160];
-      std::snprintf(b, sizeof b, "cut-off reduced to %.2f Å (half the cell's narrowest width)", rc);
+  if (!(o.cutoff > 0)) throw std::invalid_argument("sorption: the cut-off must be positive");
+  // the cut-off holds as asked: past half the cell's narrowest width every periodic image within it counts (see Host)
+  const PairModel pm(ff, o.cutoff, o.coulomb, o.dsf_alpha);
+  const Host H(s, pm, nh);
+  if (H.images) {
+    char b[320];
+    std::snprintf(b, sizeof b, "the %.1f Å cut-off is wider than half the cell (%.2f Å across): every periodic image within it counts (%zu host images)",
+                  o.cutoff, H.wmin, H.gpos.size());
+    rep.notes.push_back(b);
+    if (!o.pressures_kpa.empty() || !o.fixed_loading.empty()) {
+      int sc[3];
+      for (int d = 0; d < 3; ++d) sc[d] = std::max(1, int(std::ceil(2 * o.cutoff / H.w[d] - 1e-9)));
+      std::snprintf(b, sizeof b, "each sorbed molecule also meets its own periodic images, so its neighbours repeat with the cell; for loadings free of that "
+                    "make a %dx%dx%d supercell first (the Henry constant, one molecule alone, is unaffected)", sc[0], sc[1], sc[2]);
       rep.notes.push_back(b);
     }
   }
-  const PairModel pm(ff, rc, o.coulomb, o.dsf_alpha);
-  const Host H(s, pm, nh);
+  // a molecule's own images: part of the periodic system's energy once sorbed (GCMC, fixed loading), but not of the
+  // Henry constant, which is one molecule alone in the infinite host
+  bool count_own = false;
   // the species: each template's atoms, its shape about its centre and, when flexible, its growth plan
   std::vector<int> starts = o.species_first_atom.empty() ? std::vector<int>{o.template_first_atom} : o.species_first_atom;
   for (size_t k = 0; k < starts.size(); ++k)
@@ -378,10 +498,7 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
     for (size_t j = 0; j < mols.size(); ++j) {
       if (j == skip) continue;
       const auto& tq = tpls[mols[j].sp];
-      for (size_t q = 0; q < tq.size(); ++q) {
-        const Vec3 d = H.mi(mols[j].P[q] - p);
-        e += pm.energy(tpls[sp][size_t(a)], tq[q], dot(d, d));
-      }
+      for (size_t q = 0; q < tq.size(); ++q) e += H.pair(tpls[sp][size_t(a)], tq[q], mols[j].P[q] - p);
     }
     return e;
   };
@@ -404,6 +521,7 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
     e.host = H.energy(tpls[sp], X);
     if (!std::isfinite(e.host)) return e;
     for (size_t j = 0; j < mols.size(); ++j) if (j != skip) e.mut += H.between(tpls[sp], X, tpls[mols[j].sp], mols[j].P);
+    if (count_own) e.mut += H.own(tpls[sp], X);
     if (with_intra && sp_[sp].flexible()) e.intra = intra_full(sp, X);
     return e;
   };
@@ -424,6 +542,12 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
         e.host += H.atom(S.tpl[size_t(a)], Z[size_t(a)]);
         if (!std::isfinite(e.host)) return e;
         e.mut += mut_atom(sp, a, Z[size_t(a)], skip);
+        if (count_own && H.images) {   // the step's share of the molecule's own images (as Host::own, each pair once)
+          e.mut += 0.5 * H.lattice_sum(S.tpl[size_t(a)], S.tpl[size_t(a)], Vec3{0, 0, 0}, true);
+          for (size_t b2 = 0; b2 < m; ++b2)
+            if (placed[b2] || (std::find(idx.begin(), idx.end(), int(b2)) != idx.end() && int(b2) > a))
+              e.mut += H.lattice_sum(S.tpl[size_t(a)], S.tpl[b2], Z[b2] - Z[size_t(a)], true);
+        }
       }
       for (size_t b2 = 0; b2 < m; ++b2) {
         if (!placed[b2] || S.rel[size_t(a) * m + b2] == 1) continue;
@@ -656,7 +780,8 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
     }
   };
 
-  // ---- GCMC at each pressure
+  // ---- GCMC at each pressure (from here on molecules are sorbed: their own images count)
+  count_own = true;
   for (size_t pi = 0; pi < o.pressures_kpa.size() && !stopped; ++pi) {
     const double p = o.pressures_kpa[pi];
     std::vector<double> bfV(ns);   // β f_i V per species, ideal-gas fugacity y_i p

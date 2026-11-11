@@ -1043,7 +1043,8 @@ examples:
              the powder pattern of the cell (its reciprocal lattice, frames averaged): reflections with hkl, d, 2θ, multiplicity, |F|, I</code></pre></div></article>
 <article class="cmd" id="qeq" data-name="qeq"><h3><code>caps qeq</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps qeq FILE [--kernel ohno|slater|point] [--ewald|--no-ewald] [--accuracy 1e-7] [--lambda 0.4913] [--hydrogen] [--bounds &#x27;O:-1.2:0,Si:0:2.4&#x27;]
-         [--cutoff 10] [--total 0] [--chg OUT.chg] [-o OUT.data|mol2|car]   charge equilibration (Slater shielding; Ewald by default for cells
+         [--cutoff 10] [--total 0] [--chg OUT.chg] [-o OUT.data|mol2|car]   charge equilibration (shielded Coulomb: the Slater ns densities by
+         default, or Ohno–Klopman; Ewald by default for cells
          periodic along a, b and c unless the cell is too large for it to be quick; --ewald always, --no-ewald never:
          the tapered kernel summed over the images within the cut-off); charges that did not converge exit 1 and are not
          written unless [--allow-unconverged]</code></pre></div></article>

@@ -1,5 +1,7 @@
 /* CAPS C ABI v19 — the stable boundary used by the Studio (P/Invoke) and other languages.
-   Every function is exception-safe: errors are returned as codes and caps_last_error() explains them. */
+   Every function is exception-safe: errors are returned as codes and caps_last_error() explains them.
+   A caps_doc* argument must be a live handle (returned by a CAPS call and not yet closed): NULL or a closed handle is
+   undefined, as in other C libraries; the Python and C# wrappers check this before they call. */
 #ifndef CAPS_C_H
 #define CAPS_C_H
 #include <stdint.h>

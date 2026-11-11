@@ -3708,9 +3708,11 @@ std::string prepare_core(System& s, const FFDef& ff, std::string& charges) {
       const TypingResult tr = assign_types(s, ff);
       const size_t n = s.atoms.size();
       int added = 0;
+      std::set<std::string> on;   // the elements whose cores carry a shell (only the polarisable ions, often O alone)
       for (size_t i = 0; i < n && i < tr.types.size(); ++i) {
         auto it = ff.shells.find(tr.types[i]);
         if (it == ff.shells.end()) continue;
+        on.insert(element(s.atoms[i].element).symbol);
         Atom sh = s.atoms[i];
         sh.id = int64_t(s.atoms.size() + 1);
         sh.name = it->second;
@@ -3720,7 +3722,9 @@ std::string prepare_core(System& s, const FFDef& ff, std::string& charges) {
       }
       if (added) {
         s.bonds_from_file = true;
-        note = ff.name + " is a shell model: " + std::to_string(added) + " shells added, one on each core, bonded to it by the core-shell spring";
+        std::string els;
+        for (const auto& e : on) els += (els.empty() ? "" : "/") + e;
+        note = ff.name + " is a shell model: " + std::to_string(added) + " shells added, one on each " + els + " core, bonded to it by the core-shell spring";
       }
     }
   }

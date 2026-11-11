@@ -117,12 +117,13 @@
                 <StackPanel Spacing="10">
                   <TextBlock Text="IONS" Classes="h3" />
                   <Border Classes="seg" HorizontalAlignment="Stretch">
-                    <UniformGrid Columns="4">
-                      <RadioButton Classes="seg" Content="None" GroupName="ions" IsChecked="{Binding SolvIonNone}" HorizontalAlignment="Stretch" />
-                      <RadioButton Classes="seg" Content="Neutralise" GroupName="ions" IsChecked="{Binding SolvIonNeutral}" HorizontalAlignment="Stretch" />
-                      <RadioButton Classes="seg" Content="Concentration" GroupName="ions" IsChecked="{Binding SolvIonConc}" HorizontalAlignment="Stretch" />
-                      <RadioButton Classes="seg" Content="Custom" GroupName="ions" IsChecked="{Binding SolvIonCustom}" HorizontalAlignment="Stretch" />
-                    </UniformGrid>
+                    <!-- columns weighted by label length so 'Concentration' is not clipped in a half-width card -->
+                    <Grid ColumnDefinitions="*,1.6*,2.1*,1.3*">
+                      <RadioButton Grid.Column="0" Classes="seg" Content="None" GroupName="ions" IsChecked="{Binding SolvIonNone}" HorizontalAlignment="Stretch" />
+                      <RadioButton Grid.Column="1" Classes="seg" Content="Neutralise" GroupName="ions" IsChecked="{Binding SolvIonNeutral}" HorizontalAlignment="Stretch" />
+                      <RadioButton Grid.Column="2" Classes="seg" Content="Concentration" GroupName="ions" IsChecked="{Binding SolvIonConc}" HorizontalAlignment="Stretch" ToolTip.Tip="Add salt at a set concentration (mol/L)" />
+                      <RadioButton Grid.Column="3" Classes="seg" Content="Custom" GroupName="ions" IsChecked="{Binding SolvIonCustom}" HorizontalAlignment="Stretch" />
+                    </Grid>
                   </Border>
                   <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding SolvShowSalt}">
                     <StackPanel Spacing="6"><TextBlock Text="Salt" Classes="label" /><ComboBox ItemsSource="{Binding Salts}" SelectedItem="{Binding SolvSalt}" HorizontalAlignment="Stretch" /></StackPanel>

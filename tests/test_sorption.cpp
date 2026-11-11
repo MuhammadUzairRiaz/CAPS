@@ -522,3 +522,153 @@ TEST(Sorption, FlexibleIdealGasIsExact) {
   std::printf("flexible ideal gas: N %.3f ± %.3f (5)\n", r.isotherm[0].loading, r.isotherm[0].loading_error);
   EXPECT_NEAR(r.isotherm[0].loading, 5.0, 0.15);
 }
+
+namespace {
+// the 12 Å test host repeated n × n × n (the sorbate template last, as before)
+Host make_supercell(int n, double eps_host, double eps_sorbate) {
+  Host one = make_host(eps_host, eps_sorbate), h;
+  h.ff = one.ff;
+  h.ff.type_index.clear(), h.ff.mass.clear(), h.ff.charge.clear();
+  const double L = 12.0 * n;
+  h.s.cell.a = {L, 0, 0}, h.s.cell.b = {0, L, 0}, h.s.cell.c = {0, 0, L};
+  for (int i = 0; i < n; ++i)
+    for (int j = 0; j < n; ++j)
+      for (int k = 0; k < n; ++k)
+        for (size_t b = 0; b < 27; ++b) {
+          Atom a = one.s.atoms[b];
+          a.pos = a.pos + Vec3{12.0 * i, 12.0 * j, 12.0 * k};
+          h.s.atoms.push_back(a), h.ff.type_index.push_back(0), h.ff.mass.push_back(12.011), h.ff.charge.push_back(0.0);
+        }
+  h.s.atoms.push_back(one.s.atoms[27]), h.ff.type_index.push_back(1), h.ff.mass.push_back(39.948), h.ff.charge.push_back(0.0);
+  return h;
+}
+}  // namespace
+
+// A cut-off past half the cell's width is kept, not shortened: every periodic image within it counts. The Henry
+// constant in the 12 Å cell with an 8 Å cut-off then equals the one in the 24 Å supercell (minimum image holds there),
+// and so does the GCMC uptake per kilogram.
+TEST(Sorption, CutoffWiderThanHalfTheCellCountsEveryImage) {
+  Host small = make_host(0.1, 0.24), big = make_supercell(2, 0.1, 0.24);
+  SorptionOptions o;
+  o.coulomb = false;
+  o.cutoff = 8.0;
+  o.insertions = 200000;
+  o.template_first_atom = 27;
+  const double kT = 1.380649e-23 * 300, p = 4 * kT / 1728e-30 / 1000;   // kPa for about four ideal-gas molecules per 12 Å cell
+  o.pressures_kpa = {p};
+  o.steps = 200000;
+  const auto rs = sorption(small.s, small.ff, o);
+  o.template_first_atom = 216;
+  o.steps = 400000;
+  const auto rb = sorption(big.s, big.ff, o);
+  bool images = false, reduced = false;
+  for (const auto& n : rs.notes) {
+    images = images || n.find("every periodic image within it counts") != std::string::npos;
+    reduced = reduced || n.find("reduced") != std::string::npos;
+  }
+  EXPECT_TRUE(images);
+  EXPECT_FALSE(reduced);
+  std::printf("12 Å cell, 8 Å cut-off: Henry %.6g ± %.2g, 24 Å cell %.6g ± %.2g mol/kg/kPa · uptake %.4f ± %.4f vs %.4f ± %.4f mol/kg\n",
+              rs.henry_mol_kg_kpa, rs.henry_mol_kg_kpa * rs.widom_error / rs.widom_w, rb.henry_mol_kg_kpa,
+              rb.henry_mol_kg_kpa * rb.widom_error / rb.widom_w, rs.isotherm[0].mol_per_kg,
+              rs.isotherm[0].mol_per_kg * rs.isotherm[0].loading_error / rs.isotherm[0].loading, rb.isotherm[0].mol_per_kg,
+              rb.isotherm[0].mol_per_kg * rb.isotherm[0].loading_error / rb.isotherm[0].loading);
+  EXPECT_NEAR(rs.henry_mol_kg_kpa, rb.henry_mol_kg_kpa, 0.03 * rb.henry_mol_kg_kpa);
+  const double es = rs.isotherm[0].mol_per_kg * rs.isotherm[0].loading_error / rs.isotherm[0].loading,
+               eb = rb.isotherm[0].mol_per_kg * rb.isotherm[0].loading_error / rb.isotherm[0].loading;
+  EXPECT_NEAR(rs.isotherm[0].mol_per_kg, rb.isotherm[0].mol_per_kg, std::max(0.05 * rb.isotherm[0].mol_per_kg, 3 * std::hypot(es, eb)));
+}
+
+// The energy kept along a fixed-loading run with a 13 Å cut-off in the 12 Å cell (each argon meets its six nearest own
+// images 12 Å away) equals a brute-force lattice sum of the lowest configuration met: host images, every image of
+// every other argon, and half of each own image.
+TEST(Sorption, ImageEnergiesMatchABruteLatticeSum) {
+  Host h = make_host(0.1, 0.24);
+  SorptionOptions o;
+  o.coulomb = false;
+  o.cutoff = 13.0;
+  o.insertions = 0;
+  o.template_first_atom = 27;
+  o.fixed_loading = {5};
+  o.steps = 3000;
+  const auto r = sorption(h.s, h.ff, o);
+  ASSERT_EQ(r.fixed.lowest.size(), 5u);
+  const PairModel pm(h.ff, 13.0, false);
+  auto lattice = [&](uint32_t a, uint32_t b, const Vec3& d, bool skip0) {
+    double e = 0;
+    for (int i = -3; i <= 3; ++i)
+      for (int j = -3; j <= 3; ++j)
+        for (int k = -3; k <= 3; ++k) {
+          if (skip0 && i == 0 && j == 0 && k == 0) continue;
+          const Vec3 x = d + Vec3{12.0 * i, 12.0 * j, 12.0 * k};
+          e += pm.energy(a, b, dot(x, x));
+        }
+    return e;
+  };
+  double e = 0, own = 0;
+  for (size_t m = 0; m < 5; ++m) {
+    const Vec3 p = r.fixed.lowest[m][0];
+    for (uint32_t b = 0; b < 27; ++b) e += lattice(27, b, h.s.atoms[b].pos - p, false);
+    for (size_t q = m + 1; q < 5; ++q) e += lattice(27, 27, r.fixed.lowest[q][0] - p, false);
+    own += 0.5 * lattice(27, 27, Vec3{0, 0, 0}, true);
+  }
+  e += own;
+  EXPECT_LT(own, 0.0);   // the own images are inside the cut-off and attract
+  EXPECT_NEAR(r.fixed.lowest_energy, e, 1e-6 * std::max(1.0, std::fabs(e)));
+}
+
+// The same lattice sum for a flexible butane grown and regrown piece by piece (configurational bias): each growth step
+// adds its atoms' own images with the atoms already placed, so the energy kept along regrowths and twists stays the
+// periodic energy per cell. H has ε = 0 here, so the carbons carry every pair: host images, the other butane's images,
+// half of each own image (T != 0, bonded pairs included), and within the molecule the C1-C4 1-4 pair and the torsion.
+TEST(Sorption, FlexibleImageEnergiesMatchABruteLatticeSum) {
+  const double v1 = 1.2, v3 = 1.6;
+  FlexHost h = make_flex(0.1, 0.09, 0.0, v1, v3);
+  SorptionOptions o;
+  o.coulomb = false;
+  o.cutoff = 9.0;   // wider than half the 12 Å cell
+  o.flexible = true;
+  o.insertions = 0;
+  o.ig_samples = 1000;
+  o.template_first_atom = h.first;
+  o.fixed_loading = {2};
+  o.steps = 4000;
+  const auto r = sorption(h.s, h.ff, o);
+  ASSERT_EQ(r.fixed.lowest.size(), 2u);
+  const PairModel pm(h.ff, 9.0, false);
+  auto lattice = [&](uint32_t a, uint32_t b, const Vec3& d, bool skip0) {
+    double e = 0;
+    for (int i = -2; i <= 2; ++i)
+      for (int j = -2; j <= 2; ++j)
+        for (int k = -2; k <= 2; ++k) {
+          if (skip0 && i == 0 && j == 0 && k == 0) continue;
+          const Vec3 x = d + Vec3{12.0 * i, 12.0 * j, 12.0 * k};
+          e += pm.energy(a, b, dot(x, x));
+        }
+    return e;
+  };
+  const uint32_t f = uint32_t(h.first);
+  std::vector<uint32_t> carbons(h.c, h.c + 4);
+  double e = 0, own = 0;
+  for (size_t m = 0; m < 2; ++m) {
+    const auto& P = r.fixed.lowest[m];
+    auto at = [&](uint32_t g) { return P[g - f]; };
+    for (uint32_t c : carbons) {
+      for (uint32_t b = 0; b < 8; ++b) e += lattice(c, b, h.s.atoms[b].pos - at(c), false);
+      for (size_t q = m + 1; q < 2; ++q)
+        for (uint32_t c2 : carbons) e += lattice(c, c2, r.fixed.lowest[q][c2 - f] - at(c), false);
+    }
+    for (size_t k = 0; k < 4; ++k)
+      for (size_t q = k; q < 4; ++q) own += (k == q ? 0.5 : 1.0) * lattice(carbons[k], carbons[q], at(carbons[q]) - at(carbons[k]), true);
+    const Vec3 d14 = at(h.c[3]) - at(h.c[0]);
+    e += pm.energy(h.c[0], h.c[3], dot(d14, d14), true);
+    const Vec3 b1 = at(h.c[1]) - at(h.c[0]), b2 = at(h.c[2]) - at(h.c[1]), b3 = at(h.c[3]) - at(h.c[2]);
+    const Vec3 n1 = cross(b1, b2), n2 = cross(b2, b3);
+    const double phi = std::atan2(dot(cross(n1, n2), b2) / norm(b2), dot(n1, n2));
+    e += v1 * (1 + std::cos(phi)) + v3 * (1 + std::cos(3 * phi));
+  }
+  e += own;
+  EXPECT_LT(own, 0.0);   // the 12 Å own images sit inside the 9 Å cut-off's reach for the chain's far carbons
+  EXPECT_NEAR(r.fixed.lowest_energy, e, 1e-6 * std::max(1.0, std::fabs(e)));
+  EXPECT_GT(r.fixed.acceptance_regrow, 0.0);
+}

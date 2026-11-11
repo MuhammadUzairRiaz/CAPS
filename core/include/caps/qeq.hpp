@@ -1,12 +1,15 @@
 // CAPS QEq: charge equilibration (Rappé & Goddard, J. Phys. Chem. 95, 3358 (1991)) for any element, with the
 // electronegativities χ and idempotentials J of the UFF / QEq table.
 //
-// Minimises E(q) = Σ χ_i q_i + ½ Σ J_i q_i² + Σ_{i<j} q_i q_j K(r_ij) at fixed total charge, with the shielded Coulomb
-// kernel of Ohno and Klopman, K = 14.40 / √(r² + a_ij²) eV, a_ij = 7.20 (1/J_i + 1/J_j) Å, which tends to the
-// point-charge 1/r at long range and stays finite at bond lengths; a 7th-order taper brings it to zero at the cut-off
-// (summed over every periodic image within the cut-off, so a cell narrower than twice the cut-off keeps all of it). The linear system is solved by Jacobi-preconditioned conjugate gradients, twice
-// (H s = −χ, H t = 1; q = s + μ t with μ fixing the total charge), as LAMMPS fix qeq does. Like the original QEq it
-// gives ionic crystals large charges (quartz O about −1.6 e); molecules come out close to chemical intuition.
+// Minimises E(q) = Σ χ_i q_i + ½ Σ J_i q_i² + Σ_{i<j} q_i q_j K(r_ij) at fixed total charge. The default kernel K is
+// the Coulomb integral of the atoms' ns Slater densities, as in the original method ("slater" below). The other choice,
+// "ohno", is the shielded kernel of Ohno and Klopman, K = 14.40 / √(r² + a_ij²) eV, a_ij = 7.20 (1/J_i + 1/J_j) Å,
+// finite at bond lengths; its difference from 1/r is switched to zero over a fixed 5 to 7 Å, so it is plain 1/r beyond.
+// Without Ewald a 7th-order taper brings the kernel to zero at the cut-off (summed over every periodic image within
+// the cut-off, so a cell narrower than twice the cut-off keeps all of it). The linear system is solved by
+// Jacobi-preconditioned conjugate gradients, twice (H s = −χ, H t = 1; q = s + μ t with μ fixing the total charge), as
+// LAMMPS fix qeq does. Ionic crystals get large charges (quartz Si +1.26 e, O −0.63 e with the Slater kernel; the
+// Ohno kernel gives Si +4.5 e); molecules come out close to chemical intuition.
 //
 // For periodic fillers (silica, ZnO, clays, CaCO3) and the original model:
 //  kernel "slater"  the Coulomb integral between the atoms' normalised ns Slater densities |φ|², φ ∝ r^(n−1) e^(−ζr),
@@ -40,7 +43,11 @@ struct QEqOptions {
   double cutoff = 10.0;        // Å (pairs over every periodic image within it, however narrow the cell)
   double tolerance = 1e-8;     // CG residual (relative)
   int max_iterations = 1000;
-  std::string kernel = "ohno";   // ohno | slater | point
+  // ohno | slater | point. Slater by default, the ns densities of the original method (Rappé & Goddard 1991): with the
+  // QEq hardnesses the Ohno form 1/√(r² + a²), a = (1/J_i + 1/J_j)/2, shields diffuse atoms far more than their densities
+  // do (Si–Si at 3.06 Å in quartz: 3.90 eV against 4.70 for 1/r), and quartz Si came out +4.5 e, past the formal +4,
+  // where the Slater kernel gives +1.26 e.
+  std::string kernel = "slater";
   bool ewald = true;             // cells periodic along a, b and c; false: the tapered kernel over the images within the cut-off
   bool ewald_auto = true;        // true: the default, Ewald skipped for a cell too large to sum it quickly; false: as asked
   double ewald_accuracy = 1e-7;  // erfc(α r_c) and the reciprocal cut-off's Gaussian

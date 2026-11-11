@@ -951,8 +951,8 @@
    "group": "Force fields",
    "title": "Charge equilibration (QEq)",
    "summary": "Charges that equalise the electronegativity of every atom at fixed total charge, for any element. The energy below is minimised; the linear system is solved by conjugate gradients.",
-   "equation": "E(q) = Σ χ_i q_i + ½ Σ J_i q_i² + Σ_{i<j} q_i q_j K(r_ij),   K = 14.40 / √(r² + a_ij²) eV,   a_ij = 7.20 (1/J_i + 1/J_j) Å",
-   "equation_note": "Rappé & Goddard 1991, with the Ohno–Klopman kernel",
+   "equation": "E(q) = Σ χ_i q_i + ½ Σ J_i q_i² + Σ_{i<j} q_i q_j K(r_ij),   K = J_ij(r) of the ns Slater densities (default), or K = 14.40 / √(r² + a_ij²) eV,   a_ij = 7.20 (1/J_i + 1/J_j) Å",
+   "equation_note": "Rappé & Goddard 1991; the Slater integral J_ij(r) is given under QEq for periodic fillers. The Ohno–Klopman kernel is an option, its difference from 1/r switched off over a fixed 5 to 7 Å",
    "symbols": [
     [
      "χ, J",
@@ -962,7 +962,7 @@
     [
      "K",
      "shielded Coulomb kernel",
-     "Ohno–Klopman, tapered to zero at the cut-off"
+     "ns Slater densities (default) or Ohno–Klopman; tapered to zero at the cut-off unless Ewald is used"
     ],
     [
      "r_c",
@@ -970,17 +970,17 @@
      "10 Å, summed over every periodic image within it"
     ]
    ],
-   "when": "Charges for structures with metals, silicon or other elements without force-field charges, such as fillers and coupling agents. Like the original QEq it gives ionic crystals large charges (quartz O ≈ −1.6 e).",
+   "when": "Charges for structures with metals, silicon or other elements without force-field charges, such as fillers and coupling agents. Ionic crystals get large charges (quartz Si +1.26 e, O −0.63 e with the default Slater kernel).",
    "cites": [
     "rappe1991"
    ],
    "source": "core/src/qeq.cpp",
-   "tested": "QEq.MoleculesAreNeutralWithSensibleSigns · QEq.PeriodicCrystals",
-   "deviation": "the default Ohno–Klopman kernel with a 7th-order taper stands in for the paper's Slater-orbital Coulomb integrals (the Slater kernel and hydrogen correction are options, and a cell periodic along a, b and c takes the Ewald sum unless it is turned off or the cell is too large for it to be quick: see QEq for periodic fillers)",
+   "tested": "QEq.MoleculesAreNeutralWithSensibleSigns · QEq.PeriodicCrystals · QEq.ChargesIndependentOfTheCutoff",
+   "deviation": "the default kernel is the paper's Slater-orbital Coulomb integral; the Ohno–Klopman kernel is an option, and the hydrogen correction is opt-in. Without Ewald a 7th-order taper brings the kernel to zero at the cut-off; a cell periodic along a, b and c takes the Ewald sum unless it is turned off or the cell is too large for it to be quick: see QEq for periodic fillers",
    "engines": [
     "field.assign"
    ],
-   "tex": "E(q) = \\sum_i \\chi_i q_i + \\frac{1}{2}\\sum_i J_i q_i^2 + \\sum_{i<j} q_i q_j K(r_{ij}) \\\\ K = \\frac{14.40}{\\sqrt{r^2 + a_{ij}^2}}\\ \\text{eV}, \\qquad a_{ij} = 7.20\\left(\\frac{1}{J_i} + \\frac{1}{J_j}\\right)\\ \\text{Å}"
+   "tex": "E(q) = \\sum_i \\chi_i q_i + \\frac{1}{2}\\sum_i J_i q_i^2 + \\sum_{i<j} q_i q_j K(r_{ij}) \\\\ K = J_{ij}^{\\text{Slater}}(r)\\ \\text{(default)} \\quad \\text{or} \\quad K = \\frac{14.40}{\\sqrt{r^2 + a_{ij}^2}}\\ \\text{eV}, \\qquad a_{ij} = 7.20\\left(\\frac{1}{J_i} + \\frac{1}{J_j}\\right)\\ \\text{Å}"
   },
   {
    "id": "qeq-periodic",

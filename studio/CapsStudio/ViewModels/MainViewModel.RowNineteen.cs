@@ -473,7 +473,7 @@ public partial class MainViewModel
             MrKind = _mrRes == 0 ? "all-atom model" : _mrRes == 1 ? "united-atom model" : "coarse-grained model";
             MrAaCaption = $"{D(aa, "sites"):0} sites · {D(aa, "hydrogens"):0} H";
             MrUaCaption = $"{D(ua, "sites"):0} sites · H folded in";
-            MrCgCaption = $"{D(cg, "sites"):0} beads · {(int)_mrPerBead} backbone atoms each";
+            MrCgCaption = $"{D(cg, "sites"):0} beads · {(int)_mrPerBead} atoms/bead";
             MrRows.Clear();
             MrRows.Add(new("Sites", D(aa, "sites").ToString("0", Inv), D(ua, "sites").ToString("0", Inv), D(cg, "sites").ToString("0", Inv)));
             MrRows.Add(new("Hydrogens", $"{D(aa, "hydrogens"):0} explicit", "inside CH₂/CH₃" + (D(ua, "hydrogens") > 0 ? $" · {D(ua, "hydrogens"):0} polar kept" : ""), "inside beads"));

@@ -450,7 +450,12 @@ NebResult neb(std::vector<std::vector<Vec3>> path, const ImageEnergy& energy, co
     size_t top = 1;
     for (size_t i = 1; i + 1 < m; ++i)
       if (E[i] > E[top]) top = i;
-    R.climbing = climbing ? int(top) : -1;
+    // Climbing (Henkelman, Uberuaga, Jonsson, J. Chem. Phys. 113, 9901 (2000)) inverts the force along the tangent so the
+    // image walks uphill to the saddle. That is only bounded when the image is a maximum along the band: E above both
+    // neighbours (the ends count). If the unrelaxed ends lie above every interior image, the highest interior image is
+    // not a maximum, the inverted force has nothing to stop it, and the image runs off. Such an image keeps the spring force.
+    const bool top_is_max = E[top] > E[top - 1] && E[top] > E[top + 1];
+    R.climbing = climbing && top_is_max ? int(top) : -1;
     double fmax = 0;
     for (size_t i = 1; i + 1 < m; ++i) {
       const auto tp = sub(path[i + 1], path[i]), tm = sub(path[i], path[i - 1]);
@@ -467,7 +472,7 @@ NebResult neb(std::vector<std::vector<Vec3>> path, const ImageEnergy& energy, co
       if (tn > 0)
         for (auto& t : tau) t = t * (1 / tn);
       const double fpar = dotv(F[i], tau);
-      if (climbing && i == top) {
+      if (R.climbing >= 0 && i == top) {
         for (size_t k = 0; k < n; ++k) G[i][k] = F[i][k] - tau[k] * (2 * fpar);
       } else {
         const double spring = o.spring * (std::sqrt(dotv(tp, tp)) - std::sqrt(dotv(tm, tm)));
@@ -483,9 +488,27 @@ NebResult neb(std::vector<std::vector<Vec3>> path, const ImageEnergy& energy, co
   double dt = 0.05, alpha = astart;
   int npos = 0;
   std::vector<std::vector<Vec3>> v(m, std::vector<Vec3>(n, Vec3{0, 0, 0}));
+  auto band_length = [&]() {
+    double L = 0;
+    for (size_t i = 1; i < m; ++i) {
+      const auto dd = sub(path[i], path[i - 1]);
+      L += std::sqrt(dotv(dd, dd));
+    }
+    return L;
+  };
+  const double length0 = band_length();
+  bool diverged = false;
   double fmax = forces();
   int step = 0;
   for (; step < o.max_steps; ++step) {
+    // A band whose length has grown tenfold, or whose energies are no longer finite, has left the path between the ends:
+    // stop and say so rather than report a meaningless barrier.
+    bool finite = std::isfinite(fmax);
+    for (double e : E) finite = finite && std::isfinite(e);
+    if (!finite || (length0 > 0 && band_length() > 10 * length0)) {
+      diverged = true;
+      break;
+    }
     if (o.climb && !climbing && (fmax < std::max(o.climb_after, o.fmax) || step > o.max_steps / 2)) {
       climbing = true;
       fmax = forces();
@@ -529,11 +552,16 @@ NebResult neb(std::vector<std::vector<Vec3>> path, const ImageEnergy& energy, co
   }
   const double top = *std::max_element(E.begin() + 1, E.end() - 1);   // the highest intermediate image
   R.forward = top - E.front(), R.reverse = top - E.back();
+  if (diverged)
+    R.notes.push_back("the band diverged (grew past ten times its starting length or lost finite energies) and was stopped: "
+                      "the barrier below is not meaningful; relax the ends or use more images");
   if (top < std::max(E.front(), E.back()))
-    R.notes.push_back("no image lies above both ends: no barrier along this path (are the ends minima?)");
+    R.notes.push_back(o.climb && R.climbing < 0
+                          ? "no image lies above both ends, so no image climbed: no barrier along this path (are the ends minima? relax them first)"
+                          : "no image lies above both ends: no barrier along this path (are the ends minima?)");
   char b[200];
   std::snprintf(b, sizeof b, "%zu images, %d steps, largest NEB force %.4g%s; barrier %.6g from A, %.6g from B", m, step, fmax,
-                R.converged ? "" : " (not converged)", R.forward, R.reverse);
+                R.converged ? "" : diverged ? " (not converged, band diverged)" : " (not converged)", R.forward, R.reverse);
   R.notes.push_back(b);
   return R;
 }

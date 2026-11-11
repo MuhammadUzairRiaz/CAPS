@@ -74,7 +74,7 @@ public sealed partial class MainViewModel
     private bool _expTwoTheta;
     private string _expFile = "";
     public bool ScatterHasCurve => ScatterXrayCurve.Length > 1 || ScatterNeutronCurve.Length > 1;
-    public string ScatterFooter => _doc == null ? "" : $"{Analyze.FramesText} · {_doc.Summary().Atoms:N0} atoms";
+    public string ScatterFooter => _doc == null ? "" : Analyze.FramesText;
 
     public void OpenScattering()
     {

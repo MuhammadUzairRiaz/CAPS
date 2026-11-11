@@ -11,6 +11,7 @@
 #include <stdexcept>
 
 #include "caps/crystalfit.hpp"
+#include "caps/elements.hpp"
 #include "caps/spacegroup.hpp"
 
 namespace caps {
@@ -598,12 +599,100 @@ SolveResult solve_structure(const MeasuredPattern& data, const System& mol, cons
   for (size_t i = 0; i < n; ++i) base[i] = mol.atoms[i].pos - c0;
   const std::vector<Torsion> tors = o.torsions ? torsions_of(mol) : std::vector<Torsion>{};
   res.torsions = int(tors.size());
-  std::vector<size_t> heavy;
-  for (size_t i = 0; i < n; ++i) if (mol.atoms[i].element != 1) heavy.push_back(i);
-  // the contact distance as a fraction of each lattice plane spacing: how many cells away an image can still touch
   const double vol = cell.volume();
-  const double reach[3] = {o.contact * norm(cross(cell.b, cell.c)) / vol, o.contact * norm(cross(cell.c, cell.a)) / vol,
-                           o.contact * norm(cross(cell.a, cell.b)) / vol};
+  if (!(vol > 0)) throw std::invalid_argument("solve: the cell has no volume");
+  if (!(o.vdw_fraction >= 0 && o.vdw_fraction < 1.5)) throw std::invalid_argument("solve: vdw_fraction must be between 0 and 1.5");
+  // The molecule's van der Waals volume (union of Bondi spheres, Bondi, J. Phys. Chem. 68, 441 (1964)) on a 0.2 Å grid,
+  // and the packing coefficient Z V_mol / V_cell (Kitaigorodskii, Molecular Crystals and Molecules (1973): 0.65 to 0.77
+  // for organic crystals). Above 1 the molecules' envelopes would have to fill more than the whole cell: no packing fits.
+  double vmol = 0;
+  {
+    const double h = 0.2;
+    Vec3 lo{1e30, 1e30, 1e30}, hi{-1e30, -1e30, -1e30};
+    for (size_t i = 0; i < n; ++i) {
+      const double r = element(mol.atoms[i].element).vdw;
+      for (int k = 0; k < 3; ++k)
+        lo[size_t(k)] = std::min(lo[size_t(k)], base[i][size_t(k)] - r), hi[size_t(k)] = std::max(hi[size_t(k)], base[i][size_t(k)] + r);
+    }
+    const size_t nx = size_t((hi[0] - lo[0]) / h) + 2, ny = size_t((hi[1] - lo[1]) / h) + 2, nz = size_t((hi[2] - lo[2]) / h) + 2;
+    std::vector<char> in(nx * ny * nz, 0);
+    size_t count = 0;
+    for (size_t i = 0; i < n; ++i) {
+      const double r = element(mol.atoms[i].element).vdw, r2 = r * r;
+      const Vec3& p = base[i];
+      const size_t x0 = size_t(std::max(0.0, (p[0] - r - lo[0]) / h)), x1 = std::min(nx - 1, size_t((p[0] + r - lo[0]) / h) + 1);
+      const size_t y0 = size_t(std::max(0.0, (p[1] - r - lo[1]) / h)), y1 = std::min(ny - 1, size_t((p[1] + r - lo[1]) / h) + 1);
+      const size_t z0 = size_t(std::max(0.0, (p[2] - r - lo[2]) / h)), z1 = std::min(nz - 1, size_t((p[2] + r - lo[2]) / h) + 1);
+      for (size_t ix = x0; ix <= x1; ++ix)
+        for (size_t iy = y0; iy <= y1; ++iy)
+          for (size_t iz = z0; iz <= z1; ++iz) {
+            const double dx = lo[0] + (double(ix) + 0.5) * h - p[0], dy = lo[1] + (double(iy) + 0.5) * h - p[1], dz = lo[2] + (double(iz) + 0.5) * h - p[2];
+            if (dx * dx + dy * dy + dz * dz > r2) continue;
+            char& c = in[(ix * ny + iy) * nz + iz];
+            if (!c) c = 1, ++count;
+          }
+    }
+    vmol = double(count) * h * h * h;
+  }
+  const double packing = double(ops.size()) * vmol / vol;
+  {
+    char b[400];
+    std::snprintf(b, sizeof b, "packing coefficient %.3f (%zu molecules of %.1f Å³ van der Waals volume in %.1f Å³)", packing, ops.size(), vmol, vol);
+    res.notes.push_back(b);
+    if (packing > 1.0) {
+      std::snprintf(b, sizeof b,
+                    "solve: no packing fits: the cell (V = %.1f Å³) gives %.1f Å³ per molecule for the %zu symmetry copies in %s, but the molecule's "
+                    "van der Waals volume is %.1f Å³ (packing coefficient %.2f; organic crystals have 0.65 to 0.77); give a larger cell or a space group with fewer copies",
+                    vol, vol / double(ops.size()), ops.size(), g->hm.c_str(), vmol, packing);
+      throw std::invalid_argument(b);
+    }
+  }
+  // The closest approach allowed between two atoms of different molecules (or of a molecule and its own lattice images).
+  // Intermolecular contacts in organic crystals rarely fall below about 0.8 of the Bondi sum (Rowland & Taylor, J. Phys.
+  // Chem. 100, 7384 (1996)), so a pair is refused below vdw_fraction (0.75) of it, hydrogens included. Hydrogen bonds
+  // come closer: a polar H (on N, O, F or S) and an acceptor down to 1.4 Å (H...O in strong O-H...O bonds is about 1.5 Å,
+  // Jeffrey, An Introduction to Hydrogen Bonding (1997)); 0.75 of the sum still leaves O...O 2.28 Å, below the 2.4 Å of
+  // the strongest. A pair with a metal atom (coordination bonds) has only the contact floor.
+  auto nonmetal = [](int z) {
+    switch (z) {
+      case 1: case 2: case 5: case 6: case 7: case 8: case 9: case 10: case 14: case 15: case 16: case 17: case 18:
+      case 33: case 34: case 35: case 36: case 52: case 53: case 54: return true;
+      default: return false;
+    }
+  };
+  std::vector<int> donor_of(n, 0);   // per H: the element it is bonded to (0: none found)
+  {
+    std::vector<std::vector<size_t>> nb(n);
+    for (const auto& b : mol.bonds) if (b.i < n && b.j < n) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+    for (size_t i = 0; i < n; ++i) {
+      if (mol.atoms[i].element != 1) continue;
+      if (!nb[i].empty()) { donor_of[i] = mol.atoms[nb[i][0]].element; continue; }
+      double bd = 1e30;   // no bonds given: the nearest atom within its covalent sum plus 0.4 Å
+      for (size_t j = 0; j < n; ++j) {
+        if (j == i) continue;
+        const double d = norm(base[j] - base[i]);
+        if (d < bd && d < element(1).covalent + element(mol.atoms[j].element).covalent + 0.4) bd = d, donor_of[i] = mol.atoms[j].element;
+      }
+    }
+  }
+  auto polar_h = [&](size_t i) { const int d = donor_of[i]; return mol.atoms[i].element == 1 && (d == 7 || d == 8 || d == 9 || d == 16); };
+  auto acceptor = [&](size_t i) { const int z = mol.atoms[i].element; return z == 7 || z == 8 || z == 9 || z == 16 || z == 17 || z == 35 || z == 53; };
+  std::vector<double> lim2(n * n);
+  double max_lim = o.contact;
+  for (size_t i = 0; i < n; ++i)
+    for (size_t j = 0; j < n; ++j) {
+      const int zi = mol.atoms[i].element, zj = mol.atoms[j].element;
+      double l = (zi != 1 && zj != 1) ? o.contact : 0.0;
+      if (nonmetal(zi) && nonmetal(zj)) {
+        if ((polar_h(i) && acceptor(j)) || (polar_h(j) && acceptor(i))) l = std::max(l, std::min(1.4, o.vdw_fraction * (element(zi).vdw + element(zj).vdw)));
+        else l = std::max(l, o.vdw_fraction * (element(zi).vdw + element(zj).vdw));
+      }
+      lim2[i * n + j] = l * l;
+      max_lim = std::max(max_lim, l);
+    }
+  // the longest limit as a fraction of each lattice plane spacing: how many cells away an image can still touch
+  const double reach[3] = {max_lim * norm(cross(cell.b, cell.c)) / vol, max_lim * norm(cross(cell.c, cell.a)) / vol,
+                           max_lim * norm(cross(cell.a, cell.b)) / vol};
   struct St { Vec3 f; Vec3 axis; double ang; std::vector<double> tor; };
   auto geometry = [&](const St& s) {
     std::vector<Vec3> x = base;
@@ -640,22 +729,27 @@ SolveResult solve_structure(const MeasuredPattern& data, const System& mol, cons
       fracs.push_back(f);
     }
     if (clash) {
-      // every pair of heavy atoms, over every lattice image within the contact distance: those of two copies, and a
-      // copy's atoms against its own images in the neighbouring cells (a short axis can bring a molecule onto itself)
+      // every pair of atoms, over every lattice image within the longest limit: those of two copies, and a copy's atoms
+      // against its own images in the neighbouring cells (a short axis can bring a molecule onto itself)
       *clash = false;
-      const double c2 = o.contact * o.contact;
       for (size_t a = 0; a < fracs.size() && !*clash; ++a)
         for (size_t b = a; b < fracs.size() && !*clash; ++b)
-          for (size_t ii = 0; ii < heavy.size() && !*clash; ++ii)
-            for (size_t jj = (a == b ? ii : 0); jj < heavy.size() && !*clash; ++jj) {
-              Vec3 d = fracs[b][heavy[jj]] - fracs[a][heavy[ii]];
-              for (int k = 0; k < 3; ++k) d[size_t(k)] -= std::round(d[size_t(k)]);
+          for (size_t ii = 0; ii < n && !*clash; ++ii)
+            for (size_t jj = (a == b ? ii : 0); jj < n && !*clash; ++jj) {
+              const double c2 = lim2[ii * n + jj];
+              if (!(c2 > 0)) continue;
+              Vec3 d = fracs[b][jj] - fracs[a][ii];
+              // a copy's own atoms are contiguous, so their direct vector is the image sh after the wrap below: that one
+              // is the molecule's own bond or contact, not an image (an axis shorter than twice an intramolecular
+              // distance would otherwise refuse every placement)
+              int sh[3];
+              for (int k = 0; k < 3; ++k) sh[k] = int(std::round(d[size_t(k)])), d[size_t(k)] -= double(sh[k]);
               int lo[3], hi[3];
               for (int k = 0; k < 3; ++k) lo[k] = int(std::ceil(-reach[k] - d[size_t(k)])), hi[k] = int(std::floor(reach[k] - d[size_t(k)]));
               for (int l0 = lo[0]; l0 <= hi[0] && !*clash; ++l0)
                 for (int l1 = lo[1]; l1 <= hi[1] && !*clash; ++l1)
                   for (int l2 = lo[2]; l2 <= hi[2]; ++l2) {
-                    if (a == b && !l0 && !l1 && !l2) continue;   // the molecule's own bonds and contacts
+                    if (a == b && l0 == sh[0] && l1 == sh[1] && l2 == sh[2]) continue;   // the molecule's own bonds and contacts
                     const Vec3 v = cell.a * (d[0] + l0) + cell.b * (d[1] + l1) + cell.c * (d[2] + l2);
                     if (dot(v, v) < c2) { *clash = true; break; }
                   }
@@ -774,12 +868,12 @@ SolveResult solve_structure(const MeasuredPattern& data, const System& mol, cons
     }
   }
   if (!found) {
-    char b[400];
+    char b[480];
     std::snprintf(b, sizeof b,
-                  "solve: no placement of the molecule keeps the heavy atoms of its %zu symmetry copies in %s (and of their lattice images) "
-                  "%.2f Å apart in this cell (V = %.1f Å³, %.1f Å³ per molecule) within %d moves; the cell is likely too small for %zu molecules, "
-                  "or give more --steps or another --seed",
-                  ops.size(), g->hm.c_str(), o.contact, vol, vol / double(ops.size()), done, ops.size());
+                  "solve: no placement of the molecule keeps the atoms of its %zu symmetry copies in %s (and of their lattice images) "
+                  "at least %.2f of their van der Waals contact apart in this cell (V = %.1f Å³, %.1f Å³ per molecule, packing coefficient %.2f) "
+                  "within %d moves; the cell is likely too small for %zu molecules, or give more --steps or another --seed",
+                  ops.size(), g->hm.c_str(), o.vdw_fraction, vol, vol / double(ops.size()), packing, done, ops.size());
     throw std::runtime_error(b);
   }
   res.steps = done;

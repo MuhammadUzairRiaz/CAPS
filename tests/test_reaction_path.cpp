@@ -115,6 +115,26 @@ TEST(ReactionPath, ClimbingImageFindsTheSaddle) {
   EXPECT_NEAR(r.reverse, 1.0, 1e-9);
 }
 
+// Ends above every interior image (unrelaxed ends on E = |r|², minimum between them): no interior image is a maximum,
+// so none may climb. Climbing the highest interior image there inverts the force along the band with nothing to stop
+// it, and the image runs off to huge energies (seen as barriers of 1e7 kcal/mol on ethane conformers).
+TEST(ReactionPath, NoClimbingWithoutAnInteriorMaximum) {
+  const ImageEnergy E = [](int, const std::vector<Vec3>& p, std::vector<Vec3>& f) {
+    f.assign(1, p[0] * -2.0);
+    return dot(p[0], p[0]);
+  };
+  std::vector<std::vector<Vec3>> path;
+  for (int k = 0; k <= 8; ++k) path.push_back({Vec3{-1 + 0.25 * k, 0.1, 0}});
+  NebOptions o;
+  o.spring = 1, o.fmax = 1e-4, o.max_steps = 5000;
+  const NebResult r = neb(path, E, o);
+  EXPECT_TRUE(r.converged);
+  EXPECT_EQ(r.climbing, -1);
+  for (double e : r.energy) EXPECT_LE(e, 1.01 + 1e-9);   // nothing above the ends (E = 1.01 there)
+  EXPECT_LT(r.forward, 0);
+  EXPECT_LT(r.arc.back(), 2.5);
+}
+
 // Ethane's methyl turned by 120° with UFF: the climbing image is the eclipsed form (H–C–C–H 0° by symmetry), above both
 // ends, which have the same energy
 TEST(ReactionPath, EthaneRotationWithTheForceField) {
