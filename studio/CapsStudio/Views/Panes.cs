@@ -241,7 +241,7 @@ public static class Panes
         private readonly State _st;
         private readonly int _k;
         private readonly Border _line = new();
-        private readonly Border _pill;
+        private readonly Panel _pill;
         private readonly Button _back, _forward, _peek;
         private bool _dragging;
         private double _a, _b;   // the two panes' sizes at the start of the drag
@@ -278,17 +278,24 @@ public static class Panes
             var stack = new StackPanel { Orientation = rows ? Orientation.Horizontal : Orientation.Vertical, Spacing = 2, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             stack.Children.Add(_back);
             stack.Children.Add(_forward);
-            _pill = new Border
+            // the pill: its background is drawn but lets a press through (to the thumb under it, so the divider drags from
+            // anywhere along it, the middle too); only its two arrows take a click
+            var face = new Border
             {
-                Child = stack, Padding = new Thickness(2), CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(1), IsHitTestVisible = false,
+                BoxShadow = BoxShadows.Parse("0 4 14 0 #50000000"),
+            };
+            face.Bind(Border.BackgroundProperty, face.GetResourceObservable("Bg2B"));
+            face.Bind(Border.BorderBrushProperty, face.GetResourceObservable("AccB"));
+            stack.Margin = new Thickness(2);
+            _pill = new Panel
+            {
+                Children = { face, stack },
                 HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, IsVisible = false,
                 // wider than the 8 px divider: it reaches over both panes' edges, centred on the line
                 Margin = rows ? new Thickness(0, -8, 0, -8) : new Thickness(-8, 0, -8, 0),
                 Width = rows ? double.NaN : 26, Height = rows ? 26 : double.NaN,
-                BoxShadow = BoxShadows.Parse("0 4 14 0 #50000000"),
             };
-            _pill.Bind(Border.BackgroundProperty, _pill.GetResourceObservable("Bg2B"));
-            _pill.Bind(Border.BorderBrushProperty, _pill.GetResourceObservable("AccB"));
             Children.Add(_pill);
             // a hidden pane keeps a tab on its edge, always shown: the way back even where another divider shares the line
             _peek = new Button

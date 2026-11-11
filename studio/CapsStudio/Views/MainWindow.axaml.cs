@@ -114,7 +114,16 @@ public partial class MainWindow : Window
         Panes.Store = _vm.Settings.PaneSizes;   // the settings as loaded (LoadSettings reads the file again)
         InitShelves();                          // after the settings: each workspace's shelf layout
         // the Molecule module's sketch takes half of the centre, the Studio view the other half
-        Centre.SizeChanged += (_, e) => MolSketchHost.Width = Math.Max(300, Math.Round(e.NewSize.Width * 0.5));
+        // (a share of it the user can change with the wall between them)
+        Centre.SizeChanged += (_, e) => MolSketchHost.Width = MolSketchWidth(e.NewSize.Width);
+        MolSketchWall.DragDelta += (_, e) =>
+        {
+            var w = Centre.Bounds.Width;
+            if (w < 600) return;
+            _molSketchShare = Math.Clamp((MolSketchHost.Width + e.Vector.X) / w, 0.2, 0.8);
+            MolSketchHost.Width = MolSketchWidth(w);
+        };
+        MolSketchWall.DoubleTapped += (_, _) => { _molSketchShare = 0.5; MolSketchHost.Width = MolSketchWidth(Centre.Bounds.Width); };
         _vm.HookJobs();
         _vm.LoadRecent();
         _vm.LoadKnownProjects();
@@ -286,6 +295,9 @@ public partial class MainWindow : Window
         for (var k = 0; k < atoms.Length; k++) _vm.Pick(atoms[k], k > 0);
         RequestRender();
     }
+
+    private double _molSketchShare = 0.5;
+    private double MolSketchWidth(double centre) => Math.Max(280, Math.Round(centre * _molSketchShare));
 
     public void OpenOnStart(string path, string? topology) => Dispatcher.UIThread.Post(() => TryOpen(path, topology));
 

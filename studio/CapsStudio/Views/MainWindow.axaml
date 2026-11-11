@@ -880,7 +880,14 @@
         </Border>
         <!-- Molecule: the 2D sketch left of the view (its width follows the centre: half of it) -->
         <Border x:Name="MolSketchHost" Grid.Column="0" Width="560" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" IsVisible="{Binding IsMolecule}">
-          <pages:MoleculeSketchPane x:Name="MolSketch" />
+          <Panel>
+            <pages:MoleculeSketchPane x:Name="MolSketch" />
+            <!-- the wall between the sketch and the view: drag it (double-click for half and half) -->
+            <Thumb x:Name="MolSketchWall" Width="8" Margin="0,0,-5,0" HorizontalAlignment="Right" ZIndex="20" Cursor="SizeWestEast"
+                   ToolTip.Tip="Drag to resize the sketch and the view · double-click for half and half">
+              <Thumb.Template><ControlTemplate><Border Background="Transparent" /></ControlTemplate></Thumb.Template>
+            </Thumb>
+          </Panel>
         </Border>
         <!-- the view with its shelf docks (design/boards/Shelves): shelves dragged to an edge of the view dock there -->
         <DockPanel Grid.Column="1" x:Name="ViewDock">
