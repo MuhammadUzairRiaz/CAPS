@@ -95,13 +95,27 @@ public sealed partial class MainViewModel
     public void OpenSurface()
     {
         LoadSurface();
-        // the Polymer builder's chain, when it has a valid one, is offered first
-        if (!PolyHasError && PolyUnits.Count > 0 && (FilmPolymers.Count == 0 || FilmPolymers[0].Name != "Polymer builder chain"))
+        // the Polymer builder's chain, when it has a valid one, is offered first; it is made again from the builder's
+        // current units each time, and dropped when the builder no longer has a valid chain
+        const string builderChain = "Polymer builder chain";
+        var old = FilmPolymers.Count > 0 && FilmPolymers[0].Name == builderChain ? FilmPolymers[0] : null;
+        var fresh = !PolyHasError && PolyUnits.Count > 0 ? new FilmPolymer(builderChain, PolySpecJson()) : null;
+        if (old != fresh)   // records compare by value: nothing to do when the chain is unchanged
         {
-            var keep = _surfFilmItem;
-            FilmPolymers.Insert(0, new FilmPolymer("Polymer builder chain", PolySpecJson()));
+            var keep = old != null && _surfFilmItem == old ? fresh : _surfFilmItem;
+            var matrixWasOld = old != null && _matrixPolymer == old;   // read before a bound list drops its selection
+            if (old != null) FilmPolymers.RemoveAt(0);
+            if (fresh != null) FilmPolymers.Insert(0, fresh);
+            if (matrixWasOld) _matrixPolymer = fresh;
+            if (keep == null && FilmPolymers.Count > 0)
+            {
+                var nr = FilmPolymers.ToList().FindIndex(f => f.Name.Contains("natural rubber", StringComparison.OrdinalIgnoreCase));
+                keep = fresh ?? FilmPolymers[nr >= 0 ? nr : 0];
+            }
             _surfFilmItem = null;
-            SurfFilmItem = keep ?? FilmPolymers[0];
+            if (keep != null) SurfFilmItem = keep;
+            else { _surfFilmPolymer = -1; Raise(nameof(SurfFilmItem)); Raise(nameof(SurfFilmPolymer)); RaiseStack(); }
+            Raise(nameof(MatrixPolymer));   // the matrix follows the film when it has no polymer of its own
         }
         SetModule(14);
         SurfPreview();

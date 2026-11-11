@@ -39,6 +39,7 @@ public static class Tokens
         _highContrast = on;
         var app = Application.Current;
         if (app == null) return;
+        FollowThemeChanges(app);
         foreach (var k in new[] { "LineC", "MutedC", "DimC" }) app.Resources.Remove(k);
         if (!on) return;
         var light = app.ActualThemeVariant == ThemeVariant.Light;
@@ -53,6 +54,7 @@ public static class Tokens
         _focusRings = on;
         var app = Application.Current;
         if (app == null) return;
+        FollowThemeChanges(app);
         if (_focusStyle != null) { app.Styles.Remove(_focusStyle); _focusStyle = null; }
         if (!on) return;
         var accent = Brush("AccB");
@@ -74,5 +76,16 @@ public static class Tokens
     public static void Use(bool light)
     {
         if (Application.Current != null) Application.Current.RequestedThemeVariant = light ? ThemeVariant.Light : ThemeVariant.Dark;
+        Reapply();
+    }
+
+    private static bool _followsTheme;
+    /// <summary>Every theme change (menu, palette, Settings, or the OS while the theme is 'system') reapplies the
+    /// accessibility overrides, so high-contrast colours never stay from the previous theme.</summary>
+    private static void FollowThemeChanges(Application app)
+    {
+        if (_followsTheme) return;
+        _followsTheme = true;
+        app.ActualThemeVariantChanged += (_, _) => Reapply();
     }
 }

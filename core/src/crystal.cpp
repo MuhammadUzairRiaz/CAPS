@@ -519,6 +519,8 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
     return it == site_tags.end() ? -1 : int(it - site_tags.begin());
   };
   const int cx_ = col("_atom_site_fract_x"), cy_ = col("_atom_site_fract_y"), cz_ = col("_atom_site_fract_z");
+  if (cy_ < 0 || cz_ < 0)
+    throw CrystalError((name.empty() ? std::string("CIF") : name) + ": the atom sites have no _atom_site_fract_" + (cy_ < 0 ? "y" : "z") + " column");
   const int csym = col("_atom_site_type_symbol"), clab = col("_atom_site_label"), cocc = col("_atom_site_occupancy");
   const int cass = col("_atom_site_disorder_assembly"), cgrp = col("_atom_site_disorder_group");
   if (o.mode != "major" && o.mode != "group" && o.mode != "random") throw CrystalError("disorder: major, group or random");
@@ -536,7 +538,9 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
     st.f0 = {cif_number(r[size_t(cx_)]), cif_number(r[size_t(cy_)]), cif_number(r[size_t(cz_)])};
     if (cgrp >= 0 && !blank(r[size_t(cgrp)]) && r[size_t(cgrp)] != "0") {
       st.group = r[size_t(cgrp)];
-      st.assembly = cass >= 0 && !blank(r[size_t(cass)]) ? r[size_t(cass)] : "A";
+      // a negative group (a fragment disordered across a symmetry element) is no alternative to the positive groups
+      // of the same file: without a named assembly it gets one of its own, so neither choice nor draw drops the other
+      st.assembly = cass >= 0 && !blank(r[size_t(cass)]) ? r[size_t(cass)] : st.group[0] == '-' ? "S" : "A";
     }
     S.push_back(st);
   }
@@ -559,8 +563,13 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
     else if (o.mode == "group") R.notes.push_back("assembly " + a + " has no group " + o.group + ": its major group " + best + " kept");
     chosen[a] = best;
   }
-  // every site through every operation: unwrapped (for which copy an atom belongs to), wrapped, one per position
-  struct Ex { size_t site; int op; Vec3 fw; std::array<int, 3> shift; };
+  // a negative disorder group: a fragment disordered across a symmetry element. The file lists one orientation and
+  // the operations make the others, which overlap it, so of each overlapping set of copies only one is kept.
+  auto across = [](const Site& st) { return !st.group.empty() && st.group[0] == '-'; };
+  // every site through every operation: unwrapped (for which copy an atom belongs to), wrapped, one per position.
+  // An image that falls on an earlier one of the same site (an atom on the symmetry element) is shared: for a site
+  // across a symmetry element its operation and copy shift are kept as an alias, so the atom stays with either copy.
+  struct Ex { size_t site; int op; Vec3 fw; std::array<int, 3> shift; std::vector<std::pair<int, std::array<int, 3>>> alias{}; };
   std::vector<Ex> X;
   for (size_t si = 0; si < S.size(); ++si) {
     const size_t first = X.size();
@@ -568,13 +577,19 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
       Vec3 f;
       for (int i = 0; i < 3; ++i) f[i] = ops[k].R[i][0] * S[si].f0[0] + ops[k].R[i][1] * S[si].f0[1] + ops[k].R[i][2] * S[si].f0[2] + ops[k].t[i];
       const Vec3 fw = wrap01(f);
-      bool dup = false;
-      for (size_t q = first; q < X.size() && !dup; ++q) {
+      long dup = -1;
+      for (size_t q = first; q < X.size() && dup < 0; ++q) {
         Vec3 df = fw - X[q].fw;
         for (auto& x : df) x -= std::round(x);
-        dup = norm(s.cell.to_cartesian(df) - s.cell.to_cartesian({0, 0, 0})) < 0.05;
+        if (norm(s.cell.to_cartesian(df) - s.cell.to_cartesian({0, 0, 0})) < 0.05) dup = long(q);
       }
-      if (dup) continue;
+      if (dup >= 0) {
+        if (across(S[si])) {
+          Ex& e = X[size_t(dup)];
+          e.alias.push_back({int(k), {int(std::lround(f[0] - e.fw[0])), int(std::lround(f[1] - e.fw[1])), int(std::lround(f[2] - e.fw[2]))}});
+        }
+        continue;
+      }
       X.push_back({si, int(k), fw, {int(std::lround(f[0] - fw[0])), int(std::lround(f[1] - fw[1])), int(std::lround(f[2] - fw[2]))}});
     }
   }
@@ -633,6 +648,89 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
       if ((c += oc) > u) { g = name; break; }
     return drawn[key] = g;
   };
+  auto cmod = [](int k, int n) { return ((k % n) + n) % n; };
+  const int ncells = N[0] * N[1] * N[2];
+  auto cell_index = [&](int c0, int c1, int c2) { return (cmod(c0, N[0]) * N[1] + cmod(c1, N[1])) * N[2] + cmod(c2, N[2]); };
+  // copies across a symmetry element: one node per (assembly, group, operation) and copy cell. Two copies conflict
+  // when atoms of the two come closer than 1.4 Å (shorter than any contact between molecules that are both there).
+  struct Owner { int node; std::array<int, 3> shift; };
+  std::vector<std::vector<Owner>> owners(X.size());
+  std::map<std::tuple<std::string, std::string, int>, int> node_id;
+  std::vector<std::pair<std::string, std::string>> node_ag;   // (assembly, group) of each node
+  for (size_t i = 0; i < X.size(); ++i) {
+    const Site& st = S[X[i].site];
+    if (!across(st)) continue;
+    auto own = [&](int op, const std::array<int, 3>& shift) {
+      auto [it, added] = node_id.emplace(std::make_tuple(st.assembly, st.group, op), int(node_ag.size()));
+      if (added) node_ag.push_back({st.assembly, st.group});
+      owners[i].push_back({it->second, shift});
+    };
+    own(X[i].op, X[i].shift);
+    for (const auto& [op, shift] : X[i].alias) own(op, shift);
+  }
+  std::vector<char> copy_on;   // per node × copy cell: 1 kept, 2 left out
+  int across_left_out = 0;
+  if (!node_ag.empty()) {
+    // conflicts: node a in copy cell c overlaps node b in copy cell c + D
+    std::vector<std::set<std::pair<int, std::array<int, 3>>>> conflict(node_ag.size());
+    for (size_t i = 0; i < X.size(); ++i)
+      for (size_t j = i + 1; j < X.size(); ++j) {
+        if (owners[i].empty() || owners[j].empty() || S[X[i].site].assembly != S[X[j].site].assembly) continue;
+        if (dist(X[i].fw, X[j].fw) >= 1.4) continue;
+        for (const Owner& a : owners[i])
+          for (const Owner& b : owners[j]) {
+            if (a.node == b.node) continue;
+            std::array<int, 3> D;
+            for (int k = 0; k < 3; ++k)
+              D[size_t(k)] = int(std::lround(X[i].fw[k] + a.shift[size_t(k)] - X[j].fw[k] - b.shift[size_t(k)]));
+            conflict[size_t(a.node)].insert({b.node, D});
+            conflict[size_t(b.node)].insert({a.node, {-D[0], -D[1], -D[2]}});
+          }
+      }
+    copy_on.assign(node_ag.size() * size_t(ncells), 0);
+    auto neighbours_of = [&](int v) {
+      const int node = v / ncells, c = v % ncells, c0 = c / (N[1] * N[2]), c1 = (c / N[2]) % N[1], c2 = c % N[2];
+      std::vector<int> out;
+      for (const auto& [b, D] : conflict[size_t(node)]) {
+        const int w = b * ncells + cell_index(c0 + D[0], c1 + D[1], c2 + D[2]);
+        if (w != v && std::find(out.begin(), out.end(), w) == out.end()) out.push_back(w);
+      }
+      return out;
+    };
+    auto blocked = [&](int v) {
+      for (int w : neighbours_of(v))
+        if (copy_on[size_t(w)] == 1) return true;
+      return false;
+    };
+    if (!random) {
+      // the chosen group's copies in the order of the operations: a copy stays unless it overlaps one already kept
+      for (const auto& [key, v] : node_id) {
+        const auto& [a, g] = node_ag[size_t(v)];
+        const bool keep_it = chosen[a] == g && !blocked(v);
+        copy_on[size_t(v)] = keep_it ? 1 : 2;
+        if (chosen[a] == g && !keep_it) ++across_left_out;
+      }
+    } else {
+      // in a random order, each undecided copy and the free copies it overlaps: at most one of them, drawn by occupancy
+      std::vector<int> order(copy_on.size());
+      std::iota(order.begin(), order.end(), 0);
+      for (size_t k = order.size(); k > 1; --k) std::swap(order[k - 1], order[std::min(k - 1, size_t(u01() * double(k)))]);
+      for (int v : order) {
+        if (copy_on[size_t(v)]) continue;
+        if (blocked(v)) { copy_on[size_t(v)] = 2; continue; }
+        std::vector<int> Q{v};
+        for (int w : neighbours_of(v))
+          if (!copy_on[size_t(w)] && !blocked(w)) Q.push_back(w);
+        double u = u01(), c = 0;
+        int pick = -1;
+        for (int w : Q) {
+          const auto& [a, g] = node_ag[size_t(w / ncells)];
+          if ((c += asm_groups[a][g]) > u) { pick = w; break; }
+        }
+        for (int w : Q) copy_on[size_t(w)] = w == pick ? 1 : 2;
+      }
+    }
+  }
   struct Kept { int z; Vec3 f; std::string label; };
   std::vector<Kept> keep;
   for (int i0 = 0; i0 < N[0]; ++i0)
@@ -649,11 +747,14 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
         for (size_t i = 0; i < X.size(); ++i) {
           const Site& st = S[X[i].site];
           bool on;
-          if (!st.group.empty()) {
+          if (across(st)) {
+            on = false;
+            for (const Owner& w : owners[i])
+              if (copy_on[size_t(w.node) * size_t(ncells) + size_t(cell_index(i0 - w.shift[0], i1 - w.shift[1], i2 - w.shift[2]))] == 1) { on = true; break; }
+          } else if (!st.group.empty()) {
             if (!random) on = chosen[st.assembly] == st.group;
             else {
-              auto m = [&](int k, int n) { return ((k % n) + n) % n; };
-              const int c0 = m(i0 - X[i].shift[0], N[0]), c1 = m(i1 - X[i].shift[1], N[1]), c2 = m(i2 - X[i].shift[2], N[2]);
+              const int c0 = cmod(i0 - X[i].shift[0], N[0]), c1 = cmod(i1 - X[i].shift[1], N[1]), c2 = cmod(i2 - X[i].shift[2], N[2]);
               on = draw_group(st.assembly, X[i].op, c0, c1, c2) == st.group;
             }
           } else if (place[i] >= 0) {
@@ -675,6 +776,9 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
       for (const auto& [a, g] : chosen) t += (t.empty() ? "" : ", ") + std::string("assembly ") + a + " group " + g;
       R.notes.push_back(std::to_string(R.assemblies) + " disorder assembl" + (R.assemblies == 1 ? "y" : "ies") + ": kept " + t);
     }
+    if (across_left_out)
+      R.notes.push_back(std::to_string(across_left_out) + " overlapping cop" + (across_left_out == 1 ? "y" : "ies") +
+                        " of fragments disordered across a symmetry element left out: one orientation kept");
     int lone = 0;
     for (int p = 0; p < nplaces; ++p) lone += major_of[size_t(p)] < 0;
     if (lone) s.notes.push_back(std::to_string(lone) + " sites with occupancy below 0.5 left out");

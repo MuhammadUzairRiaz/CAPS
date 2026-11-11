@@ -287,15 +287,39 @@ public sealed partial class MainViewModel
         return o;
     }
     private JsonObject? _series;
+    private string _seriesKey = "";   // the steps the series was computed with
     private bool _seriesRunning;
     public bool SeriesRunning { get => _seriesRunning; private set { if (Set(ref _seriesRunning, value)) Raise(nameof(SeriesIdle)); } }
     public bool SeriesIdle => !_seriesRunning;
+
+    /// <summary>The steps and branch the time series depends on (not the outputs, nor steps paused while scrubbing).</summary>
+    private string SeriesKey() => new JsonObject
+    {
+        ["steps"] = new JsonArray(PipelineRows.Select(r =>
+        {
+            var o = (JsonObject)JsonNode.Parse(r.Params.ToJsonString())!;
+            o["type"] = r.Type;
+            o["enabled"] = r.Enabled;
+            return (JsonNode)o;
+        }).ToArray()),
+        ["branch"] = _pipeBranch,
+    }.ToJsonString();
+
+    /// <summary>A time series belongs to the structure and the steps it was computed with; anything else drops it.</summary>
+    private void DropSeries()
+    {
+        if (_series == null) return;
+        _series = null; _seriesKey = "";
+        RefreshTimeline();
+    }
+    private void SeriesDocumentChanged() => DropSeries();
 
     /// <summary>Runs the pipeline on every frame (or every stride-th) and adds the attributes as the Time series table.</summary>
     public async Task ComputeSeries()
     {
         if (_doc == null || SeriesRunning) return;
         var doc = _doc;
+        var key = SeriesKey();
         var stride = Math.Max(1, _frames / 500);
         SeriesRunning = true;
         try
@@ -305,7 +329,9 @@ public sealed partial class MainViewModel
                 Avalonia.Threading.Dispatcher.UIThread.Post(() => Status = $"Time series · {f * 100:0} % of the frames");
                 return true;
             }));
+            if (_doc != doc || SeriesKey() != key) { Status = "Time series dropped: the structure or the steps changed while it ran"; return; }
             _series = JsonNode.Parse(text) as JsonObject;
+            _seriesKey = key;
             RefreshPipeline();
             RefreshTimeline();
             var idx = PipeTables.Count - 1;
@@ -771,7 +797,7 @@ public sealed partial class MainViewModel
                 if (parts.Length != 3 || parts.Any(double.IsNaN)) return;
                 p[f.Key] = new JsonArray(parts.Select(x => (JsonNode)x).ToArray());
                 break;
-            case "choice" when f.Key == "axis" && int.TryParse(f.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var axis): p[f.Key] = axis; break;
+            case "choice" when f.Key is "axis" or "axis2" && int.TryParse(f.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var axis): p[f.Key] = axis; break;
             case "matrix":
                 var m = f.Text.Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries).Select(x => double.TryParse(x, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : double.NaN).ToArray();
                 if (m.Length == 0) { p.Remove(f.Key); break; }
@@ -895,7 +921,10 @@ public sealed partial class MainViewModel
             PipeError = "";
         }
         catch (Exception e) { PipeError = e.Message; }
+        var stale = _series != null && SeriesKey() != _seriesKey;
+        if (stale) { _series = null; _seriesKey = ""; }
         RefreshPipeline();
+        if (stale) RefreshTimeline();
         RefreshGroups();
         RenderRequested?.Invoke();
     }
@@ -1146,8 +1175,8 @@ public sealed partial class MainViewModel
         var shownTo = Math.Min(total, _inspectorOffset + InspectorPage);
         InspectorNote = total == 0 ? "No rows" + (_inspectorFilter.Length > 0 ? " match the filter" : "")
             : $"Rows {_inspectorOffset + 1}–{shownTo} of {total}" + (_inspectorTab == 0 && _inspectorFilter.Length > 0 ? $" matching the filter ({(int)((double?)j["in_frame"] ?? 0)} in frame)" : "");
+        _inspectorTotal = total;   // before the raise: the Next button reads it
         Raise(nameof(InspectorCanPrev)); Raise(nameof(InspectorCanNext));
-        _inspectorTotal = total;
     }
     private int _inspectorTotal;
     public bool InspectorCanPrev => _inspectorOffset > 0;

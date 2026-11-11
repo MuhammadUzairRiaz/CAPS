@@ -1,0 +1,18 @@
+# extra molecules for PCFF / COMPASS / CVFF typing against Materials Studio (compare_ms.py), beside gaff_reference_set.smi
+COS(=O)(=O)OC dimethyl_sulfate
+OS(=O)(=O)O sulfuric_acid
+COS(=O)(=O)[O-] methyl_sulfate_anion
+CS(=O)(=O)[O-] methanesulfonate
+c1c[nH+]c[nH]1 imidazolium
+Cn1cc[n+](C)c1 dimethylimidazolium
+ClCCl dichloromethane
+ClC(Cl)(Cl)Cl tetrachloromethane
+C=C(Cl)C=C chloroprene
+CC(=O)[O-] acetate_pcff
+C[NH3+] methylammonium_pcff
+CC(=O)OC(C)=O acetic_anhydride_pcff
+O=C=NCCN=C=O ethylene_diisocyanate
+CN=C=NC dimethylcarbodiimide
+c1ccc2c(c1)[nH]c1ccccc12 carbazole
+c1ccc2c(c1)oc1ccccc12 dibenzofuran
+c1ccc2c(c1)sc1ccccc12 dibenzothiophene

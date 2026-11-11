@@ -92,6 +92,20 @@ std::string forcefield_to_json(const ForceField& ff) {
       a.push_back(f.rc > 0 ? nums({double(k.first), double(k.second), double(f.form), f.a, f.b, f.c, f.rc}) : nums({double(k.first), double(k.second), double(f.form), f.a, f.b, f.c}));
     j["pair_func"] = a;
   }
+  if (!ff.tables.empty())   // the tabulated pairs (pair_func form 40, a = the index here)
+    j["tables"] = rows(ff.tables, [](const TabulatedPair& t) {
+      Json o = Json::object();
+      o["r0"] = Json(t.r0), o["dr"] = Json(t.dr), o["e"] = numbers(t.e), o["f"] = numbers(t.f);
+      return o;
+    });
+  if (!ff.swap3.site.empty() || !ff.swap3.pairs.empty()) {   // the swap model (vitrimers)
+    Json o = Json::object();
+    o["site"] = numbers(ff.swap3.site);
+    o["pairs"] = rows(ff.swap3.pairs, [](const SwapModel::Pair& p) {
+      return nums({double(p.a), double(p.b), p.eps, p.sigma, p.rc, p.lambda, double(p.n), double(p.m), p.shift ? 1.0 : 0.0});
+    });
+    j["swap3"] = o;
+  }
   j["lj14_types"] = rows(ff.lj14_types, [](const PairType& p) { return nums({p.eps, p.sigma}); });
   j["bonds2"] = rows(ff.bonds2, [](const Class2Bond& t) { return nums({double(t.i), double(t.j), t.r0, t.k2, t.k3, t.k4}); });
   j["angles2"] = rows(ff.angles2, [](const Class2Angle& t) {
@@ -213,6 +227,26 @@ ForceField forcefield_from_json(const std::string& text) {
   });
   read_rows(j, "lj_pairs", f.lj_pairs, [](const Json& r) { return PairLJ{u(r, 0), u(r, 1), d(r, 2), d(r, 3)}; });
   for (const auto& r : at(j, "pair_func").items()) f.pair_func[{n(r, 0), n(r, 1)}] = PairFunc{n(r, 2), d(r, 3), d(r, 4), d(r, 5), r.size() > 6 ? d(r, 6) : 0.0};
+  read_rows(j, "tables", f.tables, [](const Json& r) {
+    TabulatedPair t;
+    t.r0 = r.num("r0", 0.0), t.dr = r.num("dr", t.dr);
+    t.e = read_numbers<double>(r, "e"), t.f = read_numbers<double>(r, "f");
+    if (t.e.size() != t.f.size()) throw FieldError("force field file: a pair table has energies and forces of different lengths");
+    return t;
+  });
+  for (const auto& [ab, pf] : f.pair_func)
+    if (pf.form == kPairTable && (pf.a < 0 || size_t(pf.a) >= f.tables.size()))
+      throw FieldError("force field file: a tabulated pair refers to table " + std::to_string(int(pf.a)) + ", but the file holds " + std::to_string(f.tables.size()));
+  if (j.has("swap3")) {
+    const Json& s = j["swap3"];
+    f.swap3.site = read_numbers<int>(s, "site");
+    read_rows(s, "pairs", f.swap3.pairs, [](const Json& r) {
+      SwapModel::Pair p;
+      p.a = n(r, 0), p.b = n(r, 1), p.eps = d(r, 2), p.sigma = d(r, 3), p.rc = d(r, 4), p.lambda = d(r, 5);
+      p.n = n(r, 6), p.m = n(r, 7), p.shift = d(r, 8) != 0;
+      return p;
+    });
+  }
   read_rows(j, "lj14_types", f.lj14_types, [](const Json& r) { return PairType{d(r, 0), d(r, 1)}; });
   read_rows(j, "bonds2", f.bonds2, [](const Json& r) { return Class2Bond{u(r, 0), u(r, 1), d(r, 2), d(r, 3), d(r, 4), d(r, 5)}; });
   read_rows(j, "angles2", f.angles2, [](const Json& r) {
@@ -309,6 +343,7 @@ ForceField forcefield_from_json(const std::string& text) {
   });
   const size_t na = size_t(j.num("atoms", double(f.type_index.size())));
   if (f.type_index.size() != na || f.charge.size() != na || f.mass.size() != na) throw FieldError("force field file: per-atom lists of different lengths");
+  if (!f.swap3.site.empty() && f.swap3.site.size() != na) throw FieldError("force field file: the swap model's site list does not match the atoms");
   return f;
 }
 

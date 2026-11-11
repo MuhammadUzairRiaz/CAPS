@@ -60,12 +60,38 @@ void set_dihedral(System& s, const std::array<int, 4>& at, double phi, const std
   if (s.cell.valid()) axis = s.cell.minimum_image(axis);
   axis = axis * (1.0 / norm(axis));
   const double c = std::cos(delta), sn = std::sin(delta);
-  for (uint32_t i : moving) {
-    Vec3 p = s.atoms[i].pos - B;
-    if (s.cell.valid()) p = s.cell.minimum_image(p);
-    // Rodrigues: rotation by delta about the axis through B
+  // Each moving atom's offset from B. In a periodic cell these are unwrapped along the bonds from B, so a chain longer
+  // than half the cell turns as one piece; a per-atom minimum image would fold the far atoms back and tear their bonds.
+  const size_t n = s.atoms.size();
+  std::vector<Vec3> off(moving.size());
+  if (!s.cell.valid()) {
+    for (size_t m = 0; m < moving.size(); ++m) off[m] = s.atoms[moving[m]].pos - B;
+  } else {
+    std::vector<int64_t> slot(n, -1);
+    for (size_t m = 0; m < moving.size(); ++m) slot[moving[m]] = int64_t(m);
+    std::vector<std::vector<uint32_t>> nb(n);
+    for (const auto& e : s.bonds) nb[e.i].push_back(e.j), nb[e.j].push_back(e.i);
+    const uint32_t pivot = uint32_t(at[1]);
+    std::vector<char> done(moving.size(), 0);
+    std::vector<uint32_t> queue{pivot};
+    for (size_t h = 0; h < queue.size(); ++h) {
+      const uint32_t a = queue[h];
+      const Vec3 base = a == pivot ? Vec3{0, 0, 0} : off[size_t(slot[a])];
+      for (uint32_t q : nb[a]) {
+        if (slot[q] < 0 || done[size_t(slot[q])]) continue;
+        done[size_t(slot[q])] = 1;
+        off[size_t(slot[q])] = base + s.cell.minimum_image(s.atoms[q].pos - s.atoms[a].pos);
+        queue.push_back(q);
+      }
+    }
+    for (size_t m = 0; m < moving.size(); ++m)
+      if (!done[m]) off[m] = s.cell.minimum_image(s.atoms[moving[m]].pos - B);   // not bonded to the moving side
+  }
+  for (size_t m = 0; m < moving.size(); ++m) {
+    const Vec3& p = off[m];
+    // Rodrigues: rotation by delta about the axis through B; each atom keeps the periodic image it sat in
     const Vec3 r = p * c + cross(axis, p) * sn + axis * (dot(axis, p) * (1 - c));
-    s.atoms[i].pos = B + r;
+    s.atoms[moving[m]].pos = s.atoms[moving[m]].pos + (r - p);
   }
 }
 

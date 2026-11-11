@@ -163,10 +163,15 @@ public partial class MainViewModel
     // Grow uses per-chain lengths once they are sent here
     private int[]? _growChainDp;
     private string _growChainDpText = "";
+    /// <summary>True when the drawn lengths match the current chain count, the same test Grow uses before it sends chain_dp.</summary>
+    private bool GrowChainDpApplies => _growChainDp != null && _growChainDp.Length == _growChains;
+    // the lengths row stays visible on a count mismatch so the page can say why they are not used
     public bool GrowPolydisperse => _growChainDp != null;
-    public string GrowDispersityChip => _growChainDp == null ? "Monodisperse" : "Polydisperse · " + PdDistNames[_pdDist];
-    public string GrowDispersityText => _growChainDp == null ? "Đ 1.00" : $"Đ {_pdSamplePdi.ToString("0.000", Inv)}";
-    public string GrowLengthsText => _growChainDpText;
+    public string GrowDispersityChip => !GrowChainDpApplies ? "Monodisperse" : "Polydisperse · " + PdDistNames[_pdDist];
+    public string GrowDispersityText => !GrowChainDpApplies ? "Đ 1.00" : $"Đ {_pdSamplePdi.ToString("0.000", Inv)}";
+    public string GrowLengthsText => _growChainDp == null || GrowChainDpApplies ? _growChainDpText
+        : string.Format(Inv, "{0} lengths were drawn for {0} chains, but Grow now builds {1}, so the lengths are not used and every chain gets the single DP. Draw them again in Polydispersity or set the chain count back to {0}.",
+            _growChainDp.Length, _growChains);
 
     public void UsePdLengths()
     {
@@ -192,7 +197,7 @@ public partial class MainViewModel
     /// <summary>Called by Grow: the spec with the per-chain lengths (and Pₘ) when set; null keeps Grow's own path.</summary>
     private string? GrowSpecWithStatistics(string? spec)
     {
-        var poly = _growChainDp != null && _growChainDp.Length == _growChains;
+        var poly = GrowChainDpApplies;
         var stereo = _growTact == 0 && _growStereo != null;
         if (!poly && !stereo) return spec;
         var sj = spec != null ? JsonNode.Parse(spec)!.AsObject() : GrowSpecObject();
@@ -212,7 +217,7 @@ public partial class MainViewModel
     }
     private void AfterGrowStatistics(CapsDocument doc)
     {
-        if (_growChainDp != null && _growChainDp.Length == _growChains) { PdGrown = doc; PdGrownLengths = _growChainDp.ToArray(); }
+        if (GrowChainDpApplies) { PdGrown = doc; PdGrownLengths = _growChainDp!.ToArray(); }
     }
 
     // ---------------------------------------------------------------- Studio › Copolymer builder (design/boards/Copolymer)

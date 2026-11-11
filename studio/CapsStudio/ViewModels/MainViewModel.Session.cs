@@ -104,7 +104,7 @@ public sealed partial class MainViewModel
                 }
                 items.Add(new JsonObject
                 {
-                    ["name"] = it.Name.Replace(" (unsaved)", ""), ["origin"] = it.Origin, ["history"] = it.History, ["force_field"] = it.ForceField,
+                    ["name"] = it.Name.Replace(" (unsaved)", ""), ["unsaved"] = it.Name.Contains(" (unsaved)", StringComparison.Ordinal), ["origin"] = it.Origin, ["history"] = it.History, ["force_field"] = it.ForceField,
                     ["file"] = file, ["topology"] = topology, ["frame"] = it.Frame, ["active"] = it == _activeItem, ["builder"] = it.BuildSettings?.DeepClone(), ["reaction"] = it.ReactSettings?.DeepClone(),
                     ["jobs"] = new JsonArray(it.Jobs.Select(j => (JsonNode)j.Id).ToArray()),
                 });
@@ -132,7 +132,8 @@ public sealed partial class MainViewModel
             CapsDocument doc;
             try { doc = CapsDocument.Open(file, topo); }
             catch { missing.Add(name); continue; }
-            Show(doc, name);
+            // still never saved: the title says so again, so closing it keeps a copy instead of losing the session file
+            Show(doc, (bool?)n["unsaved"] == true ? name + " (unsaved)" : name);
             var it = _activeItem;
             if (it == null) continue;
             it.Origin = (string?)n["origin"] ?? "";

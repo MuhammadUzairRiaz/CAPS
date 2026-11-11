@@ -131,7 +131,7 @@ struct ClusterStats {
 ClusterStats cluster_stats(const System& s);
 
 // Flory–Stockmayer critical conversion of the A groups for an A_fA + B_fB step-growth network with ratio
-// r = (B groups)/(A groups) ≤ 1 taken on the A side: α_c = 1 / sqrt(r (fA − 1)(fB − 1)).
+// r = (A groups)/(B groups) ≤ 1, so A is the limiting group and p_B = r p_A: α_c = 1 / sqrt(r (fA − 1)(fB − 1)).
 double flory_stockmayer(double r, double fa, double fb);
 
 struct CycleRow {

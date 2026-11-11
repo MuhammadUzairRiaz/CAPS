@@ -48,7 +48,12 @@ Histogram histogram(const std::vector<double>& values, const std::string& rule, 
       h = v.size() > 1 ? 3.49 * std::sqrt(ss / (n - 1)) / std::cbrt(n) : 0;
       H.rule = "Scott";
     }
-    if (h > 0 && range > 0) k = std::max(1, int(std::ceil(range / h - 1e-12)));
+    // a tiny spread next to one far value asks for billions of bins (and range/h past INT_MAX): cap the
+    // count in double before any int cast and fall back to Sturges above it
+    constexpr double kMaxBins = 10000;
+    const double want = (h > 0 && range > 0) ? std::ceil(range / h - 1e-12) : 0;
+    if (h > 0 && range > 0 && want <= kMaxBins) k = std::max(1, int(want));
+    else if (h > 0 && range > 0) H.rule += " gives over 10000 bins: Sturges", k = 0;
     else H.rule += " gives no width: Sturges", k = 0;
   } else if (rule != "sturges") {
     throw std::invalid_argument("bin rule fd, scott, sturges or bins");

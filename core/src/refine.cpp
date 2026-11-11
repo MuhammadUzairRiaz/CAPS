@@ -314,7 +314,8 @@ Engine make_engine(const std::vector<double>& two_theta, const std::vector<Refin
   else {
     const auto ka = anode_kalpha(o.anode);
     e.lam = {ka[0]}, e.wt = {1};
-    if (o.kalpha2) e.lam.push_back(ka[1]), e.wt.push_back(o.ka2_ratio);
+    // a neutron source is monochromatic: no K-alpha2 line (as in powder.cpp)
+    if (o.kalpha2 && !e.neutron) e.lam.push_back(ka[1]), e.wt.push_back(o.ka2_ratio);
   }
   const double lam_min = *std::min_element(e.lam.begin(), e.lam.end());
   const double th_max = std::min(89.999, 0.5 * (e.tmax + 2)) / kDeg;

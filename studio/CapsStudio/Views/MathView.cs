@@ -165,7 +165,7 @@ public sealed class MathView : Control
                 {
                     var c = s[I];
                     if (c == '}') { if (top) throw new FormatException($"unmatched '}}' at {I}"); break; }
-                    if (until != null && s.AsSpan(I).StartsWith(until)) break;
+                    if (until != null && AtCommand(until)) break;
                     if (c == '^' || c == '_')
                     {
                         ++I;
@@ -190,6 +190,11 @@ public sealed class MathView : Control
                 }
                 return items.Count == 1 ? items[0] : new Seq(items);
             }
+
+            // the text at I is the whole command `cmd` (a backslash and letters), not just its start:
+            // \right matches \right( but not \rightarrow
+            private bool AtCommand(string cmd) =>
+                s.AsSpan(I).StartsWith(cmd) && (I + cmd.Length >= s.Length || !char.IsLetter(s[I + cmd.Length]));
 
             private Node Group(bool inText = false)
             {
@@ -362,7 +367,7 @@ public sealed class MathView : Control
                         {
                             var open = Delim();
                             var body = Row(until: "\\right");
-                            if (!s.AsSpan(I).StartsWith("\\right")) throw new FormatException("\\left without \\right");
+                            if (!AtCommand("\\right")) throw new FormatException("\\left without \\right");
                             I += 6;
                             return new Fenced(open, Delim(), body);
                         }

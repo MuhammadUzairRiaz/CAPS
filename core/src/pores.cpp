@@ -165,13 +165,21 @@ PoreNetworkReport pore_network(const System& s, const PoreNetworkOptions& o) {
   for (double x : rad) rmax = std::max(rmax, x + o.probe);
   int span[3];
   for (int a = 0; a < 3; ++a) span[a] = int(std::ceil(2 * rmax / widths[a]));
+  // every centre wrapped into the home cell first: unwrapped or made-whole frames can put atoms several cells away,
+  // and the ±span images below only reach the neighbours of atoms that sit in the cell
+  std::vector<Vec3> pos(na);
+  for (size_t i = 0; i < na; ++i) {
+    Vec3 f = c.to_fractional(s.atoms[i].pos);
+    for (int a = 0; a < 3; ++a) f[size_t(a)] -= std::floor(f[size_t(a)]);
+    pos[i] = c.to_cartesian(f);
+  }
   struct Img { Vec3 p; double r; };
   std::vector<std::vector<size_t>> near(na);
   std::vector<Img> imgs;
   for (size_t j = 0; j < na; ++j)
     for (int u = -span[0]; u <= span[0]; ++u)
       for (int v = -span[1]; v <= span[1]; ++v)
-        for (int w = -span[2]; w <= span[2]; ++w) imgs.push_back({s.atoms[j].pos + c.a * double(u) + c.b * double(v) + c.c * double(w), rad[j] + o.probe});
+        for (int w = -span[2]; w <= span[2]; ++w) imgs.push_back({pos[j] + c.a * double(u) + c.b * double(v) + c.c * double(w), rad[j] + o.probe});
   // neighbours through a hash of bins 2 rmax wide over the images
   const double bin = 2 * rmax;
   auto key = [&](const Vec3& p, int dx, int dy, int dz) {
@@ -184,11 +192,11 @@ PoreNetworkReport pore_network(const System& s, const PoreNetworkOptions& o) {
     for (int dx = -1; dx <= 1; ++dx)
       for (int dy = -1; dy <= 1; ++dy)
         for (int dz = -1; dz <= 1; ++dz) {
-          const auto it = hash.find(key(s.atoms[i].pos, dx, dy, dz));
+          const auto it = hash.find(key(pos[i], dx, dy, dz));
           if (it == hash.end()) continue;
           for (size_t m : it->second) {
             const double cut = rad[i] + o.probe + imgs[m].r;
-            const Vec3 d = imgs[m].p - s.atoms[i].pos;
+            const Vec3 d = imgs[m].p - pos[i];
             if (dot(d, d) < cut * cut && dot(d, d) > 1e-12) near[i].push_back(m);
           }
         }
@@ -215,7 +223,7 @@ PoreNetworkReport pore_network(const System& s, const PoreNetworkOptions& o) {
     const double Ri = rad[i] + o.probe;
     const double dA = 4 * M_PI * Ri * Ri / M;
     for (const auto& u : unit) {
-      const Vec3 p = s.atoms[i].pos + u * Ri;
+      const Vec3 p = pos[i] + u * Ri;
       bool covered = false;
       for (size_t m : near[i]) {
         const Vec3 d = p - imgs[m].p;

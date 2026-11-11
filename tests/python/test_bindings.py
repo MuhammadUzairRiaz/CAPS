@@ -1395,8 +1395,25 @@ check(_d.sulfur_bridges()["pendant"] == {"S1": 3}, f"three pendant groups: {_d.s
 _d.react("sulfur_allylic", cycles=1, per_cycle=1, relax=False, seed=3, capture=2.0, remove_pendant=True)
 check(_d.sulfur_bridges()["pendant"] == {} and _d.react_summary()["removed_pendant"] == 3 and _d.summary()["atoms"] == 78, f"pendant removed: {_d.summary()['atoms']} atoms")
 check({a["element"] for a in _atoms(_d)} == {"C", "H"} and _d.field.report()["complete"], "only carbon and hydrogen left, the force field complete on them")
-# a report of more than the buffer, cut inside a character, still decodes
-check(b"\xc3".decode(errors="replace") != "", "cut UTF-8 decodes")
+# a report of more than the buffer, cut inside a character, still decodes: relax's report through a buffer that ends
+# on the first byte of its first multi-byte character (the C side ends the cut text, the bindings decode it)
+_rd = caps.pack(molecules=[("CCO", 2)], box=12.0, seed=1)
+_rd.field.assign("uff")
+_rd.relax(max_iterations=0)
+_rb = _rd.report.encode()
+check(any(b >= 0x80 for b in _rb), f"the relax report has a multi-byte character: {_rd.report[:60]!r}")
+_cut = next(i for i, b in enumerate(_rb) if b >= 0x80)
+_report0 = caps.core._report
+def _cut_report():
+    buf = caps.core.C.create_string_buffer(_cut + 2)   # room for that character's first byte only
+    caps.core.C.memset(buf, 0x41, _cut + 2)            # no zero bytes, so the C side has to end the cut text itself
+    return buf
+caps.core._report = _cut_report
+try:
+    _rd.relax(max_iterations=0)
+finally:
+    caps.core._report = _report0
+check(_rd.report == _rb[:_cut].decode() + "�", f"a report cut inside a character decodes: {_rd.report!r}")
 
 
 print("all python checks passed")

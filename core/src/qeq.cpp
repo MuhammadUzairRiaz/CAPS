@@ -321,7 +321,9 @@ Built build(const System& s, const QEqOptions& o, QEqReport& R, bool coulomb_onl
     A.ewald = true;
     const double V = s.cell.volume();
     const double kmax = 2 * alpha * std::sqrt(-std::log(o.ewald_accuracy));
-    for (int k = 0; k < 3; ++k) A.H[k] = int(std::ceil(kmax * widths[k] / (2 * M_PI)));
+    // k = h b1 + k b2 + l b3 gives k·a = 2πh, so |k| ≤ kmax needs |h| ≤ kmax |a| / 2π (the lattice length, not the plane spacing)
+    const double lens[3] = {norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)};
+    for (int k = 0; k < 3; ++k) A.H[k] = int(std::ceil(kmax * lens[k] / (2 * M_PI)));
     const Vec3 b1 = cross(s.cell.b, s.cell.c) * (2 * M_PI / V), b2 = cross(s.cell.c, s.cell.a) * (2 * M_PI / V), b3 = cross(s.cell.a, s.cell.b) * (2 * M_PI / V);
     double self = 0;
     for (int h = 0; h <= A.H[0]; ++h)
@@ -472,13 +474,8 @@ std::vector<double> qeq_charges(const System& s, const QEqOptions& o, QEqReport*
   int iters = 0, pass = 0;
   double res = 0, mu = 0, change = 0;
   bool set_changed = false;
-  for (; pass < (iterate ? std::max(1, o.scf_iterations) : 1); ++pass) {
-    for (int i : hyd)   // J_H(q) = J_H⁰ (1 + q/ζ_H), kept positive
-    {
-      const double dJ = B.J[size_t(i)] * std::max(-0.9, q[size_t(i)] / B.zeta[size_t(i)]);
-      A.pre[size_t(i)] += D0[size_t(i)] + dJ - A.diag[size_t(i)];
-      A.diag[size_t(i)] = D0[size_t(i)] + dJ;
-    }
+  // the free atoms equalised at the total with the held ones fixed: qn (held atoms keep q), mu
+  auto equalise = [&]() {
     std::vector<char> free(n);
     std::vector<double> qp(n, 0.0);
     double pinned_sum = 0;
@@ -499,6 +496,15 @@ std::vector<double> qeq_charges(const System& s, const QEqOptions& o, QEqReport*
     if (st == 0) throw std::invalid_argument("QEq: every atom is held at a bound, so the total charge cannot be met");
     mu = (o.total_charge - pinned_sum - ss) / st;
     for (size_t i = 0; i < n; ++i) qn[i] = free[i] ? xs[i] + mu * xt[i] : q[i];
+  };
+  for (; pass < (iterate ? std::max(1, o.scf_iterations) : 1); ++pass) {
+    for (int i : hyd)   // J_H(q) = J_H⁰ (1 + q/ζ_H), kept positive
+    {
+      const double dJ = B.J[size_t(i)] * std::max(-0.9, q[size_t(i)] / B.zeta[size_t(i)]);
+      A.pre[size_t(i)] += D0[size_t(i)] + dJ - A.diag[size_t(i)];
+      A.diag[size_t(i)] = D0[size_t(i)] + dJ;
+    }
+    equalise();
     const double mix = (!hyd.empty() && pass > 0 && !set_changed) ? 0.5 : 1.0;   // hydrogen: damped steps after the first
     change = 0;
     for (size_t i = 0; i < n; ++i) {
@@ -525,9 +531,16 @@ std::vector<double> qeq_charges(const System& s, const QEqOptions& o, QEqReport*
     if (!set_changed && pass > 0 && change < o.scf_tolerance) break;
     if (!set_changed && hyd.empty()) break;   // bounds alone: the active set is settled
   }
+  // the pass limit reached on a pass that held or released atoms: the clamped charges no longer add up to the total,
+  // so equalise the free atoms once more with the final held set
+  const bool unsettled = set_changed;
+  if (unsettled) {
+    equalise();
+    q = qn;
+  }
   R.iterations = iters;
   R.residual = res;
-  R.mu = -mu;   // H q = −χ + μ·1: the equalised electronegativity is −μ
+  R.mu = mu;   // H q = −χ + μ·1, so χ_i + (H q)_i = ∂E/∂q_i = μ: the equalised electronegativity is μ
   R.scf = std::min(pass + 1, std::max(1, o.scf_iterations));
   for (size_t i = 0; i < n; ++i) R.bounded += pinned[i];
   char b[320];
@@ -551,6 +564,7 @@ std::vector<double> qeq_charges(const System& s, const QEqOptions& o, QEqReport*
     if (!hyd.empty() && change >= o.scf_tolerance) R.notes.push_back("the self-consistent passes did not converge");
   }
   if (R.bounded) R.notes.push_back(std::to_string(R.bounded) + " atom(s) held at a charge bound");
+  if (unsettled) R.notes.push_back("the atoms held at bounds did not settle within the pass limit; free atoms re-equalised to the total once more");
   if (R.residual > 1e-5) R.notes.push_back("conjugate gradients did not converge fully");
   if (report) *report = R;
   return q;

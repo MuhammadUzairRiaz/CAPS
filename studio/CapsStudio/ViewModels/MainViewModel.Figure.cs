@@ -102,7 +102,10 @@ public sealed partial class MainViewModel
     private void PrepareFigure()
     {
         if (_doc == null) return;
-        var p = FigurePresets[Math.Clamp(_settings.FigurePreset, 0, FigurePresets.Length - 1)];
+        // a hand-edited or older settings file can hold any number: keep both choices inside their lists
+        _settings.FigurePreset = Math.Clamp(_settings.FigurePreset, 0, FigurePresets.Length - 1);
+        _settings.FigureBackground = Math.Clamp(_settings.FigureBackground, 0, FigureTiles.Count - 1);
+        var p = FigurePresets[_settings.FigurePreset];
         _figWidthMm = p.Mm > 0 ? (decimal)p.Mm : 325;
         _figDpi = p.Dpi > 0 ? p.Dpi : 150;
         if (_figTitleText.Length == 0) _figTitleText = FigureDefaultTitle();
@@ -127,11 +130,12 @@ public sealed partial class MainViewModel
 
     public int FigBackground
     {
-        get => _settings.FigureBackground;
+        get => Math.Clamp(_settings.FigureBackground, 0, FigureTiles.Count - 1);
         set
         {
+            value = Math.Clamp(value, 0, FigureTiles.Count - 1);
             if (_settings.FigureBackground == value) return;
-            _settings.FigureBackground = Math.Clamp(value, 0, 2);
+            _settings.FigureBackground = value;
             foreach (var t in FigureTiles) t.Selected = t.Background == value;
             Raise();
             Raise(nameof(FigBgDark)); Raise(nameof(FigBgWhite)); Raise(nameof(FigBgTransparent));
@@ -169,7 +173,7 @@ public sealed partial class MainViewModel
 
     public int FigPreset
     {
-        get => _settings.FigurePreset;
+        get => Math.Clamp(_settings.FigurePreset, 0, FigurePresets.Length - 1);
         set
         {
             var v = Math.Clamp(value, 0, FigurePresets.Length - 1);

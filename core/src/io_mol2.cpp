@@ -77,7 +77,8 @@ System read_mol2(const std::string& path) {
     if (section == "MOLECULE") {
       ++rec_line;
       if (rec_line == 1 && s.title.empty()) s.title = t;
-      if (rec_line == 5) charges = lower(t) != "no_charges";
+      // name, counts, molecule type, charge type, then optional status bits and comment
+      if (rec_line == 4) charges = lower(t) != "no_charges";
     } else if (section == "ATOM") {
       if (w.size() < 6) throw ReadError(path + ":" + std::to_string(lineno) + ": ATOM record needs id name x y z type");
       Atom a;
@@ -86,7 +87,8 @@ System read_mol2(const std::string& path) {
       a.name = w[5];
       a.element = element_of(w[5], w[1]);
       const int64_t sub = w.size() > 6 ? std::stoll(w[6]) : 1;
-      a.mol = mol_offset + sub;
+      a.mol = mol_offset + sub;   // substructure (residue), kept per atom; molecules come from bonds
+      a.resid = sub;
       max_sub = std::max(max_sub, sub);
       if (w.size() > 7) a.resname = w[7];
       if (w.size() > 8) a.charge = std::stod(w[8]);
@@ -111,7 +113,7 @@ System read_mol2(const std::string& path) {
   (void)base;
   if (s.atoms.empty()) throw ReadError(path + ": no @<TRIPOS>ATOM records");
   s.has_charges = charges;
-  s.has_mol = true;
+  s.has_mol = false;   // substructures are residues, not molecules
   s.bonds_from_file = !s.bonds.empty();
   if (!s.cell.valid()) s.cell.periodic = {false, false, false};
   return s;

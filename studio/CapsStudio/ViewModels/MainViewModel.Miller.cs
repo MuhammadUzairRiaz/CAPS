@@ -23,6 +23,8 @@ public partial class MainViewModel
     private bool _millerShown;
     public bool MillerShown { get => _millerShown; private set => Set(ref _millerShown, value); }
     private double _millerYaw, _millerPitch;
+    /// <summary>The camera angles that look straight down the last planes' normal (the Unit cell page turns its own view to them).</summary>
+    public (double Yaw, double Pitch) MillerView => (_millerYaw, _millerPitch);
 
     /// <summary>Draws the planes (hkl) in the view and reports their spacing; view: also turn the camera down the normal.</summary>
     public void ShowMiller(bool view = false)

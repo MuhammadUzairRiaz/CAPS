@@ -851,7 +851,7 @@
    "products": [
     {
      "label": "bridged product",
-     "smiles": "C[C:1](C)([O:4]C(=O)/C=C\\C(=O)[O:5][C:6](C)(C)[CH:8](C)[O:7])[CH:3](C)[O:2]"
+     "smiles": "C[C:1](C)([O:4]C(=O)/C=C\\C(=O)[O:5][C:6](C)(C)[CH:8](C)[OH:7])[CH:3](C)[OH:2]"
     }
    ],
    "tags": [
@@ -896,7 +896,7 @@
    "products": [
     {
      "label": "grafted product",
-     "smiles": "C[C:1](C)([O:4]C(=O)/C=C\\C(=O)[O:6]C(=O)CCC(=O)OC)[CH:3](C)[O:2]"
+     "smiles": "C[C:1](C)([O:4]C(=O)/C=C\\C(=O)[O:6]C(=O)CCC(=O)OC)[CH:3](C)[OH:2]"
     },
     {
      "label": "water",

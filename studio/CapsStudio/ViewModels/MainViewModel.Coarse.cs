@@ -633,7 +633,7 @@ public partial class MainViewModel
         CgwEquilDeck = File.Exists(p) ? File.ReadAllText(p) : "";
         // the deck says how it is run in its own header (a comment line "lmp -in in.cg_equil …")
         var line = _cgwEquilDeck.Split('\n').Take(10).FirstOrDefault(l => l.TrimStart('#', ' ').StartsWith("lmp ", StringComparison.Ordinal));
-        CgwEquilCommand = line == null ? "" : $"cd {_cgwBuildOut} && {line.TrimStart('#', ' ').Trim()}";
+        CgwEquilCommand = line == null ? "" : $"cd {FieldViewModel.Quote(_cgwBuildOut)} && {line.TrimStart('#', ' ').Trim()}";
         if (_cgwEquilDeck.Length > 0) CgwStages[4].Done = true;
     }
 

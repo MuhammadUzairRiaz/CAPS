@@ -94,11 +94,15 @@ ThermoLog parse_lammps_log(const std::string& text) {
       continue;
     }
     if (in_table) {
-      if (w.size() != header.size()) { in_table = false; continue; }
+      // A run ends at "Loop time" or a new header. Lines LAMMPS prints between rows
+      // (WARNING messages, fix print output) are skipped and the table stays open;
+      // an ERROR line means the run stopped, so the table closes there.
+      if (w[0].rfind("ERROR", 0) == 0) { in_table = false; continue; }
+      if (w.size() != header.size()) continue;
       std::vector<double> vals(w.size());
       bool ok = true;
       for (size_t k = 0; k < w.size() && ok; ++k) ok = is_number(w[k], vals[k]);
-      if (!ok) { in_table = false; continue; }
+      if (!ok) continue;
       const size_t r = new_row();
       for (size_t k = 0; k < header.size(); ++k) L.rows[r][col_of[header[k]]] = vals[k];
     }

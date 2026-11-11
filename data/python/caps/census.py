@@ -42,26 +42,63 @@ MAX_FRAGMENT = 80  # atoms; a fragment that would grow past this is cut where it
 
 
 # ------------------------------------------------------------------ the force field, with and without CAPS's fits
-def ff_paths(ff, workdir):
-    """the force field's file, and a copy without the terms CAPS fitted (their comment says so): the published table.
-    The copy's relative typing path is made absolute, or CAPS cannot find the typing rules from the work directory"""
-    full = caps._forcefield_path(ff)
-    d = json.load(open(full))
+PATH_KEYS = ("typing", "pair_table", "molecule_templates", "charge_increments_from")   # files named relative to the force field
+
+
+def published_copy(path, workdir, seen=()):
+    """a copy of the force field at path without the terms CAPS fitted (their comment says so), written to workdir. Its
+    relative file names are made absolute, or CAPS cannot find them from the work directory, and the force field it
+    extends is copied the same way, so no fit inherited from the base is counted as published either"""
+    path = os.path.abspath(path)
+    if path in seen:
+        raise ValueError(f"{path} extends itself")
+    d = json.load(open(path))
+    here = os.path.dirname(path)
     for sec in ("bonds", "angles", "dihedrals", "impropers"):
         d[sec] = [t for t in d.get(sec, []) if not any(m in t.get("comment", "") for m in CAPS_FIT)]
-    if isinstance(d.get("typing"), str) and not os.path.isabs(d["typing"]):
-        d["typing"] = os.path.normpath(os.path.join(os.path.dirname(full), d["typing"]))
-    pub = os.path.join(workdir, "published-only.json")
+    for k in PATH_KEYS:
+        if isinstance(d.get(k), str) and d[k] and not os.path.isabs(d[k]):
+            d[k] = os.path.normpath(os.path.join(here, d[k]))
+    if isinstance(d.get("extends"), str):
+        base = d["extends"] if os.path.isabs(d["extends"]) else os.path.join(here, d["extends"])
+        d["extends"] = published_copy(base, workdir, seen + (path,))
+    pub = os.path.join(workdir, "published-" + os.path.basename(path))
     json.dump(d, open(pub, "w"))
-    return full, pub
+    return pub
+
+
+def ff_paths(ff, workdir):
+    """the force field's file, and a copy without the terms CAPS fitted: the published table"""
+    full = os.path.abspath(caps._forcefield_path(ff))
+    return full, published_copy(full, workdir)
+
+
+def ff_classes(path, seen=()):
+    """{type: the class its torsions are looked up with}, the types of the force field it extends included (an
+    overlay's type replaces the base's of the same name, as CAPS merges them)"""
+    path = os.path.abspath(path)
+    if path in seen:
+        raise ValueError(f"{path} extends itself")
+    d = json.load(open(path))
+    cl = {}
+    if isinstance(d.get("extends"), str):
+        base = d["extends"] if os.path.isabs(d["extends"]) else os.path.join(os.path.dirname(path), d["extends"])
+        cl = ff_classes(base, seen + (path,))
+    cl.update(classes(path))
+    return cl
 
 
 def missing_terms(report, cl):
-    """the missing terms of an assignment: {kind: set of class tuples, each in its canonical direction}"""
+    """the missing bonds, angles, dihedrals and impropers of an assignment: {kind: set of class tuples, each in its
+    canonical direction}. CAPS prints an atom as type(class) when the class it looked the term up with is not the type
+    name, and as the bare type when it is, so a bare name is its own class (cl, the dihedral classes, would relabel a
+    bond's or an angle's atom). Bond increments and pair entries are not bonded terms and are left out"""
     out = collections.defaultdict(set)
     for m in report.get("missing", []):
         w = m.split()
-        key = tuple(x.split("(")[1].rstrip(")") if "(" in x else cl.get(x, x) for x in w[1:])
+        if len(w) < 2 or w[0] == "pair" or (w[0] == "bond" and w[1] == "increment"):
+            continue
+        key = tuple(x.split("(")[1].rstrip(")") if "(" in x else x for x in w[1:])
         out[w[0]].add(min(key, key[::-1]))
     return out
 
@@ -285,7 +322,7 @@ def census(ff="oplsaa2024", out=None, only="", react=True, copolymers=True, radi
     os.makedirs(os.path.join(out, "fragments"), exist_ok=True)
     work = tempfile.mkdtemp(prefix="caps-census-")
     full, pub = ff_paths(ff, work)
-    cl = classes(full)
+    cl = ff_classes(full)
     tclass = {}        # torsion class -> status, count, structures
     envs = {}          # environment hash -> record
     other = collections.defaultdict(lambda: {"missing": set(), "CAPS fit": set()})   # bond and angle classes

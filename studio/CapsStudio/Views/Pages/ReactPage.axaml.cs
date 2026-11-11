@@ -60,11 +60,28 @@ public partial class ReactPage : PageBase
             Title = "The pre- and post-reaction templates, the map file (and the data file)", AllowMultiple = true,
         });
         var paths = files.Select(f => f.TryGetLocalPath()).Where(p => p != null).Cast<string>().ToList();
-        string? Find(params string[] keys) => paths.FirstOrDefault(p => keys.Any(k => System.IO.Path.GetFileName(p).Contains(k, System.StringComparison.OrdinalIgnoreCase)));
-        var map = Find("map");
-        var pre = Find("pre");
-        var post = Find("post");
-        var data = Find(".data", ".lmp", "data.");
+        // each role takes a file out of the list, so one file never fills two roles; a key that stands as its own
+        // word in the name (rxn1_pre.lmp, pre.data_template) wins over one buried in a longer word (prepolymer.data)
+        static string Name(string p) => System.IO.Path.GetFileName(p);
+        static bool Word(string name, string key) => System.Text.RegularExpressions.Regex.IsMatch(name,
+            "(^|[^a-z])" + System.Text.RegularExpressions.Regex.Escape(key) + "([^a-z]|$)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        string? Take(System.Func<string, bool> test)
+        {
+            var hit = paths.FirstOrDefault(p => test(Name(p)));
+            if (hit != null) paths.Remove(hit);
+            return hit;
+        }
+        string? TakeKey(string key) => Take(n => Word(n, key)) ?? Take(n => n.Contains(key, System.StringComparison.OrdinalIgnoreCase));
+        var map = TakeKey("map");
+        var pre = TakeKey("pre");
+        var post = TakeKey("post");
+        // the data file: matched on its extension (or a name starting with data.), so .data_template does not count
+        var data = Take(n =>
+        {
+            var ext = System.IO.Path.GetExtension(n);
+            return ext.Equals(".data", System.StringComparison.OrdinalIgnoreCase) || ext.Equals(".lmp", System.StringComparison.OrdinalIgnoreCase)
+                || n.StartsWith("data.", System.StringComparison.OrdinalIgnoreCase);
+        });
         if (map == null || pre == null || post == null)
         {
             Vm.Status = "Choose the three files of a reaction: names with pre, post and map (and the data file)";

@@ -714,8 +714,12 @@ std::string write_freq_set(const std::string& cd, std::vector<int> free) {
     int Cn = -1, Ca = -1;
     for (const auto& [j, d] : adj[size_t(N)]) if (at.atoms[size_t(j)].element == 6) { Cn = j; break; }
     for (const auto& [j, d] : adj[size_t(Cn)]) if (at.atoms[size_t(j)].element == 6 && j != N) { Ca = j; break; }
-    free = {N, Cn, Ca};
-    for (const auto& [j, d] : adj[size_t(Ca)]) if (at.atoms[size_t(j)].element == 1) free.push_back(j);
+    if (Ca < 0) {
+      free = {N, Cn};   // no alpha carbon (HCN, ClCN, a metal-bound cyanide): free the C#N group alone
+    } else {
+      free = {N, Cn, Ca};
+      for (const auto& [j, d] : adj[size_t(Ca)]) if (at.atoms[size_t(j)].element == 1) free.push_back(j);
+    }
   }
   std::vector<bool> fixed(at.atoms.size(), true);
   for (int i : free) if (i >= 0 && size_t(i) < fixed.size()) fixed[size_t(i)] = false;
@@ -1102,6 +1106,12 @@ std::vector<std::string> submittable(const std::vector<std::string>& dirs, const
     std::smatch m;
     const std::string job = slurp(join(d, "job.slurm"));
     if (std::regex_search(job, m, st)) { std::stringstream ss(m[1]); for (std::string w; ss >> w;) stages = w; }
+    static const std::regex sp("STEPS=\"([^\"]*)\"");
+    if (std::regex_search(job, m, sp)) {
+      // vasp-relax chain: finished when its last step is done
+      std::stringstream ss(m[1]);
+      for (std::string w; ss >> w;) stages = w;
+    }
     if (job.find("NSEG=") != std::string::npos) {
       // AIMD: every segment done?
       static const std::regex ns("NSEG=(\\d+)");
@@ -1118,7 +1128,8 @@ int update_job_scripts(const std::vector<std::string>& dirs, const ClusterProfil
   for (const auto& d : dirs) {
     const std::string path = join(d, "job.slurm");
     const std::string old = slurp(path);
-    if (old.empty() || old.find("NSEG=") != std::string::npos) continue;
+    // AIMD (NSEG=) and vasp-relax chain (STEPS=) scripts are not stage scripts: leave them as written
+    if (old.empty() || old.find("NSEG=") != std::string::npos || old.find("STEPS=\"") != std::string::npos) continue;
     auto get = [&](const std::string& pat, const std::string& def) { std::smatch m; return std::regex_search(old, m, std::regex(pat)) ? m[1].str() : def; };
     const std::string name = get("#SBATCH --job-name=(\\S+)", fs::path(d).filename().string());
     const int ranks = std::stoi(get("#SBATCH --ntasks=(\\d+)", "104"));
@@ -1169,7 +1180,8 @@ std::vector<ToolAction> cleanup_plan(const std::string& root, bool keep_best) {
     for (const auto& f : always) add(join(st, f), "not used");
     if (it->path().parent_path().filename() == "04_static") {
       if (case_name == "molecule") { for (const auto& f : charge) add(join(st, f), "molecule: only E0 and DOSCAR are used"); add(join(st, "LOCPOT"), "molecule: only E0 and DOSCAR are used"); }
-      else if (case_name == "slab" || case_name.rfind("complex_", 0) != 0) for (const auto& f : charge) add(join(st, f), "slab: Bader not needed");
+      // only the bare slab: complex_*, and the charge/cdd_slab/cdd_mol sets inside them, keep their densities for Bader and CDD
+      else if (case_name == "slab") for (const auto& f : charge) add(join(st, f), "slab: Bader not needed");
     }
   }
   if (keep_best) {

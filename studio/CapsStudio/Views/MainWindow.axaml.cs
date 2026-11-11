@@ -495,8 +495,8 @@ public partial class MainWindow : Window
         RequestRender();
     }
     // Studio toolbar
-    private void OnToolSelect(object? s, RoutedEventArgs e) => _vm.MeasureTool = false;
-    private void OnToolMeasure(object? s, RoutedEventArgs e) => _vm.MeasureTool = true;
+    private void OnToolSelect(object? s, RoutedEventArgs e) { _vm.EditTool = 0; _vm.MeasureTool = false; }
+    private void OnToolMeasure(object? s, RoutedEventArgs e) { _vm.EditTool = 0; _vm.MeasureTool = true; }
     private void OnStyleItem(object? s, RoutedEventArgs e) { if (s is MenuItem { Tag: string t }) _vm.StyleIndex = int.Parse(t); }
     private void OnColourItem(object? s, RoutedEventArgs e) { if (s is MenuItem { Tag: string t }) _vm.ColourIndex = int.Parse(t); }
     private void OnPerspectiveOn(object? s, RoutedEventArgs e) => _vm.Perspective = true;
@@ -1233,7 +1233,7 @@ public partial class MainWindow : Window
         if (_vm.Document is not { } doc || _vm.Busy || !_haveLast) return;
         var cam = _lastCam;
         var opt = _lastOpt;
-        var n = _pixW * _pixH * 4;
+        var n = opt.Width * opt.Height * 4;   // what the render writes (the Field view may have set _pixW/_pixH since)
         if (_pickBuf.Length != n) _pickBuf = new byte[n];
         var buf = _pickBuf;
         try { await Task.Run(() => doc.Render(cam, opt, buf)); } catch { return; }
@@ -1257,7 +1257,7 @@ public partial class MainWindow : Window
     private void EnsurePickBuffer()
     {
         if (!_cpuStale || _vm.Document is not { } doc || !_haveLast || _vm.Busy) return;
-        var n = _pixW * _pixH * 4;
+        var n = _lastOpt.Width * _lastOpt.Height * 4;   // what the render writes
         if (_pickBuf.Length != n) _pickBuf = new byte[n];
         try { doc.Render(_lastCam, _lastOpt, _pickBuf); _cpuStale = false; } catch { }
     }
@@ -1301,11 +1301,12 @@ public partial class MainWindow : Window
     private async Task RenderLoop()
     {
         _busy = true;
+        var ticket = _rendered;
         try
         {
             while (_rendered != _requested)
             {
-                var ticket = _requested;
+                ticket = _requested;
                 var doc = _vm.Document;
                 // the Field page has its own view (coloured by force-field type); otherwise the main viewport
                 var field = _vm.IsField;
@@ -1367,6 +1368,8 @@ public partial class MainWindow : Window
                         continue;
                     }
                     if (busy && src == null) { _rendered = ticket; break; }
+                    // the document was switched or closed meanwhile: render the one now shown, not the old one
+                    if (!ReferenceEquals(doc, _vm.Document)) { _rendered = ticket; continue; }
                 }
                 if (!field && ViewGl.IsVisible && ViewGl.Ready) { ViewGl.IsVisible = false; }
                 if (!field && !ViewImage.IsVisible) ViewImage.IsVisible = true;
@@ -1379,7 +1382,7 @@ public partial class MainWindow : Window
                 var sw = Stopwatch.StartNew();
                 var rdoc = src!;   // the document, or during a run its live snapshot
                 try { await Task.Run(() => rdoc.Render(cam, opt, buf)); }
-                catch (ObjectDisposedException) when (busy) { _rendered = ticket; continue; }   // a snapshot replaced meanwhile
+                catch (ObjectDisposedException) when (busy || !ReferenceEquals(rdoc, _vm.Document)) { _rendered = ticket; continue; }   // a snapshot replaced, or the document closed, meanwhile
                 sw.Stop();
                 var slot = field ? 2 : _frameFlip ? 1 : 0;
                 _frameFlip = !_frameFlip;
@@ -1418,12 +1421,13 @@ public partial class MainWindow : Window
         catch (Exception e)
         {
             _vm.Status = "Render failed: " + e.Message;
-            _rendered = _requested;
+            _rendered = ticket;   // only the failed request: those raised since still render
         }
         finally
         {
             _busy = false;
         }
+        if (_rendered != _requested) _ = RenderLoop();
     }
 
     // ---------------------------------------------------------------- builder tools and the Element picker

@@ -355,13 +355,30 @@ double ExchangeEngine::apply(const std::vector<Pair>& broken, const std::vector<
     edit(broken, made, retype_);
     return potential() - e0;
   }
-  // the cluster: atoms within three bonds of the change, in the graph before it together with the bonds it makes
+  // atoms whose type or charge the change may set again: the template's retyped atoms, and with parameterize every atom
+  // within three bonds of the change or of those (what edit() types again). Their Coulomb and Lennard-Jones pairs with
+  // every atom within the cut-off change too, and their bonds are made again from their new types
+  // charges change only through the template's roles (edit() keeps every other atom's charge, with parameterize too)
+  bool charges_change = false;
+  for (const auto& r : retype_) charges_change = charges_change || ff_.charge.empty() || r.charge != ff_.charge[r.atom];
+  if (charges_change && eo_.coulomb && eo_.electrostatics == EnergyOptions::Electrostatics::PME && potential) {
+    // the reciprocal sum of a charge that changes reaches the whole cell: no cluster gives it
+    const double e0 = potential();
+    edit(broken, made, retype_);
+    return potential() - e0;
+  }
+  // the cluster: atoms within three bonds of the change and of the retyped atoms (six with parameterize: a retyped atom's
+  // own terms reach three bonds further), in the graph before it together with the bonds it makes
   std::set<uint32_t> seen, front;
   for (const auto& p : broken) front.insert(p[0]), front.insert(p[1]);
   for (const auto& p : made) front.insert(p[0]), front.insert(p[1]);
+  for (const auto& r : retype_) front.insert(r.atom);
   seen = front;
+  std::set<uint32_t> retypable = o_.parameterize ? front : std::set<uint32_t>{};
+  for (const auto& r : retype_) retypable.insert(r.atom);
   const auto& nb = ed_.neighbours();
-  for (int depth = 0; depth < 3; ++depth) {
+  const int reach = o_.parameterize ? 6 : 3;
+  for (int depth = 0; depth < reach; ++depth) {
     std::set<uint32_t> next;
     for (uint32_t a : front) {
       for (uint32_t b : nb[a])
@@ -371,7 +388,18 @@ double ExchangeEngine::apply(const std::vector<Pair>& broken, const std::vector<
           if (p[k] == a && !seen.count(p[1 - k])) next.insert(p[1 - k]);
     }
     for (uint32_t b : next) seen.insert(b);
+    if (o_.parameterize && depth < 3) retypable.insert(next.begin(), next.end());
     front = std::move(next);
+  }
+  // and every atom within the cut-off of a retyped one (its non-bonded partners, as apply_relaxed holds them)
+  if (!retypable.empty()) {
+    const double rc = (ff_.cutoff > 0 ? ff_.cutoff : eo_.cutoff) + 0.5;
+    const size_t n = s_.atoms.size();
+    for (uint32_t i = 0; i < n; ++i) {
+      if (seen.count(i)) continue;
+      for (uint32_t a : retypable)
+        if (distance(x, cell, a, i) < rc) { seen.insert(i); break; }
+    }
   }
   const std::vector<uint32_t> atoms(seen.begin(), seen.end());
   const double e0 = cluster_energy(atoms, x, cell);
@@ -458,7 +486,13 @@ bool ExchangeEngine::try_swap(const std::vector<double>& x, const Cell& cell, do
   // way back, after it; the bond count and the 1/2 for the direction are the same both ways
   auto weight = [&](uint32_t x1, uint32_t x2, uint32_t y1, uint32_t y2) { return valid(x1, x2, y1, y2) ? 1.0 / double(candidates(x1, x2).size()) : 0.0; };
   const double qf = weight(a1, a2, b1, b2) + weight(b1, b2, a1, a2) + weight(a2, a1, b2, b1) + weight(b2, b1, a2, a1);
-  ed_.swap(a1, a2, b1, b2);
+  try {
+    ed_.swap(a1, a2, b1, b2);
+  } catch (const TopologyError& e) {
+    if (st_.note.empty()) st_.note = std::string("a change the force field cannot describe: ") + e.what();
+    ++st_.unparameterised;
+    return false;
+  }
   dyn = dynamic_bonds();
   const double qr = weight(a1, b2, b1, a2) + weight(b1, a2, a1, b2) + weight(b2, a1, a2, b1) + weight(a2, b1, b2, a1);
   ed_.swap(a1, b2, b1, a2);
@@ -505,6 +539,7 @@ bool ExchangeEngine::try_shift(const std::vector<double>& x, const Cell& cell, d
   }
   const double back = double(attackers(p).size());
   ed_.change({pair_of(p, r1)}, {pair_of(p, r0)});
+  if (!(back > 0)) { ++st_.no_candidate; return false; }   // no way back (r0 beyond the capture distance): never proposed in reverse
   return decide({pair_of(p, r0)}, {pair_of(p, r1)}, std::log(double(att.size()) / back), beta, x, cell, potential);
 }
 
@@ -640,7 +675,13 @@ bool ExchangeEngine::try_bind(const std::vector<double>& x, const Cell& cell, do
   if (d.empty()) { ++st_.no_candidate; return false; }
   const uint32_t j = d[std::min(d.size() - 1, size_t(u() * double(d.size())))];
   const double qf = q_break(i, j);
-  ed_.change({pair_of(i, j)}, {});
+  try {
+    ed_.change({pair_of(i, j)}, {});
+  } catch (const TopologyError& e) {
+    if (st_.note.empty()) st_.note = std::string("a change the force field cannot describe: ") + e.what();
+    ++st_.unparameterised;
+    return false;
+  }
   const double qr = q_bind(i, j);
   ed_.change({}, {pair_of(i, j)});
   if (!(qr > 0)) { ++st_.no_candidate; return false; }

@@ -214,8 +214,11 @@ ForceField manybody_part(const System& g, const ManyBodySpec& spec, std::vector<
       if (e->z != zs[t]) throw FieldError(base_name(spec.file) + ": entry '" + e->name + "' is atomic number " + std::to_string(e->z) + ", not " + els[t]);
       meam_entry.push_back(e->name);
     }
-    // the entries read: those given, in their order (the parameter file's indices), then the group's others
+    // the entries read: with a parameter file, those given in their order (the file's element indices), then the
+    // group's others; without one, only the group's own (a catalogue map may name elements this group does not hold,
+    // and LAMMPS extracts at most a few library elements)
     for (const auto& [el, name] : spec.entries) {
+      if (spec.file2.empty() && std::find(els.begin(), els.end(), el) == els.end()) continue;
       bool known = false;
       for (const auto& x : lib) known = known || x.name == name;
       if (!known) throw FieldError(base_name(spec.file) + " has no entry '" + name + "' (for " + el + ")");

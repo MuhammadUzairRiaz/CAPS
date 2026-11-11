@@ -872,11 +872,16 @@ CellAxis cell_axis(const Cell& c, int k) {
 }
 const char* axis_name(int k) { return k == 0 ? "x" : k == 1 ? "y" : "z"; }
 
-// Heights in the cell along axis k (the fractional coordinate × the cell height), wrapped into [0, height).
-double cell_height(const Cell& c, const Vec3& r, int k = 2) {
+// The fractional coordinate along axis k, wrapped into [0, 1).
+double cell_fraction(const Cell& c, const Vec3& r, int k = 2) {
   double f = c.to_fractional(r)[size_t(k)];
   f -= std::floor(f);
-  return f * cell_axis(c, k).height;
+  return f;
+}
+
+// Heights in the cell along axis k (the fractional coordinate × the cell height), wrapped into [0, height).
+double cell_height(const Cell& c, const Vec3& r, int k = 2) {
+  return cell_fraction(c, r, k) * cell_axis(c, k).height;
 }
 
 std::string surface_name(const AnalyzeOptions& o) {
@@ -893,7 +898,7 @@ Property zprofile_prop(const Trajectory& t, const std::vector<size_t>& fr, const
   const Cell& c0 = t.topology.cell;
   if (!c0.valid()) { p.notes.push_back("needs a periodic cell"); return p; }
   const CellAxis A0 = cell_axis(c0, ax);
-  const double area = A0.area, Lz = A0.height;
+  const double Lz = A0.height;
   const double dz = o.zbin > 0 ? o.zbin : 0.5;
   const int nb = std::max(1, int(std::ceil(Lz / dz)));
   const auto& atoms = t.topology.atoms;
@@ -902,12 +907,19 @@ Property zprofile_prop(const Trajectory& t, const std::vector<size_t>& fr, const
   const bool two = has_sub && has_film;
   std::vector<double> all(size_t(nb), 0), sub(size_t(nb), 0), film(size_t(nb), 0);
   std::map<int, std::vector<double>> by_element;   // the surface (molecule 1) element by element: Si, O, …
+  // Each frame is binned on its own cell (NPT and barostatted runs change it): the fractional coordinate picks the bin
+  // and the frame's own slab volume turns its mass into a density; the bin centres use the mean height.
+  double Lsum = 0;
   for (size_t q = 0; q < fr.size(); ++q) {
     if (cancelled(o, "density profile", double(q) / fr.size())) throw Cancel();
     const System f = t.frame(fr[q]);
+    const Cell& fc = f.cell.valid() ? f.cell : c0;
+    const CellAxis A = cell_axis(fc, ax);
+    Lsum += A.height;
+    const double w = 1.0 / (kNA * 1e-24) / (A.area * (A.height / nb) * double(fr.size()));   // g/mol per bin → g/cm³
     for (const auto& a : f.atoms) {
-      const int b = std::clamp(int(cell_height(f.cell, a.pos, ax) / (Lz / nb)), 0, nb - 1);
-      const double m = f.mass_of(a);
+      const int b = std::clamp(int(cell_fraction(fc, a.pos, ax) * nb), 0, nb - 1);
+      const double m = f.mass_of(a) * w;
       all[size_t(b)] += m;
       (two && o.is_surface(a.mol) ? sub : film)[size_t(b)] += m;
       if (two && o.is_surface(a.mol)) {
@@ -917,11 +929,12 @@ Property zprofile_prop(const Trajectory& t, const std::vector<size_t>& fr, const
       }
     }
   }
-  const double conv = 1.0 / (kNA * 1e-24) / (area * (Lz / nb) * double(fr.size()));   // g/mol per bin → g/cm³
+  const double conv = 1.0;   // the masses above are already densities (each frame's own slab volume)
+  const double Lm = fr.empty() ? Lz : Lsum / double(fr.size());
   Series sa{"all atoms", zl, "density (g/cm³)", {}, {}}, ss{"surface", zl, "density (g/cm³)", {}, {}},
       sf{"film", zl, "density (g/cm³)", {}, {}};
   for (int b = 0; b < nb; ++b) {
-    const double z = (b + 0.5) * Lz / nb;
+    const double z = (b + 0.5) * Lm / nb;
     sa.x.push_back(z), sa.y.push_back(all[size_t(b)] * conv);
     ss.x.push_back(z), ss.y.push_back(sub[size_t(b)] * conv);
     sf.x.push_back(z), sf.y.push_back(film[size_t(b)] * conv);
@@ -968,12 +981,12 @@ Property zprofile_prop(const Trajectory& t, const std::vector<size_t>& fr, const
       for (int b = 0; b < nb; ++b) { se.x.push_back(sf.x[size_t(b)]); se.y.push_back(v[size_t(b)] * conv); }
       p.series.push_back(std::move(se));
     }
-    p.method = "mass per " + std::to_string(Lz / nb).substr(0, 4) + " Å slab of the cell along " + axis_name(ax) + ", averaged over " +
+    p.method = "mass per " + std::to_string(Lm / nb).substr(0, 4) + " Å slab of the cell along " + axis_name(ax) + ", averaged over " +
                std::to_string(fr.size()) + " frames; surface: " + surface_name(o) + ", film: the other molecules; value: the film's density over the middle half of its thickness";
     p.series.push_back(std::move(sf));
     p.series.push_back(std::move(ss));
   } else {
-    p.method = "mass per " + std::to_string(Lz / nb).substr(0, 4) + " Å slab of the cell along " + axis_name(ax) + ", averaged over " +
+    p.method = "mass per " + std::to_string(Lm / nb).substr(0, 4) + " Å slab of the cell along " + axis_name(ax) + ", averaged over " +
                std::to_string(fr.size()) + " frames";
     p.notes.push_back(has_sub ? "every atom is in the surface (" + surface_name(o) + "): no film to split off"
                               : "no atom in the surface (" + surface_name(o) + "): no surface / film split (an interface from the Surface builder has the surface as molecule 1)");
@@ -1153,8 +1166,8 @@ Property orientation_prop(const Trajectory& t, const std::vector<size_t>& fr, co
       const double un = dot(u[i], nrm);
       f += 1.5 * un * un - 0.5;
       if (cell) {
-        const Cell& fc = t.cells.size() > fr[q] ? t.cells[fr[q]] : c0;
-        const int b2 = std::clamp(int(cell_height(fc, mid[i], ax) / (Lz / nzb)), 0, nzb - 1);
+        const Cell& fc = t.cells.size() > fr[q] && t.cells[fr[q]].valid() ? t.cells[fr[q]] : c0;
+        const int b2 = std::clamp(int(cell_fraction(fc, mid[i], ax) * nzb), 0, nzb - 1);   // the frame's own cell
         p2z[size_t(b2)] += 1.5 * un * un - 0.5;
         cnt[size_t(b2)] += 1;
       }
@@ -1547,15 +1560,18 @@ Property modes_prop(const Trajectory& t, const std::vector<size_t>& fr, const An
   if (o.ff) no.field = std::shared_ptr<const ForceField>(o.ff, [](const ForceField*) {});
   no.energy = o.energy;
   if (o.temperature > 0) no.temperature = o.temperature;
-  no.progress = [&](double f) { return !cancelled(o, "normal modes", f); };
+  bool stopped = false;   // set only when the user cancels: other runtime errors are real failures
+  no.progress = [&](double f) { return !(stopped = cancelled(o, "normal modes", f)); };
   NormalModesResult r;
   try {
     r = normal_modes(s, no);
   } catch (const std::invalid_argument& e) {
     p.notes.push_back(e.what());
     return p;
-  } catch (const std::runtime_error&) {
-    throw Cancel();
+  } catch (const std::runtime_error& e) {
+    if (stopped) throw Cancel();
+    p.notes.push_back(e.what());
+    return p;
   }
   p.value = r.zpe;
   p.name = "Normal modes (zero-point energy)";
@@ -2205,8 +2221,11 @@ std::string radii_name(const AnalyzeOptions& o) {
   return o.radii == "forcefield" ? "force-field radii (half the Lennard-Jones minimum)" : o.radii == "uff" ? "UFF radii (x/2, Rappé 1992)" : "Bondi van der Waals radii";
 }
 
-// Distance to the nearest atom surface at each grid point, for fractional coordinates on an n0 × n1 × n2 grid.
-FreeGrid free_grid(const System& s, double spacing, double search, const std::vector<double>& radii) {
+// Distance to the nearest atom surface at each grid point, for fractional coordinates on an n0 × n1 × n2 grid, exact up to
+// `limit` (at most `search` when limit ≤ search) and capped there. Atom bins are at least search + the largest radius wide,
+// so one ring of neighbouring bins holds every atom whose surface lies within `search`; points with nothing that close
+// widen the search ring by ring until no unseen atom can be nearer or every bin has been seen.
+FreeGrid free_grid(const System& s, double spacing, double search, const std::vector<double>& radii, double limit = 0) {
   FreeGrid G;
   const Cell& c = s.cell;
   G.cell_volume = c.volume();
@@ -2215,11 +2234,17 @@ FreeGrid free_grid(const System& s, double spacing, double search, const std::ve
   G.n[1] = std::max(4, int(std::ceil(lb / spacing)));
   G.n[2] = std::max(4, int(std::ceil(lc / spacing)));
   const size_t np = size_t(G.n[0]) * G.n[1] * G.n[2];
-  G.dist.assign(np, float(search));
-  // bins of atoms in fractional space, bin width ≥ search
+  // no point lies farther than 0.5 (|a| + |b| + |c|) from the nearest image of an atom
+  const double cap = std::min(std::max(search, limit), 0.5 * (la + lb + lc));
+  G.dist.assign(np, float(cap));
+  double rmax = 0;
+  for (size_t i = 0; i < s.atoms.size() && i < radii.size(); ++i) rmax = std::max(rmax, radii[i]);
+  // bins of atoms in fractional space, bin width ≥ search + the largest radius
   int nb[3];
   const double w[3] = {G.cell_volume / norm(cross(c.b, c.c)), G.cell_volume / norm(cross(c.c, c.a)), G.cell_volume / norm(cross(c.a, c.b))};
-  for (int k = 0; k < 3; ++k) nb[k] = std::max(1, int(w[k] / search));
+  for (int k = 0; k < 3; ++k) nb[k] = std::max(1, int(w[k] / (search + rmax)));
+  const double bw = std::min({w[0] / nb[0], w[1] / nb[1], w[2] / nb[2]});   // the narrowest bin
+  const int ring_all = std::max({nb[0], nb[1], nb[2]}) / 2;                 // a ring this wide covers every bin
   std::vector<std::vector<uint32_t>> bins(static_cast<size_t>(nb[0]) * nb[1] * nb[2]);
   std::vector<Vec3> frac(s.atoms.size());
   std::vector<double> rad(s.atoms.size());
@@ -2239,17 +2264,26 @@ FreeGrid free_grid(const System& s, double spacing, double search, const std::ve
         const Vec3 r = c.to_cartesian(f);
         int b[3];
         for (int k = 0; k < 3; ++k) b[k] = std::min(nb[k] - 1, int(f[k] * nb[k]));
-        double best = search;
-        for (int d0 = -1; d0 <= 1; ++d0)
-          for (int d1 = -1; d1 <= 1; ++d1)
-            for (int d2 = -1; d2 <= 1; ++d2) {
-              const int q0 = ((b[0] + d0) % nb[0] + nb[0]) % nb[0], q1 = ((b[1] + d1) % nb[1] + nb[1]) % nb[1], q2 = ((b[2] + d2) % nb[2] + nb[2]) % nb[2];
-              if ((nb[0] < 3 && d0 > 0 && nb[0] + d0 > 2) || (nb[1] < 3 && d1 > 0 && nb[1] + d1 > 2) || (nb[2] < 3 && d2 > 0 && nb[2] + d2 > 2)) continue;
-              for (uint32_t a : bins[(size_t(q0) * nb[1] + q1) * nb[2] + q2]) {
-                const double dd = norm(c.minimum_image(s.atoms[a].pos - r)) - rad[a];
-                if (dd < best) best = dd;
+        double best = cap;
+        for (int ring = 1;; ++ring) {
+          // the bins with offsets up to `ring` along each axis, only those on the outer ring after the first
+          for (int d0 = -ring; d0 <= ring; ++d0)
+            for (int d1 = -ring; d1 <= ring; ++d1)
+              for (int d2 = -ring; d2 <= ring; ++d2) {
+                if (ring > 1 && std::max({std::abs(d0), std::abs(d1), std::abs(d2)}) < ring) continue;
+                if ((2 * ring + 1 > nb[0] && (d0 < -(nb[0] / 2) || d0 > (nb[0] - 1) / 2)) ||
+                    (2 * ring + 1 > nb[1] && (d1 < -(nb[1] / 2) || d1 > (nb[1] - 1) / 2)) ||
+                    (2 * ring + 1 > nb[2] && (d2 < -(nb[2] / 2) || d2 > (nb[2] - 1) / 2)))
+                  continue;   // the axis is covered already: the offset would revisit a bin
+                const int q0 = ((b[0] + d0) % nb[0] + nb[0]) % nb[0], q1 = ((b[1] + d1) % nb[1] + nb[1]) % nb[1], q2 = ((b[2] + d2) % nb[2] + nb[2]) % nb[2];
+                for (uint32_t a : bins[(size_t(q0) * nb[1] + q1) * nb[2] + q2]) {
+                  const double dd = norm(c.minimum_image(s.atoms[a].pos - r)) - rad[a];
+                  if (dd < best) best = dd;
+                }
               }
-            }
+          // an atom outside the ring is more than ring × bw away, its surface more than ring × bw − rmax
+          if (best <= ring * bw - rmax || ring >= ring_all) break;
+        }
         G.dist[(size_t(i0) * G.n[1] + i1) * G.n[2] + i2] = float(best);
       }
   (void)frac;
@@ -2310,7 +2344,8 @@ Property psd_prop(const Trajectory& t, const std::vector<size_t>& fr0, const Ana
     if (cancelled(o, "pore sizes", double(q) / fr.size())) throw Cancel();
     const System f = t.frame(fr[q]);
     const auto rad = free_radii(f, o);
-    const FreeGrid G = free_grid(f, o.grid, 6.0, rad);
+    // exact distances at any pore size (not capped at the 6 Å of the first ring of bins)
+    const FreeGrid G = free_grid(f, o.grid, 6.0, rad, std::numeric_limits<double>::infinity());
     const int n0 = G.n[0], n1 = G.n[1], n2 = G.n[2];
     // the largest sphere that contains each free point without overlapping an atom: centres in descending radius
     std::vector<size_t> order;
@@ -2318,7 +2353,9 @@ Property psd_prop(const Trajectory& t, const std::vector<size_t>& fr0, const Ana
     std::sort(order.begin(), order.end(), [&](size_t a, size_t b) { return G.dist[a] > G.dist[b]; });
     std::vector<float> best(G.dist.size(), 0.f);
     const Cell& c = f.cell;
-    const double h[3] = {norm(c.a) / n0, norm(c.b) / n1, norm(c.c) / n2};
+    // grid step across each pair of lattice planes (the cell width over the points): a sphere of radius r reaches r / h
+    // steps along each axis, also in a skewed cell
+    const double h[3] = {cell_axis(c, 0).height / n0, cell_axis(c, 1).height / n1, cell_axis(c, 2).height / n2};
     for (size_t k : order) {
       const float r = G.dist[k];
       if (best[k] >= r) continue;   // a larger sphere already covers the centre: its own sphere lies mostly inside it
@@ -2472,6 +2509,7 @@ ForceField subset_forcefield(const ForceField& ff, const std::vector<uint32_t>& 
   s.lj = ff.lj;
   s.lj14_types = ff.lj14_types;
   s.pair_func = ff.pair_func;
+  s.tables = ff.tables;   // kPairTable entries of pair_func index these
   s.pair_override = ff.pair_override;
   s.pair_form = ff.pair_form;
   s.mixing = ff.mixing;
@@ -2532,7 +2570,15 @@ ForceField subset_forcefield(const ForceField& ff, const std::vector<uint32_t>& 
   for (auto t : ff.angles2) if (in({t.i, t.j, t.k})) { t.i = m(t.i); t.j = m(t.j); t.k = m(t.k); s.angles2.push_back(t); }
   for (auto t : ff.dihedrals2) if (in({t.i, t.j, t.k, t.l})) { t.i = m(t.i); t.j = m(t.j); t.k = m(t.k); t.l = m(t.l); s.dihedrals2.push_back(t); }
   for (auto t : ff.impropers2) if (in({t.i, t.j, t.k, t.l})) { t.i = m(t.i); t.j = m(t.j); t.k = m(t.k); t.l = m(t.l); s.impropers2.push_back(t); }
-  for (const auto& p : ff.pairs14) if (in({p[0], p[1]})) s.pairs14.push_back({m(p[0]), m(p[1])});
+  s.type_part = ff.type_part;
+  s.part14 = ff.part14;
+  for (size_t k = 0; k < ff.pairs14.size(); ++k) {   // each kept 1-4 pair keeps its own scales (merged force fields)
+    const auto& p = ff.pairs14[k];
+    if (!in({p[0], p[1]})) continue;
+    s.pairs14.push_back({m(p[0]), m(p[1])});
+    if (!ff.pairs14_lj.empty()) s.pairs14_lj.push_back(k < ff.pairs14_lj.size() ? ff.pairs14_lj[k] : ff.lj14);
+    if (!ff.pairs14_coul.empty()) s.pairs14_coul.push_back(k < ff.pairs14_coul.size() ? ff.pairs14_coul[k] : ff.coul14);
+  }
   if (ff.hbond.on()) {   // hydrogen bonds: the per-atom lists renumbered, hydrogens outside the subset dropped
     s.hbond = ff.hbond;
     s.hbond.hyd.assign(atoms.size(), {});

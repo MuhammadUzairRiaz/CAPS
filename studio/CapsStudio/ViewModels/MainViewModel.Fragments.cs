@@ -46,7 +46,7 @@ public sealed class FragmentItem : ObservableObject
             for (var k = 0; k < Smiles.Length; k++)
             {
                 var c = Smiles[k];
-                if (c == '[') { var close = Smiles.IndexOf(']', k); if (Smiles.Substring(k, close - k).Contains('*')) list.Add(atom); atom++; k = close; continue; }
+                if (c == '[') { var close = Smiles.IndexOf(']', k); if (close < 0) break; if (Smiles.Substring(k, close - k).Contains('*')) list.Add(atom); atom++; k = close; continue; }
                 if (c == '*') { list.Add(atom++); continue; }
                 if (c == '%') { k += 2; continue; }
                 if (c is 'C' && k + 1 < Smiles.Length && Smiles[k + 1] == 'l') { atom++; k++; continue; }
@@ -218,10 +218,23 @@ public sealed partial class MainViewModel
     public void AddMyFragment(string name, string smiles)
     {
         if (smiles.Trim().Length == 0) return;
+        if (!BracketsClosed(smiles)) { Status = $"{smiles.Trim()} has a bracket atom with an unmatched [ or ]; the fragment was not added"; return; }
         _settings.MyFragments.Add(new MyFragment { Name = name.Trim().Length > 0 ? name.Trim() : smiles.Trim(), Smiles = smiles.Trim() });
         Changed("Fragment added");
         _fragments = null;
         OpenFragments();
         FragmentCategory = "My fragments";
+    }
+
+    /// <summary>True when every [ of a SMILES has its ] before the next [.</summary>
+    private static bool BracketsClosed(string smiles)
+    {
+        var open = false;
+        foreach (var c in smiles)
+        {
+            if (c == '[') { if (open) return false; open = true; }
+            else if (c == ']') { if (!open) return false; open = false; }
+        }
+        return !open;
     }
 }

@@ -84,7 +84,11 @@ Outcar read_outcar(const std::string& path) {
   for (size_t k = 0; k < L.size(); ++k) {
     const std::string& l = L[k];
     size_t p;
-    if ((p = l.find("energy(sigma->0) =")) != std::string::npos) o.e0.push_back(to_d(l.substr(p + 18)));
+    // One value per ionic step: the end-of-step summary prints "energy  without entropy=" (no space
+    // before '='), while the per-SCF-iteration block prints "energy without entropy =".
+    if ((p = l.find("energy(sigma->0) =")) != std::string::npos) {
+      if (l.find("without entropy=") != std::string::npos) o.e0.push_back(to_d(l.substr(p + 18)));
+    }
     else if (l.find("TOTAL-FORCE (eV/Angst)") != std::string::npos && o.nions > 0) {
       std::vector<Vec3> f;
       double fm = 0;
@@ -185,12 +189,14 @@ std::vector<System> read_xdatcar(const std::string& path) {
     System f = base;
     for (size_t i = 0; i < el.size() && k + 1 + i < L.size(); ++i) {
       const auto w = split(L[k + 1 + i]);
+      if (w.size() < 3) break;  // truncated line (file still being written)
       Atom a;
       a.element = el[i];
       a.id = int64_t(i + 1);
       a.pos = base.cell.to_cartesian({to_d(w[0]), to_d(w[1]), to_d(w[2])});
       f.atoms.push_back(a);
     }
+    if (f.atoms.size() != el.size()) break;  // incomplete last frame: drop it
     frames.push_back(std::move(f));
     k += 1 + el.size();
   }

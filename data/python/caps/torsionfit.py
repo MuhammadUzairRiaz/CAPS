@@ -26,7 +26,7 @@ fit      evaluates the fragment at each optimised geometry with CAPS (the missin
 
 CAPS never fills a torsion without saying so: these are CAPS's fits, not the force field's published parameters.
 """
-import json, math, os, re, shutil, subprocess, sys
+import json, math, os, re, shlex, shutil, subprocess, sys
 
 # --level: the OPLS-AA/L level (the default, as the scans CAPS fitted first), or a higher one for checking or refitting
 # (geometries from a range-separated hybrid with dispersion, energies from local coupled cluster). After $new_job ORCA
@@ -54,6 +54,21 @@ def caps_binary():
 
 def arg(k, d=None):
     return sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
+
+
+def glob_literal(name):
+    """a class name as a literal match pattern: the core reads '*' and '?' as wildcards and '\\' as an escape, and
+    class names such as OPLS-AA's C* or PCFF's h* contain them"""
+    return name.replace("\\", "\\\\").replace("*", "\\*").replace("?", "\\?")
+
+
+def orca_job(rel, level):
+    """the jobs.txt line of one ORCA point: the folder quoted (class names such as C$ or c' are shell syntax), and for a
+    level with a separate single point (point_sp.inp) that run after the optimisation"""
+    job = f"cd {shlex.quote(rel)} && \"${{ORCA:-orca}}\" point.inp > point.out"
+    if level != "oplsaa-l":
+        job += " && \"${ORCA:-orca}\" point_sp.inp > point_sp.out"
+    return job
 
 
 # ------------------------------------------------------------------ structures
@@ -179,7 +194,8 @@ def listed_missing(structure, ffjson, cl):
     for line in (r.stdout + r.stderr).splitlines():
         m = re.match(r"^\s+dihedral\s+(.+)$", line)
         if m:
-            names = re.findall(r"(\S+?)\(", m.group(1)) or m.group(1).split()   # a united-atom type has no (class)
+            # each atom as TYPE, or TYPE(CLASS) where its dihedral class differs from its type: the class where shown
+            names = [w.split("(")[0] for w in m.group(1).split()]
             key = tuple(cl.get(t, t) for t in names)
             out.add(min(key, key[::-1]))
     return out
@@ -496,8 +512,12 @@ def prepare():
         ring_only = not free
         # the smallest fragment that keeps the types, growing up to the whole molecule: a cut that leaves atoms the
         # force field's rules cannot type (OPLS-AA 2024's strict ether and ester carbons) needs a wider fragment
+        whole_mol, found, whole = len(side(nb, b, None)), False, False
         for rad in range(radius, radius + max(3, len(el))):
+            if whole:   # the last fragment was already the whole molecule: a wider radius gives the same one
+                break
             keep, idx, fel, fpos, fbonds = fragment(el, pos, nb, b, c, rad, box)
+            whole = len(keep) >= whole_mol
             fdir = os.path.join(work, "-".join(key).replace("*", "x"))
             os.makedirs(fdir, exist_ok=True)
             m2 = os.path.join(fdir, "fragment.mol2")
@@ -517,8 +537,9 @@ def prepare():
             if ring_only and in_ring(neighbours(len(fel), fbonds), idx.get(b, -1), idx.get(c, -1)):
                 continue   # the fragment still closes the ring
             if all(x in idx and ftypes[idx[x]] == types[x] for x in check):
+                found = True
                 break
-        else:
+        if not found:
             plan["not_scanned"].append({"classes": key, "why": "the central bond is in a ring in every occurrence and no "
                                         "fragment that keeps the types opens it" if ring_only else "no fragment keeps the structure's types"})
             continue
@@ -551,10 +572,10 @@ def prepare():
                 open(os.path.join(pdir, "point.inp"), "w").write(orca_input(fel, p, quad, level=level, nprocs=nprocs, hold=hold))
                 if level != "oplsaa-l":
                     open(os.path.join(pdir, "point_sp.inp"), "w").write(orca_sp_input(level=level, nprocs=nprocs))
-                jobs.append(f"cd {rel} && \"${{ORCA:-orca}}\" point.inp > point.out")
+                jobs.append(orca_job(rel, level))
             else:
                 open(os.path.join(pdir, "point.in"), "w").write(psi4_input(fel, p, quad))
-                jobs.append(f"cd {rel} && ${{PSI4:-psi4}} point.in point.out")
+                jobs.append(f"cd {shlex.quote(rel)} && ${{PSI4:-psi4}} point.in point.out")
             scan["points"].append({"phi": target, "dir": rel, "closest_nonbonded": round(close, 3)})
         scan["skipped_points"] = skipped
         plan["scans"].append(scan)
@@ -665,7 +686,7 @@ def fill():
                                                                                 hold=[tuple(h) for h in s.get("hold", [])]))
                     if level != "oplsaa-l":
                         open(os.path.join(pdir, "point_sp.inp"), "w").write(orca_sp_input(level=level, nprocs=nprocs))
-                    jobs.append(f"cd {rel} && \"${{ORCA:-orca}}\" point.inp > point.out")
+                    jobs.append(orca_job(rel, level))
                     s["points"].append({"phi": target, "dir": rel, "closest_nonbonded": round(close, 3), "seed": seed["phi"]})
                     have.add(target)
                     made = True
@@ -746,7 +767,8 @@ def fit():
     if forced:
         zero = os.path.join(work, "zero_forced.json")
         json.dump({"format": "caps-forcefield", "format_version": 1, "name": "forced classes at zero", "atom_types": [],
-                   "dihedrals": [{"name": "-".join(k), "match": list(k), "style": "opls", "params": [0, 0, 0, 0]}
+                   "dihedrals": [{"name": "-".join(k), "match": [glob_literal(x) for x in k], "style": "opls",
+                                  "params": [0, 0, 0, 0]}
                                  for k in sorted(forced)]}, open(zero, "w"), indent=1)
     joint = []
     for s in plan["scans"]:
@@ -823,7 +845,7 @@ def fit():
         wts = [0.2 if q - min(eqm) > 10 else 1.0 for q in eqm]
         if "--joint" in sys.argv:   # one fit over every scan of the plan below
             joint.append({"dir": s["dir"], "keys": keys, "rows": rows, "off": offrows, "y": y, "w": wts, "eqm": eqm, "emm": emm,
-                          "emm_full": emm_full, "pts": pts, "atoms": len(s["elements"]),
+                          "emm_full": emm_full, "pts": pts, "atoms": len(s["elements"]), "listed": listed,
                           # a refitted class zeroed here was zero in the fit (zero_forced.json): written as such with
                           # --refit, or the force field's own value would come back on top of the fitted terms
                           "zeroed": [k for k in zeroed
@@ -861,7 +883,7 @@ def fit():
                 fitrec["rms_existing"] = round(rms_existing, 3)
                 for r, e in zip(fitrec["scan"], emm_full):
                     r["E_mm_existing"] = round(e - min(emm_full), 4)
-            rules.append({"name": "-".join(k), "match": [x.replace("*", "\\*") for x in k], "style": "opls", "params": V,
+            rules.append({"name": "-".join(k), "match": [glob_literal(x) for x in k], "style": "opls", "params": V,
                           "comment": f"CAPS {'refit' if refit else 'fit'} (QM): {plan['level']}, {len(pts)}-point scan of a "
                                      f"{len(s['elements'])}-atom fragment, RMS {rms:.2f} kcal/mol"
                                      + (f", ridge {lam_used:g}" if lam_used and lam_used > 1e-3 else "")
@@ -871,7 +893,7 @@ def fit():
         for k in zeroed:
             if k in forced and k not in listed and "--refit" not in sys.argv:   # as the joint fit's zeroed above
                 continue
-            rules.append({"name": "-".join(k), "match": [x.replace("*", "\\*") for x in k], "style": "opls", "params": [0.0, 0.0, 0.0, 0.0],
+            rules.append({"name": "-".join(k), "match": [glob_literal(x) for x in k], "style": "opls", "params": [0.0, 0.0, 0.0, 0.0],
                           "comment": f"CAPS fit (QM): zero; the heavy-atom torsions about the same bond carry the profile of a "
                                      f"{len(pts)}-point {plan['level']} scan of a {len(s['elements'])}-atom fragment (RMS {rms:.2f} kcal/mol)",
                           "fit": {"fragment": s["dir"], "zeroed": True, "scan": []}})
@@ -944,9 +966,14 @@ def fit():
             rms_low = math.sqrt(sum(x * x for x in low) / len(low)) if low else None
             for m, k in enumerate(K):
                 V = [round(float(v), 4) for v in sol[nc + 4 * m: nc + 4 * m + 4]]
-                refit = k in forced
+                # a --classes class the force field lacks (reported missing in a fragment) is a plain fit; one it has
+                # is a refit, written only with --refit as in the per-scan fit above
+                refit = k in forced and not any(k in j["listed"] for j in G)
                 dirs = [j["dir"] for j in G if k in j["keys"]]
-                rules.append({"name": "-".join(k), "match": [x.replace("*", "\\*") for x in k], "style": "opls", "params": V,
+                if refit and "--refit" not in sys.argv:
+                    print(f"{'-'.join(k)} (joint, {len(dirs)} scans): refit V = {V} (not written without --refit)")
+                    continue
+                rules.append({"name": "-".join(k), "match": [glob_literal(x) for x in k], "style": "opls", "params": V,
                               "comment": f"CAPS {'refit' if refit else 'fit'} (QM), joint over {len(dirs)} scans: {plan['level']}; RMS "
                                          + ", ".join(f"{d} {rms_by[d]:.2f}" for d in dirs) + " kcal/mol"
                                          + (f"; ridge {lam:g}" if lam else "")
@@ -960,7 +987,7 @@ def fit():
         fitted_k = {tuple(r["match"]) for r in rules}
         for j in joint:
             for k in j["zeroed"]:
-                m = tuple(x.replace("*", "\\*") for x in k)
+                m = tuple(glob_literal(x) for x in k)
                 if m in fitted_k:
                     continue
                 fitted_k.add(m)

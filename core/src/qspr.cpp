@@ -582,7 +582,7 @@ Core fit_core(const std::vector<double>& y, const std::vector<std::vector<double
     const int amax = int(std::min<size_t>({p, n > 2 ? n - 2 : 1, 10}));
     int A = o.components;
     if (A <= 0) {   // by cross-validation
-      const int k = o.folds > 0 ? o.folds : int(n);
+      const int k = o.folds > 1 ? o.folds : int(n);   // one fold would train on nothing: fall back to leave-one-out
       double bestq = -std::numeric_limits<double>::infinity();
       for (int a = 1; a <= amax; ++a) {
         double press = 0;
@@ -840,7 +840,7 @@ namespace {
 struct Lda {
   std::vector<std::vector<double>> dirs;
   std::vector<double> eig;
-  std::vector<std::vector<double>> means;   // per class, projected
+  std::vector<std::vector<double>> means;   // per class, projected; empty for a class with no rows
 };
 Lda lda_fit(const std::vector<std::vector<double>>& X, const std::vector<int>& cls, int C) {
   const size_t n = X.size(), p = X[0].size();
@@ -898,6 +898,10 @@ Lda lda_fit(const std::vector<std::vector<double>>& X, const std::vector<int>& c
   }
   for (int c = 0; c < C; ++c) {
     std::vector<double> m;
+    if (cnt[size_t(c)] == 0) {   // no rows in this class: it cannot be predicted
+      r.means.push_back(m);
+      continue;
+    }
     for (const auto& d : r.dirs) {
       double s = 0;
       for (size_t j = 0; j < p; ++j) s += d[j] * mu[size_t(c)][j];
@@ -917,6 +921,7 @@ int lda_class(const Lda& m, const std::vector<double>& x) {
   int best = 0;
   double bd = std::numeric_limits<double>::infinity();
   for (size_t c = 0; c < m.means.size(); ++c) {
+    if (m.means[c].empty()) continue;
     double dd = 0;
     for (size_t q = 0; q < z.size(); ++q) dd += (z[q] - m.means[c][q]) * (z[q] - m.means[c][q]);
     if (dd < bd) bd = dd, best = int(c);

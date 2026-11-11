@@ -43,21 +43,26 @@ struct Mol {
 // Pair tables between two molecules.
 struct Pair {
   size_t nx = 0, ny = 0;
+  bool nine = false;                        // class II 9-6 form ε[2(σ/r)⁹ − 3(σ/r)⁶], else 12-6 4ε[(σ/r)¹² − (σ/r)⁶]
   std::vector<double> eps4, s6, qq, sig2;   // 4ε, σ⁶, k q_i q_j, (contact σ)²
 };
 
 Pair make_pair_table(const Mol& X, const Mol& Y, const ForceField& ffc, int y_type_offset, double scale) {
   Pair p;
   p.nx = X.x.size(), p.ny = Y.x.size();
+  p.nine = ffc.pair_form == "lj9-6";
   const size_t n = p.nx * p.ny;
   p.eps4.resize(n), p.s6.resize(n), p.qq.resize(n), p.sig2.resize(n);
   for (size_t i = 0; i < p.nx; ++i)
     for (size_t j = 0; j < p.ny; ++j) {
       const size_t k = i * p.ny + j;
-      const PairType pt = mixed_pair(ffc, X.type[i], Y.type[j] + y_type_offset);
-      p.eps4[k] = 4 * pt.eps;
+      const int a = X.type[i], b = Y.type[j] + y_type_offset;
+      const PairType pt = mixed_pair(ffc, a, b);
+      // a type pair the force field leaves out (a held sheet) does not interact at all
+      const bool off = ffc.excluded_type_pairs.count({std::min(a, b), std::max(a, b)}) > 0;
+      p.eps4[k] = off ? 0.0 : 4 * pt.eps;
       p.s6[k] = std::pow(pt.sigma, 6);
-      p.qq[k] = kCoul * X.q[i] * Y.q[j];
+      p.qq[k] = off ? 0.0 : kCoul * X.q[i] * Y.q[j];
       const double s = scale * (X.rad[i] + Y.rad[j]);
       p.sig2[k] = s * s;
     }
@@ -110,7 +115,8 @@ double pair_energy(const Mol& X, const std::vector<Vec3>& y, const Pair& P) {
       const size_t k = i * P.ny + j;
       const Vec3 D = y[j] - X.x[i];
       const double r2 = dot(D, D), sr = P.s6[k] / (r2 * r2 * r2);
-      e += P.eps4[k] * (sr * sr - sr) + P.qq[k] / std::sqrt(r2);
+      const double lj = P.nine ? 0.25 * P.eps4[k] * (2 * sr * std::sqrt(sr) - 3 * sr) : P.eps4[k] * (sr * sr - sr);
+      e += lj + P.qq[k] / std::sqrt(r2);
     }
   return e;
 }
@@ -172,15 +178,37 @@ ChiPairResult chi_by_contacts(const ChiPairOptions& o) {
     try { assign_gaff(s); return true; } catch (const FieldError&) { return false; }
   };
   ForceField fa, fb;
+  ForceField ffc;            // both molecules' types in one table for the mixing rule and the explicit pairs
+  std::vector<int> ta, tb;   // per atom: its type index in ffc (B's before the offset off)
+  int off = 0;
   if (!o.forcefield.empty()) {
     const FFDef def = load_forcefield(o.forcefield);
-    auto typed = [&](const System& s, const std::string& which) {
-      const TypingResult tr = assign_types(s, def);
+    auto types_of = [&](const System& s, const std::string& which) {
+      TypingResult tr = assign_types(s, def);
       if (tr.untyped) throw FieldError(which + ": " + std::to_string(tr.untyped) + " atoms match no typing rule of " + def.name);
-      ParamReport rep;
-      return parameterize(s, def, tr.types, "gasteiger", &rep, true);   // bonded gaps do not matter here
+      return std::move(tr.types);
     };
-    fa = typed(A0, sa), fb = typed(B0, sb);
+    const std::vector<std::string> tya = types_of(A0, sa), tyb = types_of(B0, sb);
+    ParamReport rep;
+    fa = parameterize(A0, def, tya, "gasteiger", &rep, true);   // bonded gaps do not matter here
+    fb = parameterize(B0, def, tyb, "gasteiger", &rep, true);
+    // the pair terms from both molecules typed together, so the force field's pair form and its explicit pairs (also
+    // those between a type of A and a type of B) are those of one table
+    System ab = A0;
+    const uint32_t na = uint32_t(A0.atoms.size());
+    ab.atoms.insert(ab.atoms.end(), B0.atoms.begin(), B0.atoms.end());
+    for (Bond b : B0.bonds) b.i += na, b.j += na, ab.bonds.push_back(b);
+    for (Bond b : B0.typing_bonds) b.i += na, b.j += na, ab.typing_bonds.push_back(b);
+    std::vector<std::string> tyab = tya;
+    tyab.insert(tyab.end(), tyb.begin(), tyb.end());
+    ffc = parameterize(ab, def, tyab, "keep", &rep, true);
+    bool other_form = ffc.sw.on;   // a Stillinger-Weber type has no Lennard-Jones term at all
+    for (const auto& kv : ffc.pair_func)
+      if (kv.second.form != kPairGromacs) other_form = true;   // lj/gromacs pairs are the mixed Lennard-Jones pairs, switched near the cut-off only
+    if (other_form)
+      throw FieldError(def.name + ": χ by pair contacts handles Lennard-Jones pairs (12-6 or 9-6) only, not this force field's other pair forms");
+    ta.assign(ffc.type_index.begin(), ffc.type_index.begin() + na);
+    tb.assign(ffc.type_index.begin() + na, ffc.type_index.end());
     r.forcefield = def.name + ", Gasteiger charges";
   } else {
     const bool gaff = gaff_types(A0) && gaff_types(B0);
@@ -188,14 +216,15 @@ ChiPairResult chi_by_contacts(const ChiPairOptions& o) {
     fa = gaff ? assign_gaff(A0) : uff_with_charges(A0, &qa);
     fb = gaff ? assign_gaff(B0) : uff_with_charges(B0, &qb);
     r.forcefield = gaff ? "GAFF (built-in C and H subset), Gasteiger charges" : "UFF, " + (qa == qb ? qa : qa + " / " + qb) + " charges";
+    ffc.mixing = fa.mixing;
+    ffc.pair_form = fa.pair_form;
+    ffc.lj = fa.lj;
+    ffc.lj.insert(ffc.lj.end(), fb.lj.begin(), fb.lj.end());
+    off = int(fa.lj.size());
+    ta = fa.type_index, tb = fb.type_index;
   }
-  ForceField ffc;   // both molecules' types in one table for the mixing rule
-  ffc.mixing = fa.mixing;
-  ffc.lj = fa.lj;
-  ffc.lj.insert(ffc.lj.end(), fb.lj.begin(), fb.lj.end());
-  const int off = int(fa.lj.size());
 
-  auto fill = [](const System& s, const ForceField& ff, const std::string& smiles) {
+  auto fill = [](const System& s, const ForceField& ff, const std::vector<int>& types, const std::string& smiles) {
     Mol m;
     Vec3 c{0, 0, 0};
     for (const auto& a : s.atoms) c = c + a.pos;
@@ -203,14 +232,14 @@ ChiPairResult chi_by_contacts(const ChiPairOptions& o) {
     m.name = smiles;
     for (size_t i = 0; i < s.atoms.size(); ++i) {
       m.x.push_back(s.atoms[i].pos - c);
-      m.type.push_back(ff.type_index[i]);
+      m.type.push_back(types[i]);
       m.q.push_back(ff.charge[i]);
       m.rad.push_back(element(s.atoms[i].element).vdw);
       m.reach = std::max(m.reach, norm(m.x.back()) + m.rad.back());
     }
     return m;
   };
-  const Mol A = fill(A0, fa, sa), B = fill(B0, fb, sb);
+  const Mol A = fill(A0, fa, ta, sa), B = fill(B0, fb, tb, sb);
   r.a_name = sa, r.b_name = sb;
   r.a_atoms = int(A.x.size()), r.b_atoms = int(B.x.size());
 

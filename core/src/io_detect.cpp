@@ -93,16 +93,42 @@ std::string detect_format(const std::string& path) {
 
 Trajectory open_file(const std::string& path, const std::string& topology_path) { return open_file(path, topology_path, OpenProgress{}); }
 
+namespace {
+bool gz_name(const std::string& p) { return p.size() > 3 && p.compare(p.size() - 3, 3, ".gz") == 0; }
+// Whether a file's frames carry the MD steps they were written at (a LAMMPS dump, .xtc, .trr, DCD). The other readers
+// number their frames from 0 in each file, so those steps say nothing about where a part sits in a run.
+bool carries_md_steps(const std::string& path) {
+  if (gz_name(path)) {
+    const std::string name = lower(std::filesystem::path(path.substr(0, path.size() - 3)).filename().string());
+    const std::string e = lower(std::filesystem::path(name).extension().string());
+    if (e == ".xtc" || e == ".trr" || e == ".dcd" || e == ".lammpstrj" || e == ".dump") return true;
+    gzFile in = gzopen(path.c_str(), "rb");
+    if (!in) return false;
+    char buf[8] = {0};
+    const bool dump = gzgets(in, buf, sizeof buf) && std::string(buf).rfind("ITEM:", 0) == 0;
+    gzclose(in);
+    return dump;
+  }
+  const std::string f = detect_format(path);
+  return f == "lammps-dump" || f == "xtc" || f == "trr" || f == "dcd";
+}
+}  // namespace
+
 Trajectory open_files(const std::vector<std::string>& paths, const std::string& topology_path, std::vector<std::string>* notes) {
   if (paths.empty()) throw ReadError("no files to open");
   if (paths.size() == 1) return open_file(paths[0], topology_path);
   std::vector<std::pair<Trajectory, std::string>> parts;
-  for (const auto& p : paths) parts.emplace_back(open_file(p, topology_path), p);
-  // in time order (the first timestep of each part; files without timesteps keep the order given)
-  std::stable_sort(parts.begin(), parts.end(), [](const auto& x, const auto& y) {
-    if (x.first.timesteps.empty() || y.first.timesteps.empty()) return false;
-    return x.first.timesteps.front() < y.first.timesteps.front();
-  });
+  bool md_steps = true;   // every part carries real MD steps: joined in time order, restart overlaps kept once
+  for (const auto& p : paths) {
+    md_steps = md_steps && carries_md_steps(p);
+    parts.emplace_back(open_file(p, topology_path), p);
+  }
+  // in time order (the first timestep of each part); files numbered from frame 0 keep the order given
+  if (md_steps)
+    std::stable_sort(parts.begin(), parts.end(), [](const auto& x, const auto& y) {
+      if (x.first.timesteps.empty() || y.first.timesteps.empty()) return false;
+      return x.first.timesteps.front() < y.first.timesteps.front();
+    });
   Trajectory out = std::move(parts[0].first);
   const auto& topo = out.topology;
   size_t dropped = 0;
@@ -117,7 +143,7 @@ Trajectory open_files(const std::vector<std::string>& paths, const std::string& 
     const size_t n0 = out.frames();
     for (size_t f = 0; f < t.frames(); ++f) {
       // a restart repeats the step it started from: keep the earlier copy
-      if (f < t.timesteps.size() && !out.timesteps.empty() && t.timesteps[f] <= out.timesteps.back()) { ++dropped; continue; }
+      if (md_steps && f < t.timesteps.size() && !out.timesteps.empty() && t.timesteps[f] <= out.timesteps.back()) { ++dropped; continue; }
       out.positions.push_back(t.positions[f]);
       out.cells.push_back(f < t.cells.size() ? t.cells[f] : (t.cells.empty() ? topo.cell : t.cells.back()));
       if (f < t.timesteps.size()) out.timesteps.push_back(t.timesteps[f]);
@@ -132,8 +158,12 @@ Trajectory open_files(const std::vector<std::string>& paths, const std::string& 
   if (!out.velocities.empty() && out.velocities.size() != out.positions.size()) out.velocities.clear();
   for (auto it = out.columns.begin(); it != out.columns.end();)
     it = it->second.size() != out.positions.size() ? out.columns.erase(it) : std::next(it);
+  if (!md_steps) {   // each part counted its frames from 0: numbered again through the joined run
+    out.timesteps.resize(out.frames());
+    for (size_t f = 0; f < out.timesteps.size(); ++f) out.timesteps[f] = int64_t(f);
+  }
   if (notes) {
-    notes->push_back(std::to_string(parts.size()) + " files joined in time order: " + std::to_string(out.frames()) + " frames" +
+    notes->push_back(std::to_string(parts.size()) + (md_steps ? " files joined in time order: " : " files joined in the order given: ") + std::to_string(out.frames()) + " frames" +
                      (dropped ? " (" + std::to_string(dropped) + " repeated at the boundaries kept once)" : ""));
   }
   out.topology.notes.push_back("joined from " + std::to_string(parts.size()) + " files");
@@ -164,7 +194,6 @@ const char* format_name(const std::string& f) {
 }  // namespace
 
 namespace {
-bool gz_name(const std::string& p) { return p.size() > 3 && p.compare(p.size() - 3, 3, ".gz") == 0; }
 // a gzip-compressed file unpacked into the temporary folder, under its own name without .gz (so the format is known)
 std::string gunzip_to_temp(const std::string& path) {
   gzFile in = gzopen(path.c_str(), "rb");

@@ -337,7 +337,28 @@ public partial class MainViewModel
             if (modes.Count == 0) { DftStatus = "Choose at least one orientation"; return; }
             a["modes"] = string.Join(",", modes);
         }
-        if (Directory.Exists(_adsOut)) Directory.Delete(_adsOut, true);   // a set is rebuilt whole: no stale complexes
+        if (Directory.Exists(_adsOut))
+        {
+            // a set is rebuilt whole (no stale complexes), but only a folder that holds nothing except an earlier set is removed
+            try
+            {
+                var dir = new DirectoryInfo(_adsOut);
+                var foreign = dir.EnumerateFileSystemInfos().Where(e => !(e is DirectoryInfo
+                        ? e.Name is "slab" or "molecule" || e.Name.StartsWith("complex_", StringComparison.Ordinal)
+                        : e.Name == ".DS_Store")).Select(e => e.Name).ToList();
+                if (foreign.Count > 0)
+                {
+                    DftStatus = $"{_adsOut} holds other files ({string.Join(", ", foreign.Take(3))}{(foreign.Count > 3 ? ", ..." : "")}), not only an earlier adsorption set: choose a new or empty folder to write into";
+                    return;
+                }
+                dir.Delete(true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                DftStatus = $"Could not clear the earlier set in {_adsOut}: {e.Message}";
+                return;
+            }
+        }
         var r = await Dft("adsorb-dft", a);
         if (r == null) return;
         var on = AdsAnchors.ToDictionary(x => x.Name, x => x.On);
@@ -592,7 +613,7 @@ public partial class MainViewModel
 
     // ---------------------------------------------------------------- run monitor (module 78)
     private string _runsRoot = "";
-    public string RunsRoot { get => _runsRoot; set => Set(ref _runsRoot, value ?? ""); }
+    public string RunsRoot { get => _runsRoot; set { if (Set(ref _runsRoot, value ?? "")) DftPlan = ""; } }   // a cleanup plan belongs to one folder
     public ObservableCollection<DftRunRow> DftRuns { get; } = new();
     private DftRunRow? _dftRun;
     public DftRunRow? SelectedDftRun { get => _dftRun; set { if (Set(ref _dftRun, value)) { Raise(nameof(HasDftRun)); LoadRunStages(); DftChanged?.Invoke(); } } }
@@ -679,17 +700,32 @@ public partial class MainViewModel
     /// <summary>Cleanup: first a dry run (the plan), the second press removes.</summary>
     public async Task CleanupRuns(bool keepBest)
     {
-        var apply = DftPlan.StartsWith("Cleanup plan", StringComparison.Ordinal);
-        var a = new JsonObject { ["inputs"] = new JsonArray("cleanup", _runsRoot), ["keep_best"] = keepBest };
-        if (apply) a["yes"] = true;
-        var r = await Dft("vasp-jobs", a);
+        // the second press removes only what the shown plan listed: same folder, same Keep best, same files
+        var root = _runsRoot;
+        var apply = DftPlan.StartsWith("Cleanup plan", StringComparison.Ordinal) && root == _planRoot && keepBest == _planKeepBest;
+        var plan = await Dft("vasp-jobs", new JsonObject { ["inputs"] = new JsonArray("cleanup", root), ["keep_best"] = keepBest });
+        if (plan == null) return;
+        var items = (plan["plan"]?["items"] as JsonArray ?? []).Count;
+        var bytes = DNum(plan["plan"]?["bytes"], 0);
+        if (apply && (items != _planItems || bytes != _planBytes)) apply = false;   // the runs changed since the plan was shown
+        if (!apply)
+        {
+            (_planRoot, _planKeepBest, _planItems, _planBytes) = (root, keepBest, items, bytes);
+            DftPlan = $"Cleanup plan: {items} files ({bytes / 1e9:0.00} GB) of finished stages. Press Clean up again to remove them";
+            DftStatus = DftPlan;
+            return;
+        }
+        var r = await Dft("vasp-jobs", new JsonObject { ["inputs"] = new JsonArray("cleanup", root), ["keep_best"] = keepBest, ["yes"] = true });
         if (r == null) return;
-        var items = (r["plan"]?["items"] as JsonArray ?? []).Count;
+        items = (r["plan"]?["items"] as JsonArray ?? []).Count;
         var gb = DNum(r["plan"]?["bytes"], 0) / 1e9;
-        DftPlan = apply ? $"Removed {items} files ({gb:0.00} GB)." : $"Cleanup plan: {items} files ({gb:0.00} GB) of finished stages — press Clean up again to remove them";
-        if (apply) DftPlan = "";
-        DftStatus = apply ? $"Removed {items} files, {gb:0.00} GB" : DftPlan;
+        DftPlan = "";
+        DftStatus = $"Removed {items} files, {gb:0.00} GB";
     }
+    private string _planRoot = "";
+    private bool _planKeepBest;
+    private int _planItems;
+    private double _planBytes;
 
     public void OpenRunStructure()
     {

@@ -561,10 +561,13 @@ Json md_analysis(const std::string& dir, double equil_ps, double dt_fs) {
         if (comp[d] < 0 && norm(mic_ab(f0.cell, f0.atoms[d].pos - f0.atoms[fr[h]].pos)) < 1.75) comp[d] = int(frags.size()), fr.push_back(d);
     frags.push_back(fr);
   }
+  // single atoms are lattice C/N of the slab (or stray H), never the molecule
   std::vector<size_t> mol;
+  bool molN = false;
   for (const auto& fr : frags) {
+    if (fr.size() < 2) continue;
     const bool hasN = std::any_of(fr.begin(), fr.end(), [&](size_t i) { return f0.atoms[i].element == 7; });
-    if ((hasN && (mol.empty() || !std::any_of(mol.begin(), mol.end(), [&](size_t i) { return f0.atoms[i].element == 7; }))) || (!hasN && fr.size() > mol.size() && mol.empty())) mol = fr;
+    if ((hasN && (!molN || fr.size() > mol.size())) || (!hasN && !molN && fr.size() > mol.size())) mol = fr, molN = hasN;
   }
   std::sort(mol.begin(), mol.end());
   if (mol.size() < 2) throw std::runtime_error("no molecule found among the C/N/H atoms");

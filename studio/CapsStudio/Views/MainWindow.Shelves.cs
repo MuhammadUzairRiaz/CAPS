@@ -26,7 +26,7 @@ public partial class MainWindow
     private Border? _guide;
     // a drag in progress: the shelf, the pointer's offset in it, where it started, whether it has moved
     private Shelf? _dragShelf;
-    private Point _dragOffset, _dragStart;
+    private Point _dragOffset, _dragStart, _dragLast;
     private bool _dragMoved, _dragBlocked;
     private string? _dragTarget;
 
@@ -53,7 +53,8 @@ public partial class MainWindow
         ShelfFloat.Children.Add(_guide);
         ShelfFloat.PointerMoved += OnShelfDragMove;
         ShelfFloat.PointerReleased += OnShelfDragEnd;
-        ShelfFloat.PointerCaptureLost += (_, _) => EndShelfDrag(commit: true);
+        // capture lost without a release (another window took the pointer): drop where the pointer was last seen
+        ShelfFloat.PointerCaptureLost += (_, _) => EndShelfDrag(commit: true, _dragLast);
         foreach (var w in Workspaces)
         {
             var b = new Button { Classes = { "ws" }, Content = w, Tag = w, [ToolTip.TipProperty] = $"{w} workspace: its own shelves and places" };
@@ -174,7 +175,7 @@ public partial class MainWindow
         foreach (var id in _shelves.Keys)
         {
             var st = layout.FirstOrDefault(x => x.Id == id) ?? new ShelfState { Id = id, Dock = id.StartsWith("my-", StringComparison.Ordinal) ? "float" : "hidden", X = 360, Y = 150 };
-            _shelfState[id] = new ShelfState { Id = id, Dock = st.Dock, Order = st.Order, X = st.X, Y = st.Y, Folded = st.Folded };
+            _shelfState[id] = new ShelfState { Id = id, Dock = st.Dock, Order = st.Order, X = st.X, Y = st.Y, WinX = st.WinX, WinY = st.WinY, Folded = st.Folded };
         }
         foreach (var st in _shelfState.Values.OrderBy(x => x.Order)) Place(st.Id);
         UpdateModifyBar();
@@ -189,7 +190,7 @@ public partial class MainWindow
             Control shown = st.Folded && _pucks.TryGetValue(id, out var p) ? p : _shelves[id];
             if (_slots.TryGetValue(st.Dock, out var slot)) st.Order = Math.Max(0, slot.Children.IndexOf(shown));
         }
-        _vm.Settings.ShelfLayouts[Workspace] = _shelfState.Values.Select(s => new ShelfState { Id = s.Id, Dock = s.Dock, Order = s.Order, X = s.X, Y = s.Y, Folded = s.Folded }).ToList();
+        _vm.Settings.ShelfLayouts[Workspace] = _shelfState.Values.Select(s => new ShelfState { Id = s.Id, Dock = s.Dock, Order = s.Order, X = s.X, Y = s.Y, WinX = s.WinX, WinY = s.WinY, Folded = s.Folded }).ToList();
         _vm.Settings.Save();
     }
 
@@ -263,6 +264,13 @@ public partial class MainWindow
     {
         if (!_shelfState.TryGetValue(id, out var st)) return;
         if (dock == "float" && st.Dock != "float" && st.X == 0 && st.Y == 0) (st.X, st.Y) = (360, 160);
+        // a floating shelf popped out: its window opens where the shelf was (window DIPs to screen pixels)
+        if (dock == "window" && st.Dock == "float" && ShelfFloat.GetVisualRoot() != null)
+        {
+            var (x, y) = ClampToWindow(st.X, st.Y);
+            var at = ShelfFloat.PointToScreen(new Point(x, y));
+            (st.WinX, st.WinY) = (at.X, at.Y);
+        }
         st.Dock = dock;
         if (dock == "hidden") st.Folded = false;
         Place(id, index);
@@ -339,15 +347,25 @@ public partial class MainWindow
             Title = s.Title, SizeToContent = SizeToContent.WidthAndHeight, CanResize = false, ShowInTaskbar = false, Content = s, DataContext = _vm,
             Background = (IBrush?)this.FindResource("Bg1B") ?? Brushes.Black, Padding = new Thickness(6), Topmost = true,
         };
-        if (st.X != 0 || st.Y != 0) { w.WindowStartupLocation = WindowStartupLocation.Manual; w.Position = new PixelPoint((int)st.X, (int)st.Y); }
+        // WinX, WinY are screen pixels; X, Y stay the shelf's place when it floats (window DIPs)
+        if (st.WinX != 0 || st.WinY != 0) { w.WindowStartupLocation = WindowStartupLocation.Manual; w.Position = new PixelPoint(st.WinX, st.WinY); }
         else w.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        w.PositionChanged += (_, e) => { st.X = e.Point.X; st.Y = e.Point.Y; };
-        w.Closing += (_, _) =>
+        w.PositionChanged += (_, e) => { st.WinX = e.Point.X; st.WinY = e.Point.Y; };
+        w.Closing += (_, e) =>
         {
             if ((string?)w.Tag == "closing") return;   // closed by a layout change
+            // the app quitting closes it too: the shelf stays popped out in the saved layout
+            if (e.CloseReason is WindowCloseReason.OwnerWindowClosing or WindowCloseReason.ApplicationShutdown or WindowCloseReason.OSShutdown)
+            {
+                if (_shelfState.ContainsKey(s.Id)) SaveShelfLayout();   // with the window's last place
+                return;
+            }
             w.Content = null;
             _shelfWindows.Remove(s.Id);
+            if (!_shelves.ContainsKey(s.Id) || !_shelfState.ContainsKey(s.Id)) return;   // the shelf was deleted
             st.Dock = DefaultLayout("Sketch").FirstOrDefault(x => x.Id == s.Id)?.Dock ?? "float";
+            // back to floating: where the window was, in window DIPs
+            if (st.Dock == "float" && ShelfFloat.GetVisualRoot() != null) { var at = ShelfFloat.PointToClient(w.Position); (st.X, st.Y) = (at.X, at.Y); }
             Place(s.Id);
             SaveShelfLayout();
         };
@@ -367,6 +385,7 @@ public partial class MainWindow
         _dragMoved = false;
         _dragBlocked = false;
         _dragStart = e.GetPosition(ShelfFloat);
+        _dragLast = _dragStart;
         var origin = s.TranslatePoint(new Point(0, 0), ShelfFloat) ?? _dragStart;
         _dragOffset = _dragStart - origin;
         e.Pointer.Capture(ShelfFloat);
@@ -376,6 +395,7 @@ public partial class MainWindow
     {
         if (_dragShelf is not { } s) return;
         var p = e.GetPosition(ShelfFloat);
+        _dragLast = p;
         if (!_dragMoved)
         {
             if (Math.Abs(p.X - _dragStart.X) + Math.Abs(p.Y - _dragStart.Y) < 5) return;
@@ -406,8 +426,9 @@ public partial class MainWindow
     private void OnShelfDragEnd(object? sender, PointerReleasedEventArgs e)
     {
         if (_dragShelf == null) return;
-        e.Pointer.Capture(null);
+        // drop first: releasing the capture raises PointerCaptureLost at once, which would end the drag without this point
         EndShelfDrag(commit: true, e.GetPosition(ShelfFloat));
+        e.Pointer.Capture(null);
     }
 
     private void EndShelfDrag(bool commit, Point? at = null)
@@ -425,7 +446,7 @@ public partial class MainWindow
         _dragTarget = null;
         if (target != null && _slots.TryGetValue(target, out var slot))
         {
-            var index = InsertIndex(slot, at ?? default);
+            var index = InsertIndex(slot, at ?? _dragLast);
             st.Dock = target;
             st.Folded = false;
             Place(s.Id, index);
@@ -563,8 +584,9 @@ public partial class MainWindow
     public async Task MakeShelfDialog(string? editId = null)
     {
         var editing = editId == null ? null : _vm.Settings.CustomShelves.FirstOrDefault(c => c.Id == editId);
-        var chosen = editing?.Tools.ToList() ?? new List<string>();
         var tools = AllTools();
+        // a saved tool that this build no longer has (renamed or removed) is left off, as the shelf itself does
+        var chosen = editing?.Tools.Where(t => tools.Any(x => x.Id == t)).ToList() ?? new List<string>();
         var preview = new WrapPanel { Orientation = Orientation.Horizontal, ItemSpacing = 2, LineSpacing = 2, MinHeight = 40 };
         var name = new TextBox { Text = editing?.Name ?? "My shelf", Width = 240 };
         var glyph = new ComboBox { ItemsSource = ShelfGlyphs, SelectedIndex = Math.Max(0, Array.IndexOf(ShelfGlyphs, editing?.Glyph ?? "pin")), Width = 120 };
@@ -630,6 +652,7 @@ public partial class MainWindow
     public void DeleteCustomShelf(string id)
     {
         if (!_shelves.Remove(id, out var s)) return;
+        if (_shelfWindows.Remove(id, out var w)) { w.Tag = "closing"; w.Content = null; w.Close(); }
         Detach(s);
         if (_pucks.Remove(id, out var p)) Detach(p);
         _shelfState.Remove(id);

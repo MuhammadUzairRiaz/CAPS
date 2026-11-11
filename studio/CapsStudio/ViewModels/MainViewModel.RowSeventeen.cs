@@ -225,9 +225,12 @@ public partial class MainViewModel
         PackXD = _dcA; PackYD = _dcB; PackZD = _dcC;
         PackPeriodic = true;
         NewPackInput();
-        foreach (var s in DcSpecies.Where(s => s.Count > 0))
+        for (var k = 0; k < DcSpecies.Count; ++k)
         {
-            var path = Path.Combine(dir, string.Concat(s.Smiles.Select(c => char.IsLetterOrDigit(c) ? c : '_')) + ".pdb");
+            var s = DcSpecies[k];
+            if (s.Count <= 0) continue;
+            // the species index keeps SMILES that differ only in bond symbols (C=CC, C#CC; C/C=C/C, C/C=C\C) in separate files
+            var path = Path.Combine(dir, $"species-{k + 1}-" + string.Concat(s.Smiles.Select(c => char.IsLetterOrDigit(c) ? c : '_')) + ".pdb");
             try
             {
                 var (doc, _) = CapsDocument.BuildSmiles(s.Smiles, "uff", 1, 1, s.Name);
@@ -262,6 +265,8 @@ public partial class MainViewModel
     public string SaTotal { get => _saTotal; private set => Set(ref _saTotal, value); }
     public string SaStatus { get => _saStatus; private set => Set(ref _saStatus, value); }
     private double[] _saArea = [];
+    private string[] _saElem = [];
+    private CapsDocument? _saDoc;                  // the document _saArea and _saElem belong to
     /// <summary>The document whose atoms carry the last run's exposure values (null until a run, and after leaving the page).</summary>
     public CapsDocument? SaColoured { get; private set; }
     public event Action? SaChanged;
@@ -283,6 +288,8 @@ public partial class MainViewModel
         var total = r["total"]!.GetValue<double>();
         SaTotal = total.ToString("0.0", inv) + " Å²";
         _saArea = ((JsonArray)r["area"]!).Select(x => x!.GetValue<double>()).ToArray();
+        _saElem = Enumerable.Range(0, _saArea.Length).Select(i => doc.Atom(i).ElementSymbol).ToArray();
+        _saDoc = doc;
         SaGroups.Clear();
         SaGroups.Add(new SasaGroupRow("Whole structure", total.ToString("0.0", inv), "100"));
         foreach (var g in (JsonArray)r["groups"]!)
@@ -310,10 +317,11 @@ public partial class MainViewModel
     public void ExportSasaCsv(string path)
     {
         if (_doc == null || _saArea.Length == 0) return;
+        if (!ReferenceEquals(_doc, _saDoc)) { Status = "Run Surface area on this structure before exporting its per-atom CSV"; return; }
         var inv = CultureInfo.InvariantCulture;
         using var w = new StreamWriter(path);
         w.WriteLine("atom,element,sasa_A2");
-        for (var i = 0; i < _saArea.Length; ++i) w.WriteLine($"{i + 1},{_doc.Atom(i).ElementSymbol},{_saArea[i].ToString("0.###", inv)}");
+        for (var i = 0; i < _saArea.Length; ++i) w.WriteLine($"{i + 1},{_saElem[i]},{_saArea[i].ToString("0.###", inv)}");
         Status = $"Wrote {Path.GetFileName(path)} · {_saArea.Length} atoms";
     }
 

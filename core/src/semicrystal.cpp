@@ -792,6 +792,9 @@ System build_semicrystalline(const SemicrystallineOptions& o, SemicrystallineRep
   const Vec3 ca = uc.cell.a, cb = uc.cell.b, cc = uc.cell.c;
   if (o.nx < 1 || o.ny < 1) throw std::invalid_argument("lateral repeats must be at least 1");
   const int nc = o.nc > 0 ? o.nc : std::max(2, int(std::lround(o.crystal_nm * 10 / cc[2])));
+  if (nc * nbb < 3)
+    throw std::invalid_argument("the crystal layer is too thin: each stem needs at least 3 backbone atoms (" + std::to_string(nc) +
+                                " cell(s) along c give " + std::to_string(nc * nbb) + ")");
   const double La = o.amorphous_nm * 10;
   if (La < 5) throw std::invalid_argument("the amorphous layer must be at least 0.5 nm");
   const double Lc = nc * cc[2], Lz = Lc + La;
@@ -1797,11 +1800,16 @@ SemicrystallineReport analyse_semicrystalline(const System& s, double p2_cut, in
       if (r + 1 < runs.size() && runs[r + 1].lo > runs[r].hi + 1)
         mark(runs[r].hi + 1, runs[r + 1].lo - 1, runs[r].f_hi == runs[r + 1].f_lo ? SemicrystallineReport::kLoop : SemicrystallineReport::kBridge);
     }
-    R.tails += 2;
-    R.tail_units.push_back(int(runs.front().lo));
-    R.tail_units.push_back(int(m - 1 - runs.back().hi));
-    (runs.front().f_lo > 0 ? R.tails_top : R.tails_bottom)++;
-    (runs.back().f_hi > 0 ? R.tails_top : R.tails_bottom)++;
+    if (runs.front().lo > 0) {   // a chain end inside a stem has no tail
+      ++R.tails;
+      R.tail_units.push_back(int(runs.front().lo));
+      (runs.front().f_lo > 0 ? R.tails_top : R.tails_bottom)++;
+    }
+    if (runs.back().hi + 1 < m) {
+      ++R.tails;
+      R.tail_units.push_back(int(m - 1 - runs.back().hi));
+      (runs.back().f_hi > 0 ? R.tails_top : R.tails_bottom)++;
+    }
     for (size_t r = 0; r + 1 < runs.size(); ++r) {
       const int units = int(runs[r + 1].lo - runs[r].hi - 1);
       if (runs[r].f_hi == runs[r + 1].f_lo) {

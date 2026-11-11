@@ -162,18 +162,21 @@ Perception perceive(const System& s) {
   // bonds: known orders are kept, the others (unknown, aromatic, amide) are solved from valences
   bool any_order = false;
   for (const auto& b : s.bonds) any_order = any_order || b.order > 0;
-  struct E { uint32_t i, j; int order; bool fixed; bool arom_in; };
+  struct E { uint32_t i, j; int order; bool fixed; bool arom_in; bool dative = false; };
   std::vector<E> edges;
   for (const auto& b : s.bonds) {
     if (b.i == b.j || b.i >= n || b.j >= n) continue;
-    if (b.order == kBondDative) { edges.push_back({b.i, b.j, 0, true, false}); continue; }   // a coordinate bond: no valence
+    if (b.order == kBondDative) { edges.push_back({b.i, b.j, 0, true, false, true}); continue; }   // a coordinate bond: no valence
     const bool fixed = any_order && (b.order == 1 || b.order == 2 || b.order == 3 || b.order == 5);
     edges.push_back({b.i, b.j, fixed ? (b.order == 5 ? 1 : b.order) : 1, fixed, b.order == 4});
   }
   std::vector<std::vector<size_t>> inc(n);
   for (size_t e = 0; e < edges.size(); ++e) { inc[edges[e].i].push_back(e); inc[edges[e].j].push_back(e); }
-  std::vector<int> z(n), deg(n);
-  for (size_t i = 0; i < n; ++i) { z[i] = s.atoms[i].element; deg[i] = int(inc[i].size()); }
+  // deg counts covalent neighbours only: a coordinate bond to a metal does not change the ligand atom's valence
+  std::vector<int> z(n), deg(n, 0);
+  for (size_t i = 0; i < n; ++i) z[i] = s.atoms[i].element;
+  for (const auto& e : edges)
+    if (!e.dative) { ++deg[e.i]; ++deg[e.j]; }
   // united-atom sites: only when no carbon has an explicit hydrogen (a heavy-atom PDB's "CH2" is a ring carbon's name)
   p.implicit_h.assign(n, 0);
   {
@@ -196,7 +199,7 @@ Perception perceive(const System& s) {
   for (size_t i = 0; i < n; ++i) {
     target[i] = target_valence(z[i], deg[i] + p.implicit_h[i]);
     if (target[i] >= 0) target[i] = std::max(0, target[i] - p.implicit_h[i]);   // implicit hydrogens: single bonds already there
-    const bool lone = deg[i] == 0 && p.implicit_h[i] == 0;   // a united-atom methane is not an ion
+    const bool lone = inc[i].empty() && p.implicit_h[i] == 0;   // a united-atom methane is not an ion
     if (lone && target[i] >= 0 && z[i] != 1) { target[i] = -1; p.charge[i] = ion_charge(z[i]); }
     if (lone && target[i] < 0) p.charge[i] = ion_charge(z[i]);
     if (z[i] == 7 && deg[i] == 4) p.charge[i] = 1;
@@ -205,6 +208,7 @@ Perception perceive(const System& s) {
     if (z[i] == 15 && deg[i] == 4 && p.implicit_h[i] == 0) {
       bool ch = true;
       for (size_t e : inc[i]) {
+        if (edges[e].dative) continue;
         const uint32_t o = edges[e].i == i ? edges[e].j : edges[e].i;
         ch = ch && (z[o] == 6 || z[o] == 1);
       }
@@ -213,6 +217,7 @@ Perception perceive(const System& s) {
     if (z[i] == 7 && deg[i] == 3) {
       int term_o = 0;
       for (size_t e : inc[i]) {
+        if (edges[e].dative) continue;
         const uint32_t o = edges[e].i == i ? edges[e].j : edges[e].i;
         if (z[o] == 8 && deg[o] == 1) ++term_o;
       }
@@ -222,6 +227,7 @@ Perception perceive(const System& s) {
     if (z[i] == 7 && deg[i] == 2) {
       int term_n = 0, n_nb = 0;
       for (size_t e : inc[i]) {
+        if (edges[e].dative) continue;
         const uint32_t o = edges[e].i == i ? edges[e].j : edges[e].i;
         if (z[o] == 7) ++n_nb;
         if (z[o] == 7 && deg[o] == 1) ++term_n;
@@ -992,7 +998,10 @@ bool eval_atom(const AtomExpr& e, const Ctx& c, uint32_t a) {
     case Prim::Degree: return int(p.nb[a].size()) == e.value;
     case Prim::Connect: return int(p.nb[a].size()) + (a < p.implicit_h.size() ? p.implicit_h[a] : 0) == e.value;   // implicit: united atoms
     case Prim::HCount: return p.hcount[a] == e.value;
-    case Prim::ImplicitH: return (a < p.implicit_h.size() ? p.implicit_h[a] : 0) == e.value;
+    case Prim::ImplicitH: {   // bare h: at least one implicit hydrogen
+      const int h = a < p.implicit_h.size() ? p.implicit_h[a] : 0;
+      return e.value < 0 ? h > 0 : h == e.value;
+    }
     case Prim::Valence: {
       int v = a < p.implicit_h.size() ? p.implicit_h[a] : 0;
       for (int o : p.order[a]) v += o;

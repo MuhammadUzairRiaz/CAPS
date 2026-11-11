@@ -42,9 +42,9 @@ public partial class MainViewModel
             if (RelaxRestraints.Any(r => r.IsDihedral && ((r.I == q[0] && r.J == q[1] && r.K == q[2] && r.L == q[3]) || (r.I == q[3] && r.J == q[2] && r.K == q[1] && r.L == q[0]))))
             { Status = "That dihedral is restrained already"; return; }
             var phi = _doc.Measure(q);
-            string A(int a) => $"{_doc.Atom(a).Id} {_doc.Atom(a).ElementSymbol}";
-            var drow = new RestraintRow { I = q[0], J = q[1], K = q[2], L = q[3], Atoms = $"{A(q[0])} – {A(q[1])} – {A(q[2])} – {A(q[3])}", Measured = phi, R0D = Math.Round((decimal)phi, 1), KD = 50 };
+            var drow = new RestraintRow { I = q[0], J = q[1], K = q[2], L = q[3], Atoms = RestraintAtomsLabel(_doc, q), Measured = phi, R0D = Math.Round((decimal)phi, 1), KD = 50 };
             drow.Changed = ApplyRestraints;
+            _restraintAtomCount = _doc.Summary().Atoms;
             RelaxRestraints.Add(drow);
             Raise(nameof(HasRestraints));
             ApplyRestraints();
@@ -54,8 +54,9 @@ public partial class MainViewModel
         var (i, j) = (_selection[0], _selection[1]);
         if (RelaxRestraints.Any(r => (r.I == i && r.J == j) || (r.I == j && r.J == i))) { Status = "That pair is restrained already"; return; }
         var d = _doc.Measure([i, j]);
-        var row = new RestraintRow { I = i, J = j, Atoms = $"{_doc.Atom(i).Id} {_doc.Atom(i).ElementSymbol} – {_doc.Atom(j).Id} {_doc.Atom(j).ElementSymbol}", Measured = d, R0D = Math.Round((decimal)d, 2), KD = 10 };
+        var row = new RestraintRow { I = i, J = j, Atoms = RestraintAtomsLabel(_doc, [i, j]), Measured = d, R0D = Math.Round((decimal)d, 2), KD = 10 };
         row.Changed = ApplyRestraints;
+        _restraintAtomCount = _doc.Summary().Atoms;
         RelaxRestraints.Add(row);
         Raise(nameof(HasRestraints));
         ApplyRestraints();
@@ -79,12 +80,23 @@ public partial class MainViewModel
         try { _doc.SetRestraints(a.ToJsonString()); } catch (Exception e) { Status = "Restraints: " + e.Message; }
     }
 
-    /// <summary>A new document keeps the restraints only when it has the same atoms (a relaxed copy); otherwise they go.</summary>
+    /// <summary>Atom count of the structure the restraints were picked on.</summary>
+    private long _restraintAtomCount = -1;
+
+    /// <summary>"id element – id element …" for the restrained atoms: the row label, and the identity a new document must match.</summary>
+    private static string RestraintAtomsLabel(CapsDocument doc, IReadOnlyList<int> atoms) =>
+        string.Join(" – ", atoms.Select(a => { var x = doc.Atom(a); return $"{x.Id} {x.ElementSymbol}"; }));
+
+    /// <summary>A new document keeps the restraints only when it has the same atoms (a relaxed copy): the same atom count
+    /// and the same id and element at every restrained index. Otherwise they go.</summary>
     private void RestraintsFollow(CapsDocument doc)
     {
         if (RelaxRestraints.Count == 0) return;
         var n = doc.Summary().Atoms;
-        if (RelaxRestraints.Any(r => r.I >= n || r.J >= n || r.K >= n || r.L >= n)) { RelaxRestraints.Clear(); Raise(nameof(HasRestraints)); return; }
+        bool same = n == _restraintAtomCount && RelaxRestraints.All(r =>
+            r.I < n && r.J < n && r.K < n && r.L < n
+            && r.Atoms == RestraintAtomsLabel(doc, r.IsDihedral ? new[] { r.I, r.J, r.K, r.L } : new[] { r.I, r.J }));
+        if (!same) { RelaxRestraints.Clear(); _restraintAtomCount = -1; Raise(nameof(HasRestraints)); return; }
         ApplyRestraints();
     }
 }

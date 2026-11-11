@@ -297,7 +297,10 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
     for (size_t t = 0; t < items.size(); ++t) {
       const auto& it = items[t];
       if (it.fixed) {
-        for (const auto& p : it.molecule.atoms) grow(p.pos + (it.center ? it.position - tpl[t].centre : Vec3{0, 0, 0}));
+        // Where the instance code below puts it: c + R0 (r - centre), c = position when centred, else centre + position.
+        const Mat3 R0 = euler_xyz(it.angles);
+        const Vec3 c = it.center ? it.position : tpl[t].centre + it.position;
+        for (const auto& r : tpl[t].r0) grow(c + apply(R0, r));
         continue;
       }
       bool bounded = false;
@@ -980,6 +983,8 @@ std::string packmol_to_caps_pack(const std::string& text) {
   out << "# CAPS Pack (converted from packmol syntax)\n";
   bool inside = false, atoms = false;
   std::string atom_ids;
+  int lineno = 0;
+  auto bad = [&](const std::string& why) { return PackError("line " + std::to_string(lineno) + ": " + why); };
   auto region = [](const std::vector<std::string>& t, size_t i) -> std::string {
     const std::string r = pack_lower(t[i]);
     auto at = [&](size_t q) { return q < t.size() ? t[q] : std::string("?"); };
@@ -992,30 +997,43 @@ std::string packmol_to_caps_pack(const std::string& text) {
     return t[i];
   };
   for (std::string raw; std::getline(in, raw);) {
+    ++lineno;
     const std::string line = pack_strip_comment(raw);
     const auto t = pack_words(line);
     if (t.empty()) { if (raw.find('#') != std::string::npos && raw.find("packmol syntax") == std::string::npos) out << raw << "\n"; continue; }
     const std::string k = pack_lower(t[0]);
+    // Everything after the keyword (file names may hold spaces).
+    auto rest = [&]() {
+      if (t.size() < 2) throw bad(t[0] + " needs a value");
+      return line.substr(line.find(t[1], line.find(t[0]) + t[0].size()));
+    };
+    auto value = [&]() -> const std::string& {
+      if (t.size() < 2) throw bad(t[0] + " needs a value");
+      return t[1];
+    };
     auto cons = [&](size_t i) -> std::string {
       const std::string c = pack_lower(t[i]);
       const std::string r = i + 1 < t.size() ? region(t, i + 1) : "";
       return c == "inside" ? "in " + r : c == "outside" ? "not in " + r : c == "over" || c == "above" ? "above " + r : "below " + r;
     };
     if (!inside) {
-      if (k == "tolerance") out << "distance  " << t[1] << "\n";
-      else if (k == "seed") out << "seed      " << (t[1] == "-1" ? "new" : t[1]) << "\n";
-      else if (k == "pbc") out << (t.size() >= 7 ? "cell      " + t[1] + " " + t[2] + " " + t[3] + " to " + t[4] + " " + t[5] + " " + t[6] : "cell      " + t[1] + " " + t[2] + " " + t[3]) << "\n";
-      else if (k == "compress") out << "compress  " << t[1] << "\n";
-      else if (k == "nloop") out << "loops     " << t[1] << "\n";
-      else if (k == "maxit") out << "iterations " << t[1] << "\n";
-      else if (k == "output") out << "save      " << line.substr(line.find(t[0]) + t[0].size() + 1) << "\n";
-      else if (k == "structure") { out << "\nmolecule  " << line.substr(line.find(t[0]) + t[0].size() + 1) << "\n"; inside = true; }
+      if (k == "tolerance") out << "distance  " << value() << "\n";
+      else if (k == "seed") out << "seed      " << (value() == "-1" ? "new" : t[1]) << "\n";
+      else if (k == "pbc") {
+        if (t.size() < 4) throw bad("pbc needs 3 or 6 numbers");
+        out << (t.size() >= 7 ? "cell      " + t[1] + " " + t[2] + " " + t[3] + " to " + t[4] + " " + t[5] + " " + t[6] : "cell      " + t[1] + " " + t[2] + " " + t[3]) << "\n";
+      }
+      else if (k == "compress") out << "compress  " << value() << "\n";
+      else if (k == "nloop") out << "loops     " << value() << "\n";
+      else if (k == "maxit") out << "iterations " << value() << "\n";
+      else if (k == "output") out << "save      " << rest() << "\n";
+      else if (k == "structure") { out << "\nmolecule  " << rest() << "\n"; inside = true; }
       continue;   // packmol's other settings have no effect in CAPS
     }
     if (k == "end" && t.size() > 1 && pack_lower(t[1]) == "atoms") { atoms = false; continue; }
     if (k == "end") { out << "end\n"; inside = false; continue; }
-    if (k == "number") out << "  count   " << t[1] << "\n";
-    else if ((k == "forcefield" || k == "water") && t.size() >= 2) out << "  " << k << (k == "water" ? "   " : " ") << line.substr(line.find(t[0]) + t[0].size() + 1) << "\n";
+    if (k == "number") out << "  count   " << value() << "\n";
+    else if ((k == "forcefield" || k == "water") && t.size() >= 2) out << "  " << k << (k == "water" ? "   " : " ") << rest() << "\n";
     else if (k == "center" || k == "centerofmass") out << "  centred\n";
     else if (k == "fixed" && t.size() >= 7) {
       char b[200];

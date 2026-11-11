@@ -243,11 +243,23 @@ public sealed partial class MainViewModel
             psi.StandardInputEncoding = new System.Text.UTF8Encoding(false);
             psi.StandardOutputEncoding = System.Text.Encoding.UTF8;
             using var proc = System.Diagnostics.Process.Start(psi) ?? throw new InvalidOperationException("cannot start " + python);
-            proc.StandardInput.Write(input);
-            proc.StandardInput.Close();
+            // Both pipes are drained and stdin is fed in the background, so a script that never ends (or never
+            // reads its input) cannot block this thread past the 30 s limit.
             var err = proc.StandardError.ReadToEndAsync();
-            var outText = proc.StandardOutput.ReadToEnd();
-            if (!proc.WaitForExit(30000)) { try { proc.Kill(true); } catch { } return (null, "", "the overlay script took longer than 30 s"); }
+            var outRead = proc.StandardOutput.ReadToEndAsync();
+            var feed = Task.Run(() =>
+            {
+                try { proc.StandardInput.Write(input); proc.StandardInput.Close(); }
+                catch (Exception e) when (e is System.IO.IOException or ObjectDisposedException) { }   // the script exited (or was stopped) before reading all of its input
+            });
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+            if (!proc.WaitForExit(30000)
+                || !Task.WaitAll(new Task[] { err, outRead, feed }, Math.Max(0, 30000 - (int)timer.ElapsedMilliseconds)))
+            {
+                try { proc.Kill(true); } catch { }
+                return (null, "", "the overlay script took longer than 30 s");
+            }
+            var outText = outRead.Result;
             var console = err.Result.Trim();
             if (proc.ExitCode != 0) return (null, console, console.Split('\n').LastOrDefault(l => l.Trim().Length > 0) ?? $"exit code {proc.ExitCode}");
             var j = System.Text.Json.Nodes.JsonNode.Parse(outText);

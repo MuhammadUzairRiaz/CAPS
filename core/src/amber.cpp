@@ -85,6 +85,11 @@ std::map<std::string, Section> read_sections(const std::string& path) {
       continue;
     }
     if (!cur) continue;
+    // a title line is one field whatever its FORMAT: tleap and this writer use 20a4, older files 1a80
+    if (cur->kind == 'a' && (cur->width >= 80 || flag == "TITLE" || flag == "CTITLE")) {
+      if (!line.empty()) cur->fields.push_back(trim(line));
+      continue;
+    }
     // fixed-width fields; a text field keeps its spaces trimmed, a blank numeric tail ends the line
     for (size_t p = 0; p < line.size(); p += size_t(cur->width)) {
       const std::string f = line.substr(p, size_t(cur->width));
@@ -94,9 +99,6 @@ std::map<std::string, Section> read_sections(const std::string& path) {
         if (t.empty()) break;
         cur->fields.push_back(t);
       }
-    }
-    if (cur->kind == 'a' && cur->width >= 80) {   // a title line: one field, whatever its length
-      if (!cur->fields.empty()) cur->fields.back() = trim(line);
     }
   }
   if (!any) throw ReadError(path + ": not an AMBER topology (no %FLAG sections)");
@@ -780,7 +782,17 @@ AmberCoordinates read_amber_coordinates(const std::string& path) {
   }
   const size_t n3 = 3 * natom;
   if (v.size() < n3) throw ReadError(path + ": " + std::to_string(v.size() / 3) + " coordinates for " + std::to_string(natom) + " atoms");
-  const bool vel = v.size() >= 2 * n3, box = v.size() == n3 + 6 || v.size() == 2 * n3 + 6;
+  bool vel = v.size() >= 2 * n3, box = v.size() == n3 + 6 || v.size() == 2 * n3 + 6;
+  if (vel && box && v.size() == 2 * n3) {
+    // two atoms: twelve numbers are either coordinates + velocities or coordinates + box, never both.
+    // A box line holds positive lengths and angles of at least 10 degrees; a velocity that large
+    // (over 200 A/ps in AMBER units) is not physical, so such a line is the box.
+    const double* b = &v[n3];
+    const bool looks_like_box = b[0] > 0 && b[1] > 0 && b[2] > 0 &&
+                                b[3] >= 10 && b[3] < 180 && b[4] >= 10 && b[4] < 180 && b[5] >= 10 && b[5] < 180;
+    if (looks_like_box) vel = false;
+    else box = false;
+  }
   if (!(v.size() == n3 || v.size() == n3 + 6 || v.size() == 2 * n3 || v.size() == 2 * n3 + 6))
     throw ReadError(path + ": " + std::to_string(v.size()) + " numbers after the header fit neither coordinates, velocities nor a box for " + std::to_string(natom) + " atoms");
   c.positions.resize(natom);

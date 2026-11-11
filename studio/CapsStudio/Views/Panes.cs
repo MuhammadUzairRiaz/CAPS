@@ -128,8 +128,43 @@ public static class Panes
     private static void Remember(Grid g, State st)
     {
         if (Store == null) return;
-        Store[st.Key] = string.Join("|", Enumerable.Range(0, Count(g, st.Rows)).Select(k => Describe(g, st.Rows, k)));
+        // a set-size pane filling a hidden proportional pane's space is kept at its own size (the fill is redone at start)
+        string Kept(int k) => st.Filled.Values.Where(f => f.J == k).Select(f => (double?)f.Size).FirstOrDefault() is { } px
+            ? "child:" + px.ToString("0", CultureInfo.InvariantCulture) : Describe(g, st.Rows, k);
+        Store[st.Key] = string.Join("|", Enumerable.Range(0, Count(g, st.Rows)).Select(Kept));
         Save?.Invoke();
+    }
+
+    /// <summary>Hidden proportional pane k: a set-size neighbour (the dock) takes its space.</summary>
+    private static void Fill(Grid g, State st, int k)
+    {
+        foreach (var j in new[] { k + 1, k - 1 })
+            if (j >= 0 && j < Count(g, st.Rows) && !st.Before.ContainsKey(j) && SizedChild(g, st.Rows, j) is { } c)
+            {
+                st.Filled[k] = (j, c, st.Rows ? c.Height : c.Width);
+                SetDef(g, st.Rows, j, new GridLength(1, GridUnitType.Star));
+                if (st.Rows) c.Height = double.NaN; else c.Width = double.NaN;
+                break;
+            }
+    }
+
+    /// <summary>Undoes the fill made when pane k was hidden: the neighbour back to an automatic track at its own size
+    /// (keep: the size it fills now, for a drag to start from; otherwise the size it had).</summary>
+    private static bool Unfill(Grid g, State st, int k, bool keep)
+    {
+        if (!st.Filled.Remove(k, out var f)) return false;
+        var now = Actual(g, st.Rows, f.J);
+        SetDef(g, st.Rows, f.J, GridLength.Auto);
+        var px = keep && now > 0 ? now : f.Size;
+        if (st.Rows) f.C.Height = px; else f.C.Width = px;
+        return true;
+    }
+
+    /// <summary>Undoes the fill for hidden pane k and gives pane k its proportional size back.</summary>
+    private static void Restore(Grid g, State st, int k, bool keep)
+    {
+        if (!Unfill(g, st, k, keep)) return;
+        if (st.Before.Remove(k, out var b)) Apply(g, st.Rows, k, b is "0" or "child:0" ? st.Defaults[k] : b);
     }
 
     // ---------------------------------------------------------------- install
@@ -144,8 +179,20 @@ public static class Panes
         var index = host?.GetVisualDescendants().OfType<Grid>().Where(x => GetSplit(x) || GetSplitRows(x)).ToList().IndexOf(g) ?? 0;
         st.Key = (GetKey(g) ?? $"{host?.GetType().Name ?? "grid"}.{g.Name ?? index.ToString(CultureInfo.InvariantCulture)}") + (rows ? ".rows" : ".cols");
         st.Defaults = Enumerable.Range(0, n).Select(k => Describe(g, rows, k)).ToArray();
+        var star = Enumerable.Range(0, n).Select(k => Def(g, rows, k).IsStar).ToArray();
         if (Store != null && Store.TryGetValue(st.Key, out var saved) && saved.Split('|') is { } parts && parts.Length == n)
-            for (int k = 0; k < n; ++k) Apply(g, rows, k, parts[k]);
+        {
+            // a set-size pane is only ever saved by its size; an older proportional entry for it was a fill, not a choice
+            for (int k = 0; k < n; ++k)
+                Apply(g, rows, k, st.Defaults[k].StartsWith("child:", StringComparison.Ordinal) && !parts[k].StartsWith("child:", StringComparison.Ordinal) ? st.Defaults[k] : parts[k]);
+            // a proportional pane saved hidden: hidden again, with its set-size neighbour filling the space as before
+            for (int k = 0; k < n; ++k)
+                if (star[k] && Def(g, rows, k) is { IsAbsolute: true } d && d.Value < 1 && !st.Before.ContainsKey(k))
+                {
+                    st.Before[k] = st.Defaults[k];
+                    Fill(g, st, k);
+                }
+        }
         for (int k = 0; k + 1 < n; ++k)
         {
             var left = Panes_(g).Where(c => Index(c, rows) + Span(c, rows) - 1 == k && !GetFixed(c)).ToList();
@@ -173,19 +220,17 @@ public static class Panes
     public static void Hide(Grid g, int k, bool remember = true)
     {
         if (!States.TryGetValue(g, out var st) || st.Before.ContainsKey(k) || k >= Count(g, st.Rows)) return;
+        // pane k is filling a hidden proportional pane's space: that pane gets its space back, and k folds at its own size
+        foreach (var e in st.Filled.Where(x => x.Value.J == k).Select(x => x.Key).ToList())
+        {
+            Restore(g, st, e, false);
+            Toggled?.Invoke(st.Key, e, true);
+        }
         st.Before[k] = Describe(g, st.Rows, k);
         var wasStar = Def(g, st.Rows, k).IsStar;
         SetPixels(g, st.Rows, k, SizedChild(g, st.Rows, k) is { } fold ? GetFoldedSize(fold) : 0);
         // a proportional pane (the 3D view) hidden: a set-size neighbour (the dock) takes its space
-        if (wasStar)
-            foreach (var j in new[] { k + 1, k - 1 })
-                if (j >= 0 && j < Count(g, st.Rows) && !st.Before.ContainsKey(j) && SizedChild(g, st.Rows, j) is { } c)
-                {
-                    st.Filled[k] = (j, c, st.Rows ? c.Height : c.Width);
-                    SetDef(g, st.Rows, j, new GridLength(1, GridUnitType.Star));
-                    if (st.Rows) c.Height = double.NaN; else c.Width = double.NaN;
-                    break;
-                }
+        if (wasStar) Fill(g, st, k);
         foreach (var d in st.Dividers) d.Refresh();
         if (remember) Remember(g, st);
         Toggled?.Invoke(st.Key, k, false);
@@ -195,11 +240,7 @@ public static class Panes
     public static void Show(Grid g, int k, bool remember = true)
     {
         if (!States.TryGetValue(g, out var st) || k >= Count(g, st.Rows)) return;
-        if (st.Filled.Remove(k, out var f))
-        {
-            SetDef(g, st.Rows, f.J, GridLength.Auto);
-            if (st.Rows) f.C.Height = f.Size; else f.C.Width = f.Size;
-        }
+        Unfill(g, st, k, false);
         var v = st.Before.Remove(k, out var b) ? b : null;
         var folded = SizedChild(g, st.Rows, k) is { } fc ? GetFoldedSize(fc) : 0;
         if (v == null && Size(g, st.Rows, k) > folded + 1) return;   // already shown
@@ -221,6 +262,9 @@ public static class Panes
     /// <summary>Both sides of a divider back to their first sizes.</summary>
     private static void Reset(Grid g, State st, int k)
     {
+        // a fill on either side undone first, so a set-size pane is an automatic track again and takes its first size
+        foreach (var e in st.Filled.Where(x => x.Key == k || x.Key == k + 1 || x.Value.J == k || x.Value.J == k + 1).Select(x => x.Key).ToList())
+            Restore(g, st, e, false);
         foreach (var i in new[] { k, k + 1 }) { st.Before.Remove(i); Apply(g, st.Rows, i, st.Defaults[i]); }
         foreach (var d in st.Dividers) d.Refresh();
         Remember(g, st);
@@ -394,6 +438,9 @@ public static class Panes
         private void Drag(double delta)
         {
             var rows = _st.Rows;
+            // dragging a hidden proportional pane back: its neighbour stops filling, at the size it fills now (the sizes
+            // the drag started from), and the proportional pane takes whatever the drag leaves
+            foreach (var i in new[] { _k, _k + 1 }) Restore(_g, _st, i, true);
             _moved += delta;
             var total = _a + _b;
             var a = Math.Clamp(_a + _moved, 0, total);
@@ -417,14 +464,16 @@ public static class Panes
             _st.Before.Remove(_k + 1);
         }
 
-        /// <summary>A pane dragged thinner than 48 px is hidden (its first size comes back when shown).</summary>
+        /// <summary>A pane dragged thinner than 48 px is hidden, to its folded size (its first size comes back when shown).
+        /// A pane already at its folded size (a dock's tab row) is left as it is.</summary>
         private void Snap()
         {
             var rows = _st.Rows;
             foreach (var i in new[] { _k, _k + 1 })
             {
                 var s = Size(_g, rows, i);
-                if (s > 0.5 && s < 48 && !Def(_g, rows, i).IsStar) { SetPixels(_g, rows, i, 0); _st.Before[i] = _st.Defaults[i]; Toggled?.Invoke(_st.Key, i, false); }
+                var folded = SizedChild(_g, rows, i) is { } fc ? GetFoldedSize(fc) : 0;
+                if (s > folded + 0.5 && s < 48 && !Def(_g, rows, i).IsStar) { SetPixels(_g, rows, i, folded); _st.Before[i] = _st.Defaults[i]; Toggled?.Invoke(_st.Key, i, false); }
             }
         }
     }

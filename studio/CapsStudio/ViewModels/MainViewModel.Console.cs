@@ -16,7 +16,7 @@ public sealed partial class MainViewModel
     private string _pyInput = "", _pyDir = "";
     private readonly List<string> _pyHistory = new();
     private int _pyHistoryAt = -1;
-    public string ConsoleText => _pyOut.ToString();
+    public string ConsoleText { get { lock (_pyOut) return _pyOut.ToString(); } }   // the stdout/stderr pumps append on their own threads
     public string ConsoleInput { get => _pyInput; set => Set(ref _pyInput, value ?? ""); }
     public bool ConsoleRunning => _py is { HasExited: false };
     public event Action? ConsoleChanged;

@@ -186,10 +186,25 @@ void write_car(const System& s, const std::string& path) {
     ms = cell_from(la, lb, lc, al, be, ga);
   }
   const size_t n = s.atoms.size();
-  int nmol = 0;
-  const auto mol = s.molecules(&nmol);
-  std::vector<std::vector<uint32_t>> members(size_t(std::max(nmol, 0)));
-  for (size_t i = 0; i < n; ++i) members[size_t(mol[i])].push_back(uint32_t(i));
+  // blocks by bond-connected component, not by molecule id: the .mdf names a partner only within its own residue, so a
+  // bond between two blocks (a mol2 residue per monomer, a data file whose mol ids split a chain) would point at nothing
+  std::vector<uint32_t> parent(n);
+  for (size_t i = 0; i < n; ++i) parent[i] = uint32_t(i);
+  auto find = [&](uint32_t x) {
+    while (parent[x] != x) x = parent[x] = parent[parent[x]];
+    return x;
+  };
+  for (const auto& bd : s.bonds) parent[find(bd.i)] = find(bd.j);
+  std::vector<int> label(n, -1);
+  std::vector<std::vector<uint32_t>> members;
+  for (size_t i = 0; i < n; ++i) {
+    const uint32_t r = find(uint32_t(i));
+    if (label[r] < 0) {
+      label[r] = int(members.size());
+      members.emplace_back();
+    }
+    members[size_t(label[r])].push_back(uint32_t(i));
+  }
   const auto nb = s.neighbours();
   // fractional positions, each molecule whole: a walk over its bonds puts every partner at the image nearest the atom
   // it was reached from, then the molecule moves by whole cells so its centre is inside the cell

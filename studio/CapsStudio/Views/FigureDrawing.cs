@@ -23,7 +23,15 @@ public static class FigureDrawing
     /// <summary>Draws o in the image's own pixels (the caller scales the context to fit a smaller control).</summary>
     public static void Draw(DrawingContext ctx, FigureOverlay o)
     {
-        if (o.Labels is { Count: > 0 } lb && o.LabelLook is { } look) LabelDrawing.Draw(ctx, lb, look with { Size = o.LabelTextPx });
+        if (o.Labels is { Count: > 0 } lb && o.LabelLook is { } look)
+        {
+            // labels without a chosen colour take the figure's ink (as in the SVG), and the plate follows the figure's
+            // background, not the app theme
+            var inkArgb = 0xFF000000u | (o.Ink & 0xFFFFFF);
+            uint Or(uint? c) => c is { } v && v != 0 ? v : inkArgb;
+            var inkLum = 0.2126 * ((o.Ink >> 16) & 255) + 0.7152 * ((o.Ink >> 8) & 255) + 0.0722 * (o.Ink & 255);
+            LabelDrawing.Draw(ctx, lb, look with { Size = o.LabelTextPx, AtomArgb = Or(look.AtomArgb), BondArgb = Or(look.BondArgb) }, darkBackground: inkLum >= 128);
+        }
         var ink = new SolidColorBrush(C(o.Ink));
         var m = o.Margin;
         if (o.Title is { } title)

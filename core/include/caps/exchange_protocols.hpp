@@ -58,6 +58,7 @@ struct TvScanResult {
   std::vector<double> T, specific_volume, accepted_per_ps;
   BilinearFit fit;                           // hinge of the specific volume: Tv (or Tg) where the expansion changes
   ArrheniusFit rate;                         // of the time between accepted moves
+  ExchangeStats stats;                       // the moves over the whole scan
 };
 TvScanResult tv_scan(System& s, ProtocolOptions& o, double t_from, double t_to, double t_step, double ps_per_step);
 

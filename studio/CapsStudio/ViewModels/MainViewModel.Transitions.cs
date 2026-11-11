@@ -103,8 +103,12 @@ public sealed partial class MainViewModel
             {
                 GtStatus = $"Replica {r} of {_gtReplicas}: cooling {GtFrom.ToString(inv)} → {GtTo.ToString(inv)} K";
                 Analyze.MechSeed = (ulong)r;
+                // Results only change when a run succeeds: a cancelled or failed replica leaves the previous card in place,
+                // which must not be counted again
+                var before = Analyze.Results.FirstOrDefault(c => c.Id == "tg");
                 await RunChips("tg");
                 var card = Analyze.Results.FirstOrDefault(c => c.Id == "tg");
+                if (ReferenceEquals(card, before)) card = null;
                 var curve = card == null ? null : Analyze.Curves.FirstOrDefault(c => c.Property == card.Name && c.Markers);
                 if (card == null || curve == null) { GtStatus = Analyze.Log; if (runs.Count == 0) return; break; }
                 double X(string k) => card.Extra.Where(e => e.Key.StartsWith(k, StringComparison.Ordinal)).Select(e => e.Value).DefaultIfEmpty(double.NaN).First();

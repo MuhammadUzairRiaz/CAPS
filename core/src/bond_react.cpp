@@ -991,6 +991,7 @@ MolFile read_mol(const std::string& path) {
       else m.label[size_t(i)] = w[1];
     } else if (section == "Masses" && w.size() >= 2) {
       const int i = std::stoi(w[0]) - 1;
+      if (i < 0) throw ReactError(path + ": atom ids start at 1");
       if (m.atom_mass.size() <= size_t(i)) m.atom_mass.resize(size_t(i) + 1, 0);
       m.atom_mass[size_t(i)] = std::stod(w[1]);
     } else if (section == "Bonds" && w.size() >= 4) {
@@ -999,6 +1000,9 @@ MolFile read_mol(const std::string& path) {
   }
   if (m.natoms <= 0) m.natoms = int(m.type.size());
   if (int(m.type.size()) < m.natoms) m.type.resize(size_t(m.natoms), 0), m.label.resize(size_t(m.natoms));
+  for (auto [a, b] : m.bonds)
+    if (a < 0 || b < 0 || a >= m.natoms || b >= m.natoms)
+      throw ReactError(path + ": a bond names atom " + std::to_string((a < 0 || a >= m.natoms ? a : b) + 1) + ", outside 1 to " + std::to_string(m.natoms));
   return m;
 }
 
@@ -1067,6 +1071,14 @@ ReactionTemplate read_bond_react(const std::string& pre_path, const std::string&
   if (init.size() != 2) throw ReactError(map_path + ": needs two InitiatorIDs");
   const int n = pre.natoms;
   if (int(eq.size()) != n) throw ReactError(map_path + ": every pre-reaction atom needs an equivalence (" + std::to_string(eq.size()) + " of " + std::to_string(n) + ")");
+  auto check_id = [&](int a, int count, const char* what) {
+    if (a < 0 || a >= count)
+      throw ReactError(map_path + ": " + what + " names atom " + std::to_string(a + 1) + ", outside 1 to " + std::to_string(count));
+  };
+  for (int a : init) check_id(a, n, "InitiatorIDs");
+  for (int a : edge) check_id(a, n, "EdgeIDs");
+  for (int a : del) check_id(a, n, "DeleteIDs");
+  for (auto [a, b] : eq) check_id(a, n, "Equivalences"), check_id(b, post.natoms, "Equivalences (post-reaction id)");
   // elements
   std::vector<int> el(static_cast<size_t>(n), 0);
   for (int i = 0; i < n; ++i) {

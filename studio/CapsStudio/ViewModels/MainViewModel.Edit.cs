@@ -27,9 +27,11 @@ public sealed partial class MainViewModel
         {
             if (!Set(ref _editTool, value)) return;
             _bondFirst = -1;
-            foreach (var n in new[] { nameof(IsPlaceTool), nameof(IsBondTool), nameof(IsDeleteTool), nameof(IsLassoTool), nameof(IsMoveTool), nameof(IsRotateTool), nameof(EditHint) }) Raise(n);
+            foreach (var n in new[] { nameof(IsPlaceTool), nameof(IsBondTool), nameof(IsDeleteTool), nameof(IsLassoTool), nameof(IsMoveTool), nameof(IsRotateTool), nameof(IsSelectTool), nameof(EditHint) }) Raise(n);
         }
     }
+    /// <summary>The plain select tool: no edit tool armed and not measuring.</summary>
+    public bool IsSelectTool => _editTool == 0 && !_measureTool;
     public bool IsPlaceTool => _editTool == 1;
     public bool IsBondTool => _editTool == 2;
     public bool IsDeleteTool => _editTool == 3;

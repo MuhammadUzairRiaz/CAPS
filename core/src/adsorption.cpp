@@ -218,9 +218,13 @@ void locate_adsorption(System& s, const ForceField& ff, const AdsorptionOptions&
     return true;
   };
   auto centre = [](const std::vector<Vec3>& Q) { Vec3 c{0, 0, 0}; for (const auto& q : Q) c = c + q; return c * (1.0 / double(Q.size())); };
+  // with a z band only the in-plane directions fold: wrapping z would carry a molecule above the
+  // cell top to the slab's other face, outside the band it was placed in
+  Cell fold_cell = s.cell;
+  if (zband) fold_cell.periodic[2] = false;
   auto fold = [&](std::vector<Vec3>& Q) {   // the centre back into the cell (whole molecule shifted)
     if (!M.per) return;
-    const Vec3 c = centre(Q), d = s.cell.wrap(c) - c;
+    const Vec3 c = centre(Q), d = fold_cell.wrap(c) - c;
     for (auto& q : Q) q = q + d;
   };
   auto random_axis = [&] {
@@ -268,8 +272,8 @@ void locate_adsorption(System& s, const ForceField& ff, const AdsorptionOptions&
       double be = std::numeric_limits<double>::infinity();
       for (int t = 0; t < 50; ++t) {
         auto Q = random_place(P[m]);
-        if (!inside(Q)) continue;
         fold(Q);
+        if (!inside(Q)) continue;
         const double e = mol_energy(m, Q);
         if (e < be) be = e, best = Q;
       }
@@ -303,8 +307,8 @@ void locate_adsorption(System& s, const ForceField& ff, const AdsorptionOptions&
         for (auto& q : Q) q = c + rotate(q - c, u, a);
       }
       ++att;
-      if (!inside(Q)) return;
       fold(Q);
+      if (!inside(Q)) return;
       const double e_old = mol_energy(m, P[m]), e_new = mol_energy(m, Q);
       if (!std::isfinite(e_new)) return;
       const double dE = e_new - (std::isfinite(e_old) ? e_old : 1e300);

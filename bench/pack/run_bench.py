@@ -56,11 +56,14 @@ with open("results.md", "w") as f:
     f.write("|---|---|---|---|---|---|---|---|---|---|\n")
     for name in names:
         desc, nmol, natoms, rho, _ = CASES[name]
-        ref = next(r[3] for r in rows if r[0] == name and r[1] != "CAPS")
+        # The speed-up is only exact when packmol finished. A packmol run stopped at LIMIT gives a lower bound;
+        # a packmol run that failed gives no reference at all.
+        ref, ref_ok = next((r[3], r[6]) for r in rows if r[0] == name and r[1] != "CAPS")
+        ref_stopped = not ref_ok and ref >= LIMIT
         for (_, tool, thr, wall, d, close, ok) in [r for r in rows if r[0] == name]:
             wt = f"{wall:.2f}" if ok else f"> {LIMIT} (stopped)" if wall >= LIMIT else f"{wall:.2f} (failed)"
             dm = f"{d:.3f}" if ok else "–"
-            sp = f"{ref / wall:.1f}×" if ok else "–"
+            sp = (f"{ref / wall:.1f}×" if ref_ok else f"> {LIMIT / wall:.1f}×" if ref_stopped else "–") if ok else "–"
             f.write(f"| {desc} | {nmol:,} | {natoms:,} | {rho} | {tool} | {thr} | {wt} | {dm} | "
                     f"{'yes' if ok and close == 0 else 'no'} | {sp} |\n")
 print(open("results.md").read())

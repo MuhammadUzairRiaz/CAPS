@@ -759,11 +759,20 @@ Phono3pyResult write_phono3py_set(const System& unit0, const std::string& dir, c
     const ClusterRule r3 = parallel_rule(prof, p.atoms_fc3, false), r2 = parallel_rule(prof, p.atoms_fc2, false);
     p.ranks_fc3 = r3.ranks, p.ranks_fc2 = r2.ranks;
     // dipole for a polar sheet
-    double dipz = -1;
-    if (two_d && (o.dipole == "on" || (o.dipole == "auto" && polar_along_c(unit)))) {
-      double zmin = 1e300, zmax = -1e300;
-      for (const auto& a : unit.atoms) { const double f = unit.cell.to_fractional(a.pos)[2]; zmin = std::min(zmin, f), zmax = std::max(zmax, f); }
-      dipz = 0.5 * (zmin + zmax);
+    // the centre of the sheet: fractional z wrapped into [0,1), the sheet is the arc opposite the largest vacuum gap
+    // (so a sheet at z = 0 or one split across the cell boundary is centred on its atoms, not in the vacuum)
+    bool dipole = false;
+    double dipz = 0;
+    if (two_d && !unit.atoms.empty() && (o.dipole == "on" || (o.dipole == "auto" && polar_along_c(unit)))) {
+      std::vector<double> zs;
+      for (const auto& a : unit.atoms) { const double f = unit.cell.to_fractional(a.pos)[2]; zs.push_back(f - std::floor(f)); }
+      std::sort(zs.begin(), zs.end());
+      double gap = zs.front() + 1.0 - zs.back(), lo = zs.front(), hi = zs.back();   // the gap across the boundary
+      for (size_t i = 1; i < zs.size(); ++i)
+        if (zs[i] - zs[i - 1] > gap) gap = zs[i] - zs[i - 1], lo = zs[i], hi = zs[i - 1] + 1.0;
+      dipz = 0.5 * (lo + hi);
+      dipz -= std::floor(dipz);
+      dipole = true;
       p.notes.push_back("polar sheet: dipole correction (IDIPOL 3, LDIPOL) in every single point");
     }
     // files
@@ -790,7 +799,7 @@ Phono3pyResult write_phono3py_set(const System& unit0, const std::string& dir, c
     add("KPAR", std::to_string(r3.kpar), "k-point groups (cluster profile)");
     add("LWAVE", ".FALSE.", "no WAVECAR (quota)");
     add("LCHARG", ".FALSE.", "no CHGCAR (quota)");
-    if (dipz >= 0) {
+    if (dipole) {
       add("IDIPOL", "3", "polar sheet: dipole correction along z");
       add("LDIPOL", ".TRUE.", "corrected potential: the forces carry it");
       add("DIPOL", "0.5 0.5 " + fmt("%.4f", dipz), "centre of the atoms (fractional)");
@@ -897,15 +906,19 @@ Phono3pyResult write_phono3py_set(const System& unit0, const std::string& dir, c
                      "## the measured times and sets --time of run_step2.sh / run_step3.sh to 1.5 x the measured time.\n" + common +
                      "bash ./run_step1.sh || exit 1\nsource ./vasp_task.sh\n"
                      "fmt_time() { local s=$1; [ $s -lt 900 ] && s=900; printf '%02d:%02d:00' $((s / 3600)) $(((s % 3600) / 60)); }\n"
+                     "R3=" + std::to_string(r3.ranks) + "; R2=" + std::to_string(r2.ranks) + "\n"
+                     "## each test runs on the ranks of its own array (the allocation holds the larger of the two)\n"
+                     "SRUN0=${CAPS_SRUN:-srun}\n"
                      "t3=0; k=0\n"
+                     "CAPS_SRUN=\"$SRUN0 -n $R3\"\n"
                      "for d in $(head -" + std::to_string(nd) + " fc3_dirs.txt); do\n"
                      "  t0=$(date +%s); run_disp \"$d\" || { echo \"dry run: $d failed (see $d/OUT)\"; exit 1; }; t=$(( $(date +%s) - t0 )); t3=$((t3 > t ? t3 : t)); k=$((k + 1))\n"
                      "  echo \"$d: $t s\"\n"
                      "done\n"
+                     "CAPS_SRUN=\"$SRUN0 -n $R2\"\n"
                      "d=$(head -1 fc2_dirs.txt); t0=$(date +%s); run_disp \"$d\" || { echo \"dry run: $d failed (see $d/OUT)\"; exit 1; }; t2=$(( $(date +%s) - t0 ))\n"
                      "echo \"$d: $t2 s\"\n"
                      "n3=$(wc -l < fc3_dirs.txt | tr -d ' '); n2=$(wc -l < fc2_dirs.txt | tr -d ' ')\n"
-                     "R3=" + std::to_string(r3.ranks) + "; R2=" + std::to_string(r2.ranks) + "\n"
                      "awk -v n3=$n3 -v n2=$n2 -v t3=$t3 -v t2=$t2 -v r3=$R3 -v r2=$R2 -v e=" + fmt("%.0f", p.core_h_total) + " 'BEGIN {\n"
                      "  c = (n3 * t3 * r3 + n2 * t2 * r2) / 3600\n"
                      "  printf \"measured: %d s per fc3 supercell (%d ranks), %d s per fc2 supercell (%d ranks)\\n\", t3, r3, t2, r2\n"

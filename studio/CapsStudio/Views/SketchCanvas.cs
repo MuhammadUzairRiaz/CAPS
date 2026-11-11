@@ -42,6 +42,7 @@ public sealed class SketchCanvas : Control
     public event Action? HistoryChanged;
     private readonly List<string> _undo = new(), _redo = new();
     private string? _before;                 // the sketch when the pointer went down, pushed when that gesture edits it
+    private Dictionary<A, (int Sum, int Pi)>? _beforeSums; // each atom's bond-order sum (and aromatic pi share) when the pointer went down (bracket hydrogens follow it)
     private int _moveAtom = -1;
     private int _pending = -1;              // Bond tool: the first of two atoms clicked
     private bool _panning;
@@ -262,6 +263,20 @@ public sealed class SketchCanvas : Control
             return;
         }
         if (_before != null) { Remember(_before); _before = null; }
+        // a bracket atom carries its hydrogens as a count: each bond order it gains takes one hydrogen and each it loses
+        // gives one back, so [C@H] with a new bond becomes [C] and [O-] cut from its carbon becomes [OH-]
+        if (_beforeSums != null)
+        {
+            for (var i = 0; i < _atoms.Count; i++)
+            {
+                var a = _atoms[i];
+                if (!a.Bracket || a.HCount < 0 || !_beforeSums.TryGetValue(a, out var was)) continue;
+                // an atom still aromatic keeps its pi share; one written out as Kekulé counts the double bond it now has
+                var now = BondSum(i) + (a.Aromatic && HasAromaticBond(i) ? was.Pi : 0);
+                a.HCount = Math.Max(0, a.HCount - (now - was.Sum));
+            }
+            _beforeSums = null;
+        }
         // an edit next to a stereocentre or a marked double bond drops that stereo (it would no longer mean the same)
         foreach (var i in touched)
             if (i >= 0 && i < _atoms.Count)
@@ -562,6 +577,8 @@ public sealed class SketchCanvas : Control
         _pressAt = p;
         _dragAt = p;
         _before = Snapshot();
+        _beforeSums = new Dictionary<A, (int Sum, int Pi)>();
+        for (var i = 0; i < _atoms.Count; i++) { var pi = AromaticPi(i); _beforeSums[_atoms[i]] = (BondSum(i) + pi, pi); }
         _dragFrom = Mode is Tool.Draw or Tool.Bond ? AtomAt(p) : -1;
         _moveAtom = Mode == Tool.Move ? AtomAt(p) : -1;
         _panning = Mode == Tool.Move && _moveAtom < 0;
@@ -719,7 +736,15 @@ public sealed class SketchCanvas : Control
                 else if (bond >= 0)
                 {
                     var b = _bonds[bond];
-                    b.Order = b.Order switch { 1 => 2, 2 => 3, 4 => 2, _ => 1 };
+                    static int Next(int o) => o switch { 1 => 2, 2 => 3, 4 => 2, _ => 1 };
+                    var was = b.Order;
+                    var first = Next(was);
+                    // a step the atoms have no room for (a triple bond on a carbon that has two other bonds) goes on round
+                    // the cycle, so the bond falls back to single instead of sticking at double
+                    b.Order = first;
+                    while (b.Order != 1 && OverValence([b.A, b.B2]) >= 0) b.Order = Next(b.Order);
+                    // no order fits but the one it had: try the first step, which Changed takes back and says why
+                    if (b.Order == was) b.Order = first;
                     if (b.Order != 4 && (_atoms[b.A].Aromatic || _atoms[b.B2].Aromatic)) Dearomatise(b.A, b.B2);
                     Changed(b.A, b.B2);
                 }
@@ -747,13 +772,16 @@ public sealed class SketchCanvas : Control
                     var a = _atoms[at];
                     a.Charge = a.Charge switch { 0 => 1, 1 => -1, _ => 0 };
                     a.Bracket = a.Charge != 0 || a.Isotope != 0;
-                    a.HCount = a.Bracket ? ImplicitH(at) : -1;
+                    // the hydrogens follow the charge: a charged atom takes the valence of the element it is isoelectronic
+                    // with (N+ as C: [NH3+]; O- as F: [O-]; C+ as B: [CH3+]; C- as N: [CH3-])
+                    a.HCount = a.Bracket ? ValenceH(at, a.Z - a.Charge) : -1;
                     Changed(at);
                 }
                 break;
         }
         _dragging = false;
         _before = null;
+        _beforeSums = null;
         _hoverAtom = AtomAt(p);
         InvalidateVisual();
     }
@@ -798,15 +826,44 @@ public sealed class SketchCanvas : Control
     {
         var a = _atoms[i];
         if (a.HCount >= 0 && a.Bracket) return a.HCount;
+        return ValenceH(i, a.Z);
+    }
+
+    /// <summary>Hydrogens atom i takes from the valence of element z (its own, or the one a charged atom is isoelectronic
+    /// with) and the bonds it has.</summary>
+    private int ValenceH(int i, int z)
+    {
+        var a = _atoms[i];
         var sum = 0;
         var arom = 0;
         foreach (var b in _bonds) if (b.A == i || b.B2 == i) { sum += b.Order == 4 ? 1 : b.Order; arom += b.Order == 4 ? 1 : 0; }
         if (a.Aromatic && arom > 0)
         {
-            if (a.Z is 8 or 16) return 0;
-            return Math.Max(0, (a.Z == 6 ? 4 : 3) - (sum + 1));
+            if (z is 8 or 16) return 0;
+            return Math.Max(0, (z == 6 ? 4 : 3) - (sum + 1));
         }
-        foreach (var v in Valences(a.Z)) if (v >= sum) return v - sum;
+        foreach (var v in Valences(z)) if (v >= sum) return v - sum;
+        return 0;
+    }
+
+    /// <summary>The bond orders on atom i, an aromatic bond counted as 1.</summary>
+    private int BondSum(int i)
+    {
+        var sum = 0;
+        foreach (var b in _bonds) if (b.A == i || b.B2 == i) sum += b.Order == 4 ? 1 : b.Order;
+        return sum;
+    }
+
+    private bool HasAromaticBond(int i) => _bonds.Any(b => (b.A == i || b.B2 == i) && b.Order == 4);
+
+    /// <summary>The double bond an aromatic atom has in its Kekulé form (1 or 0), from its valence, bonds and hydrogens:
+    /// 1 for benzene's c, pyridine's n and [nH+]; 0 for pyrrole's [nH], [se] and [cH-], whose ring bonds are all single.</summary>
+    private int AromaticPi(int i)
+    {
+        var a = _atoms[i];
+        if (!a.Aromatic || !HasAromaticBond(i)) return 0;
+        var used = BondSum(i) + ImplicitH(i);
+        foreach (var v in Valences(a.Z - a.Charge)) if (v >= used) return Math.Min(1, v - used);
         return 0;
     }
 

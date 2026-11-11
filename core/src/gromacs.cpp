@@ -154,7 +154,9 @@ bool gromacs_switch(const ForceField& ff) {
 
 }  // namespace
 
-std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, const EnergyOptions& e) {
+std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, const EnergyOptions& e0) {
+  EnergyOptions e = e0;
+  if (ff.cutoff > 0) e.cutoff = ff.cutoff;   // the model's own cut-off, as gromacs_mdp writes it
   std::vector<std::string> notes;
   const size_t n = s.atoms.size();
   if (ff.atom_type.size() != n) throw FieldError("the force field does not cover every atom");
@@ -273,8 +275,10 @@ std::string gromacs_mdp(const System& s, const ForceField& ff, const EnergyOptio
   return m.str();
 }
 
-std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& stem,
+std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, const EnergyOptions& e0, const std::string& stem,
                                        const std::vector<Restraint>& restraints) {
+  EnergyOptions e = e0;
+  if (ff.cutoff > 0) e.cutoff = ff.cutoff;   // the model's own cut-off, as gromacs_mdp writes it: the vacuum box is sized by it
   std::vector<std::string> notes = gromacs_notes(s, ff, e);
   const size_t n = s.atoms.size();
 
@@ -417,20 +421,24 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   for (const auto& p : ff.lj_pairs) {
     add(PAIRS, {p.i, p.j}, " 1 " + lj_pair(p.sigma, p.eps));
   }
-  // angles (Urey–Bradley terms join their angle: GROMACS function 5)
-  std::map<std::pair<uint32_t, uint32_t>, const UreyBradley*> ub;
-  for (const auto& u : ff.urey_bradley) ub[{std::min(u.i, u.k), std::max(u.i, u.k)}] = &u;
-  size_t ub_used = 0;
+  // angles (Urey–Bradley terms join their angle: GROMACS function 5). Each Urey–Bradley term is a pair term on the
+  // angle's end atoms, so it joins exactly one angle with those ends (two angles across a 4-membered ring share them);
+  // one left over (more terms on a pair than angles) is the same harmonic pair as a bond of function 6
+  std::map<std::pair<uint32_t, uint32_t>, std::vector<const UreyBradley*>> ub;
+  for (const auto& u : ff.urey_bradley) ub[{std::min(u.i, u.k), std::max(u.i, u.k)}].push_back(&u);
+  for (auto& [key, v] : ub) std::reverse(v.begin(), v.end());   // taken from the back: the first term goes to the first angle
   for (const auto& a : ff.angles) {
     auto it = ub.find({std::min(a.i, a.k), std::max(a.i, a.k)});
-    if (it != ub.end()) {
-      ++ub_used;
-      add(ANGLES, {a.i, a.j, a.k}, " 5 " + c6(a.theta0 * R2D) + nm8s({2 * a.kt * KJ, it->second->r0 / 10, 2 * it->second->kub * KJ * 100}));
+    if (it != ub.end() && !it->second.empty()) {
+      const UreyBradley* u = it->second.back();
+      it->second.pop_back();
+      add(ANGLES, {a.i, a.j, a.k}, " 5 " + c6(a.theta0 * R2D) + nm8s({2 * a.kt * KJ, u->r0 / 10, 2 * u->kub * KJ * 100}));
     } else {
       add(ANGLES, {a.i, a.j, a.k}, " 1 " + c6(a.theta0 * R2D) + nm8s({2 * a.kt * KJ}));
     }
   }
-  if (ub_used != ub.size()) throw FieldError("a Urey–Bradley term has no angle to join (GROMACS angle function 5 needs one)");
+  for (const auto& [key, v] : ub)
+    for (auto it = v.rbegin(); it != v.rend(); ++it) add(BONDS, {(*it)->i, (*it)->k}, " 6" + nm8s({(*it)->r0 / 10, 2 * (*it)->kub * KJ * 100}));
   for (const auto& a : ff.angles_x) {
     std::string tail;
     if (a.form == 1) tail = " 2 " + c6(a.b * R2D) + nm8s({2 * a.a * KJ});   // K (cos θ − cos θ0)² = ½ kθ (…)², GROMOS-96 angle

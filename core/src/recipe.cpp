@@ -261,11 +261,24 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
   RecipeResult res;
   res.name = text(r, "name", "recipe");
   if (stages.size() == 1 && stages[0] == "dft") {
-    // the DFT workbench's commands in order, in the recipe's folder (relative paths from base_dir), results in out_dir
+    // the DFT workbench's commands in order, run in out_dir (what one command writes, the next reads by its bare name);
+    // an input file that is not in out_dir but sits beside the recipe (relative to base_dir) is read from there
     const std::string data = o.forcefield_dir.empty() ? std::string() : std::filesystem::absolute(o.forcefield_dir).parent_path().string();
     const auto here = std::filesystem::current_path();
-    std::filesystem::create_directories(o.out_dir.empty() ? "." : o.out_dir);
-    std::filesystem::current_path(o.out_dir.empty() ? "." : o.out_dir);
+    const std::filesystem::path out_abs = std::filesystem::absolute(o.out_dir.empty() ? "." : o.out_dir);
+    const std::filesystem::path base_abs = std::filesystem::absolute(o.base_dir.empty() ? "." : o.base_dir);
+    static const std::set<std::string> kWords = {"analyze", "check", "cleanup", "estimate", "reset", "store", "submit", "update", "fit", "make", "report", "setup",
+                                                 "bader", "cdd", "dos", "freq", "geom", "md", "summary", "wf", "aimd", "charge", "top"};
+    auto beside_recipe = [&](const Json& v) -> Json {
+      if (!v.is_string()) return v;
+      const std::string p = v.str();
+      if (p.empty() || kWords.count(p) || std::filesystem::path(p).is_absolute()) return v;
+      std::error_code ec;
+      if (std::filesystem::exists(out_abs / p, ec) || !std::filesystem::exists(base_abs / p, ec)) return v;
+      return Json((base_abs / p).string());
+    };
+    std::filesystem::create_directories(out_abs);
+    std::filesystem::current_path(out_abs);
     const auto& items = r["dft"].items();
     try {
       for (size_t k = 0; k < items.size(); ++k) {
@@ -273,8 +286,19 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         Json args = Json::object();
         for (const auto& [key, v] : items[k].members()) if (key != "command") args[key] = v;
         if (o.progress) o.progress(RecipeEvent{int(k) + 1, int(items.size()), cmd, dft_command_line(cmd, args), "running", 0.0});
-        const Json out = dft_run(cmd, args, data);
-        if (out.has("wrote")) res.files.push_back(out.text("wrote"));
+        Json run_args = args;   // the input files resolved; the command line keeps the paths as the recipe gives them
+        for (const char* key : {"from", "molecule", "pp_dir", "slab_poscar", "hdf5", "reference"})
+          if (run_args.has(key)) run_args[key] = beside_recipe(run_args[key]);
+        if (run_args.has("inputs") && run_args["inputs"].is_array()) {
+          Json in = Json::array();
+          for (const auto& x : run_args["inputs"].items()) in.push_back(beside_recipe(x));
+          run_args["inputs"] = in;
+        }
+        const Json out = dft_run(cmd, run_args, data);
+        if (out.has("wrote")) {   // reported like the other stages' files: under out_dir, not the folder the run returns to
+          const std::string w = out.text("wrote");
+          res.files.push_back(std::filesystem::path(w).is_absolute() || o.out_dir.empty() ? w : (std::filesystem::path(o.out_dir) / w).string());
+        }
         res.manifest.steps.push_back(step("dft." + cmd, dft_command_line(cmd, args), {{"command", cmd}}, "", {}));
         if (o.progress) o.progress(RecipeEvent{int(k) + 1, int(items.size()), cmd, out.has("ok") && !out["ok"].boolean() ? "finished with findings" : "done", "done", 1.0});
       }
@@ -1255,6 +1279,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
       } else if (st == "thermal") {
         // thermal: {dimensionality: 3 | 2, thickness (Å, 2D), method: gk | nemd, temperature, equilibrate_ps, ps, dt,
         // sample_every, corr_ps, axis, slabs, swap_every, transient}: κ by MD (caps/thermal.hpp), as properties
+        if (!ff) type_now(s);   // a polymer typed on one probe chain: the grown cell in the recipe's force field
         ThermalOptions to;
         to.field = ff;
         to.energy = energy;

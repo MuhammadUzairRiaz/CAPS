@@ -18,13 +18,17 @@ public partial class MainViewModel
         if (stem.Length == 0) stem = "structure";
         var dir = saved ? Path.GetDirectoryName(src)! : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "CAPS");
         Directory.CreateDirectory(dir);
-        var file = saved ? src! : Path.Combine(dir, Path.GetFileNameWithoutExtension(stem) + ".data");
+        // an unsaved structure gets a free name in Documents/CAPS, never one already there (an earlier notebook's
+        // structure or a file of the user's); the stem is used whole, since a title may hold a '.' ("d = 6.78 Å")
+        var file = saved ? src! : Path.Combine(dir, stem + ".data");
+        for (var k = 2; !saved && File.Exists(file); k++) file = Path.Combine(dir, $"{stem}_{k}.data");
         if (!saved) _doc.Save(file);
         var nb = Path.Combine(dir, Path.GetFileNameWithoutExtension(file) + ".ipynb");
         for (var k = 2; File.Exists(nb); k++) nb = Path.Combine(dir, $"{Path.GetFileNameWithoutExtension(file)}_{k}.ipynb");
         var data = Path.GetDirectoryName(Paths.ForceFields ?? "") ?? "";   // …/data (its forcefields folder's parent)
         var py = Path.Combine(data, "python");
-        string R(string p) => "r\"" + p.Replace("\"", "\\\"") + "\"";
+        // a plain (not raw) Python string literal: a raw string keeps the backslash before an escaped quote
+        string R(string p) => "\"" + p.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r") + "\"";
         var cells = new JsonArray();
         int id = 0;
         void Md(string text) => cells.Add(new JsonObject { ["cell_type"] = "markdown", ["id"] = $"cell-{id++}", ["metadata"] = new JsonObject(), ["source"] = text });

@@ -111,6 +111,8 @@ AdpResult displacement_tensors(const Trajectory& t, const std::vector<size_t>& f
   const size_t n = t.topology.atoms.size();
   if (frames.size() < 2) throw std::invalid_argument("displacement tensors: two frames or more");
   if (n == 0) throw std::invalid_argument("displacement tensors: no atoms");
+  for (int k = 0; k < 3; ++k)
+    if (o.supercell[size_t(k)] < 1) throw std::invalid_argument("displacement tensors: each supercell repeat must be 1 or more");
   R.frames = int(frames.size());
   R.scale = ellipsoid_scale(o.probability);
   std::vector<double> m(n);

@@ -37,29 +37,37 @@ public sealed class Formula
         public void Space() { while (I < s.Length && char.IsWhiteSpace(s[I])) ++I; }
         private bool Eat(char c) { Space(); if (I < s.Length && s[I] == c) { ++I; return true; } return false; }
 
-        // conditions (the Study filter): a or b, a and b, comparisons < <= > >= == !=; true is 1, false 0
+        // conditions (the Study filter): a or b, a and b, comparisons < <= > >= == !=; true is 1, false 0. A missing
+        // value (NaN) stays unknown: a comparison with it is NaN, and 'or'/'and' give NaN unless the other side decides
+        // the answer on its own (unknown or true is true, unknown and false is false).
         public Func<Func<string, double>, double> Condition()
         {
             var a = Conjunction();
-            while (Word("or") || Two('|', '|')) { var l = a; var r = Conjunction(); a = v => l(v) != 0 || r(v) != 0 ? 1 : 0; }
+            while (Word("or") || Two('|', '|')) { var l = a; var r = Conjunction(); a = v => Or(l(v), r(v)); }
             return a;
         }
         private Func<Func<string, double>, double> Conjunction()
         {
             var a = Comparison();
-            while (Word("and") || Two('&', '&')) { var l = a; var r = Comparison(); a = v => l(v) != 0 && r(v) != 0 ? 1 : 0; }
+            while (Word("and") || Two('&', '&')) { var l = a; var r = Comparison(); a = v => And(l(v), r(v)); }
             return a;
         }
+        private static double Or(double x, double y) =>
+            (!double.IsNaN(x) && x != 0) || (!double.IsNaN(y) && y != 0) ? 1 : double.IsNaN(x) || double.IsNaN(y) ? double.NaN : 0;
+        private static double And(double x, double y) =>
+            x == 0 || y == 0 ? 0 : double.IsNaN(x) || double.IsNaN(y) ? double.NaN : 1;
+        private static Func<Func<string, double>, double> Compare(Func<Func<string, double>, double> l, Func<Func<string, double>, double> r, Func<double, double, bool> op) =>
+            v => { double x = l(v), y = r(v); return double.IsNaN(x) || double.IsNaN(y) ? double.NaN : op(x, y) ? 1 : 0; };
         private Func<Func<string, double>, double> Comparison()
         {
             var a = Sum();
             Space();
-            if (Two('<', '=')) { var l = a; var r = Sum(); return v => l(v) <= r(v) ? 1 : 0; }
-            if (Two('>', '=')) { var l = a; var r = Sum(); return v => l(v) >= r(v) ? 1 : 0; }
-            if (Two('=', '=')) { var l = a; var r = Sum(); return v => l(v) == r(v) ? 1 : 0; }
-            if (Two('!', '=')) { var l = a; var r = Sum(); return v => l(v) != r(v) ? 1 : 0; }
-            if (Eat('<')) { var l = a; var r = Sum(); return v => l(v) < r(v) ? 1 : 0; }
-            if (Eat('>')) { var l = a; var r = Sum(); return v => l(v) > r(v) ? 1 : 0; }
+            if (Two('<', '=')) return Compare(a, Sum(), (x, y) => x <= y);
+            if (Two('>', '=')) return Compare(a, Sum(), (x, y) => x >= y);
+            if (Two('=', '=')) return Compare(a, Sum(), (x, y) => x == y);
+            if (Two('!', '=')) return Compare(a, Sum(), (x, y) => x != y);
+            if (Eat('<')) return Compare(a, Sum(), (x, y) => x < y);
+            if (Eat('>')) return Compare(a, Sum(), (x, y) => x > y);
             return a;
         }
         private bool Two(char a, char b)
@@ -116,7 +124,7 @@ public sealed class Formula
             if (c == '(')
             {
                 ++I;
-                var a = Sum();
+                var a = Condition();   // a group may hold comparisons and and/or: (a or b) and c
                 if (!Eat(')')) throw new FormatException($"a ')' is missing at {I + 1}");
                 return a;
             }

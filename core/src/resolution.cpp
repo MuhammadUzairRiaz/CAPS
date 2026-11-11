@@ -232,7 +232,17 @@ std::array<double, 9> align(Vec3 a, Vec3 b) {
   a = a * (1 / norm(a)), b = b * (1 / norm(b));
   const Vec3 v = cross(a, b);
   const double c = dot(a, b), s = norm(v);
-  if (s < 1e-12) return c > 0 ? std::array<double, 9>{1, 0, 0, 0, 1, 0, 0, 0, 1} : std::array<double, 9>{-1, 0, 0, 0, -1, 0, 0, 0, 1};
+  if (s < 1e-12) {
+    if (c > 0) return {1, 0, 0, 0, 1, 0, 0, 0, 1};
+    // anti-parallel: a half turn about an axis p perpendicular to a, R = 2 p p^T - I
+    const double ax = std::fabs(a[0]), ay = std::fabs(a[1]), az = std::fabs(a[2]);
+    const Vec3 e = (ax <= ay && ax <= az) ? Vec3{1, 0, 0} : (ay <= az ? Vec3{0, 1, 0} : Vec3{0, 0, 1});
+    Vec3 p = cross(a, e);
+    p = p * (1 / norm(p));
+    return {2 * p[0] * p[0] - 1, 2 * p[0] * p[1], 2 * p[0] * p[2],
+            2 * p[1] * p[0], 2 * p[1] * p[1] - 1, 2 * p[1] * p[2],
+            2 * p[2] * p[0], 2 * p[2] * p[1], 2 * p[2] * p[2] - 1};
+  }
   const double k = (1 - c) / (s * s);
   return {c + k * v[0] * v[0], k * v[0] * v[1] - v[2], k * v[0] * v[2] + v[1],
           k * v[0] * v[1] + v[2], c + k * v[1] * v[1], k * v[1] * v[2] - v[0],

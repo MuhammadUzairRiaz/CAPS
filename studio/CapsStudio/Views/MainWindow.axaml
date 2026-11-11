@@ -648,7 +648,7 @@
             </Button>
           </StackPanel>
           <WrapPanel x:Name="ToolbarLeft" Orientation="Horizontal" ItemSpacing="2" MinHeight="48">
-            <Button Classes="tool" Classes.on="{Binding !MeasureTool}" Click="OnToolSelect" ToolTip.Tip="Select: click an atom · ⇧ click adds (up to 4 measure)"><local:Icon Kind="cursor" Size="18" /></Button>
+            <Button Classes="tool" Classes.on="{Binding IsSelectTool}" Click="OnToolSelect" ToolTip.Tip="Select: click an atom · ⇧ click adds (up to 4 measure)"><local:Icon Kind="cursor" Size="18" /></Button>
           <Button Classes="tool" Classes.on="{Binding IsLassoTool}" Click="OnToolLasso" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Lasso select: drag around atoms (⇧ adds to the selection)"><local:Icon Kind="lasso" Size="18" /></Button>
           <Button Classes="tool" Classes.on="{Binding IsMoveTool}" Click="OnToolMove" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Translate: drag the selection, or the molecule under the cursor, in the view plane (undo with ⌘Z)"><local:Icon Kind="move" Size="18" /></Button>
           <Button Classes="tool" Classes.on="{Binding IsRotateTool}" Click="OnToolRotate" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Rotate: drag the selection, or the molecule under the cursor, about the view axis through its centre; hold X, Y or Z for that axis, ⇧ for 15° steps (undo with ⌘Z)"><local:Icon Kind="spin" Size="18" /></Button>
@@ -1020,7 +1020,7 @@
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:DyadCell">
                         <StackPanel Spacing="4">
-                          <Border Width="44" Height="30" CornerRadius="5" Background="{DynamicResource SelB}" Classes.meso="{Binding IsMeso}" Classes="dyad">
+                          <Border Width="44" Height="30" CornerRadius="5" Classes.meso="{Binding IsMeso}" Classes="dyad">
                             <TextBlock Text="{Binding Kind}" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource AccInkB}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                           </Border>
                           <TextBlock Text="{Binding Label}" Classes="mono" FontSize="10.5" Foreground="{DynamicResource DimB}" HorizontalAlignment="Center" />
@@ -1709,10 +1709,12 @@
             <TextBlock Grid.Column="3" Text="{Binding MarkerNote}" FontSize="11" Foreground="{DynamicResource WarnB}" VerticalAlignment="Center" MaxWidth="200" TextWrapping="Wrap" />
           </Grid>
           <Grid ColumnDefinitions="Auto,Auto,*,Auto">
-            <Button Content="{Binding PlayLabel}" Click="OnPlay" Width="64" Margin="0,0,12,0" ToolTip.Tip="Play / pause (Space) · ← → step frames" />
-            <Button Classes="small" Click="OnTrajectoryPlayer" Margin="0,0,12,0" IsVisible="{Binding IsStudio}" ToolTip.Tip="Trajectory player: linked plots (density, temperature from the log, a chain's Rg and Ree), loop, smoothing">
-              <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="chart" Size="13" VerticalAlignment="Center" /><TextBlock Text="Player" VerticalAlignment="Center" /></StackPanel>
-            </Button>
+            <StackPanel Orientation="Horizontal">
+              <Button Content="{Binding PlayLabel}" Click="OnPlay" Width="64" Margin="0,0,12,0" ToolTip.Tip="Play / pause (Space) · ← → step frames" />
+              <Button Classes="small" Click="OnTrajectoryPlayer" Margin="0,0,12,0" IsVisible="{Binding IsStudio}" ToolTip.Tip="Trajectory player: linked plots (density, temperature from the log, a chain's Rg and Ree), loop, smoothing">
+                <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="chart" Size="13" VerticalAlignment="Center" /><TextBlock Text="Player" VerticalAlignment="Center" /></StackPanel>
+              </Button>
+            </StackPanel>
             <TextBlock Grid.Column="1" Text="Frame" Classes="muted" VerticalAlignment="Center" Margin="0,0,12,0" />
             <Slider Grid.Column="2" Minimum="0" Maximum="{Binding FrameMax}" Value="{Binding Frame}" TickFrequency="1" IsSnapToTickEnabled="True" />
             <TextBlock Grid.Column="3" Text="{Binding FrameLabel}" Classes="mono" VerticalAlignment="Center" Margin="12,0,0,0" />

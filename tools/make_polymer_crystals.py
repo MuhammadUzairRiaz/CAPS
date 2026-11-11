@@ -169,6 +169,9 @@ CRYSTALS = [
                   ("CH2d", "C", 0.089, -0.039, 0.392), ("CH2e", "C", -0.106, 0.065, 0.458)],
         "where": "cell p. 39 and p. 49; density p. 42; coordinates p. 49 (heavy atoms)",
         "hydrogens": {"CH2a": "CH2", "CH2b": "CH2", "CH2c": "CH2", "CH2d": "CH2", "CH2e": "CH2", "N": "NH"},
+        "corrections": ["O kept as printed (x = -0.371, p. 49), which gives C=O 1.35 A and C(O)-N 1.38 A against about 1.24 and "
+                        "1.33 A; the paper put O out of the chain plane, near the 010 plane, to fit the intensities and doubts whether "
+                        "that is genuine (p. 49), so relax the cell before MD or DFT (VASP, or caps cellrelax with a force field)"],
         "use": "nylon 66 crystal", "hkl": (0, 1, 0),
     },
     {
@@ -758,6 +761,10 @@ def main():
     only = [a for a in sys.argv[1:] if not a.startswith("--")]
     meta = []
     bad = 0
+    try:     # a crystal that fails its checks keeps its previous entry, so polymers.json still matches the .cif left on disk
+        previous = {c["id"]: c for c in json.load(open(os.path.join(OUT, "polymers.json")))["crystals"]}
+    except FileNotFoundError:
+        previous = {}
     for x in CRYSTALS:
         if only and x["id"] not in only:
             continue
@@ -777,6 +784,10 @@ def main():
         if write and ok:
             os.makedirs(OUT, exist_ok=True)
             open(os.path.join(OUT, x["id"] + ".cif"), "w").write(cif_text(x, L, atoms, mins, rho, vol))
+        if not ok:
+            if x["id"] in previous:
+                meta.append(previous[x["id"]])
+            continue
         meta.append({
             "id": x["id"], "name": x["name"], "polymer": x["polymer"], "file": x["id"] + ".cif", "source": x["source"], "doi": x["doi"],
             "where": x["where"], "space_group": x["space_group"], "space_group_number": x["number"],

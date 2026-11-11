@@ -231,6 +231,11 @@ void delete_atoms(System& s, const std::vector<char>& remove) {
   std::vector<Bond> bonds;
   for (const auto& b : s.bonds)
     if (map[b.i] >= 0 && map[b.j] >= 0) bonds.push_back({uint32_t(map[b.i]), uint32_t(map[b.j]), b.order});
+  // the bonds kept aside for typing only hold atom indices too: renumbered the same way, those to a deleted atom dropped
+  std::vector<Bond> typing;
+  for (const auto& b : s.typing_bonds)
+    if (b.i < n && b.j < n && map[b.i] >= 0 && map[b.j] >= 0) typing.push_back({uint32_t(map[b.i]), uint32_t(map[b.j]), b.order});
+  s.typing_bonds = std::move(typing);
   if (!s.velocities.empty() && s.velocities.size() == n) {
     std::vector<Vec3> v;
     for (size_t i = 0; i < n; ++i) if (map[i] >= 0) v.push_back(s.velocities[i]);
@@ -572,13 +577,58 @@ std::vector<uint32_t> side_of(const System& s, uint32_t b, uint32_t c) {
     throw EditError("the bond " + std::to_string(b + 1) + "–" + std::to_string(c + 1) + " is in a ring: its two sides cannot move apart");
   }
 }
+// The atoms reached from c without passing b (c first). `closes` tells whether the walk came back to b another way
+// (the b–c bond in a ring, a chelate's ligand when b is its metal).
+std::vector<uint32_t> walk_away(const System& s, uint32_t b, uint32_t c, bool& closes) {
+  const auto nb = neighbours(s);
+  std::vector<char> seen(s.atoms.size(), 0);
+  std::vector<uint32_t> out{c}, stack{c};
+  seen[c] = seen[b] = 1;
+  closes = false;
+  while (!stack.empty()) {
+    const uint32_t a = stack.back();
+    stack.pop_back();
+    for (uint32_t q : nb[a]) {
+      if (a == c && q == b) continue;
+      if (q == b) { closes = true; continue; }
+      if (seen[q]) continue;
+      seen[q] = 1;
+      out.push_back(q);
+      stack.push_back(q);
+    }
+  }
+  return out;
+}
+// Each atom of `side` (one side of a bond at `pivot`) as a vector from `pivot`, followed bond by bond so a molecule
+// split by the cell's walls comes out whole.
+std::vector<Vec3> offsets_from(const System& s, uint32_t pivot, const std::vector<uint32_t>& side) {
+  const auto nb = neighbours(s);
+  std::vector<int64_t> slot(s.atoms.size(), -1);
+  for (size_t m = 0; m < side.size(); ++m) slot[side[m]] = int64_t(m);
+  std::vector<Vec3> off(side.size());
+  std::vector<char> done(side.size(), 0);
+  std::vector<uint32_t> queue{pivot};
+  for (size_t h = 0; h < queue.size(); ++h) {
+    const uint32_t a = queue[h];
+    const Vec3 at = a == pivot ? Vec3{0, 0, 0} : off[size_t(slot[a])];
+    for (uint32_t q : nb[a]) {
+      if (slot[q] < 0 || done[size_t(slot[q])]) continue;
+      done[size_t(slot[q])] = 1;
+      off[size_t(slot[q])] = at + rel(s, a, q);
+      queue.push_back(q);
+    }
+  }
+  for (size_t m = 0; m < side.size(); ++m)
+    if (!done[m]) off[m] = rel(s, pivot, side[m]);
+  return off;
+}
 }  // namespace
 
 void set_bond_length(System& s, uint32_t i, uint32_t j, double r) {
   if (i >= s.atoms.size() || j >= s.atoms.size() || i == j) throw EditError("pick two bonded atoms");
   if (!(r > 0.3 && r < 10)) throw EditError("a bond length between 0.3 and 10 Å");
   const auto mv = side_of(s, i, j);
-  const Vec3 d = s.atoms[j].pos - s.atoms[i].pos;
+  const Vec3 d = rel(s, i, j);   // the bond itself, also across the cell's walls
   const double now = norm(d);
   if (now < 1e-9) throw EditError("the two atoms sit on each other");
   const Vec3 shift = d * ((r - now) / now);
@@ -590,12 +640,16 @@ void set_bond_angle(System& s, uint32_t i, uint32_t j, uint32_t k, double theta_
   if (!(theta_deg > 1 && theta_deg < 179.5)) throw EditError("an angle between 1° and 179.5°");
   const auto mv = side_of(s, j, k);
   if (std::find(mv.begin(), mv.end(), i) != mv.end()) throw EditError("atom " + std::to_string(i + 1) + " is on the side that moves (a ring)");
-  const Vec3 a = s.atoms[i].pos - s.atoms[j].pos, b = s.atoms[k].pos - s.atoms[j].pos;
+  const Vec3 a = rel(s, j, i), b = rel(s, j, k);   // the two bonds, also across the cell's walls
+  if (norm(a) < 1e-9 || norm(b) < 1e-9) throw EditError("two of the atoms sit on each other");
   Vec3 n = cross(a, b);
   if (norm(n) < 1e-9) n = perpendicular(a);   // straight now: any plane through the bond
   const double now = std::acos(std::clamp(dot(a, b) / (norm(a) * norm(b)), -1.0, 1.0));
   const double rot = theta_deg * M_PI / 180 - now;
-  for (uint32_t x : mv) s.atoms[x].pos = rotate_about(s.atoms[x].pos, s.atoms[j].pos, n, rot);
+  // the moving side turned as one whole piece about j; each atom keeps the periodic image it sat in
+  const auto off = offsets_from(s, j, mv);
+  for (size_t m = 0; m < mv.size(); ++m)
+    s.atoms[mv[m]].pos = s.atoms[mv[m]].pos + (rotate_about(off[m], {0, 0, 0}, n, rot) - off[m]);
 }
 
 void set_torsion(System& s, uint32_t i, uint32_t j, uint32_t k, uint32_t l, double phi_deg) {
@@ -697,9 +751,8 @@ double set_coordination(System& s, uint32_t centre, const std::string& geometry)
   // each ligand turned about the centre onto its site, with its substituents (a chelate's ligand alone)
   double moved = 0;
   for (size_t k = 0; k < lig.size(); ++k) {
-    auto side = side_of(s, centre, lig[k]);
-    bool shared = std::find(side.begin(), side.end(), centre) != side.end();
-    for (size_t m = 0; m < lig.size() && !shared; ++m) shared = m != k && std::find(side.begin(), side.end(), lig[m]) != side.end();
+    bool shared = false;   // the ligand comes back to the centre (a chelate): its donor atom moves alone
+    auto side = walk_away(s, centre, lig[k], shared);
     if (shared) side = {lig[k]};
     moved = std::max(moved, std::acos(std::clamp(dot(u[k], best_dir[k]), -1.0, 1.0)) * 180 / M_PI);
     for (uint32_t a : side) {
@@ -1275,6 +1328,7 @@ int point_defects(System& s, const DefectOptions& o, std::vector<std::string>* n
   } else {
     for (uint32_t i : pick) {
       s.atoms[i].element = o.to;
+      s.atoms[i].type = type_for(s, o.to);   // the new element's type, so its mass is the new element's
       s.atoms[i].name = element(o.to).symbol;
     }
     if (notes) notes->push_back(std::to_string(pick.size()) + " " + sym + " → " + element(o.to).symbol + " (of " + std::to_string(cand.size()) + " " + sym +

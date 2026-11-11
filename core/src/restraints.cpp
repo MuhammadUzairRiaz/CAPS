@@ -95,8 +95,8 @@ bool geometry(const Restraint& r, const std::vector<double>& x, const Cell& c, G
       const Vec3 gi = m * (-lb2 / m2), gl = nn * (lb2 / n2);
       const double s1 = dot(b1, b2) / (lb2 * lb2), s3 = dot(b3, b2) / (lb2 * lb2);
       out.grad[0] = gi, out.grad[3] = gl;
-      out.grad[1] = gi * (s1 - 1) - gl * s3;
-      out.grad[2] = gl * (s3 - 1) - gi * s1;
+      out.grad[1] = gi * (-s1 - 1) + gl * s3;   // b1 = r_j − r_i, so the s1/s3 signs flip vs F = r_i − r_j
+      out.grad[2] = gi * s1 + gl * (-s3 - 1);
       out.rel[1] = b1, out.rel[2] = b1 + b2, out.rel[3] = b1 + b2 + b3;
       return true;
     }

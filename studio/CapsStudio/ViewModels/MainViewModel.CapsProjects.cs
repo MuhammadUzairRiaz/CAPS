@@ -26,6 +26,8 @@ public sealed partial class MainViewModel
     // the structures as they were when the project opened (name → history): what this session did is measured from it
     private Dictionary<ProjectItem, (string Name, string History)> _projStart = new();
     private readonly Dictionary<ProjectItem, string> _projFiles = new();   // each structure's file under structures/
+    // manifest entries whose file is there but could not be read on opening: kept in the project, their files untouched
+    private readonly List<JsonObject> _projUnread = new();
     private bool _projClosing;
 
     public bool HasCapsProject => _projFile != null;
@@ -197,6 +199,7 @@ public sealed partial class MainViewModel
         var folder = CapsProjectFile.FolderOf(file);
         ProjectItem? active = null;
         var missing = new List<string>();
+        var unread = new List<JsonObject>();
         foreach (var n in (m["structures"] as JsonArray ?? []).OfType<JsonObject>())
         {
             var rel = (string?)n["file"] ?? "";
@@ -206,7 +209,7 @@ public sealed partial class MainViewModel
             var topo = (string?)n["topology"] is { Length: > 0 } t ? (Path.IsPathRooted(t) ? t : Path.Combine(folder, t)) : null;
             CapsDocument doc;
             try { doc = CapsDocument.Open(path, topo != null && File.Exists(topo) ? topo : null); }
-            catch { missing.Add(name); continue; }
+            catch { unread.Add(n); continue; }   // the file stays in the project: a save must not take it out
             Show(doc, name);
             var it = _activeItem;
             if (it == null) continue;
@@ -233,10 +236,13 @@ public sealed partial class MainViewModel
         }
         if (active != null) Activate(active);
         Attach(file, m);
+        _projUnread.AddRange(unread);
         LoadKnownProjects();
         if (ProjectItems.Count == 0) SetModule(8);
+        var unreadNames = unread.Select(n => (string?)n["name"] is { Length: > 0 } nm ? nm : Path.GetFileNameWithoutExtension((string?)n["file"] ?? "")).ToList();
         return $"Opened {CapsProjectName}: {ProjectItems.Count} structure{(ProjectItems.Count == 1 ? "" : "s")}" +
-               (missing.Count > 0 ? $"; not found: {string.Join(", ", missing)}" : "") + _engineNote;
+               (missing.Count > 0 ? $"; not found: {string.Join(", ", missing)}" : "") +
+               (unreadNames.Count > 0 ? $"; could not be read (kept in the project): {string.Join(", ", unreadNames)}" : "") + _engineNote;
     }
 
     /// <summary>The project file becomes the open project and a new session starts.</summary>
@@ -247,6 +253,7 @@ public sealed partial class MainViewModel
     {
         _projFile = Path.GetFullPath(file);
         _projManifest = m;
+        _projUnread.Clear();
         _projOpened = DateTime.Now;
         _projSavedAt = default;
         var sessions = m["sessions"] as JsonArray ?? new JsonArray();
@@ -276,6 +283,7 @@ public sealed partial class MainViewModel
         _projFile = null;
         _projManifest = null;
         _projFiles.Clear();
+        _projUnread.Clear();
         ProjectFolder = "";
         ProjectSessions.Clear();
         RaiseCapsProject();
@@ -352,6 +360,18 @@ public sealed partial class MainViewModel
             var before = (_projManifest["structures"] as JsonArray ?? []).OfType<JsonObject>().Select(o => (string?)o["file"] ?? "").Where(f => f.Length > 0 && !Path.IsPathRooted(f)).ToHashSet();
             var items = new JsonArray();
             var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // structures that could not be read on opening stay listed and keep their files (while those are still there);
+            // reserving their names first also keeps a new structure from being written over them
+            var unread = new List<JsonObject>();
+            foreach (var n in _projUnread)
+            {
+                var rel = (string?)n["file"] ?? "";
+                if (rel.Length == 0 || !File.Exists(Path.IsPathRooted(rel) ? rel : Path.Combine(folder, rel))) continue;
+                used.Add(rel);
+                var keep = (JsonObject)n.DeepClone();
+                keep["active"] = false;
+                unread.Add(keep);
+            }
             foreach (var it in ProjectItems.ToList())
             {
                 if (it.Doc.IsDisposed) continue;
@@ -392,6 +412,7 @@ public sealed partial class MainViewModel
                     ["jobs"] = new JsonArray(it.Jobs.Select(j => (JsonNode)j.Id).ToArray()),
                 });
             }
+            foreach (var keep in unread) items.Add(keep);
             // structures taken out of the project: their files go too
             foreach (var gone in before.Where(f => !used.Contains(f)))
                 foreach (var f in new[] { gone, Path.ChangeExtension(gone, ".ff.json"), gone + ".provenance.json", gone + ".tags.json" })

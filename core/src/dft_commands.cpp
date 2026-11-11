@@ -28,6 +28,22 @@ namespace fs = std::filesystem;
 
 namespace {
 
+// One argument for a std::system command line, quoted so the shell passes it
+// through unchanged. POSIX: single quotes, an embedded ' becomes '\''.
+// Windows (cmd.exe): double quotes; a path there cannot contain ".
+std::string shell_arg(const std::string& s) {
+#ifdef _WIN32
+  return "\"" + s + "\"";
+#else
+  std::string q = "'";
+  for (char ch : s) {
+    if (ch == '\'') q += "'\\''";
+    else q += ch;
+  }
+  return q + "'";
+#endif
+}
+
 // ---------------------------------------------------------------- options
 struct Opt { const char* name; const char* def; const char* why; };
 struct Cmd { const char* name; const char* usage; const char* about; std::vector<Opt> opts; std::vector<const char*> examples; };
@@ -731,7 +747,10 @@ Json dft_run(const std::string& c, const Json& a, const std::string& data_dir) {
         const std::string py = S(a, "python", env ? env : "python3");
         std::string script = (d / "analyze_kappa.py").string();
         if (!fs::exists(script)) throw std::invalid_argument(script + " missing (written by caps phono3py setup)");
-        const std::string cmd = "'" + py + "' '" + script + "' '" + h5 + "' --out '" + ex.string() + "'";
+        std::string cmd = shell_arg(py) + " " + shell_arg(script) + " " + shell_arg(h5) + " --out " + shell_arg(ex.string());
+#ifdef _WIN32
+        cmd = "\"" + cmd + "\"";  // cmd /c strips one outer pair of quotes when the line starts with one
+#endif
         if (std::system(cmd.c_str()) != 0 || !fs::exists(ex / "kappa_summary.json"))
           throw std::runtime_error("analyze_kappa.py failed (it needs h5py and numpy: --python PY or CAPS_PYTHON): " + cmd);
       }
@@ -878,7 +897,7 @@ Json dft_run(const std::string& c, const Json& a, const std::string& data_dir) {
         Json j = Json::object();
         j["dir"] = d;
         if (B(a, "run")) {
-          const std::string cmd = "cd '" + d + "' && { [ -f POTCAR ] || ./make_potcar.sh; } && sbatch job.slurm";
+          const std::string cmd = "cd " + shell_arg(d) + " && { [ -f POTCAR ] || ./make_potcar.sh; } && sbatch job.slurm";
           j["exit"] = std::system(cmd.c_str());
         }
         s.push_back(j);

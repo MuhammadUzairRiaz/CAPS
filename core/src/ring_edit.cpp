@@ -181,9 +181,16 @@ RingEditResult fuse_ring(System& s, uint32_t i, uint32_t j, const RingSpec& sp) 
   } else if (!hj_all.empty()) {
     hj = int(hj_all[0]);
   }
-  for (auto [x, h] : {std::pair{i, hi}, std::pair{j, hj}})
-    if (h < 0 && !sp.aromatic && order_sum(s, x) + 1 > valence(s, x) + 1e-9)
-      throw EditError("atom " + label(s, x) + " has no hydrogen to give up and no free valence for the ring");
+  // an aromatic ring turns i-j into an aromatic bond and adds one more (1.5 each, half a bond of slack for the
+  // aromatic counting); a plain ring adds one single bond
+  int ij_order = 1;
+  for (const auto& b : s.bonds) if ((b.i == i && b.j == j) || (b.i == j && b.j == i)) ij_order = b.order;
+  for (auto [x, h] : {std::pair{i, hi}, std::pair{j, hj}}) {
+    if (h >= 0) continue;
+    const bool full = sp.aromatic ? order_sum(s, x) - order_value(ij_order) + 3.0 > valence(s, x) + 0.5 + 1e-9
+                                  : order_sum(s, x) + 1 > valence(s, x) + 1e-9;
+    if (full) throw EditError("atom " + label(s, x) + " has no hydrogen to give up and no free valence for the ring");
+  }
   Vec3 u{0, 0, 0};
   if (hi >= 0) u = u + unitv(rel(s, i, uint32_t(hi)));
   if (hj >= 0) u = u + unitv(rel(s, j, uint32_t(hj)));

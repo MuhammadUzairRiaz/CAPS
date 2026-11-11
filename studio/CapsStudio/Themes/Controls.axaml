@@ -377,6 +377,7 @@
   <Style Selector="Button.pt.common"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" /><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
   <Style Selector="Button.pt.chosen"><Setter Property="Background" Value="{DynamicResource AccB}" /><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="Foreground" Value="{DynamicResource AccInkB}" /></Style>
 
+  <Style Selector="Border.dyad"><Setter Property="Background" Value="{DynamicResource SelB}" /></Style>
   <Style Selector="Border.dyad.meso"><Setter Property="Background" Value="{DynamicResource AccB}" /></Style>
 
   <Style Selector="v|Icon.lvl.err"><Setter Property="Foreground" Value="{DynamicResource ErrB}" /></Style>

@@ -144,8 +144,15 @@ void write_kg_lammps(const System& s, const KgOptions& o, const std::string& ste
   {
     std::ofstream f(stem + ".data");
     if (!f) throw std::runtime_error("cannot write " + stem + ".data");
-    size_t nang = 0;
-    for (size_t i = 1; i + 1 < s.atoms.size(); ++i) nang += angles && s.atoms[i - 1].mol == s.atoms[i].mol && s.atoms[i + 1].mol == s.atoms[i].mol;
+    // angles from the bond graph, as kremer_grest_forcefield builds them, so the deck matches CAPS's energy after bonds change
+    std::vector<std::array<uint32_t, 3>> ang;
+    if (angles) {
+      const auto nb = s.neighbours();
+      for (uint32_t j = 0; j < nb.size(); ++j)
+        for (size_t a = 0; a < nb[j].size(); ++a)
+          for (size_t c = a + 1; c < nb[j].size(); ++c) ang.push_back({nb[j][a], j, nb[j][c]});
+    }
+    const size_t nang = ang.size();
     char b[256];
     f << "Kremer-Grest melt: " << o.chains << " chains x " << o.beads << " beads, rho sigma^3 = " << o.density << (real ? " (CAPS, units real: sigma = " + std::to_string(o.sigma) + " A)" : std::string(" (CAPS, reduced units)")) << "\n\n";
     f << s.atoms.size() << " atoms\n" << s.bonds.size() << " bonds\n";
@@ -165,9 +172,7 @@ void write_kg_lammps(const System& s, const KgOptions& o, const std::string& ste
     for (size_t k = 0; k < s.bonds.size(); ++k) f << k + 1 << " 1 " << s.bonds[k].i + 1 << " " << s.bonds[k].j + 1 << "\n";
     if (angles) {
       f << "\nAngles\n\n";
-      size_t k = 0;
-      for (size_t i = 1; i + 1 < s.atoms.size(); ++i)
-        if (s.atoms[i - 1].mol == s.atoms[i].mol && s.atoms[i + 1].mol == s.atoms[i].mol) f << ++k << " 1 " << i << " " << i + 1 << " " << i + 2 << "\n";
+      for (size_t k = 0; k < ang.size(); ++k) f << k + 1 << " 1 " << ang[k][0] + 1 << " " << ang[k][1] + 1 << " " << ang[k][2] + 1 << "\n";
     }
   }
   std::ofstream f(stem + ".in");

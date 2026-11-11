@@ -39,10 +39,12 @@ endif()
 # statically into the shipped library where the compiler allows it.
 set(CMAKE_Fortran_STANDARD 2018)
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -std=f2018 -Wall -fimplicit-none")
+  # -ffrontend-optimize in every configuration: without it (-O0, -Og, a Debug build) gfortran calls libgfortran's
+  # matmul instead of inlining the 3x3 products of the kernels
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -std=f2018 -Wall -fimplicit-none -ffrontend-optimize")
   set(CMAKE_Fortran_FLAGS_RELEASE "-O3")
-  # the kernels need no Fortran runtime (core/src/fortran_runtime.cpp provides the two entry points they can reach):
-  # nothing of libgfortran or libquadmath is linked, so no platform has to ship them
+  # the kernels need no Fortran runtime (core/src/fortran_runtime.cpp provides the error entry points they can reach,
+  # optimised or not): nothing of libgfortran or libquadmath is linked, so no platform has to ship them
   set(CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES "")
   set(CMAKE_Fortran_IMPLICIT_LINK_DIRECTORIES "")
 endif()

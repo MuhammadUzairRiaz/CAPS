@@ -68,17 +68,8 @@ internal static class Screenshot
                 if (f.Length > 2 && f[2] == "fold") w.FoldShelf(f[0], true);
             }
             if (kv[0] == "makeshelf") w.MakeCustomShelf(kv[1], "pin", w.AllTools().Where(t => t.Id is "lasso_select" or "measure" or "pin_monitor" or "auto_clean" or "fragments").Select(t => t.Id));
-            // drag=X1,Y1,X2,Y2: a real left-button drag through the window (press, eight moves, release); click=X,Y
-            if (kv[0] is "drag" or "click")
-            {
-                var v = kv[1].Split(',').Select(double.Parse).ToArray();
-                var a = new Point(v[0], v[1]);
-                var b = v.Length > 3 ? new Point(v[2], v[3]) : a;
-                w.MouseDown(a, Avalonia.Input.MouseButton.Left);
-                for (var k = 1; k <= 8; ++k) { w.MouseMove(a + (b - a) * (k / 8.0)); Dispatcher.UIThread.RunJobs(); }
-                w.MouseUp(b, Avalonia.Input.MouseButton.Left);
-            }
-            if (kv[0] is "workspace" or "shelf" or "makeshelf" or "drag" or "click") for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            // click=X,Y and drag=X1,Y1,X2,Y2 are handled once, further down, after any building
+            if (kv[0] is "workspace" or "shelf" or "makeshelf") for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
             if (kv[0] == "colour") w.ViewModel.ColourIndex = int.Parse(kv[1]);
             if (kv[0] == "style") w.ViewModel.StyleIndex = int.Parse(kv[1]);
             if (kv[0] == "module") w.ViewModel.SetModule(int.Parse(kv[1]));
@@ -1628,7 +1619,7 @@ internal static class Screenshot
                 var v = kv[1].Split(':').Select(x => decimal.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
                 (w.ViewModel.Analyze.TensRateD, w.ViewModel.Analyze.TensMaxD, w.ViewModel.Analyze.TensTD) = (v[0], v[1], v[2]);
             }
-            if (kv[0] == "sweep")   // sweep=DIR: every page in turn: time to show, a picture, visible text that reads as an error
+            if (kv[0] == "pagesweep")   // pagesweep=DIR: every page in turn: time to show, a picture, visible text that reads as an error
             {
                 Directory.CreateDirectory(kv[1]);
                 var bad = new System.Text.RegularExpressions.Regex(@"(?i)\b(error|exception|could not|cannot|failed|not found|nan|null reference|object reference|unhandled)\b");

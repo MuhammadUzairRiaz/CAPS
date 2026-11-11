@@ -343,20 +343,22 @@ public partial class MainViewModel
             // the preview: a copy with the hydrogens added (and the existing ones removed first when not kept)
             var before = doc.Copy("as it is");
             var after = doc.Copy("with hydrogens");
-            int n0 = (int)after.Summary().Atoms;
-            await Task.Run(() =>
+            // n0: the atoms the new H are appended after (the heavy atoms alone when the present H are removed first)
+            var n0 = await Task.Run(() =>
             {
                 if (!_ahKeep && D("h") > 0)   // replace the hydrogens present: remove them first
                 {
                     after.Select("{\"mode\":\"element\",\"pattern\":\"H\"}");
                     after.Edit("{\"op\":\"delete\",\"atoms\":\"selection\"}");
                 }
+                var m = (int)after.Summary().Atoms;
                 after.Edit("{\"op\":\"add_h\",\"atoms\":\"\"}");
+                return m;
             });
             var n1 = (int)after.Summary().Atoms;
-            var added = n1 - n0;
-            var first = (int)after.Summary().Atoms - Math.Max(0, added);
-            try { after.Select(new JsonObject { ["mode"] = "indices", ["atoms"] = new JsonArray(Enumerable.Range(first, Math.Max(0, added)).Select(i => (JsonNode)i).ToArray()) }.ToJsonString()); } catch { }
+            var added = Math.Max(0, n1 - n0);
+            var first = n0;
+            try { after.Select(new JsonObject { ["mode"] = "indices", ["atoms"] = new JsonArray(Enumerable.Range(first, added).Select(i => (JsonNode)i).ToArray()) }.ToJsonString()); } catch { }
             AhAdded = added.ToString(Inv);
             AhCanAdd = added > 0;
             AhAfterCaption = $"{n1} atoms · +{added} H";
@@ -369,33 +371,68 @@ public partial class MainViewModel
         catch (Exception e) { AhStatus = "Add hydrogens: " + e.Message; }
     }
 
-    /// <summary>Adds the hydrogens to the document (one undoable edit), then relaxes only the new ones when asked.</summary>
+    /// <summary>The undo steps the last Apply pushed (removing the present H, adding, relaxing): Undo takes back exactly these.</summary>
+    private int _ahSteps;
+
+    /// <summary>Does what the preview shows on the whole structure: the present H removed first when not kept, the hydrogens
+    /// added (each an undoable edit), then only the new ones relaxed when asked.</summary>
     public async Task AhApply()
     {
-        if (_doc == null || !Idle) return;
-        var n0 = (int)_doc.Summary().Atoms;
-        AddHydrogensAll();
-        var n1 = (int)_doc.Summary().Atoms;
-        if (_ahRelax && n1 > n0)
+        if (_doc == null || !Idle || EditLocked()) return;
+        var doc = _doc;
+        int steps = 0;
+        string? error = null;
+        // an edit's reply: only a successful edit pushes an undo step, so only it is counted
+        bool Done(string reply, string json)
         {
-            var doc = _doc;
-            var ids = new JsonArray(Enumerable.Range(n0, n1 - n0).Select(i => (JsonNode)i).ToArray());
-            try { await Task.Run(() => doc.Edit(new JsonObject { ["op"] = "clean", ["atoms"] = ids, ["ftol"] = 0.5 }.ToJsonString())); } catch (Exception e) { Status = "Relax of the new H: " + e.Message; }
+            var r = JsonNode.Parse(reply)!;
+            if (r["ok"]?.GetValue<bool>() != true) { error = r["error"]?.GetValue<string>() ?? "the edit failed"; return false; }
+            RecordEdit(json);
+            steps++;
+            return true;
         }
-        _ahApplied = true;
+        bool Run(string json) => Done(doc.Edit(json), json);
+        var removed = 0;
+        if (!_ahKeep)   // replace the hydrogens present: remove them first, as the preview does
+        {
+            var h = JsonNode.Parse(doc.Select("{\"mode\":\"element\",\"pattern\":\"H\",\"op\":\"preview\"}"))!;
+            removed = (int)((double?)h["count"] ?? 0);
+            if (removed > 0)
+            {
+                doc.Select("{\"mode\":\"element\",\"pattern\":\"H\"}");
+                Record("doc.select(\"element\", \"H\")");
+                if (!Run("{\"op\":\"delete\",\"atoms\":\"selection\"}")) removed = 0;
+            }
+        }
+        var n0 = (int)doc.Summary().Atoms;
+        if (error == null) Run("{\"op\":\"add_h\",\"atoms\":\"\"}");   // the whole structure, as previewed
+        var n1 = (int)doc.Summary().Atoms;
+        var relaxed = false;
+        if (error == null && _ahRelax && n1 > n0)
+        {
+            var ids = new JsonArray(Enumerable.Range(n0, n1 - n0).Select(i => (JsonNode)i).ToArray());
+            var json = new JsonObject { ["op"] = "clean", ["atoms"] = ids, ["ftol"] = 0.5 }.ToJsonString();
+            relaxed = Done(await Task.Run(() => doc.Edit(json)), json);
+            if (!relaxed) error = "Relax of the new H: " + error;
+        }
+        _ahSteps = steps;
+        _ahApplied = steps > 0;
         Raise(nameof(AhCanUndo));
-        RefreshSummary();
-        RenderRequested?.Invoke();
-        Status = $"Added {n1 - n0} hydrogens" + (_ahRelax ? ", only they were relaxed (UFF)" : "") + " · undo with ⌘Z";
+        if (steps > 0) AfterEdit("Hydrogens added");
+        EditError = error ?? "";
+        Status = error ?? $"Added {n1 - n0} hydrogens" + (removed > 0 ? $" after removing the {removed} present" : "")
+                          + (relaxed ? ", only they were relaxed (UFF)" : "") + " · undo with ⌘Z";
         await AhPreview();
     }
     public async Task AhUndo()
     {
-        if (!_ahApplied) return;
-        UndoEdit(false);
-        if (_ahRelax) UndoEdit(false);
+        if (!_ahApplied || _doc == null || EditLocked()) return;
+        var undone = 0;
+        while (undone < _ahSteps && _doc.Undo(false)) undone++;
+        _ahSteps = 0;
         _ahApplied = false;
         Raise(nameof(AhCanUndo));
+        if (undone > 0) AfterEdit("Undone");
         await AhPreview();
     }
 

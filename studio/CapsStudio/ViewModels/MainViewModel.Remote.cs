@@ -78,7 +78,10 @@ public sealed partial class MainViewModel
 
     public void AddHost()
     {
-        var h = new RemoteHost { Name = $"host-{_settings.Hosts.Count + 1}" };
+        // jobs find their host again by name, so a new host never takes a name already in use (after a removal Count + 1 may be)
+        var n = _settings.Hosts.Count + 1;
+        while (_settings.Hosts.Any(x => x.Name == $"host-{n}")) n++;
+        var h = new RemoteHost { Name = $"host-{n}" };
         _settings.Hosts.Add(h);
         var row = new HostRow(h, h.Name, HostDetail(h));
         Hosts.Add(row);
@@ -243,10 +246,11 @@ public sealed partial class MainViewModel
         }
         else if (kind == "React")
         {
+            // MD runs between (or during) cycles only when relax or during-MD is on, as in the local run
             r["react"] = new JsonObject
             {
                 ["templates"] = _rxText, ["cycles"] = _rxCycles, ["per_cycle"] = _rxPerCycle, ["target"] = _rxTarget, ["relax"] = _rxRelax,
-                ["md_ps"] = _rxMdPs, ["temperature"] = _rxTemp, ["seed"] = _rxSeed,
+                ["md_ps"] = _rxRelax || _rxDuringMd ? _rxMdPs : 0, ["temperature"] = _rxTemp, ["seed"] = _rxSeed, ["during_md"] = _rxDuringMd,
             };
             if (_rxCapture > 0) ((JsonObject)r["react"]!)["capture"] = _rxCapture;
         }
@@ -282,6 +286,12 @@ public sealed partial class MainViewModel
         if ((_doc == null && !grow) || RunWhereIndex == 0) return;
         var h = _settings.Hosts[RunWhereIndex - 1];
         if (h.Hostname.Length == 0) { Status = "The host has no hostname: set it in Settings › Compute & remote"; return; }
+        // a recipe's react stage stops only at a conversion target; a crosslink target would run on to full conversion there
+        if (kind == "React" && _rxTargetKind != 0)
+        {
+            Status = $"A React run on a host stops only at a conversion target, not at \"{RxTargetKinds[Math.Clamp(_rxTargetKind, 0, RxTargetKinds.Length - 1)]}\": set the target to conversion, or run it on this machine";
+            return;
+        }
         var k = _jobCounters[kind] = _jobCounters.GetValueOrDefault(kind) + 1;
         var id = $"{kind.ToLowerInvariant()}-{k}";
         var growRecipe = grow ? GrowRecipe() : "";
@@ -311,6 +321,20 @@ public sealed partial class MainViewModel
                 File.WriteAllText(Path.Combine(local, recipeFile), recipe.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
             }
             if (!_relaxCoulomb && !grow) job.Add("Note: recipes always include Coulomb terms; the host's run has them although the page has them off");
+            if (kind == "React")
+            {
+                // page options a recipe's react stage does not carry: the host runs with the core's defaults for them
+                var notApplied = new List<string>();
+                if (_rxBetween) notApplied.Add("bonds only between chains");
+                if (_rxKeepBy) notApplied.Add("keep byproducts");
+                if (RxSeveral && _rxByWeights) notApplied.Add("selection by weights");
+                if (_rxAutoCapture) notApplied.Add("auto capture");
+                if ((int)_rxSitesPer > 0) notApplied.Add("sites per chain");
+                if (_rxRemoveUnreacted) notApplied.Add("remove unreacted donors");
+                if (_rxRemovePendant) notApplied.Add("remove pendant sulfur");
+                if (notApplied.Count > 0)
+                    job.Add("Note: a recipe cannot carry these React settings, so the host's run does without them: " + string.Join(", ", notApplied));
+            }
             var files = grow ? new List<string> { recipeFile } : new List<string> { "structure.caps.data", recipeFile };
             if (!grow && Field.Assigned && kind != "React") files.AddRange(SaveForceFieldForHost(local));
             await SendJob(job, h, kind, files.ToArray(), $"caps run {recipeFile} --out .");

@@ -126,10 +126,10 @@ std::vector<VoronoiCell> voronoi_cells(const System& s, const VoronoiOptions& o)
   const Cell& c = s.cell;
   const bool per = c.valid();
   std::vector<double> w(n, 0.0);
-  double wmin = 0;
+  double wmax = 0;
   if (o.radical) {
-    wmin = 1e300;
-    for (size_t i = 0; i < n; ++i) w[i] = std::pow(element(s.atoms[i].element).vdw, 2), wmin = std::min(wmin, w[i]);
+    wmax = -1e300;
+    for (size_t i = 0; i < n; ++i) w[i] = std::pow(element(s.atoms[i].element).vdw, 2), wmax = std::max(wmax, w[i]);
   }
   // bins in fractional coordinates (periodic) or over the bounding box
   Vec3 lo{0, 0, 0}, span{1, 1, 1};
@@ -220,9 +220,10 @@ std::vector<VoronoiCell> voronoi_cells(const System& s, const VoronoiOptions& o)
         if (d > P.radius() + 1e-9) continue;   // cannot reach the cell
         P.clip(rj.first * (1 / r), d, int(rj.second));
       }
-      // no atom beyond the shells searched can cut the cell any more
+      // no atom beyond the shells searched can cut the cell any more: an unseen atom j sits at r >= R, and
+      // its plane (r^2 + w_i - w_j) / 2r is at least (R^2 + w_i - wmax) / 2R, the heaviest weight giving the nearest plane
       const double R = reach * binw;   // every atom closer than this has been seen
-      const double reach_plane = R > 0 ? (R * R - (w[i] - wmin)) / (2 * R) : 0;
+      const double reach_plane = R > 0 ? (R * R + w[i] - wmax) / (2 * R) : 0;
       if (R > 0 && reach_plane >= P.radius()) break;
     }
     VoronoiCell& cell = out[i];

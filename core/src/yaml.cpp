@@ -15,12 +15,36 @@ struct Line {
   int number;         // 1-based
 };
 
+// A quote opens a quoted scalar only where a scalar starts: at the start of the
+// line, after "key: " (or right after the ':' of a quoted key, as in JSON), after
+// a "- " list marker, or after '[', '{' or ','.
+// An apostrophe inside a plain scalar (Young's modulus) is just a character.
+bool opens_quote(const std::string& s, size_t i) {
+  size_t j = i;
+  while (j > 0 && (s[j - 1] == ' ' || s[j - 1] == '\t')) --j;
+  if (j == 0) return true;
+  const char p = s[j - 1];
+  if (p == '[' || p == '{' || p == ',') return true;
+  if (p == ':' && (j < i || (j >= 2 && (s[j - 2] == '"' || s[j - 2] == '\'')))) return true;   // also {"k":"v"}
+  if (p == '-' && j < i && (j == 1 || s[j - 2] == ' ' || s[j - 2] == '\t')) return true;
+  return false;
+}
+
+// Inside a quoted scalar at s[i]: true when s[i] ends it. Steps i over a
+// backslash escape in double quotes and over a doubled '' in single quotes.
+bool closes_quote(const std::string& s, size_t& i, char quote) {
+  if (quote == '"' && s[i] == '\\') { if (i + 1 < s.size()) ++i; return false; }
+  if (s[i] != quote) return false;
+  if (quote == '\'' && i + 1 < s.size() && s[i + 1] == '\'') { ++i; return false; }
+  return true;
+}
+
 std::string strip_comment(const std::string& s) {
   char quote = 0;
   for (size_t i = 0; i < s.size(); ++i) {
     const char c = s[i];
-    if (quote) { if (c == quote) quote = 0; continue; }
-    if (c == '"' || c == '\'') quote = c;
+    if (quote) { if (closes_quote(s, i, quote)) quote = 0; continue; }
+    if ((c == '"' || c == '\'') && opens_quote(s, i)) quote = c;
     else if (c == '#' && (i == 0 || std::isspace(static_cast<unsigned char>(s[i - 1])))) return s.substr(0, i);
   }
   return s;
@@ -71,8 +95,13 @@ std::string flow_token(const std::string& s, size_t& i) {
   if (i < s.size() && (s[i] == '"' || s[i] == '\'')) {
     const char q = s[i];
     out += s[i++];
-    while (i < s.size() && s[i] != q) out += s[i++];
-    if (i < s.size()) out += s[i++];
+    while (i < s.size()) {
+      const size_t from = i;
+      const bool end = closes_quote(s, i, q);
+      out.append(s, from, i - from + 1);
+      ++i;
+      if (end) break;
+    }
     return out;
   }
   while (i < s.size() && s[i] != ',' && s[i] != '}' && s[i] != ']' && s[i] != ':') out += s[i++];
@@ -140,8 +169,8 @@ size_t key_colon(const std::string& s) {
   int depth = 0;
   for (size_t i = 0; i < s.size(); ++i) {
     const char c = s[i];
-    if (quote) { if (c == quote) quote = 0; continue; }
-    if (c == '"' || c == '\'') quote = c;
+    if (quote) { if (closes_quote(s, i, quote)) quote = 0; continue; }
+    if ((c == '"' || c == '\'') && opens_quote(s, i)) quote = c;
     else if (c == '[' || c == '{') ++depth;
     else if (c == ']' || c == '}') --depth;
     else if (c == ':' && depth == 0 && (i + 1 == s.size() || s[i + 1] == ' ')) return i;
@@ -173,8 +202,9 @@ Json block(const std::vector<Line>& L, size_t& k, int indent) {
       const Line& ln = L[k++];
       const std::string item = trim(ln.text.substr(1));
       if (item.empty()) { list.push_back(k < L.size() && L[k].indent > indent ? block(L, k, L[k].indent) : Json()); continue; }
-      if (key_colon(item) != std::string::npos && item[0] != '{' && item[0] != '[' && item[0] != '"' && item[0] != '\'') {
-        // "- key: value" opens a mapping whose other keys sit at the item's indentation
+      if (key_colon(item) != std::string::npos && item[0] != '{' && item[0] != '[') {
+        // "- key: value" (or "- \"key\": value") opens a mapping whose other keys sit at the item's indentation.
+        // A quoted scalar with no ": " after its closing quote gives npos and stays a scalar.
         Json m = Json::object();
         const int inner = indent + 2;
         entry(L, k, inner, item, ln.number, m);

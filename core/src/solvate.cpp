@@ -7,7 +7,9 @@
 #include <cmath>
 #include <cstdio>
 #include <map>
+#include <mutex>
 #include <stdexcept>
+#include <utility>
 
 #include "caps/elements.hpp"
 #include "caps/molecule.hpp"
@@ -117,9 +119,20 @@ System solvent_molecule(const SolvateOptions& o, std::string* name) {
     if (name) *name = "water (" + wm.name + ")";
     return w;
   }
+  // shared by every caller (the Studio plans on the UI thread while a preview solvates on a worker), so the map is
+  // only touched under the lock; the molecule is built outside it and the result is copied out while still held
   static std::map<std::string, System> cache;
-  auto it = cache.find(sv->smiles);
-  if (it == cache.end()) {
+  static std::mutex cache_mutex;
+  {
+    std::lock_guard<std::mutex> lock(cache_mutex);
+    auto it = cache.find(sv->smiles);
+    if (it != cache.end()) {
+      if (name) *name = sv->name;
+      return it->second;
+    }
+  }
+  System built;
+  {
     BuildOptions bo;
     bo.forcefield = "uff";
     bo.seed = 3;
@@ -129,8 +142,10 @@ System solvent_molecule(const SolvateOptions& o, std::string* name) {
     for (auto& a : m.atoms) a.resname = m.atoms[0].resname;
     m.has_mol = true;
     finish_types_by_element(m);
-    it = cache.emplace(sv->smiles, m).first;
+    built = std::move(m);
   }
+  std::lock_guard<std::mutex> lock(cache_mutex);
+  auto it = cache.emplace(sv->smiles, std::move(built)).first;   // keeps the first entry if another thread got there first
   if (name) *name = sv->name;
   return it->second;
 }

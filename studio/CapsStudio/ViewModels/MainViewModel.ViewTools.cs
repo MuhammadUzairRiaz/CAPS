@@ -8,7 +8,10 @@ namespace CapsStudio.ViewModels;
 /// <summary>A measurement pinned to the view: its atoms and its value, kept up to date with the frame and edits.</summary>
 public sealed class MonitorRow : ObservableObject
 {
-    public int[] Atoms { get; init; } = [];
+    /// <summary>The atoms' indices now; a delete shifts them, so they are found again by AtomIds.</summary>
+    public int[] Atoms { get; set; } = [];
+    /// <summary>The atoms' ids when pinned (a delete keeps the other atoms' ids).</summary>
+    public long[] AtomIds { get; init; } = [];
     public string Ids { get; init; } = "";
     public string Kind => Atoms.Length switch { 2 => "d", 3 => "∠", _ => "φ" };
     private string _value = "";
@@ -67,31 +70,18 @@ public sealed partial class MainViewModel
 
     /// <summary>A screen drag (view points) as a move in the view plane, from the projection of the atoms: the map
     /// screen = A·world + b is fitted by least squares to the visible atoms' projections, and the smallest world move
-    /// giving the drag is Aᵀ(AAᵀ)⁻¹ d (exact for the orthographic view).</summary>
+    /// giving the drag is Aᵀ(AAᵀ)⁻¹ d (exact for the orthographic view). For flat atoms (one plane) the fit knows nothing
+    /// across the plane, so the move stays in that plane and still follows the cursor.</summary>
     public static double[]? ScreenToWorld(IReadOnlyList<(double X, double Y, double Z, double Sx, double Sy)> pts, double dx, double dy)
     {
-        if (pts.Count < 4) return null;
-        // normal equations for [a1 a2 a3 b] · [x y z 1] = s, once for sx and once for sy
-        var m = new double[4, 4];
-        double[] vx = new double[4], vy = new double[4];
-        foreach (var p in pts)
-        {
-            double[] w = [p.X, p.Y, p.Z, 1];
-            for (var r = 0; r < 4; ++r)
-            {
-                for (var c = 0; c < 4; ++c) m[r, c] += w[r] * w[c];
-                vx[r] += w[r] * p.Sx;
-                vy[r] += w[r] * p.Sy;
-            }
-        }
-        var ax = Solve4(m, vx);
-        var ay = Solve4(m, vy);
-        if (ax == null || ay == null) return null;
+        if (Fit(pts) is not { } f) return null;
+        var (ax, ay) = f;
         // A = [ax0 ax1 ax2; ay0 ay1 ay2]; Δw = Aᵀ (A Aᵀ)⁻¹ d
         double g11 = ax[0] * ax[0] + ax[1] * ax[1] + ax[2] * ax[2], g22 = ay[0] * ay[0] + ay[1] * ay[1] + ay[2] * ay[2];
         double g12 = ax[0] * ay[0] + ax[1] * ay[1] + ax[2] * ay[2];
         var det = g11 * g22 - g12 * g12;
-        if (Math.Abs(det) < 1e-12) return null;
+        // the two screen directions must be independent in the atoms' span (not a line of atoms, not a plane seen edge on)
+        if (!(det > 1e-9 * g11 * g22)) return null;
         var u = (g22 * dx - g12 * dy) / det;
         var v = (-g12 * dx + g11 * dy) / det;
         return [ax[0] * u + ay[0] * v, ax[1] * u + ay[1] * v, ax[2] * u + ay[2] * v];
@@ -125,7 +115,8 @@ public sealed partial class MainViewModel
             // the view axis: normal to the screen's two world gradients
             double[] n = [ax[1] * ay[2] - ax[2] * ay[1], ax[2] * ay[0] - ax[0] * ay[2], ax[0] * ay[1] - ax[1] * ay[0]];
             var nn = Math.Sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
-            if (nn < 1e-12) return null;
+            var na = Math.Sqrt((ax[0] * ax[0] + ax[1] * ax[1] + ax[2] * ax[2]) * (ay[0] * ay[0] + ay[1] * ay[1] + ay[2] * ay[2]));
+            if (!(nn > 1e-6 * na)) return null;
             for (var k = 0; k < 3; ++k) n[k] /= nn;
             double Sx(double[] w) => ax[0] * w[0] + ax[1] * w[1] + ax[2] * w[2] + ax[3];
             double Sy(double[] w) => ay[0] * w[0] + ay[1] * w[1] + ay[2] * w[2] + ay[3];
@@ -151,50 +142,88 @@ public sealed partial class MainViewModel
         return (axis, deg);
     }
 
-    // the screen map s = A·w + b fitted by least squares to the atoms' projections: (a_x, b_x), (a_y, b_y) as 4 numbers each
+    // the screen map s = A·w + b fitted by least squares to the atoms' projections: (a_x, b_x), (a_y, b_y) as 4 numbers each.
+    // Solved about the atoms' centre with the eigenvectors of their spread: directions the atoms do not span (all of them
+    // in one plane, or on one line) carry no information and get no gradient, the minimum-norm solution. The normal
+    // equations in x y z 1 are singular there, and their roundoff would give an arbitrary gradient across the plane.
     private static (double[] Ax, double[] Ay)? Fit(IReadOnlyList<(double X, double Y, double Z, double Sx, double Sy)> pts)
     {
         if (pts.Count < 4) return null;
-        var m = new double[4, 4];
-        double[] vx = new double[4], vy = new double[4];
+        double mx = 0, my = 0, mz = 0, msx = 0, msy = 0;
+        foreach (var p in pts) { mx += p.X; my += p.Y; mz += p.Z; msx += p.Sx; msy += p.Sy; }
+        var np = (double)pts.Count;
+        mx /= np; my /= np; mz /= np; msx /= np; msy /= np;
+        var c = new double[3, 3];
+        double[] gx = new double[3], gy = new double[3];
         foreach (var p in pts)
         {
-            double[] w = [p.X, p.Y, p.Z, 1];
-            for (var r = 0; r < 4; ++r)
+            double[] w = [p.X - mx, p.Y - my, p.Z - mz];
+            double sx = p.Sx - msx, sy = p.Sy - msy;
+            for (var r = 0; r < 3; ++r)
             {
-                for (var c = 0; c < 4; ++c) m[r, c] += w[r] * w[c];
-                vx[r] += w[r] * p.Sx;
-                vy[r] += w[r] * p.Sy;
+                for (var k = 0; k < 3; ++k) c[r, k] += w[r] * w[k];
+                gx[r] += w[r] * sx;
+                gy[r] += w[r] * sy;
             }
         }
-        var ax = Solve4(m, vx);
-        var ay = Solve4(m, vy);
-        return ax == null || ay == null ? null : (ax, ay);
+        var (lam, vec) = Eigen3(c);
+        var lmax = Math.Max(lam[0], Math.Max(lam[1], lam[2]));
+        if (!(lmax > 0)) return null;
+        // a direction counts when the atoms spread along it more than 1/1000 of their widest spread (the screen
+        // positions are single precision, so a thinner spread is noise)
+        double[] ax = new double[4], ay = new double[4];
+        for (var e = 0; e < 3; ++e)
+        {
+            if (!(lam[e] > 1e-6 * lmax)) continue;
+            double px = 0, py = 0;
+            for (var k = 0; k < 3; ++k) { px += vec[k, e] * gx[k]; py += vec[k, e] * gy[k]; }
+            for (var k = 0; k < 3; ++k) { ax[k] += vec[k, e] * px / lam[e]; ay[k] += vec[k, e] * py / lam[e]; }
+        }
+        ax[3] = msx - (ax[0] * mx + ax[1] * my + ax[2] * mz);
+        ay[3] = msy - (ay[0] * mx + ay[1] * my + ay[2] * mz);
+        return (ax, ay);
     }
 
-    private static double[]? Solve4(double[,] a0, double[] b0)
+    // eigenvalues and eigenvectors (columns) of a symmetric 3 × 3 matrix, by Jacobi rotations
+    private static (double[] Values, double[,] Vectors) Eigen3(double[,] m0)
     {
-        var a = (double[,])a0.Clone();
-        var b = (double[])b0.Clone();
-        for (var c = 0; c < 4; ++c)
+        var a = (double[,])m0.Clone();
+        var v = new double[3, 3] { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
+        for (var sweep = 0; sweep < 50; ++sweep)
         {
-            var piv = c;
-            for (var r = c + 1; r < 4; ++r) if (Math.Abs(a[r, c]) > Math.Abs(a[piv, c])) piv = r;
-            if (Math.Abs(a[piv, c]) < 1e-12) return null;
-            if (piv != c)
-            {
-                for (var k = 0; k < 4; ++k) (a[c, k], a[piv, k]) = (a[piv, k], a[c, k]);
-                (b[c], b[piv]) = (b[piv], b[c]);
-            }
-            for (var r = 0; r < 4; ++r)
-            {
-                if (r == c) continue;
-                var f = a[r, c] / a[c, c];
-                for (var k = c; k < 4; ++k) a[r, k] -= f * a[c, k];
-                b[r] -= f * b[c];
-            }
+            var off = a[0, 1] * a[0, 1] + a[0, 2] * a[0, 2] + a[1, 2] * a[1, 2];
+            var diag = a[0, 0] * a[0, 0] + a[1, 1] * a[1, 1] + a[2, 2] * a[2, 2];
+            if (off <= 1e-30 * diag || off == 0) break;
+            for (var p = 0; p < 2; ++p)
+                for (var q = p + 1; q < 3; ++q)
+                {
+                    if (a[p, q] == 0) continue;
+                    var theta = (a[q, q] - a[p, p]) / (2 * a[p, q]);
+                    var t = Math.Sign(theta) / (Math.Abs(theta) + Math.Sqrt(theta * theta + 1));
+                    if (theta == 0) t = 1;
+                    var cs = 1 / Math.Sqrt(t * t + 1);
+                    var sn = t * cs;
+                    for (var k = 0; k < 3; ++k)
+                    {
+                        double akp = a[k, p], akq = a[k, q];
+                        a[k, p] = cs * akp - sn * akq;
+                        a[k, q] = sn * akp + cs * akq;
+                    }
+                    for (var k = 0; k < 3; ++k)
+                    {
+                        double apk = a[p, k], aqk = a[q, k];
+                        a[p, k] = cs * apk - sn * aqk;
+                        a[q, k] = sn * apk + cs * aqk;
+                    }
+                    for (var k = 0; k < 3; ++k)
+                    {
+                        double vkp = v[k, p], vkq = v[k, q];
+                        v[k, p] = cs * vkp - sn * vkq;
+                        v[k, q] = sn * vkp + cs * vkq;
+                    }
+                }
         }
-        return [b[0] / a[0, 0], b[1] / a[1, 1], b[2] / a[2, 2], b[3] / a[3, 3]];
+        return ([a[0, 0], a[1, 1], a[2, 2]], v);
     }
 
     // ---------------------------------------------------------------- pinned monitors
@@ -207,7 +236,8 @@ public sealed partial class MainViewModel
         if (_doc == null || _selection.Count < 2) { Status = "Pick 2–4 atoms (⇧ click) to measure, then pin the measurement"; return; }
         var atoms = _selection.Take(4).ToArray();
         if (Monitors.Any(m => m.Atoms.SequenceEqual(atoms))) { Status = "That measurement is pinned already"; return; }
-        var row = new MonitorRow { Atoms = atoms, Ids = string.Join("–", atoms.Select(i => _doc.Atom(i).Id)) };
+        var ids = atoms.Select(i => _doc.Atom(i).Id).ToArray();
+        var row = new MonitorRow { Atoms = atoms, AtomIds = ids, Ids = string.Join("–", ids) };
         Monitors.Add(row);
         Raise(nameof(HasMonitors)); Raise(nameof(MonitorsVisible));
         RefreshMonitors();
@@ -222,12 +252,18 @@ public sealed partial class MainViewModel
         RenderRequested?.Invoke();
     }
 
-    /// <summary>Recomputes each monitor on the shown frame; monitors whose atoms are gone (after a delete) are dropped.</summary>
+    /// <summary>Recomputes each monitor on the shown frame; monitors whose atoms are gone (after a delete) are dropped,
+    /// and those whose atoms moved to other indices (a delete before them) follow them by their ids.</summary>
     public void RefreshMonitors()
     {
-        if (_doc == null || Monitors.Count == 0) return;
+        if (Monitors.Count == 0) return;
+        if (_doc == null) { ClearMonitors(); return; }
         var n = (int)_doc.Summary().Atoms;
-        foreach (var m in Monitors.Where(m => m.Atoms.Any(a => a >= n)).ToList()) Monitors.Remove(m);
+        foreach (var m in Monitors.ToList())
+        {
+            if (FindMonitorAtoms(m, n) is { } at) m.Atoms = at;
+            else Monitors.Remove(m);
+        }
         Raise(nameof(HasMonitors)); Raise(nameof(MonitorsVisible));
         foreach (var m in Monitors)
         {
@@ -236,7 +272,34 @@ public sealed partial class MainViewModel
         }
     }
 
-    /// <summary>The monitors as the overlay draws them, from the atoms' screen positions in this render.</summary>
+    /// <summary>The monitor's atoms in the open structure: each at its index if the id there is still its own, else
+    /// searched for by id (downwards first, as a delete moves atoms to lower indices); null when one is gone.</summary>
+    private int[]? FindMonitorAtoms(MonitorRow m, int n)
+    {
+        if (_doc == null) return null;
+        if (m.AtomIds.Length != m.Atoms.Length) return m.Atoms.All(a => a >= 0 && a < n) ? m.Atoms : null;
+        var found = new int[m.Atoms.Length];
+        for (var k = 0; k < found.Length; ++k)
+        {
+            var id = m.AtomIds[k];
+            var at = m.Atoms[k];
+            if (at >= 0 && at < n && _doc.Atom(at).Id == id) { found[k] = at; continue; }
+            found[k] = -1;
+            for (var i = Math.Min(at, n - 1); i >= 0 && found[k] < 0; --i) if (_doc.Atom(i).Id == id) found[k] = i;
+            for (var i = Math.Max(at + 1, 0); i < n && found[k] < 0; ++i) if (_doc.Atom(i).Id == id) found[k] = i;
+            if (found[k] < 0) return null;
+        }
+        return found.Distinct().Count() == found.Length ? found : null;
+    }
+
+    /// <summary>Monitors are a structure's atoms: a structure shown in place of another (or none) starts with none.</summary>
+    internal void ClearMonitors()
+    {
+        if (Monitors.Count == 0) return;
+        Monitors.Clear();
+        Raise(nameof(HasMonitors)); Raise(nameof(MonitorsVisible));
+    }
+
     /// <summary>The pinned monitors from the GPU view's camera fit (their atoms looked up one by one).</summary>
     public List<MonitorMark> MonitorMarksFit(in CapsViewFit fit, double scaling)
     {
@@ -257,6 +320,7 @@ public sealed partial class MainViewModel
         return list;
     }
 
+    /// <summary>The monitors as the overlay draws them, from the atoms' screen positions in this render.</summary>
     public List<MonitorMark> MonitorMarks(CapsCamera cam, CapsRenderOpts opt, double scaling)
     {
         var list = new List<MonitorMark>();

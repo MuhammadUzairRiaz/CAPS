@@ -145,36 +145,66 @@ public partial class MainViewModel
     private string _fillText = "";
     public decimal? FillDensity { get => _fillDensity; set { if (value != null) Set(ref _fillDensity, Math.Clamp(value.Value, 0.01m, 5m)); } }
     public string FillText { get => _fillText; private set => Set(ref _fillText, value); }
-    /// <summary>Sets the last structure block's number so the cell (the current structure plus the molecules) reaches the
-    /// density: N = (ρ V N_A − m_host) / m_molecule, rounded down (ρ in g/cm³, V the cell's volume).</summary>
+    /// <summary>Sets the last structure block's number so the cell (the structure packed around, the other rows and the
+    /// molecules) reaches the density: N = (ρ V N_A − m_host − Σ count_i m_i) / m_molecule, rounded down (ρ in g/cm³, V the
+    /// cell's volume).</summary>
     public void FillToDensity()
     {
         var inv = CultureInfo.InvariantCulture;
-        if (_doc == null || _packStart != 1) { FillText = "Pack around the current structure first (Pack into › Around the current structure)"; return; }
+        // the structure Pack packs around: with the last packed cell open, the one it was packed around (not the packed cell,
+        // whose mass already holds the last run's molecules)
+        var hostDoc = _packStart == 1 ? PackHostDoc() : null;
+        if (hostDoc == null) { FillText = "Pack around the current structure first (Pack into › Around the current structure)"; return; }
         var lines = _packText.Split('\n').ToList();
         var caps = IsCapsPack(_packText);
         string open = caps ? "molecule " : "structure ", countKey = caps ? "count " : "number ", endKey = caps ? "end" : "end structure";
+        string PathOf(string line)
+        {
+            var p = line.Trim()[open.Length..].Split('#')[0].Trim();
+            if (p.Length >= 2 && (p[0] == '"' || p[0] == '\'') && p[^1] == p[0]) p = p[1..^1];
+            return Path.IsPathRooted(p) ? p : Path.Combine(_packBaseDir, p);
+        }
         var k = lines.FindLastIndex(l => l.TrimStart().StartsWith(open, StringComparison.OrdinalIgnoreCase));
         if (k < 0) { FillText = "Add the molecule to fill with first"; return; }
-        var path = lines[k].Trim()[open.Length..].Split('#')[0].Trim();
-        if (!Path.IsPathRooted(path)) path = Path.Combine(_packBaseDir, path);
+        var path = PathOf(lines[k]);
         double mMol;
         try { using var mol = Interop.CapsDocument.Open(path); mMol = mol.Summary().TotalMass; }
         catch (Exception e) { FillText = "Cannot read the molecule: " + e.Message; return; }
-        var s = _doc.Summary();
+        // the other rows go into the same cell: their copies count toward its mass
+        double mOthers = 0;
+        for (var i = 0; i < lines.Count; ++i)
+        {
+            if (i == k || !lines[i].TrimStart().StartsWith(open, StringComparison.OrdinalIgnoreCase)) continue;
+            var count = 1;   // a block without a count (a fixed molecule) is one copy
+            for (var q = i + 1; q < lines.Count; ++q)
+            {
+                var w = lines[q].Split('#')[0].Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+                if (w.Length == 0) continue;
+                var key = w[0].ToLowerInvariant();
+                if (key == "end" && !(w.Length > 1 && w[1].Equals("atoms", StringComparison.OrdinalIgnoreCase))) break;
+                if (key is "count" or "number" && w.Length > 1 && int.TryParse(w[1], NumberStyles.Integer, inv, out var c)) count = c;
+            }
+            var other = PathOf(lines[i]);
+            try { using var mol = Interop.CapsDocument.Open(other); mOthers += count * mol.Summary().TotalMass; }
+            catch (Exception e) { FillText = $"Cannot read {Path.GetFileName(other)}: {e.Message}"; return; }
+        }
+        var s = hostDoc.Summary();
+        if (s.CellValid == 0 || s.Volume <= 0) { FillText = "The structure packed around has no cell"; return; }
         const double avogadroPerA3 = 0.602214076;   // g/cm³ × Å³ → g/mol
+        var mFixed = s.TotalMass + mOthers;
+        var dNow = mFixed / (s.Volume * avogadroPerA3);
         var target = (double)_fillDensity * s.Volume * avogadroPerA3;
-        var room = target - s.TotalMass;
+        var room = target - mFixed;
         if (mMol <= 0) { FillText = "The molecule has no mass"; return; }
-        if (room < mMol) { FillText = string.Format(inv, "The cell is already at {0:0.000} g/cm³: nothing to add for {1:0.000}", s.Density, _fillDensity); return; }
+        if (room < mMol) { FillText = string.Format(inv, "The cell is already at {0:0.000} g/cm³: nothing to add for {1:0.000}", dNow, _fillDensity); return; }
         var n = (int)Math.Floor(room / mMol);
         var j = k + 1;
         while (j < lines.Count && !lines[j].TrimStart().StartsWith(endKey, StringComparison.OrdinalIgnoreCase) && !lines[j].TrimStart().StartsWith(countKey, StringComparison.OrdinalIgnoreCase)) ++j;
         if (j < lines.Count && lines[j].TrimStart().StartsWith(countKey, StringComparison.OrdinalIgnoreCase)) lines[j] = $"  {countKey}{n}";
         else lines.Insert(k + 1, $"  {countKey}{n}");
         PackText = string.Join('\n', lines);
-        var reached = (s.TotalMass + n * mMol) / (s.Volume * avogadroPerA3);
-        FillText = string.Format(inv, "{0} × {1} ({2:0.0} g/mol): {3:0.000} → {4:0.000} g/cm³ (target {5:0.000}; whole molecules)", n, Path.GetFileNameWithoutExtension(path), mMol, s.Density, reached, _fillDensity);
+        var reached = (mFixed + n * mMol) / (s.Volume * avogadroPerA3);
+        FillText = string.Format(inv, "{0} × {1} ({2:0.0} g/mol): {3:0.000} → {4:0.000} g/cm³ (target {5:0.000}; whole molecules)", n, Path.GetFileNameWithoutExtension(path), mMol, dNow, reached, _fillDensity);
     }
 
     /// <summary>After Grow or Pack made a cell: that builder's own force field, typed and checked.</summary>
@@ -448,8 +478,17 @@ public partial class MainViewModel
             var safe = System.Text.RegularExpressions.Regex.Replace(new string(name.Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' ? c : '_').ToArray()), "_+", "_").Trim('_');
             if (safe.Length == 0) safe = "molecule";
             if (safe.Length > 40) safe = safe[..40];
+            // each file keeps the SMILES it was built from beside it: a different molecule under the same name (isomers share
+            // a formula) gets a file of its own, so the rows and inputs naming the first one still pack it
+            static string? BuiltFrom(string mol2)
+            {
+                var tag = Path.ChangeExtension(mol2, ".smiles");
+                return File.Exists(tag) ? File.ReadAllText(tag).Trim() : null;
+            }
             var path = Path.Combine(dir, safe + ".mol2");
+            for (var k = 2; File.Exists(path) && BuiltFrom(path) != smiles; ++k) path = Path.Combine(dir, $"{safe}_{k}.mol2");
             File.Move(tmp, path, true);
+            File.WriteAllText(Path.ChangeExtension(path, ".smiles"), smiles + "\n");
             AddPackStructure(path);
             Status = $"{name} ({formula}): built from {smiles} ({atoms} atoms) and added — set its count and region below";
         }

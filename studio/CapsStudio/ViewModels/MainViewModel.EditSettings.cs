@@ -296,7 +296,7 @@ public sealed partial class MainViewModel
         switch (page)
         {
             case "crystal":
-                o["group"] = CrystalGroupPick?.Key;
+                o["group"] = _cGroup?.Key;
                 o["sites"] = new JsonArray(CrystalSites.Select(r => (JsonNode)new JsonObject { ["label"] = r.Label, ["element"] = r.Element, ["x"] = r.X, ["y"] = r.Y, ["z"] = r.Z, ["occ"] = r.Occ }).ToArray());
                 break;
             case "nano" when MatrixPolymer is { } mp:
@@ -347,7 +347,11 @@ public sealed partial class MainViewModel
         switch (page)
         {
             case "crystal":
-                if ((string?)o["group"] is { } key && CrystalGroups.FirstOrDefault(g => g.Key == key) is { } grp) CrystalGroupPick = grp;
+                if ((string?)o["group"] is { } key && FindGroup(key) is { } grp)
+                {
+                    CrystalGroup = grp;
+                    CrystalFilter();
+                }
                 if (o["sites"] is JsonArray sites && sites.Count > 0)
                 {
                     CrystalSites.Clear();

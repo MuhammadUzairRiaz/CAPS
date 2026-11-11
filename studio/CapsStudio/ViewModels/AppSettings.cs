@@ -224,7 +224,8 @@ public sealed class SavedQueryData
 }
 
 /// <summary>Where a shelf is: dock top-left | top-right | top-2 | left | right | bottom | float | window | hidden; its
-/// order in the dock; its place when floating (window coordinates, or screen for a popped-out one); folded to a puck.</summary>
+/// order in the dock; its place when floating (X, Y in window coordinates) and when popped out (WinX, WinY in screen
+/// pixels, 0, 0 for centred on the main window); folded to a puck.</summary>
 public sealed class ShelfState
 {
     public string Id { get; set; } = "";
@@ -232,6 +233,8 @@ public sealed class ShelfState
     public int Order { get; set; }
     public double X { get; set; }
     public double Y { get; set; }
+    public int WinX { get; set; }
+    public int WinY { get; set; }
     public bool Folded { get; set; }
 }
 

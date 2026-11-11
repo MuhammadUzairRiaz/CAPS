@@ -22,7 +22,7 @@ public sealed partial class MainViewModel
     public decimal CifNa { get => _cifNa; set => Set(ref _cifNa, Math.Clamp(value, 1, 20)); }
     public decimal CifNb { get => _cifNb; set => Set(ref _cifNb, Math.Clamp(value, 1, 20)); }
     public decimal CifNc { get => _cifNc; set => Set(ref _cifNc, Math.Clamp(value, 1, 20)); }
-    public decimal CifSeed { get => _cifSeed; set => Set(ref _cifSeed, Math.Max(1, value)); }
+    public decimal CifSeed { get => _cifSeed; set => Set(ref _cifSeed, Math.Clamp(decimal.Truncate(value), 1, int.MaxValue)); }
     public string CifInfo { get => _cifInfo; private set { if (Set(ref _cifInfo, value)) Raise(nameof(CifHasDisorder)); } }
     public bool CifHasDisorder => _cifInfo.Length > 0;
     public string CifError { get => _cifError; private set { if (Set(ref _cifError, value)) Raise(nameof(CifHasError)); } }

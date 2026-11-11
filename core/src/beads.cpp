@@ -166,10 +166,29 @@ System build_bead_graph(const BeadMolecule& m, const std::vector<double>& bond_l
       }
     }
   }
-  // spring model: bonds at b0; beads two bonds apart at least 1.4 b0 (rings excepted: they are bonded), the rest
-  // at least 0.9 of the longer bond; steepest descent with a capped step
-  double bmax = o.default_bond;
-  for (const auto& [a, b] : m.bonds) bmax = std::max(bmax, b0(a, b));
+  // spring model: bonds at b0; beads two bonds apart at least 1.4 times the shorter of the two bonds through their
+  // shared neighbour (rings excepted: they are bonded), the rest at least 0.9 of the longest bond at either bead;
+  // steepest descent with a capped step
+  std::vector<double> blong(size_t(n), 0.0);   // each bead's longest bond (default_bond for a bead with none)
+  for (int a = 0; a < n; ++a) {
+    for (int c : nb[size_t(a)]) blong[size_t(a)] = std::max(blong[size_t(a)], b0(a, c));
+    if (nb[size_t(a)].empty()) blong[size_t(a)] = o.default_bond;
+  }
+  std::vector<std::vector<double>> dmin_of(size_t(n), std::vector<double>(size_t(n), 0.0));
+  for (int a = 0; a < n; ++a)
+    for (int b = a + 1; b < n; ++b) {
+      const int gdist = gd[size_t(a)][size_t(b)];
+      if (gdist <= 1) continue;
+      double dmin = 0.9 * std::max(blong[size_t(a)], blong[size_t(b)]);
+      if (gdist == 2) {
+        // the shortest two-bond path a-c-b sets what the geometry allows (a 4-ring's diagonal has two)
+        double bshort = 1e30;
+        for (int c : nb[size_t(a)])
+          if (gd[size_t(c)][size_t(b)] == 1) bshort = std::min(bshort, std::min(b0(a, c), b0(c, b)));
+        dmin = 1.4 * bshort;
+      }
+      dmin_of[size_t(a)][size_t(b)] = dmin;
+    }
   for (int it = 0; it < 3000; ++it) {
     std::vector<Vec3> g(size_t(n), Vec3{0, 0, 0});
     for (const auto& [a, b] : m.bonds) {
@@ -180,9 +199,8 @@ System build_bead_graph(const BeadMolecule& m, const std::vector<double>& bond_l
     }
     for (int a = 0; a < n; ++a)
       for (int b = a + 1; b < n; ++b) {
-        const int gdist = gd[size_t(a)][size_t(b)];
-        if (gdist <= 1) continue;
-        const double dmin = gdist == 2 ? 1.4 * std::min(b0(a, b), bmax) : 0.9 * bmax;
+        const double dmin = dmin_of[size_t(a)][size_t(b)];
+        if (dmin <= 0) continue;
         const Vec3 d = x[size_t(b)] - x[size_t(a)];
         const double r = std::max(1e-6, norm(d));
         if (r >= dmin) continue;

@@ -69,7 +69,8 @@ struct Cell3 {
   double limit(char a, char b) const { return base_limit(a, b) * scale; }
 
   explicit Cell3(double L_, double scale_) : L(L_), scale(scale_) {
-    n = std::max(1, int(L / 3.0));
+    // around() only scans adjacent bins, so a bin must be at least as wide as the largest contact limit (C–C, 3.0 Å × scale).
+    n = std::max(1, int(L / (3.0 * std::max(1.0, scale))));
     cs = L / n;
     bins.assign(size_t(n) * n * n, {});
   }

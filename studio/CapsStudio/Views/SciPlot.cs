@@ -166,6 +166,7 @@ public sealed class SciPlot : Control
     private Rect _frame;
     private Func<double, double>? _xinv, _yinv;
     private Point? _b0, _b1;
+    private bool _brushing; // true only between press and release of a brush drag
 
     protected override void OnPointerPressed(Avalonia.Input.PointerPressedEventArgs e)
     {
@@ -176,27 +177,35 @@ public sealed class SciPlot : Control
         if (!Brushable) { Clicked?.Invoke(_xinv(p.X)); return; }
         _b0 = _b1 = p;
         e.Pointer.Capture(this);
+        _brushing = true;
         InvalidateVisual();
     }
     protected override void OnPointerMoved(Avalonia.Input.PointerEventArgs e)
     {
         base.OnPointerMoved(e);
-        if (_b0 == null || !Brushable) return;
+        if (!_brushing || _b0 == null || !Brushable) return;
         var p = e.GetPosition(this);
         _b1 = new Point(Math.Clamp(p.X, _frame.Left, _frame.Right), Math.Clamp(p.Y, _frame.Top, _frame.Bottom));
         InvalidateVisual();
     }
+    protected override void OnPointerCaptureLost(Avalonia.Input.PointerCaptureLostEventArgs e)
+    {
+        base.OnPointerCaptureLost(e);
+        _brushing = false;
+    }
     protected override void OnPointerReleased(Avalonia.Input.PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
-        if (_b0 is not { } a || _b1 is not { } b || !Brushable || _xinv == null || _yinv == null) return;
+        if (!_brushing) return;
+        _brushing = false;
         e.Pointer.Capture(null);
+        if (_b0 is not { } a || _b1 is not { } b || !Brushable || _xinv == null || _yinv == null) return;
         if (Math.Abs(a.X - b.X) < 3 && Math.Abs(a.Y - b.Y) < 3) { _b0 = _b1 = null; InvalidateVisual(); Brushed?.Invoke(double.NaN, double.NaN, double.NaN, double.NaN); return; }
         double x0 = _xinv(a.X), x1 = _xinv(b.X), y0 = _yinv(a.Y), y1 = _yinv(b.Y);
         Brushed?.Invoke(Math.Min(x0, x1), Math.Max(x0, x1), Math.Min(y0, y1), Math.Max(y0, y1));
     }
     /// <summary>Clears the drawn brush box (new data).</summary>
-    public void ClearBrush() { _b0 = _b1 = null; InvalidateVisual(); }
+    public void ClearBrush() { _b0 = _b1 = null; _brushing = false; InvalidateVisual(); }
 
     // ------------------------------------------------------------------ colours
     internal static IBrush Colour(int k) => new SolidColorBrush(SciStyle.Screen().Colour(k));

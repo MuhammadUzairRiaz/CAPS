@@ -111,7 +111,8 @@ struct StillingerWeber {
 // written by Ciarella, Sciortino & Ellenbroek, Phys. Rev. Lett. 121, 058003 (2018), Eqs. 1–3). Reactive sites of
 // complementary classes attract by a generalised Lennard-Jones pair, v(r) = 4ε[(σ/r)^n − (σ/r)^m] below rc (20-10 in the
 // papers), and every site i with two partners j, k within reach adds the three-body term λ ε v̂(r_ij) v̂(r_ik), with
-// v̂ = 1 inside the pair's minimum r_min = 2^{1/(n−m)} σ and −v(r)/ε beyond it. The three-body term cancels the second
+// v̂ = 1 inside the pair's minimum r_min = (n/m)^{1/(n−m)} σ (2^{1/(n−m)} σ for n = 2m) and −v(r)/D beyond it, D = −v(r_min)
+// the well's depth (ε for n = 2m unshifted, as in the papers), so v̂ is continuous at r_min. The three-body term cancels the second
 // bond a site would gain, so a partner swaps through a triplet at a barrier of about ε(λ − 1) and no site keeps two
 // partners. Bonds are not listed: they are where the pair is. Sites and pairs are found by their own cell list (their
 // reach may exceed the force field's cut-off); the pairs the force field excludes (bonded) take no part. The site

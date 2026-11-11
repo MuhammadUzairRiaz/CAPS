@@ -523,7 +523,18 @@
    "source": "core/src/field.cpp",
    "tested": "tests/test_slab_ewald.cpp (a dipolar ion slab: with the correction the energy at 40 and 80 Å cell height differs by under 2 % of what it differs without it, and by under 10⁻³ relative; factor 3 against 5 within 10⁻³; a slab with a net charge moved 3 Å along z keeps its energy to 10⁻⁶; forces equal −∂E/∂z by central differences to 10⁻⁴; against LAMMPS (ewald 1e-10, coul/long, kspace_modify slab 3.0, boundary p p f) 2452.6201 kcal/mol and plain 1914.1118, CAPS within 2·10⁻³ of both); tests/python/test_bindings.py (the LAMMPS and GROMACS exports carry the settings)",
    "deviation": "c must lie along z and a, b in the xy plane. No virial from the correction. Atoms must stay inside the cell along z (the vacuum keeps them there); one that crosses is wrapped, which a slab should never need.",
-   "engines": "CLI --slab 3 (implies --pme) on every command with electrostatics; Python caps.set_electrostatics(\"pme\", slab=3); Studio Settings › Force fields › Particle-mesh Ewald › Slab cells; C API caps_set_slab",
+   "usage": "CLI --slab 3 (implies --pme) on every command with electrostatics; Python caps.set_electrostatics(\"pme\", slab=3); Studio Settings › Force fields › Particle-mesh Ewald › Slab cells; C API caps_set_slab",
+   "engines": [
+    "relax.lbfgs",
+    "relax.cg",
+    "relax.sd",
+    "relax.fire",
+    "dynamics.nve",
+    "dynamics.nvt",
+    "dynamics.npt",
+    "equilibrate.larsen21",
+    "equilibrate.protocol"
+   ],
    "tex": "E_{\\mathrm{corr}} = \\frac{2\\pi k}{V'}\\left(M_z^2 - Q\\sum_i q_i z_i^2 - \\frac{Q^2 L_z'^2}{12}\\right),\\qquad M_z = \\sum_i q_i z_i,\\qquad F_{iz} = -\\frac{4\\pi k}{V'}\\,q_i\\left(M_z - Q z_i\\right)"
   },
   {
@@ -3231,7 +3242,10 @@
   {
    "group": "Growth",
    "source": "core/src/edit.cpp",
-   "engines": "C API caps_edit defects {grade radial | axial, inner, outer, axis}; Studio Crystal › Point defects › Graded",
+   "usage": "C API caps_edit defects {grade radial | axial, inner, outer, axis}; Studio Crystal › Point defects › Graded",
+   "engines": [
+    "edit.builder"
+   ],
    "cites": [],
    "id": "point-defects",
    "title": "Point defects: vacancies and doping, graded",
@@ -3710,7 +3724,10 @@
    "source": "core/src/qha.cpp",
    "tested": "tests/test_qha.cpp (an Einstein model with a Grüneisen γ against independent bisection: V(T) to 2·10⁻⁵, B_T and C_v and S to 2·10⁻³, the relation α B_T V = γ C_v to 5·10⁻³, α = 0 at 0 K, zero-point expansion; pressure shifts the minimum to the root of dF/dV = −P; fcc Lennard-Jones argon: zero-point expansion, volume and α rising and B_T falling with T, C_v below 3R per atom and above 85 % of it at 60 K, the volume and axes modes agreeing to 0.2 % with α_a = α_b = α_c = α_V/3 to 2 %; a locked axis keeps its length); tests/python/test_bindings.py. Checked by hand: orthorhombic PE with GAFF gives α_c negative (−5 to −7.5 × 10⁻⁶ K⁻¹) and large positive α_a, α_b at 100 to 300 K",
    "deviation": "No anharmonicity beyond the strain dependence of the modes, so results degrade towards melting (and glassy or disordered phases are out of scope). Angles stay fixed in the axes mode. Modes that go imaginary at a strain leave F_vib, counted in the notes. A minimum outside the sampled strains is marked extrapolated: widen the range (0.05 suits soft polymer axes). The cell's shifted Lennard-Jones differs slightly from a tail-corrected one: use a cut-off of 10 to 13 Å.",
-   "engines": "caps qha CRYSTAL [--mode volume|axes] [--lock c] [--range] [--points] [--temps] [--pressure] [--csv]; Python Document.qha(mode, lock, range, points, temperatures, pressure, …); Studio Thermal conductivity › Thermal expansion",
+   "usage": "caps qha CRYSTAL [--mode volume|axes] [--lock c] [--range] [--points] [--temps] [--pressure] [--csv]; Python Document.qha(mode, lock, range, points, temperatures, pressure, …); Studio Thermal conductivity › Thermal expansion",
+   "engines": [
+    "analysis.qha"
+   ],
    "tex": "G(\\varepsilon, T) = E(\\varepsilon) + F_{\\mathrm{vib}}(\\varepsilon, T) + P V(\\varepsilon),\\qquad F_{\\mathrm{vib}} = \\sum_{\\mathbf q\\nu}\\left[\\tfrac{1}{2}\\hbar\\omega_{\\mathbf q\\nu} + k_{\\mathrm B}T\\ln\\left(1 - e^{-\\hbar\\omega_{\\mathbf q\\nu}/k_{\\mathrm B}T}\\right)\\right],\\qquad B_T = \\frac{V}{\\mathbf v^{\\mathsf T}\\mathbf H^{-1}\\mathbf v},\\qquad C_p = C_v + T V B_T \\alpha_V^2"
   },
   {
@@ -4096,7 +4113,8 @@
    "source": "core/src/miller.cpp",
    "tested": "tests/test_miller.cpp (cubic d = a/√(h²+k²+l²) and (222) = (111)/2; hexagonal 1/d² = 4(h²+hk+k²)/(3a²) + l²/c² for four reflections; a triclinic cell against hᵀG⁻¹h with the metric tensor, to 10⁻¹²; the cube's (111) planes are two triangles of side a√2, shifted by half a spacing a triangle, the regular hexagon of side a/√2 and area 3√3a²/4, and a triangle; every corner on its plane; (100) shifted by half is one face-sized square; the view angles put five normals exactly on the line of sight); tests/python/test_bindings.py (copper (111): d = a/√3, two planes); quartz (101) gives d = 3.3434 Å",
    "deviation": "Planes of the cell as it is: a supercell's planes are those of the supercell's indices. Planes that only touch an edge or a corner of the cell are not drawn. The camera has no roll: looking down a normal, the picture can stand at any turn about it.",
-   "engines": "caps planes FILE --hkl h,k,l [--shift] [--max] [--json]; Python Document.miller(h, k, l, shift, max_planes, show), clear_planes(); Studio Unit cell › Lattice planes",
+   "usage": "caps planes FILE --hkl h,k,l [--shift] [--max] [--json]; Python Document.miller(h, k, l, shift, max_planes, show), clear_planes(); Studio Unit cell › Lattice planes",
+   "engines": [],
    "tex": "d_{hkl} = \\frac{1}{\\left|h\\,\\mathbf a^* + k\\,\\mathbf b^* + l\\,\\mathbf c^*\\right|},\\qquad \\mathbf a^* = \\frac{\\mathbf b\\times\\mathbf c}{V},\\quad \\mathbf b^* = \\frac{\\mathbf c\\times\\mathbf a}{V},\\quad \\mathbf c^* = \\frac{\\mathbf a\\times\\mathbf b}{V}"
   },
   {
@@ -4130,7 +4148,10 @@
    "source": "core/src/pointgroup.cpp",
    "tested": "tests/test_pointgroup.cpp (water C2v, ammonia C3v, methane Td, benzene D6h, SF₆ Oh, a B₁₂ icosahedron Ih, staggered and eclipsed ethane D3d and D3h, H₂O₂ C2, CHFClBr C1, CO₂ D∞h and HCN C∞v, with the group orders 4, 6, 24, 24, 48, 120, 12, 12, 2, 1; methane and benzene with every atom moved by up to 0.04 Å symmetrised back to Td and D6h with the images meeting to 10⁻⁹ Å, equal bonds and the tetrahedral angle to 10⁻⁷°); tests/python/test_bindings.py",
    "deviation": "C_n is tested up to n = 8. Pair candidates are used up to 300 atoms and three-atom planes up to 60; a larger molecule is searched along its principal axes and atom directions only. A cell, if any, is ignored: the group is that of the atoms as they are.",
-   "engines": "caps pointgroup FILE [--tolerance 0.1] [--symmetrize -o OUT]; Python Document.point_group(tolerance), symmetrize_molecule(tolerance); Studio Unit cell › Point group (molecule)",
+   "usage": "caps pointgroup FILE [--tolerance 0.1] [--symmetrize -o OUT]; Python Document.point_group(tolerance), symmetrize_molecule(tolerance); Studio Unit cell › Point group (molecule)",
+   "engines": [
+    "edit.builder"
+   ],
    "tex": "\\mathbf x_i \\leftarrow \\frac{1}{|G|}\\sum_{g\\in G} \\mathbf R_g^{\\mathsf T}\\,\\mathbf x_{\\pi_g(i)},\\qquad \\mathbf R_g = \\mathbf H_g\\left(\\mathbf H_g^{\\mathsf T}\\mathbf H_g\\right)^{-1/2},\\qquad \\mathbf H_g = \\sum_i \\mathbf x_{\\pi_g(i)}\\,\\mathbf x_i^{\\mathsf T}"
   },
   {
@@ -4170,7 +4191,10 @@
    "source": "core/src/cell_relax.cpp",
    "tested": "tests/test_cell_relax.cpp (the gradient of all six parameters of a sheared argon cell against central differences of the energy, with and without the tail correction, to 10⁻⁵; fcc argon from a = 5.6 Å reaches the minimum of E(a) found by a golden-section search over the cubic lattice to 10⁻⁴ Å, stays cubic to 10⁻⁶°, with less than 1 atm left; c and β held stay to 10⁻¹² and 10⁻⁹ while the free parameters carry no force and the cell keeps a along x); tests/python/test_bindings.py (monoclinic PE with b and β held)",
    "deviation": "0 K: no thermal expansion. The stress reported is the energy's own (−(1/V) ∂E/∂ε, the tail as ∂E_t/∂V), not the homogeneous-fluid tail pressure of an MD run. Held parameters are held exactly, not by a restraint; symmetry is not imposed, so a held β with free α and γ can drift off a monoclinic cell unless α and γ are held too.",
-   "engines": "caps cellrelax FILE -o OUT [--hold c,beta] [--pressure] [--ftol] [--steps] [--cutoff] [--ff]; Python Document.relax_cell(hold, pressure, ftol, steps, cutoff); Studio Minimise › Cell with held parameters (undoable)",
+   "usage": "caps cellrelax FILE -o OUT [--hold c,beta] [--pressure] [--ftol] [--steps] [--cutoff] [--ff]; Python Document.relax_cell(hold, pressure, ftol, steps, cutoff); Studio Minimise › Cell with held parameters (undoable)",
+   "engines": [
+    "edit.builder"
+   ],
    "tex": "H = E + PV,\\qquad \\frac{\\partial H}{\\partial \\mathbf s_i} = \\mathbf h^{\\mathsf T}\\frac{\\partial E}{\\partial \\mathbf x_i},\\qquad \\frac{\\partial H}{\\partial \\mathbf h} = \\left(PV\\,\\mathbf I - \\mathbf W\\right)\\mathbf h^{-\\mathsf T},\\qquad \\frac{\\partial H}{\\partial p} = \\sum_{\\alpha\\beta}\\left(\\frac{\\partial H}{\\partial \\mathbf h}\\right)_{\\alpha\\beta}\\frac{\\partial h_{\\alpha\\beta}}{\\partial p}"
   },
   {
@@ -4415,7 +4439,10 @@
   {
    "group": "Growth",
    "source": "core/src/layers.cpp",
-   "engines": "Python caps.stack(layers, gap, vacuum, match, keep_volume, flips, shifts, names); Studio Surface › Layer stack › Keep each layer's volume",
+   "usage": "Python caps.stack(layers, gap, vacuum, match, keep_volume, flips, shifts, names); Studio Surface › Layer stack › Keep each layer's volume",
+   "engines": [
+    "build.stack"
+   ],
    "cites": [],
    "id": "stack-ops",
    "title": "Layer stacks: oblique cells, flip, shift, shared strain, kept volume",
@@ -4485,7 +4512,10 @@
    "source": "core/src/ring_edit.cpp",
    "tested": "tests/test_ring_edit.cpp (ethane + O is ethylene oxide, C₂H₄O, the O at |CC| from both carbons before clean-up; a carbon six-ring on ethane is cyclohexane, a chair after UFF with ring torsions alternating in sign; C C C N aromatic on benzene is quinoline, C₉H₇N, with 11 aromatic bonds and 120° angles; four carbons spiro on cyclohexane give spiro[3.5]nonane, C₉H₁₆, a square of side 2r_C, and N C=O C C gives C₉H₁₅NO with one H on N; S into dimethyl disulfide gives C₂H₆S₃ with S–S = 2r_S and S–S–S = 109.47°, each side unchanged; C into cyclohexane gives C₇H₁₄ with the shared atoms fixed; two ideal methanes joined are staggered ethane, C–C = 2r_C, and a torsion asked is set to 10⁻⁹°); tests/python/test_bindings.py",
    "deviation": "Starting geometries only: polygons, covalent sums and the tetrahedral angle, then UFF where the edit cleans. Aromatic is offered for fused six-rings, and a ring nitrogen there takes no hydrogen (pyridine type). Insertion makes both new bonds single. A joined piece keeps its own geometry and charges; its cell is dropped.",
-   "engines": "caps edit --ops 'ring I J N [MEMBERS] [aromatic]; spiro I N [MEMBERS]; insert I J Sym; join I FILE [J|auto] [torsion]'; Python Document.fuse_ring, spiro_ring, insert_atom, join; Studio sketch toolbar › ring button",
+   "usage": "caps edit --ops 'ring I J N [MEMBERS] [aromatic]; spiro I N [MEMBERS]; insert I J Sym; join I FILE [J|auto] [torsion]'; Python Document.fuse_ring, spiro_ring, insert_atom, join; Studio sketch toolbar › ring button",
+   "engines": [
+    "edit.builder"
+   ],
    "tex": "R = \\frac{L}{2\\sin(\\pi/n)},\\qquad a = \\frac{L}{2\\tan(\\pi/n)},\\qquad d_{ij} = \\sqrt{r_1^2 + r_2^2 - 2 r_1 r_2 \\cos\\theta_t},\\quad \\cos\\theta_t = -\\tfrac{1}{3},\\qquad r_{AB} = r_A + r_B"
   },
   {
@@ -4534,7 +4564,10 @@
    "source": "core/src/dendrimer.cpp",
    "tested": "tests/test_dendrimer.cpp (PAMAM generation 0 is C₂₂H₄₈N₁₀O₄ and generation 1 C₆₂H₁₂₈N₂₆O₁₂ with 4 and 8 units per shell and both DB 1; PPI generation 1 (DAB-Am-4) is C₁₆H₄₀N₆ and generation 2 C₄₀H₉₆N₁₄, relaxed with no two atoms within 0.9 Å; eight acetyl ends make PAMAM G0 C₃₈H₆₄N₁₀O₁₂; Flory AB₂ trees of 4000 units have T = D + 1 and DB 0.5 ± 0.03; slow addition has T = D + 1 and DB 2/3 ± 0.02; 20-unit bis-MPA molecules by either growth are C₁₀₀H₁₆₂O₆₁). The PAMAM masses for generations 0 to 4 come out at 516.7, 1429.9, 3256.2, 6909.0 and 14214.5 g/mol; tests/python/test_bindings.py",
    "deviation": "Geometry from joining and a UFF relaxation, not a sampled conformation of the molecule in solvent. Flory growth has no core. For n > 2 the report gives the units by B sites used and no degree of branching. Sites are unreactive towards each other: no intramolecular cycles, no back-biting or side reactions. Molecules are limited to 15 000 atoms.",
-   "engines": "caps dendrimer -o OUT [--preset pamam|ppi|bismpa --generation G] [--core] [--unit] [--end] [--focal] [--shells] [--growth perfect|sma|flory --units N --seed S] [--no-relax]; Python caps.dendrimer(); Studio Builders › Polymer › Dendrimers from units",
+   "usage": "caps dendrimer -o OUT [--preset pamam|ppi|bismpa --generation G] [--core] [--unit] [--end] [--focal] [--shells] [--growth perfect|sma|flory --units N --seed S] [--no-relax]; Python caps.dendrimer(); Studio Builders › Polymer › Dendrimers from units",
+   "engines": [
+    "dendrimer.build"
+   ],
    "tex": "\\mathrm{DB}_{\\mathrm{Frey}} = \\frac{2D}{2D + L},\\qquad \\mathrm{DB}_{\\mathrm{Fr\\acute{e}chet}} = \\frac{D + T}{D + T + L},\\qquad \\frac{dT}{dN} = 1 - \\frac{2T}{F},\\quad \\frac{dL}{dN} = \\frac{2T - L}{F},\\quad \\frac{dD}{dN} = \\frac{L}{F}"
   },
   {
@@ -5012,8 +5045,8 @@
    "group": "Coarse-grained",
    "title": "Three-body swap potential (vitrimers)",
    "summary": "Bond exchange as continuous dynamics, with no Monte Carlo step. Reactive sites of complementary classes attract through a steep generalised Lennard-Jones pair (20-10 in the papers). A three-body term on every site with two partners in reach cancels the second bond it would gain. A partner therefore swaps through a triplet whose energy is only ε(λ − 1) above the bonded state, and no site keeps two partners. λ sets the swap barrier, standing in for the catalyst or the temperature of an exchange chemistry. Sites are found by their own cell list. Bonded (excluded) pairs take no part. The pair can be shifted to zero at its cut-off for exact energy conservation. The virial has a term along each distance, so stress and G(t) include the triplets.",
-   "equation": "v(r) = 4ε[(σ/r)^n − (σ/r)^m] (r < rc);   V₃ = λ ε Σ_i Σ_{j<k} v̂(r_ij) v̂(r_ik),   v̂ = 1 (r ≤ r_min), −v(r)/ε (r > r_min);   ΔE_swap ≈ ε(λ − 1)",
-   "equation_note": "r_min = 2^{1/(n−m)} σ; the virial tensor −Σ_p (∂U/∂r_p) d_p d_pᵀ / r_p over every distance the potential depends on (Ciarella et al. 2018, appendix B)",
+   "equation": "v(r) = 4ε[(σ/r)^n − (σ/r)^m] (r < rc);   V₃ = λ ε Σ_i Σ_{j<k} v̂(r_ij) v̂(r_ik),   v̂ = 1 (r ≤ r_min), −v(r)/D (r > r_min);   ΔE_swap ≈ ε(λ − 1)",
+   "equation_note": "r_min = (n/m)^{1/(n−m)} σ (2^{1/(n−m)} σ for n = 2m); D = −v(r_min), the well depth (ε for n = 2m without the shift); the virial tensor −Σ_p (∂U/∂r_p) d_p d_pᵀ / r_p over every distance the potential depends on (Ciarella et al. 2018, appendix B)",
    "symbols": [
     [
      "ε, σ, rc",
@@ -5041,7 +5074,7 @@
    "tested": "SwapModel.BarrierIsEpsilonTimesLambdaMinusOne (exact), ForcesVirialAndSumsMatchTheEnergy (finite differences of energy for forces and for stretch and shear strains; a direct sum over 200 sites to 10⁻⁹), ExclusionsAndCellSize, NveConservesEnergy",
    "deviation": "with several pair types a triplet takes the geometric means of its two pairs' λ and ε (the papers use one pair type); LAMMPS has no such pair style, so CAPS runs the model itself (the papers used HOOMD-blue)",
    "engines": [],
-   "tex": "V_3 = \\lambda\\varepsilon \\sum_i \\sum_{j<k} \\hat v(r_{ij})\\,\\hat v(r_{ik}),\\qquad \\hat v(r) = 1 \\quad (r \\le r_\\mathrm{min}),\\quad \\hat v(r) = -v(r)/\\varepsilon \\quad (r > r_\\mathrm{min}),\\qquad v(r) = 4\\varepsilon\\left[\\left(\\tfrac{\\sigma}{r}\\right)^{20} - \\left(\\tfrac{\\sigma}{r}\\right)^{10}\\right]"
+   "tex": "V_3 = \\lambda\\varepsilon \\sum_i \\sum_{j<k} \\hat v(r_{ij})\\,\\hat v(r_{ik}),\\qquad \\hat v(r) = 1 \\quad (r \\le r_\\mathrm{min}),\\quad \\hat v(r) = -v(r)/D \\quad (r > r_\\mathrm{min}),\\qquad v(r) = 4\\varepsilon\\left[\\left(\\tfrac{\\sigma}{r}\\right)^{20} - \\left(\\tfrac{\\sigma}{r}\\right)^{10}\\right]"
   },
   {
    "id": "termination-height",
@@ -5330,7 +5363,8 @@
    "source": "core/src/table_tools.cpp",
    "tested": "tests/test_table_tools.cpp (1 … 100 by Freedman–Diaconis: five bins of 19.8 with 20 values each; Sturges gives 8 bins; Scott on 1 … 10 two bins of five; four bins over [0, 1] count 1, 1, 1, 2 with a NaN left out; equal values give one bin; a two-key order with a missing value last and stable ties; an SD file with data items written exactly and read back, a row without a structure left out, a name with < refused); tests/python/test_bindings.py",
    "deviation": "The filter hides rows from the sheet and the SD file only; the chart and the statistics use every row. SD data item names lose < and > (the format's delimiters).",
-   "engines": "caps table CSV [--sort 'A,-B'] [--hist COLUMN --rule fd|scott|sturges|N] [--sdf OUT.sdf --structure COLUMN]; Python caps.histogram, caps.write_sdf_table; Studio Analyze › Study table",
+   "usage": "caps table CSV [--sort 'A,-B'] [--hist COLUMN --rule fd|scott|sturges|N] [--sdf OUT.sdf --structure COLUMN]; Python caps.histogram, caps.write_sdf_table; Studio Analyze › Study table",
+   "engines": [],
    "tex": "h_{\\mathrm{FD}} = 2\\,\\mathrm{IQR}\\,n^{-1/3},\\qquad h_{\\mathrm{Scott}} = 3.49\\,s\\,n^{-1/3},\\qquad k_{\\mathrm{Sturges}} = \\lceil \\log_2 n \\rceil + 1,\\qquad k = \\left\\lceil \\frac{x_{\\max} - x_{\\min}}{h} \\right\\rceil"
   },
   {
@@ -5364,7 +5398,8 @@
    "source": "core/src/tension.cpp",
    "tested": "tests/test_tension.cpp (P_zz 200, P_xx = P_yy 100 atm and L_z 60 Å give 30.3975 mN/m exactly, twice that for one interface; block errors zero for alternating samples and positive for a drifting run; the skipped share left out; the normal along x; a LAMMPS log with Zlo/Zhi and CAPS's thermo CSV give the same; a log without the tensor refused); tests/python/test_bindings.py",
    "deviation": "The global Kirkwood–Buff form gives γ only, not the profiles P_N(z) and P_T(z). The tension changes with a truncated potential's cut-off and no tail correction to γ is applied (Blokhuis et al.'s correction needs the density profile): use a cut-off of 12 Å or more, or compare two. Long runs (nanoseconds) are needed for errors below 1 mN/m.",
-   "engines": "caps tension FILE [--axis] [--interfaces] [--skip] [--blocks] [--cell]; Python caps.surface_tension(file, …); Studio Analyze › Reader › Surface tension",
+   "usage": "caps tension FILE [--axis] [--interfaces] [--skip] [--blocks] [--cell]; Python caps.surface_tension(file, …); Studio Analyze › Reader › Surface tension",
+   "engines": [],
    "tex": "\\gamma = \\frac{1}{2}\\int\\left[P_N(z) - P_T(z)\\right]\\mathrm dz = \\frac{L_n}{N_{\\mathrm{int}}}\\left[P_{nn} - \\frac{P_{t_1} + P_{t_2}}{2}\\right]"
   }
  ]

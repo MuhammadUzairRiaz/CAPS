@@ -125,8 +125,10 @@ FunctionalizeReport functionalize(System& s, const FunctionalizeOptions& o) {
       }
       if (pat == "helix") {
         if (o.pitch <= 0) throw std::invalid_argument("helix: the pitch must be positive");
-        const double th = std::atan2(s.atoms[i].pos[1] - c[1], s.atoms[i].pos[0] - c[0]);
-        const double want = 2 * kPi * (s.atoms[i].pos[2] - lo[2]) / o.pitch + o.phase * kPi / 180;
+        // angle round the tube axis (the two other directions, cyclically: x, y for a tube along z) and phase along it
+        const size_t au = size_t((axis + 1) % 3), av = size_t((axis + 2) % 3), aw = size_t(axis);
+        const double th = std::atan2(s.atoms[i].pos[av] - c[av], s.atoms[i].pos[au] - c[au]);
+        const double want = 2 * kPi * (s.atoms[i].pos[aw] - lo[aw]) / o.pitch + o.phase * kPi / 180;
         double d = std::remainder(th - want, 2 * kPi);
         if (std::fabs(d) > 20 * kPi / 180) continue;
       }

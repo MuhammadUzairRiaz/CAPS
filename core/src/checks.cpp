@@ -186,7 +186,18 @@ std::vector<FileCheck> file_checks(const Trajectory& t) {
   }
   // close contacts between atoms that are not bonded
   {
-    Grid g(s, 0.7);
+    // Bins of 0.7 Å would make hundreds of millions of empty bins for a box a few hundred Å wide. Any bin at
+    // least 0.7 Å wide still finds every pair within 0.7 Å, so widen the bins to keep about 2 million of them.
+    double vol = 0;
+    if (s.cell.valid()) {
+      vol = s.cell.volume();
+    } else if (!s.atoms.empty()) {
+      Vec3 lo = s.atoms[0].pos, hi = lo;
+      for (const auto& a : s.atoms)
+        for (int k = 0; k < 3; ++k) lo[k] = std::min(lo[k], a.pos[k]), hi[k] = std::max(hi[k], a.pos[k]);
+      vol = (hi[0] - lo[0] + 2) * (hi[1] - lo[1] + 2) * (hi[2] - lo[2] + 2);   // the box Grid pads around the atoms
+    }
+    Grid g(s, std::max(0.7, std::cbrt(std::fabs(vol) / 2.0e6)));
     std::vector<std::vector<uint32_t>> nb(n);
     for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
     size_t close = 0;

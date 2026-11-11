@@ -456,8 +456,8 @@ public sealed class MolView : Control
         {
             // Å per pixel: the structure's extent over the view, shrinking as the view zooms in
             var perPx = PanScale() / Math.Max(1, Math.Min(Bounds.Width, Bounds.Height)) / Math.Max(0.05, _cam.Zoom);
-            _cam.PanX -= (p.X - _last.X) * perPx;
-            _cam.PanY += (p.Y - _last.Y) * perPx;
+            _cam.PanX += (p.X - _last.X) * perPx;
+            _cam.PanY -= (p.Y - _last.Y) * perPx;
         }
         else
         {

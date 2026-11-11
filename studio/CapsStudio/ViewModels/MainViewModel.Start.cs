@@ -102,7 +102,9 @@ public sealed partial class MainViewModel
     {
         var doc = it.Doc;
         if (doc.IsDisposed) return;
-        var onDisk = doc.Path is { Length: > 0 } p0 && File.Exists(p0) && !p0.StartsWith(Path.GetTempPath(), StringComparison.Ordinal);
+        // the session folder is CAPS's own (restored structures live there until the next session save clears it)
+        var onDisk = doc.Path is { Length: > 0 } p0 && File.Exists(p0) && !p0.StartsWith(Path.GetTempPath(), StringComparison.Ordinal)
+                     && !Path.GetFullPath(p0).StartsWith(Path.GetFullPath(SessionFolder) + Path.DirectorySeparatorChar, StringComparison.Ordinal);
         if (onDisk && !it.Name.Contains("(unsaved)", StringComparison.Ordinal)) return;   // a file of the user's: Recent has it
         try
         {

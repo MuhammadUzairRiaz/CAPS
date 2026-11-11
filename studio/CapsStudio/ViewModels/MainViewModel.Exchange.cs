@@ -125,15 +125,17 @@ public sealed partial class MainViewModel
     {
         get
         {
-            var ps = _exProtocol switch
-            {
-                0 => _exSteps * _exDt / 1000,
-                2 => (Math.Floor(Math.Abs(_exTTo - _exTFrom) / _exTStep) + 1) * _exPsPerT,
-                _ => _exPs,
-            };
+            var ps = ExRunPs();
             return string.Format(CultureInfo.InvariantCulture, "{0:N0} MD steps ({1:0.###} ps)", Math.Round(ps * 1000 / _exDt), ps);
         }
     }
+    /// <summary>How long the chosen protocol runs, in ps (the Tv scan: one stage per temperature).</summary>
+    private decimal ExRunPs() => _exProtocol switch
+    {
+        0 => _exSteps * _exDt / 1000,
+        2 => (Math.Floor(Math.Abs(_exTTo - _exTFrom) / _exTStep) + 1) * _exPsPerT,
+        _ => _exPs,
+    };
 
     // ------------------------------------------------------------------ the live counter and the results
     private long _exAccepted, _exTried;
@@ -193,7 +195,7 @@ public sealed partial class MainViewModel
         _exCts = new CancellationTokenSource();
         var ct = _exCts.Token;
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        var total = (double)(_exProtocol == 0 ? _exSteps * _exDt / 1000 : _exPs);
+        var total = (double)ExRunPs();
         Status = "Bond exchange: running…";
         try
         {

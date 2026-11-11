@@ -354,7 +354,7 @@
   {
    "id": "P069",
    "name": "1,4-Butanediol diglycidyl ether resin",
-   "smiles": "[*]CC(O)COCCCOC(O)CO[*]"
+   "smiles": "[*]CC(O)COCCCCOCC(O)CO[*]"
   },
   {
    "id": "P070",
@@ -379,7 +379,7 @@
   {
    "id": "P074",
    "name": "Polyaniline",
-   "smiles": "[*]Nc1ccc(Nc2ccc(Nc3ccc(Nc4ccc(C[*])cc4)cc3)cc2)cc1"
+   "smiles": "[*]Nc1ccc(Nc2ccc(Nc3ccc(Nc4ccc([*])cc4)cc3)cc2)cc1"
   },
   {
    "id": "P075",
@@ -404,7 +404,7 @@
   {
    "id": "P079",
    "name": "Poly(phenylglycidyl ether)",
-   "smiles": "[*]C1C(O1)COC2=CC=CC=C2[*]"
+   "smiles": "[*]CC(COc1ccccc1)O[*]"
   },
   {
    "id": "P080",
@@ -414,7 +414,7 @@
   {
    "id": "P081",
    "name": "Poly(p-xylylene sebacamide)",
-   "smiles": "*NCc1ccccc1CNC(=O)CCCCCCCCC(=O)*"
+   "smiles": "*NCc1ccc(cc1)CNC(=O)CCCCCCCCC(=O)*"
   },
   {
    "id": "P082",
@@ -464,7 +464,7 @@
   {
    "id": "P091",
    "name": "Poly(1-decene)",
-   "smiles": "[*]CC(CCCCCCCCC)[*]"
+   "smiles": "[*]CC(CCCCCCCC)[*]"
   },
   {
    "id": "P092",
@@ -474,7 +474,7 @@
   {
    "id": "P093",
    "name": "Polyoxytetramethylene",
-   "smiles": "[*]OCCC[*]"
+   "smiles": "[*]OCCCC[*]"
   },
   {
    "id": "P094",

@@ -96,6 +96,8 @@ System read_gromacs_topology(const std::string& path, std::vector<std::string>* 
   std::string sec, title;
   MolType* cur = nullptr;
   std::set<std::string> ignored;
+  int comb_rule = 2;   // [ defaults ]: with comb-rule 1, inline pair parameters are C6 and C12, otherwise sigma and epsilon
+  bool c12_only_noted = false;
   for (size_t ln = 0; ln < lines.size(); ++ln) {
     const auto w = words(lines[ln]);
     if (w.empty()) continue;
@@ -111,7 +113,9 @@ System read_gromacs_topology(const std::string& path, std::vector<std::string>* 
       if (!cur || i < 0 || size_t(i) >= cur->atoms.size()) throw ReadError(where + ": atom " + w.at(k) + " out of range");
       return uint32_t(i);
     };
-    if (sec == "moleculetype") {
+    if (sec == "defaults") {
+      if (w.size() > 1) comb_rule = std::stoi(w[1]);
+    } else if (sec == "moleculetype") {
       MolType m;
       m.name = w[0];
       m.nrexcl = w.size() > 1 ? std::stoi(w[1]) : 1;
@@ -201,13 +205,26 @@ System read_gromacs_topology(const std::string& path, std::vector<std::string>* 
       title += (title.empty() ? "" : " ") + lines[ln];
     } else if (sec == "molecules") {
       molecules.push_back({w[0], std::stol(w.at(1))});
-    } else if (sec == "pairs" && w.size() >= 5 && int(num(w, 2, where)) == 1) {   // with its own σ, ε
-      cur->topo.pairs.push_back({idx(0), idx(1), num(w, 4, where) / kKJ, num(w, 3, where) * 10});
+    } else if (sec == "pairs" && w.size() >= 5 && int(num(w, 2, where)) == 1) {   // with its own σ, ε (or C6, C12)
+      if (comb_rule == 1) {   // C6 (kJ/mol nm^6), C12 (kJ/mol nm^12): σ = (C12/C6)^(1/6), ε = C6² / (4 C12)
+        const double c6 = num(w, 3, where), c12 = num(w, 4, where);
+        double eps = 0, sigma = 0;
+        if (c6 > 0 && c12 > 0) {
+          sigma = std::pow(c12 / c6, 1.0 / 6) * 10;
+          eps = c6 * c6 / (4 * c12) / kKJ;
+        } else if ((c6 != 0 || c12 != 0) && !c12_only_noted) {   // C6 = C12 = 0: no Lennard-Jones, the pair keeps its Coulomb
+          notes.push_back(where + ": a C6/C12 pair that is not both positive has no sigma/epsilon form: its Lennard-Jones part is read as zero");
+          c12_only_noted = true;
+        }
+        cur->topo.pairs.push_back({idx(0), idx(1), eps, sigma});
+      } else {
+        cur->topo.pairs.push_back({idx(0), idx(1), num(w, 4, where) / kKJ, num(w, 3, where) * 10});
+      }
     } else if (sec == "pairs" || sec == "cmap" || sec == "settles" || sec == "virtual_sites4") {
       if (!ignored.count(sec)) notes.push_back("[ " + sec + " ] not read");
       ignored.insert(sec);
     }
-    // defaults, atomtypes, nonbond_params, pairtypes, position_restraints ...: the force field's or not needed
+    // atomtypes, nonbond_params, pairtypes, position_restraints ...: the force field's or not needed
   }
   if (molecules.empty()) {   // an .itp alone: one copy of each molecule type
     for (const auto& [n, t] : types) molecules.push_back({n, 1});

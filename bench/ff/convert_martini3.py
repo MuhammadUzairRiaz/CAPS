@@ -6,8 +6,10 @@ molecule, sugar, nucleobase and phospholipid files):
                                            ("P a b sigma_nm epsilon_kJ", GROMACS sigma-epsilon form): 844 types, the whole
                                            matrix; CAPS reads the pairs of the types a structure uses
   data/martini/martini3-molecules.json     each molecule of the parameter files with its explicit topology (GROMACS units:
-                                           nm, kJ/mol, degrees, functions as in the .itp); "#ifdef FLEXIBLE" blocks are
-                                           taken (stiff bonds where the default has constraints: CAPS has no constraints)
+                                           nm, kJ/mol, degrees, functions as in the .itp); the default variant of each
+                                           molecule, so constraints stay constraints (the "#ifdef FLEXIBLE" stiff bonds are
+                                           for minimisation only); CAPS runs constraints as stiff bonds of its own strength
+                                           and writes them back to a GROMACS .itp as [ constraints ]
   data/forcefields/martini3.json           the force field: bead types, the pair table, Martini 3's run settings
   data/typing/martini3.typing.json         beads typed by name; molecules built from the templates carry their topology
 
@@ -24,7 +26,7 @@ SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/vermouth-ref/c
 MAIN = os.path.join(SRC, "martini_v3.0.0.itp")
 MOLFILES = ["martini_v3.0.0_solvents_v1.itp", "martini_v3.0.0_ions_v1.itp", "martini_v3.0.0_small_molecules_v1.itp",
             "martini_v3.0.0_sugars_v1.itp", "martini_v3.0.0_nucleobases_v1.itp", "martini_v3.0.0_phospholipids_v1.itp"]
-DEFINES = {"FLEXIBLE"}
+DEFINES = set()   # nothing defined: the default topologies (FLEXIBLE is martini's minimisation-only variant)
 
 
 def lines_with_defines(path):
@@ -184,7 +186,7 @@ if __name__ == "__main__":
         print(f"left out {k}: bead types not in martini_v3.0.0.itp")
         del mols[k]
     doc = {"format": "caps-martini-molecules", "version": 1, "model": "Martini 3.0.0",
-           "source": "cgmartini.nl martini_v300.zip: " + ", ".join(MOLFILES) + " (FLEXIBLE variants)",
+           "source": "cgmartini.nl martini_v300.zip: " + ", ".join(MOLFILES),
            "units": "GROMACS: nm, kJ/mol, degrees; functions as in the .itp", "molecules": mols}
     json.dump(doc, open(os.path.join(dd, "martini3-molecules.json"), "w"), ensure_ascii=False, separators=(",", ":"))
     ff = {"format": "caps-forcefield", "format_version": 1, "name": "Martini 3", "version": "3.0.0",
@@ -200,7 +202,7 @@ if __name__ == "__main__":
           "pairs": [], "bonds": [], "angles": [], "dihedrals": [], "impropers": [],
           "notes": [f"{len(types)} bead types and {len(pairs)} pairs from martini_v3.0.0.itp (the pair table)",
                     "run settings: LJ cut at 11 A and shifted (Potential-shift), reaction field epsilon_r 15, epsilon_rf infinite, special_bonds 0 1 1",
-                    f"{len(mols)} molecules from the parameter files as templates with their topologies (FLEXIBLE variants: stiff bonds for constraints)"]}
+                    f"{len(mols)} molecules from the parameter files as templates with their topologies (default variants: constraints kept as constraints)"]}
     json.dump(ff, open(os.path.join(ROOT, "data", "forcefields", "martini3.json"), "w"), ensure_ascii=False, indent=1)
     rules = [{"type": t, "smarts": "*", "atom_name": t, "priority": 0} for t in names]
     # all-atom small molecules become Martini 3 beads by vermouth's mappings (data/martini/martini3-small-molecules.json,

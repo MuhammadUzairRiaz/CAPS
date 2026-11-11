@@ -594,7 +594,16 @@ bool is_cli_switch(const std::string& a) {
          a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo" || a == "--equivalent" || a == "--no-drift" || a == "--below" || a == "--whole-molecules" || a == "--ewald" || a == "--hydrogen" || a == "--find" || a == "--clear" || a == "--neb" || a == "--no-climb" || a == "--relax-ends" || a == "--no-match";
 }
 
-std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
+// A switch for this command? --json is one for run and provenance (print JSON) and names the output file for the
+// rest (analyze, elastic, data ...: --json OUT); --vacuum is one for pore (a slit in vacuum) and a length for the
+// rest (surface, interface, habit: --vacuum 15)
+bool is_cli_switch_for(const std::string& cmd, const std::string& a) {
+  if (a == "--json") return cmd == "run" || cmd == "provenance";
+  if (a == "--vacuum") return cmd == "pore";
+  return is_cli_switch(a);
+}
+
+std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos, const std::string& cmd) {
   std::map<std::string, std::string> o;
   for (int i = from; i < argc; ++i) {
     std::string a = argv[i];
@@ -603,9 +612,9 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       throw std::invalid_argument("unknown option " + a + (near.empty() ? "" : " (did you mean " + near + "?)"));
     }
     if (a.rfind("--", 0) == 0 || a == "-o") {
-      // --json is a switch (provenance, run, job) except when a .json file name follows (analyze, elastic: --json OUT.json)
-      const auto next_json = [&] { const std::string n = i + 1 < argc ? argv[i + 1] : ""; return n.size() > 5 && n.compare(n.size() - 5, 5, ".json") == 0; };
-      const bool flag = (is_cli_switch(a) && !(a == "--json" && next_json())) ||
+      if (a == "--json" && !is_cli_switch_for(cmd, a) && (i + 1 >= argc || argv[i + 1][0] == '-'))
+        throw std::invalid_argument("--json needs a file name here (--json OUT.json)");
+      const bool flag = is_cli_switch_for(cmd, a) ||
                         (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
@@ -892,13 +901,23 @@ Json relax_job(const caps::ml::Potential& pot, const Json& job) {
     std::vector<std::array<double, 3>> xyz;
     for (const Json& e : job["elements"].items()) z.push_back(element_from_symbol(e.str()));
     for (const Json& p : job["positions"].items()) xyz.push_back({p[0].number(), p[1].number(), p[2].number()});
+    if (z.size() != xyz.size())
+      throw std::runtime_error(std::to_string(z.size()) + " elements but " + std::to_string(xyz.size()) + " positions");
     std::vector<caps::ml::Hold> holds;
     if (job.has("hold"))
       for (const Json& h : job["hold"].items()) {
         caps::ml::Hold hd;
         hd.n = static_cast<int>(h.size());
         if (hd.n < 2 || hd.n > 4) throw std::runtime_error("a held coordinate has 2, 3 or 4 atoms");
-        for (int k = 0; k < hd.n; ++k) hd.idx[k] = static_cast<int>(h[k].number());
+        for (int k = 0; k < hd.n; ++k) {
+          const double a = h[k].number();
+          if (!(a >= 0 && a < double(xyz.size()))) {
+            char b[64];
+            std::snprintf(b, sizeof b, "%g", a);
+            throw std::runtime_error("held atom " + std::string(b) + " is not one of the " + std::to_string(xyz.size()) + " atoms (atoms count from 0)");
+          }
+          hd.idx[k] = static_cast<int>(a);
+        }
         hd.target = caps::ml::hold_value(hd, xyz);
         holds.push_back(hd);
       }
@@ -1169,6 +1188,8 @@ static void write_structure_file(const System& s, const std::string& out) {
   else write_lammps_data(s, out);
 }
 
+void keep_cli_error(int argc, char** argv, const std::exception& e);
+
 // The DFT surface & adsorption workbench (caps/dft_commands.hpp): the same commands as the Studio's DFT pages
 static int dft_main(const std::string& cmd, int argc, char** argv) {
   std::vector<std::string> pos;
@@ -1197,6 +1218,7 @@ static int dft_main(const std::string& cmd, int argc, char** argv) {
     return r.has("ok") && !r["ok"].boolean() ? 1 : 0;
   } catch (const std::exception& e) {
     std::fprintf(stderr, "caps %s: %s\n", cmd.c_str(), e.what());
+    keep_cli_error(argc, argv, e);
     return 2;
   }
 }
@@ -1349,6 +1371,13 @@ void mark_submitting(const HostProfile& h, const JobFolder& f) {
   update_job_state(f.dir, c);
   for (const auto& d : f.task_dirs) update_job_state(d, c);
 }
+// the scheduler refused the script: the job and its tasks were never queued, so they are created again, not submitted
+void mark_refused(const JobFolder& f) {
+  Json c = Json::object();
+  c["state"] = std::string("created");
+  update_job_state(f.dir, c);
+  for (const auto& d : f.task_dirs) update_job_state(d, c);
+}
 // after: the scheduler's id, unless the script already wrote its own (a job that started at once)
 void mark_submitted(const HostProfile& h, const JobFolder& f, const std::string& id) {
   auto set_id = [&](const std::string& dir, const std::string& jid, const std::string& task) {
@@ -1495,9 +1524,7 @@ int job_main(int argc, char** argv) {
         mark_submitting(h, f);
         const std::string id = submit_script(h, f, tasks, &msg);
         if (id.empty()) {
-          Json back = Json::object();
-          back["state"] = std::string("created");
-          update_job_state(f.dir, back);
+          mark_refused(f);
           out["submitted"] = false, out["error"] = msg;
           std::printf("%s\n", a.opt.count("--json") ? out.dump(0).c_str() : ("made " + f.dir + "; the scheduler refused it:\n" + msg).c_str());
           return 1;
@@ -1529,7 +1556,7 @@ int job_main(int argc, char** argv) {
         std::string msg;
         mark_submitting(h, f);
         const std::string id = submit_script(h, f, 0, &msg);
-        if (id.empty()) { out["submitted"] = false, out["error"] = msg; }
+        if (id.empty()) { mark_refused(f); out["submitted"] = false, out["error"] = msg; }
         else { mark_submitted(h, f, id); out["submitted"] = true, out["id"] = id; }
       }
       if (a.opt.count("--json")) std::printf("%s\n", out.dump(0).c_str());
@@ -1555,7 +1582,7 @@ int job_main(int argc, char** argv) {
       std::vector<ArrayTask> tasks;
       for (const auto& t : tlist) {
         const std::string th = t == "full" ? std::to_string(cores) : t;
-        tasks.push_back({"scaling", "caps md " + input + " -o bench.data --steps " + steps + " --threads " + th + " --thermo 1000 --quiet --bench-json bench.json"});
+        tasks.push_back({"scaling", "caps md " + shq(input) + " -o bench.data --steps " + shq(steps) + " --threads " + th + " --thermo 1000 --quiet --bench-json bench.json"});
       }
       JobRequest r;
       r.kind = "bench";
@@ -1573,12 +1600,12 @@ int job_main(int argc, char** argv) {
         std::string msg;
         mark_submitting(h, f);
         const std::string id = submit_script(h, f, int(tasks.size()), &msg);
-        if (id.empty()) out["submitted"] = false, out["error"] = msg;
+        if (id.empty()) mark_refused(f), out["submitted"] = false, out["error"] = msg;
         else mark_submitted(h, f, id), out["submitted"] = true, out["id"] = id;
       }
       if (a.opt.count("--json")) std::printf("%s\n", out.dump(0).c_str());
       else std::printf("%s\n%s · then: caps job collect-bench %s\n", f.dir.c_str(), out.has("id") ? ("submitted: " + out["id"].str()).c_str() : "not submitted", f.dir.c_str());
-      return 0;
+      return out.has("submitted") && !out["submitted"].boolean() ? 1 : 0;
     }
     if (a.sub == "collect-bench") {   // the scaling check's table from each task's bench.json
       const std::string dir = a.pos.empty() ? std::string(".") : a.pos[0];
@@ -1616,7 +1643,11 @@ int job_main(int argc, char** argv) {
       std::string msg;
       mark_submitting(h, f);
       const std::string id = submit_script(h, f, tasks, &msg);
-      if (id.empty()) { std::fprintf(stderr, "caps job: the scheduler refused it:\n%s", msg.c_str()); return 1; }
+      if (id.empty()) {
+        mark_refused(f);
+        std::fprintf(stderr, "caps job: the scheduler refused it:\n%s", msg.c_str());
+        return 1;
+      }
       mark_submitted(h, f, id);
       std::printf("submitted: %s\n", id.c_str());
       return 0;
@@ -1683,7 +1714,9 @@ int job_main(int argc, char** argv) {
       const Json st = read_job_state(dir);
       const std::string scr = st.has("scratch") && st["scratch"].is_string() ? st["scratch"].str() : "";
       const auto out = std::filesystem::path(dir) / "out";
-      if (scr.empty() || !std::filesystem::is_directory(scr) || std::filesystem::equivalent(scr, out)) {
+      // out/ is not there yet when the job was stopped before it copied back, and equivalent() throws on a missing path
+      std::error_code same_ec;
+      if (scr.empty() || !std::filesystem::is_directory(scr) || (std::filesystem::exists(out) && std::filesystem::equivalent(scr, out, same_ec))) {
         std::printf("nothing to collect: the scratch folder is gone or is out/ itself\n");
         return 0;
       }
@@ -1733,6 +1766,7 @@ int job_main(int argc, char** argv) {
     return job_usage();
   } catch (const std::exception& e) {
     std::fprintf(stderr, "caps job: %s\n", e.what());
+    keep_cli_error(argc, argv, e);
     return 2;
   }
 }
@@ -1768,6 +1802,7 @@ static int cg_main(const std::string& cmd, int argc, char** argv) {
     return r.has("ok") && !r["ok"].boolean() ? 1 : 0;
   } catch (const std::exception& e) {
     std::fprintf(stderr, "caps %s: %s\n", cmd.c_str(), e.what());
+    keep_cli_error(argc, argv, e);
     return 2;
   }
 }
@@ -1782,10 +1817,11 @@ std::string resume_line(const std::string& head, const std::string& input, const
     return q + "'";
   };
   std::string line = head + " " + word(input);
+  const std::string cmd = head.substr(head.find_last_of(' ') + 1);   // "caps tensile" -> tensile
   for (const auto& [k, v] : o) {
     if (extra.count(k) || k == "--resume" || k == "--resume-at" || k == "--print-protocol") continue;
     line += " " + k;
-    if (!is_cli_switch(k)) line += " " + word(v);
+    if (!is_cli_switch_for(cmd, k)) line += " " + word(v);
   }
   for (const auto& [k, v] : extra) line += " " + k + (v.empty() ? "" : " " + word(v));
   return line;
@@ -1852,6 +1888,12 @@ void log_cli_error(int argc, char** argv, const std::string& what) {
   } catch (...) {}
 }
 
+// a command that failed: a wrong argument is the user's to fix; anything else may be a bug in CAPS, so it is kept
+// for caps report (every command's own catch calls this, so the log always holds the newest failure)
+void keep_cli_error(int argc, char** argv, const std::exception& e) {
+  if (!dynamic_cast<const std::invalid_argument*>(&e)) log_cli_error(argc, argv, e.what());
+}
+
 std::string system_description() {
 #if defined(_WIN32)
   return "Windows";
@@ -1914,7 +1956,7 @@ int main(int argc, char** argv) {
   std::vector<std::string> pos;
   std::map<std::string, std::string> o;
   try {
-    o = parse(argc, argv, 2, pos);
+    o = parse(argc, argv, 2, pos, cmd);
   } catch (const std::exception& e) {
     std::fprintf(stderr, "caps: %s\n", e.what());
     return 2;
@@ -1981,6 +2023,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps grow: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -2130,6 +2173,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps semicrystalline: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -2193,6 +2237,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps solvate: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -2320,6 +2365,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps crystal: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -2372,6 +2418,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps pore: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -2448,6 +2495,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps nano: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -2492,6 +2540,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps blend: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -2559,6 +2608,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps interface: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -2610,96 +2660,111 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps surface: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
   if (cmd == "run") {   // a saved pipeline over many inputs: caps run PIPE.yaml --input 'runs/*/X.lammpstrj' [--frame first|last] [--csv OUT] [--out DIR]
     if (pos.empty()) return usage();
-    std::ifstream pf(pos[0]);
-    if (!pf) throw std::runtime_error("cannot read " + pos[0]);
-    const std::string text((std::istreambuf_iterator<char>(pf)), std::istreambuf_iterator<char>());
-    if (text.find("caps_pipeline") == std::string::npos) {   // a recipe: caps run RECIPE.yaml [--seed N] [--threads N] [--out DIR] [--json]
-      Json r;
-      try {
-        const auto t0 = text.find_first_not_of(" \t\r\n");
-        r = t0 != std::string::npos && text[t0] == '{' ? Json::parse(text) : yaml_parse(text);
-      } catch (const std::exception& e) {
-        std::fprintf(stderr, "caps run: %s: %s\n", pos[0].c_str(), e.what());
-        return 2;
-      }
-      if (r.is_object() && (r.has("recipe") || r.has("build"))) return cli_recipe(r, pos[0], o);
-    }
-    std::string name, file, topo;
-    Pipeline pl = text.find("caps_pipeline") != std::string::npos ? pipeline_from_yaml(text, &name, &file, &topo) : pipeline_from_json(Json::parse(text));
-    if (o.count("--branch")) pl.branch = o["--branch"];   // the branch to run (steps of the others are skipped)
-    const std::string pattern = o.count("--input") ? o["--input"] : file;
-    const auto inputs = glob_files(pattern);
-    if (inputs.empty()) throw std::runtime_error("no files match " + pattern);
-    const bool last = !o.count("--frame") || o["--frame"] != "first";
-    std::vector<std::string> keys;
-    std::vector<std::pair<std::string, std::map<std::string, double>>> rows;
-    // the pipeline's outputs: under --out (default outputs/), one folder per input when there are several
-    const std::string out_root = o.count("--out") ? o["--out"] : "outputs";
-    size_t idx = 0;
-    for (const auto& in : inputs) {
-      ++idx;
-      try {
-        std::string tp = o.count("--topology") ? o["--topology"] : "";
-        if (tp.empty() && (in.size() > 10 && (in.rfind(".lammpstrj") == in.size() - 10 || in.rfind(".dump") == in.size() - 5))) {
-          const auto d = std::filesystem::path(in).replace_extension(".data");
-          if (std::filesystem::exists(d)) tp = d.string();
+    try {
+      std::ifstream pf(pos[0]);
+      if (!pf) throw std::runtime_error("cannot read " + pos[0]);
+      const std::string text((std::istreambuf_iterator<char>(pf)), std::istreambuf_iterator<char>());
+      if (text.find("caps_pipeline") == std::string::npos) {   // a recipe: caps run RECIPE.yaml [--seed N] [--threads N] [--out DIR] [--json]
+        Json r;
+        try {
+          const auto t0 = text.find_first_not_of(" \t\r\n");
+          r = t0 != std::string::npos && text[t0] == '{' ? Json::parse(text) : yaml_parse(text);
+        } catch (const std::exception& e) {
+          std::fprintf(stderr, "caps run: %s: %s\n", pos[0].c_str(), e.what());
+          keep_cli_error(argc, argv, e);
+          return 2;
         }
-        const Trajectory t = open_file(in, tp);
-        const int fr = last ? int(t.frames()) - 1 : 0;
-        System f0 = t.frame(size_t(fr));
-        if (!f0.unwrapped && f0.cell.valid()) make_molecules_whole(f0);
-        const auto st = run_pipeline(f0, pl, fr, t.timesteps.empty() ? 0 : t.timesteps[size_t(fr)], &t);
-        std::map<std::string, double> m;
-        for (const auto& [k, v] : st.attributes) {
-          m[k] = v;
-          if (std::find(keys.begin(), keys.end(), k) == keys.end()) keys.push_back(k);
-        }
-        rows.push_back({in, m});
-        if (!pl.outputs.empty()) {
-          std::string sub = std::filesystem::path(in).parent_path().filename().string();
-          if (sub.empty() || sub == ".") sub = std::filesystem::path(in).stem().string();
-          const std::string dir = inputs.size() == 1 ? out_root : out_root + "/" + std::to_string(idx) + "_" + sub;
-          for (const auto& line : write_pipeline_outputs(st, pl, dir)) std::fprintf(stderr, "        %s\n", line.c_str());
-        }
-        std::fprintf(stderr, "done    %s\n", in.c_str());
-      } catch (const std::exception& e) {
-        rows.push_back({in, {}});
-        std::fprintf(stderr, "failed  %s · %s\n", in.c_str(), e.what());
+        if (r.is_object() && (r.has("recipe") || r.has("build"))) return cli_recipe(r, pos[0], o);
       }
-    }
-    std::string csv = "input,state";
-    for (const auto& k : keys) csv += "," + k;
-    csv += "\n";
-    char b[40];
-    for (const auto& [in, m] : rows) {
-      csv += in + (m.empty() ? ",failed" : ",done");
-      for (const auto& k : keys) {
-        auto it = m.find(k);
-        if (it == m.end()) csv += ",";
-        else { std::snprintf(b, sizeof b, ",%.10g", it->second); csv += b; }
+      std::string name, file, topo;
+      Pipeline pl = text.find("caps_pipeline") != std::string::npos ? pipeline_from_yaml(text, &name, &file, &topo) : pipeline_from_json(Json::parse(text));
+      if (o.count("--branch")) pl.branch = o["--branch"];   // the branch to run (steps of the others are skipped)
+      const std::string pattern = o.count("--input") ? o["--input"] : file;
+      const auto inputs = glob_files(pattern);
+      if (inputs.empty()) throw std::runtime_error("no files match " + pattern);
+      const bool last = !o.count("--frame") || o["--frame"] != "first";
+      std::vector<std::string> keys;
+      std::vector<std::pair<std::string, std::map<std::string, double>>> rows;
+      // the pipeline's outputs: under --out (default outputs/), one folder per input when there are several
+      const std::string out_root = o.count("--out") ? o["--out"] : "outputs";
+      size_t idx = 0;
+      for (const auto& in : inputs) {
+        ++idx;
+        try {
+          std::string tp = o.count("--topology") ? o["--topology"] : "";
+          if (tp.empty() && (in.size() > 10 && (in.rfind(".lammpstrj") == in.size() - 10 || in.rfind(".dump") == in.size() - 5))) {
+            const auto d = std::filesystem::path(in).replace_extension(".data");
+            if (std::filesystem::exists(d)) tp = d.string();
+          }
+          const Trajectory t = open_file(in, tp);
+          const int fr = last ? int(t.frames()) - 1 : 0;
+          System f0 = t.frame(size_t(fr));
+          if (!f0.unwrapped && f0.cell.valid()) make_molecules_whole(f0);
+          const auto st = run_pipeline(f0, pl, fr, t.timesteps.empty() ? 0 : t.timesteps[size_t(fr)], &t);
+          std::map<std::string, double> m;
+          for (const auto& [k, v] : st.attributes) {
+            m[k] = v;
+            if (std::find(keys.begin(), keys.end(), k) == keys.end()) keys.push_back(k);
+          }
+          rows.push_back({in, m});
+          if (!pl.outputs.empty()) {
+            std::string sub = std::filesystem::path(in).parent_path().filename().string();
+            if (sub.empty() || sub == ".") sub = std::filesystem::path(in).stem().string();
+            const std::string dir = inputs.size() == 1 ? out_root : out_root + "/" + std::to_string(idx) + "_" + sub;
+            for (const auto& line : write_pipeline_outputs(st, pl, dir)) std::fprintf(stderr, "        %s\n", line.c_str());
+          }
+          std::fprintf(stderr, "done    %s\n", in.c_str());
+        } catch (const std::exception& e) {
+          rows.push_back({in, {}});
+          std::fprintf(stderr, "failed  %s · %s\n", in.c_str(), e.what());
+        }
       }
+      std::string csv = "input,state";
+      for (const auto& k : keys) csv += "," + k;
       csv += "\n";
+      char b[40];
+      for (const auto& [in, m] : rows) {
+        csv += in + (m.empty() ? ",failed" : ",done");
+        for (const auto& k : keys) {
+          auto it = m.find(k);
+          if (it == m.end()) csv += ",";
+          else { std::snprintf(b, sizeof b, ",%.10g", it->second); csv += b; }
+        }
+        csv += "\n";
+      }
+      if (o.count("--csv")) {
+        std::ofstream out(o["--csv"]);
+        out << csv;
+        std::fprintf(stderr, "wrote %s\n", o["--csv"].c_str());
+      } else {
+        std::fputs(csv.c_str(), stdout);
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps run: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
+      return 2;
     }
-    if (o.count("--csv")) {
-      std::ofstream out(o["--csv"]);
-      out << csv;
-      std::fprintf(stderr, "wrote %s\n", o["--csv"].c_str());
-    } else {
-      std::fputs(csv.c_str(), stdout);
-    }
-    return 0;
   }
   if (cmd == "reproduce") {   // a figure bundle: rebuild its data from its input and pipeline, compare the hashes
-    std::vector<std::string> report;
-    const bool ok = reproduce_bundle(pos[0], report);
-    for (const auto& r : report) std::printf("%s\n", r.c_str());
-    std::printf("%s\n", ok ? "reproduced: every data file matches" : "not reproduced");
-    return ok ? 0 : 2;
+    if (pos.empty()) return usage();
+    try {
+      std::vector<std::string> report;
+      const bool ok = reproduce_bundle(pos[0], report);
+      for (const auto& r : report) std::printf("%s\n", r.c_str());
+      std::printf("%s\n", ok ? "reproduced: every data file matches" : "not reproduced");
+      return ok ? 0 : 2;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps reproduce: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
+      return 2;
+    }
   }
   if (cmd == "bench") {
     try {
@@ -2743,6 +2808,7 @@ int main(int argc, char** argv) {
       return fail ? 1 : 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps bench: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -2772,6 +2838,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps build: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -2792,9 +2859,11 @@ int main(int argc, char** argv) {
         else write_lammps_data(s, path);
       };
       if (o.count("--all") && r.conformers.size() > 1) {
-        const auto dot = out.find_last_of('.');
+        // confs.pdb -> confs_1.pdb ... (the number goes on the file's stem, in the same folder; a name may have no extension)
+        const std::filesystem::path op(out);
+        const std::string stem = op.stem().string(), ext = op.extension().string();
         for (size_t k = 0; k < r.conformers.size(); ++k)
-          write(molecule_system(r.graph, r.conformers[k].pos), out.substr(0, dot) + "_" + std::to_string(k + 1) + out.substr(dot));
+          write(molecule_system(r.graph, r.conformers[k].pos), (op.parent_path() / (stem + "_" + std::to_string(k + 1) + ext)).string());
       } else
         write(r.system, out);
       std::printf("%s · %.2f g/mol · %d atoms (%d heavy) · %d rings · %d stereocentres\n", r.info.formula.c_str(), r.info.mass, r.info.atoms,
@@ -2809,6 +2878,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps build: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -2837,6 +2907,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps martini: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -2873,6 +2944,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps pack: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 2;
     }
   }
@@ -2968,6 +3040,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps ml: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -3377,6 +3450,7 @@ int main(int argc, char** argv) {
       return usage();
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps ff: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 2;
     }
   }
@@ -3450,6 +3524,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps elastic: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -3556,6 +3631,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps tensile: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -3591,6 +3667,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps pull: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4031,6 +4108,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps exchange: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4131,6 +4209,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps tg: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4215,6 +4294,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps fields: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4233,6 +4313,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps tension: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4323,6 +4404,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps table: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4351,7 +4433,7 @@ int main(int argc, char** argv) {
       eo.cutoff = o.count("--cutoff") ? std::stod(o["--cutoff"]) : 10.0;
       electrostatics(eo, o);
       auto field_for = [&](const System& sup) { System x = sup; return cli_forcefield(x, o, true); };
-      if (!quiet) cli_forcefield(s, o, false);   // says which force field
+      (void)cli_forcefield(s, o, quiet);   // the structure as the force field describes it (shells, united atoms, charges); says which field
       const auto r = relax_cell(s, field_for, eo, co);
       for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
       const char* nm[6] = {"a", "b", "c", "alpha", "beta", "gamma"};
@@ -4366,6 +4448,7 @@ int main(int argc, char** argv) {
       return r.converged ? 0 : 2;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps cellrelax: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4435,6 +4518,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps path: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4457,6 +4541,10 @@ int main(int argc, char** argv) {
         return 0;
       }
       const MeasuredCurve c = read_measured(in);
+      if (c.x.empty()) {   // a header with no readable data lines after it
+        for (const auto& n : c.notes) std::printf("%s\n", n.c_str());
+        throw std::runtime_error(in + ": no data points could be read" + (c.format.empty() ? "" : " (" + c.format + ")"));
+      }
       std::printf("%s%s%s: %zu points, x %.6g … %.6g%s%s, y %s%s\n", c.format.c_str(), c.title.empty() ? "" : " · ", c.title.c_str(), c.x.size(), c.x.front(), c.x.back(),
                   c.xunits.empty() ? "" : " ", c.xunits.c_str(), c.yunits.empty() ? "as written" : c.yunits.c_str(), c.sigma.empty() ? "" : " with σ");
       for (const auto& n : c.notes) std::printf("%s\n", n.c_str());
@@ -4478,6 +4566,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps data: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4517,6 +4606,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps symmetry: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4556,6 +4646,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps pores: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4611,6 +4702,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps qeq: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4646,6 +4738,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps dendrimer: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4763,6 +4856,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps dpd: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4832,6 +4926,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps qha: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4937,6 +5032,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps phonons: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -4980,6 +5076,7 @@ int main(int argc, char** argv) {
       return r.solutions.empty() ? 2 : 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps index: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -5012,6 +5109,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps solve: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -5076,6 +5174,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps domains: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -5123,6 +5222,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps adp: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -5165,6 +5265,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps cif: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -5213,6 +5314,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps graft: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -5232,6 +5334,7 @@ int main(int argc, char** argv) {
       copolymer_options(spec, o);
       spec.sequence = !spec.transition.empty() ? Sequence::Markov : !spec.penultimate.empty() ? Sequence::Penultimate : Sequence::Terminal;
       if (spec.sequence == Sequence::Terminal && spec.reactivity.empty() && n > 2) throw std::invalid_argument("three or more units need --reactivity");
+      if (spec.sequence == Sequence::Penultimate && n != 2) throw std::invalid_argument("--penultimate is a model of two units: give --feed two fractions");
       SequenceModel m;
       std::vector<double> r = spec.reactivity;
       if (r.empty() && n == 2) r = {1, spec.r1, spec.r2, 1};
@@ -5279,6 +5382,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps copolymer: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -5325,6 +5429,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps zmelt: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -5385,6 +5490,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps %s: %s\n", cmd.c_str(), e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -5461,6 +5567,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps dielectric: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -5538,6 +5645,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps refine: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -5738,7 +5846,10 @@ int main(int argc, char** argv) {
           return 0;
         }
         std::vector<std::string> cls;
-        for (size_t r = 0; r < t.cells.size(); ++r) cls.push_back(t.cells[r][ex[0]]);
+        for (size_t r = 0; r < t.cells.size(); ++r) {
+          if (ex[0] >= t.cells[r].size()) throw std::invalid_argument("row " + std::to_string(r + 1) + " has no " + t.names[ex[0]] + " (the class column)");
+          cls.push_back(t.cells[r][ex[0]]);
+        }
         const DiscriminantResult d = discriminant(rows, cls);
         std::printf("discriminant analysis of %zu rows, %zu classes, %zu columns: %.1f %% right on the rows, %.1f %% left out one at a time\n", rows.size(), d.classes.size(),
                     xc.size(), 100 * d.accuracy, 100 * d.accuracy_loo);
@@ -5755,6 +5866,7 @@ int main(int argc, char** argv) {
       throw std::invalid_argument("qspr: descriptors, model, cluster or lda");
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps qspr: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -5835,6 +5947,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps habit: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -5930,6 +6043,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps fit: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -6027,6 +6141,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps powder: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -6034,14 +6149,20 @@ int main(int argc, char** argv) {
     // caps frames FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N] [--timestep-fs 1]
     // A long trajectory thinned as it is read: only the frames kept are held and written.
     if (pos.size() < 2) return usage();
-    OpenProgress rd;
-    if (o.count("--first")) rd.frames.first = std::stoul(o["--first"]);
-    if (o.count("--last")) rd.frames.last = std::stoul(o["--last"]);
-    if (o.count("--stride")) rd.frames.stride = std::max<size_t>(1, std::stoul(o["--stride"]));
-    const Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "", rd);
-    write_trajectory(t, pos[1], o.count("--timestep-fs") ? std::stod(o["--timestep-fs"]) : 1.0);
-    std::printf("wrote %s: %zu frames (%zu read)\n", pos[1].c_str(), t.frames(), t.frames_read ? t.frames_read : t.frames());
-    return 0;
+    try {
+      OpenProgress rd;
+      if (o.count("--first")) rd.frames.first = std::stoul(o["--first"]);
+      if (o.count("--last")) rd.frames.last = std::stoul(o["--last"]);
+      if (o.count("--stride")) rd.frames.stride = std::max<size_t>(1, std::stoul(o["--stride"]));
+      const Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "", rd);
+      write_trajectory(t, pos[1], o.count("--timestep-fs") ? std::stod(o["--timestep-fs"]) : 1.0);
+      std::printf("wrote %s: %zu frames (%zu read)\n", pos[1].c_str(), t.frames(), t.frames_read ? t.frames_read : t.frames());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps frames: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
+      return 1;
+    }
   }
   if (cmd == "analyze") {
     // caps analyze FILE [--topology DATA] --props density,rdf,... [--first --last --stride] [--frame-ps | --timestep-fs]
@@ -6142,6 +6263,7 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps analyze: %s\n", e.what());
+      keep_cli_error(argc, argv, e);
       return 1;
     }
   }
@@ -6737,10 +6859,12 @@ int main(int argc, char** argv) {
         run_dynamics(s, d, &rep);
       } catch (const DynamicsInterrupted& e) {
         // the checkpoint holds this step; the command that continues the run is written beside it
-        std::string again = "caps md " + cp + " --resume --steps " + std::to_string(d.step_offset + d.steps) + " -o " + o["-o"];
-        for (const char* k : {"--dt", "--temp", "--thermostat", "--tau-t", "--barostat", "--pressure", "--tau-p", "--constraints", "--constraint-solver", "--thermo",
-                              "--every", "--cutoff", "--skin", "--threads", "--checkpoint-every", "--log", "--dump"})
-          if (o.count(k)) again += std::string(" ") + k + " " + o[k];
+        // every option of this run again (the physics: electrostatics, HMR, held molecule, restraints, precision ...), the
+        // words quoted; the checkpoint is the input, so the original input's --topology and --frame do not apply to it
+        auto ro = o;
+        ro.erase("--topology");
+        ro.erase("--frame");
+        const std::string again = resume_line("caps md", cp, ro, {{"--resume", ""}, {"--steps", std::to_string(d.step_offset + d.steps)}});
         std::ofstream("resume.txt") << again << "\n";
         std::printf("stopped at step %lld (a stop was asked for): the state is in %s; continue with\n  %s\n", static_cast<long long>(e.step), cp.c_str(), again.c_str());
         live.done(false, "interrupted at step " + std::to_string(e.step) + "; resume: " + again);

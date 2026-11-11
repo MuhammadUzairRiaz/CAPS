@@ -142,12 +142,11 @@ public partial class MainViewModel
     {
         if (_doc == null) return;
         JsonObject req;
-        try { req = ChargeRequest(true); }
+        try { req = ChargeRequest(false); }
         catch (FormatException fe) { ChargeError = fe.Message; return; }
+        req["save"] = path;   // written from a copy: no undo step, the Field assignment and selection kept
         var r = JsonNode.Parse(_doc.Charges(req.ToJsonString()))!;
         if (r["ok"]?.GetValue<bool>() != true) { ChargeError = r["error"]?.GetValue<string>() ?? "cannot export"; return; }
-        try { _doc.Save(path); }
-        finally { _doc.Undo(false); }
         Status = $"Wrote {Path.GetFileName(path)} with {MethodName(_chgMethod)} charges";
     }
 }

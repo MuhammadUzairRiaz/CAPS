@@ -177,8 +177,10 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   const size_t ncons = cset.c.size();
   if (o.topology && o.topology_every > 0 && ncons) throw std::invalid_argument("bond exchange runs without bond constraints");
   ConstraintSolver cons(std::move(cset), m, s.cell, 1e-8, 1000, o.constraint_algorithm);
-  // with held atoms momentum is not conserved: every free coordinate counts
-  const double ndof = (nheld || npart ? 3.0 * double(n - nheld) - double(npart) : 3.0 * n - 3.0) - double(ncons);
+  // with held atoms momentum is not conserved: every free coordinate counts. Virtual sites carry no
+  // momentum and hold nothing, so with only them the centre-of-mass motion still takes away three.
+  const bool momentum_kept = nheld == nvs && !npart;
+  const double ndof = 3.0 * double(n - nheld) - double(npart) - (momentum_kept ? 3.0 : 0.0) - double(ncons);
   if (ndof < 1) throw std::invalid_argument("the constraints leave no degree of freedom");
   if (nheld > nvs) rep.notes.push_back(std::to_string(nheld - nvs) + " atoms held in place");
   if (npart) rep.notes.push_back(std::to_string(npart) + " single coordinates held (atoms held along some axes only)");
@@ -237,6 +239,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       }
     for (size_t i = 0; i < n; ++i)
       for (int k = 0; k < 3; ++k) v[3 * i + k] = held[i] ? 0.0 : v[3 * i + k] - p[k] / mfree;
+    zero_partial(v);   // before the rescale: ndof leaves these coordinates out, so their energy must too
     if (ncons) cons.rattle(x, v, cell);
     const double t0 = 2 * kinetic_energy(v, m) / (ndof * kB);
     if (t0 > 0)

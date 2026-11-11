@@ -144,11 +144,12 @@ public static class LabelDrawing
         _ => new FontFamily(name),
     };
 
-    public static void Draw(DrawingContext ctx, IReadOnlyList<ViewLabel> labels, LabelStyle style)
+    /// <param name="darkBackground">The background the labels sit on (a figure's own), or null to follow the app theme.</param>
+    public static void Draw(DrawingContext ctx, IReadOnlyList<ViewLabel> labels, LabelStyle style, bool? darkBackground = null)
     {
         if (labels.Count == 0) return;
         var ink = Tokens.Brush("TextB");
-        var light = Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Light;
+        var light = darkBackground is { } dark ? !dark : Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Light;
         IBrush plate = light ? new SolidColorBrush(Color.FromArgb(0xC8, 0xFF, 0xFF, 0xFF)) : new SolidColorBrush(Color.FromArgb(0xB0, 0x16, 0x19, 0x1C));
         var face = new Typeface(Family(style.Font), FontStyle.Normal, style.Bold ? FontWeight.Bold : FontWeight.Normal);
         var brushes = new Dictionary<uint, IBrush>();

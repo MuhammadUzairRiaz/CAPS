@@ -29,7 +29,7 @@
           <DockPanel>
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
               <Button Content="Stop" Click="OnStop" IsVisible="{Binding ExportDlgBusy}" />
-              <Button Click="OnCopy" IsVisible="{Binding ExportIsImage}" IsEnabled="{Binding ExportDlgIdle}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="copy" Size="15" VerticalAlignment="Center" /><TextBlock Text="Copy to clipboard" VerticalAlignment="Center" /></StackPanel></Button>
+              <Button Click="OnCopy" IsVisible="{Binding ExportIsRaster}" IsEnabled="{Binding ExportDlgIdle}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="copy" Size="15" VerticalAlignment="Center" /><TextBlock Text="Copy to clipboard" VerticalAlignment="Center" /></StackPanel></Button>
               <Button Classes="primary" Click="OnExport" IsEnabled="{Binding ExportDlgIdle}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="15" VerticalAlignment="Center" /><TextBlock Text="{Binding ExportButton}" VerticalAlignment="Center" /></StackPanel></Button>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">

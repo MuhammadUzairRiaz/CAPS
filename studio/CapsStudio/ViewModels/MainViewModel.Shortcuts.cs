@@ -32,8 +32,17 @@ public sealed partial class MainViewModel
     private ShortcutRow? _recordingRow;
     public bool RecordingShortcut => _recordingRow != null;
 
-    /// <summary>The Studio's own keys (Settings › Keyboard), as gestures, for conflict warnings.</summary>
-    private static readonly (string Gesture, string What)[] BuiltInKeys =
+    /// <summary>"Meta+Shift+Z" → "Shift+Meta+Z" on macOS, "Ctrl+Shift+Z" elsewhere: GestureText's form.</summary>
+    private static string PlatformGesture(string g)
+    {
+        var parts = g.Split('+');
+        var mods = parts[..^1].Select(m => !OperatingSystem.IsMacOS() && m == "Meta" ? "Ctrl" : m).ToHashSet();
+        var order = new[] { "Ctrl", "Alt", "Shift", "Meta" };
+        return string.Join("+", order.Where(mods.Contains).Append(parts[^1]));
+    }
+
+    /// <summary>The Studio's own keys as Settings › Keyboard lists them (Meta is Cmd on macOS, Ctrl elsewhere).</summary>
+    private static readonly (string Gesture, string What)[] BuiltInKeysAsWritten =
     [
         ("Meta+K", "the command palette"), ("Meta+O", "Open"), ("Meta+S", "Save"), ("Meta+W", "Close"), ("Meta+Shift+O", "the most recent file"),
         ("Meta+Z", "Undo"), ("Meta+Shift+Z", "Redo"), ("Meta+F", "Select by query"), ("Meta+I", "Invert the selection"), ("Meta+H", "Add hydrogens"),
@@ -47,6 +56,11 @@ public sealed partial class MainViewModel
         ("Meta+Shift+S", "Save a copy of the project"),
         ("Meta+OemComma", "Settings"), ("Meta+C", "Copy"), ("Meta+V", "Paste"), ("Meta+X", "Cut"), ("Meta+A", "Select all in text"), ("Meta+Q", "Quit"),
     ];
+
+    /// <summary>The Studio's own keys (Settings › Keyboard), as gestures, for conflict warnings. Each is
+    /// brought to the form GestureText records on this system (Meta is Ctrl off macOS, modifiers in
+    /// the order Ctrl, Alt, Shift, Meta), so a plain string comparison finds the clash.</summary>
+    private static readonly (string Gesture, string What)[] BuiltInKeys = BuiltInKeysAsWritten.Select(b => (PlatformGesture(b.Gesture), b.What)).ToArray();
 
     /// <summary>Settings › Your shortcuts: the commands matching the filter (those with a key first when it is empty).</summary>
     public void FillShortcutRows()
@@ -85,7 +99,7 @@ public sealed partial class MainViewModel
         var notes = new List<string>();
         if (mods is KeyModifiers.None or KeyModifiers.Shift && key is >= Key.A and <= Key.Z or >= Key.D0 and <= Key.D9)
             notes.Add("a plain letter or digit does nothing while a text field has the focus");
-        if (BuiltInKeys.FirstOrDefault(b => (OperatingSystem.IsMacOS() ? b.Gesture : b.Gesture.Replace("Meta", "Ctrl")) == g) is { What: { } what }) notes.Add($"it replaces the Studio's key for {what}");
+        if (BuiltInKeys.FirstOrDefault(b => b.Gesture == g) is { What: { } what }) notes.Add($"it replaces the Studio's key for {what}");
         foreach (var (id, other) in _settings.Shortcuts.ToList())
             if (other == g && id != row.Id)
             {

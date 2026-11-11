@@ -576,14 +576,49 @@ std::string martini3_itp(const System& s, double constraint_kj) {
                        x.group.c_str());
     o << b;
   }
-  if (!T.vsites.empty()) {
-    o << "\n[ virtual_sitesn ]\n";
-    for (const auto& v : T.vsites) {
-      o << v.site + 1 << (v.w.empty() ? " 2" : " 1");
-      for (uint32_t a : v.from) o << " " << a + 1;
-      o << "\n";
+  // virtual sites keep their construction: linear two- and three-atom sites (weights summing to 1, perhaps
+  // negative: a site outside its atoms) as virtual_sites2 / virtual_sites3 function 1, out-of-plane ones as
+  // virtual_sites3 function 4, the centre of mass as virtual_sitesn function 2, equal weights as function 1
+  // (centre of geometry) and other positive weights as function 3 (each atom with its weight)
+  std::ostringstream vs2, vs3, vsn;
+  for (const auto& v : T.vsites) {
+    double sum = 0, lo = 0;
+    bool equal = true;
+    for (double x : v.w) sum += x, lo = std::min(lo, x), equal = equal && std::fabs(x - v.w[0]) < 1e-12;
+    const bool unit = std::fabs(sum - 1) < 1e-9;
+    if (v.c != 0) {
+      if (v.from.size() != 3 || !unit) throw std::invalid_argument("an out-of-plane virtual site needs three atoms and weights summing to 1");
+      std::snprintf(b, sizeof b, "%u %u %u %u 4 %.12g %.12g %.12g\n", v.site + 1, v.from[0] + 1, v.from[1] + 1, v.from[2] + 1, v.w[1], v.w[2], v.c * 10);
+      vs3 << b;
+    } else if (v.w.empty()) {
+      vsn << v.site + 1 << " 2";
+      for (uint32_t a : v.from) vsn << " " << a + 1;
+      vsn << "\n";
+    } else if (unit && (v.from.size() == 2 || (v.from.size() == 3 && !equal))) {
+      if (v.from.size() == 2) {
+        std::snprintf(b, sizeof b, "%u %u %u 1 %.12g\n", v.site + 1, v.from[0] + 1, v.from[1] + 1, v.w[1]);
+        vs2 << b;
+      } else {
+        std::snprintf(b, sizeof b, "%u %u %u %u 1 %.12g %.12g\n", v.site + 1, v.from[0] + 1, v.from[1] + 1, v.from[2] + 1, v.w[1], v.w[2]);
+        vs3 << b;
+      }
+    } else if (equal) {
+      vsn << v.site + 1 << " 1";
+      for (uint32_t a : v.from) vsn << " " << a + 1;
+      vsn << "\n";
+    } else {
+      if (lo < 0) throw std::invalid_argument("a virtual site with negative weights on " + std::to_string(v.from.size()) + " atoms has no GROMACS form");
+      vsn << v.site + 1 << " 3";
+      for (size_t k = 0; k < v.from.size(); ++k) {
+        std::snprintf(b, sizeof b, " %u %.12g", v.from[k] + 1, v.w[k]);
+        vsn << b;
+      }
+      vsn << "\n";
     }
   }
+  if (!vs2.str().empty()) o << "\n[ virtual_sites2 ]\n" << vs2.str();
+  if (!vs3.str().empty()) o << "\n[ virtual_sites3 ]\n" << vs3.str();
+  if (!vsn.str().empty()) o << "\n[ virtual_sitesn ]\n" << vsn.str();
   if (!T.exclusions.empty()) {
     o << "\n[ exclusions ]\n";
     for (const auto& e : T.exclusions) o << e.first + 1 << " " << e.second + 1 << "\n";

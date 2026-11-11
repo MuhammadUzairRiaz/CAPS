@@ -407,6 +407,39 @@ std::map<std::string, double> cg_masses(const std::vector<CgSysIn>& sys) {
   return out;
 }
 
+// bead positions of a STEM.cg.data frame in map order: atom id k goes to bead k - 1 (file order when ids are absent)
+std::vector<Vec3> cg_data_positions(const System& d, size_t beads, const std::string& p) {
+  if (d.atoms.size() != beads) throw std::invalid_argument(p + " has " + std::to_string(d.atoms.size()) + " beads, its map " + std::to_string(beads));
+  std::vector<Vec3> q(beads);
+  std::vector<char> seen(beads, 0);
+  for (size_t b = 0; b < d.atoms.size(); ++b) {
+    const int64_t id = d.atoms[b].id;
+    const size_t k = id > 0 ? size_t(id - 1) : b;
+    if (k >= beads) throw std::invalid_argument(p + ": atom id " + std::to_string(id) + " is above its " + std::to_string(beads) + " beads; renumber the atoms 1.." + std::to_string(beads));
+    if (seen[k]) throw std::invalid_argument(p + ": bead " + std::to_string(k + 1) + " appears twice; renumber the atoms 1.." + std::to_string(beads));
+    seen[k] = 1;
+    q[k] = d.atoms[b].pos;
+  }
+  return q;
+}
+
+// a shell command that runs Z1+ on config.Z1 inside run; each path is quoted so the shell takes it literally
+std::string z1_command(const fs::path& run, const std::string& z1) {
+#ifdef _WIN32
+  // cmd.exe: paths cannot hold a double quote, and % would expand even inside quotes
+  for (const std::string& s : {run.string(), z1})
+    if (s.find_first_of("\"%") != std::string::npos) throw std::invalid_argument("Z1+ cannot run from a path with \" or %: " + s);
+  return "cd /d \"" + run.string() + "\" && perl \"" + z1 + "\" config.Z1 > z1.log 2>&1";
+#else
+  auto quote = [](const std::string& s) {
+    std::string o = "'";
+    for (char c : s) o += c == '\'' ? std::string("'\\''") : std::string(1, c);
+    return o + "'";
+  };
+  return "cd " + quote(run.string()) + " && perl " + quote(z1) + " config.Z1 > z1.log 2>&1";
+#endif
+}
+
 // every frame of a system: CG dumps streamed, or STEM.cg.data
 template <class F>
 size_t cg_frames(const CgSysIn& x, size_t stride, F&& f) {
@@ -414,10 +447,7 @@ size_t cg_frames(const CgSysIn& x, size_t stride, F&& f) {
   for (const auto& p : x.frames) {
     if (fs::path(p).extension() == ".data") {
       const System d = read_lammps_data(p);
-      if (d.atoms.size() != x.t.beads()) throw std::invalid_argument(p + " has " + std::to_string(d.atoms.size()) + " beads, its map " + std::to_string(x.t.beads()));
-      std::vector<Vec3> q(d.atoms.size());
-      for (size_t b = 0; b < d.atoms.size(); ++b) q[size_t(d.atoms[b].id > 0 ? d.atoms[b].id - 1 : int64_t(b))] = d.atoms[b].pos;
-      f(q, d.cell);
+      f(cg_data_positions(d, x.t.beads(), p), d.cell);
       ++n;
     } else {
       n += for_each_dump_frame(p, x.t.beads(), [&](size_t, int64_t, const std::vector<Vec3>& q, const Cell& c, bool) { f(q, c); return true; }, stride);
@@ -448,6 +478,9 @@ std::string stem_of_map(const std::string& map) {
 // LAMMPS inputs for the CG model: in.cg_run (NVT or NPT, a dump for g(r) and the next IBI step) and in.cg_tg (a stepwise
 // cooling scan writing T and density to tg.dat for caps cgfit tg)
 void write_cg_decks(const std::string& dir, int exclude, double T, double dt, int64_t steps, double t_hi, double t_lo, double t_step, std::vector<std::string>& files) {
+  // the T_g scan steps down from t_hi to t_lo; a step that is not positive would never reach t_lo
+  if (!(t_step > 0) || !std::isfinite(t_step)) throw std::invalid_argument("--t-step must be a positive number of kelvin");
+  if (!std::isfinite(t_hi) || !std::isfinite(t_lo) || t_hi < t_lo) throw std::invalid_argument("--t-hi must be at least --t-lo");
   const char* special = exclude <= 2 ? "0 1 1" : exclude == 3 ? "0 0 1" : "0 0 0";
   char b[512];
   {
@@ -1160,10 +1193,7 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
         ins.push_back({fs::path(fpath).filename().string(), sha_of(fpath)});
         if (fs::path(fpath).extension() == ".data") {
           const System d = read_lammps_data(fpath);
-          if (d.atoms.size() != x.t.beads()) throw std::invalid_argument(fpath + " has " + std::to_string(d.atoms.size()) + " beads, its map " + std::to_string(x.t.beads()));
-          std::vector<Vec3> p(d.atoms.size());
-          for (size_t b = 0; b < d.atoms.size(); ++b) p[size_t(d.atoms[b].id > 0 ? d.atoms[b].id - 1 : int64_t(b))] = d.atoms[b].pos;
-          acc.add_frame(si, p, d.cell);
+          acc.add_frame(si, cg_data_positions(d, x.t.beads(), fpath), d.cell);
           ++nfr;
         } else {
           nfr += for_each_dump_frame(fpath, x.t.beads(), [&](size_t, int64_t, const std::vector<Vec3>& p, const Cell& cell, bool) {
@@ -1441,7 +1471,7 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
           const fs::path run = fs::path(dir) / (stem + "_z1");
           fs::create_directories(run);
           fs::copy_file(cfg, run / "config.Z1", fs::copy_options::overwrite_existing);
-          const std::string cmd = "cd \"" + run.string() + "\" && perl \"" + z1 + "\" config.Z1 > z1.log 2>&1";
+          const std::string cmd = z1_command(run, z1);
           const int rc = std::system(cmd.c_str());
           const fs::path sp = run / "Z1+SP.dat";
           if (rc == 0 && fs::exists(sp)) {
@@ -1562,7 +1592,7 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
             const fs::path run = fs::path(dir) / ("z1_" + std::to_string(k));
             fs::create_directories(run);
             write_z1_config(x.t, q, c2, (run / "config.Z1").string());
-            if (std::system(("cd \"" + run.string() + "\" && perl \"" + z1 + "\" config.Z1 > z1.log 2>&1").c_str()) == 0 && fs::exists(run / "Z1+SP.dat"))
+            if (std::system(z1_command(run, z1).c_str()) == 0 && fs::exists(run / "Z1+SP.dat"))
               z = entanglement_of(read_z1_paths((run / "Z1+SP.dat").string())).z;
           }
           f << k << "," << o.strain << "," << o.p2 << "," << o.ree_anisotropy << "," << o.void_fraction << "," << z << "\n";

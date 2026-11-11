@@ -30,9 +30,12 @@ std::vector<std::vector<uint64_t>> environment_signatures(const System& s, int r
     std::vector<uint32_t> q{uint32_t(a)};
     dist[a] = 0;
     int best = 0;
-    for (size_t h = 0; h < q.size() && !best; ++h) {
+    for (size_t h = 0; h < q.size(); ++h) {
       const uint32_t u = q[h];
       if (dist[u] >= 4) break;
+      // a node at depth d closes rings of 2d+1 or 2d+2 only, so finish the whole level before stopping:
+      // which closure turns up first inside a level depends on atom and bond order
+      if (best && 2 * dist[u] + 1 > best) break;
       for (auto [w, o] : nb[u]) {
         if (dist[w] < 0) {
           dist[w] = dist[u] + 1, root[w] = u == a ? int(w) : root[u];

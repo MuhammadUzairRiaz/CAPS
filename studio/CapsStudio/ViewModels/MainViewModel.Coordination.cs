@@ -75,6 +75,8 @@ public sealed partial class MainViewModel
                 if (r < rms - 1e-6 || (Math.Abs(r - rms) <= 1e-6 && sites.Length == u.Length)) (best, rms) = (sites.Length == u.Length ? name : $"{name}, {sites.Length - u.Length} site{(sites.Length - u.Length > 1 ? "s" : "")} empty", r);
             }
         }
+        // more neighbours than any ideal shape has sites (octahedral is the largest): report the count alone
+        if (best.Length == 0) return string.Format(CultureInfo.InvariantCulture, "{0} neighbours", u.Length);
         return string.Format(CultureInfo.InvariantCulture, "{0} neighbours · {1} (RMS {2:0.0}°)", u.Length, best, rms);
     }
     private static IEnumerable<int[]> Subsets(int n, int k)

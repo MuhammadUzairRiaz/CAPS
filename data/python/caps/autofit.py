@@ -142,7 +142,8 @@ def missing_terms(structure, ffjson):
     for line in text.splitlines():
         m = re.match(r"^\s+(bond|angle|dihedral)\s+(.+)$", line)
         if m:
-            names = re.findall(r"(\S+?)\(", m.group(2)) or m.group(2).split()
+            # each atom is its type name, followed by "(class)" only when the class differs from the name
+            names = [w.split("(", 1)[0] for w in m.group(2).split()]
             if names not in out[m.group(1)] and names[::-1] not in out[m.group(1)]:
                 out[m.group(1)].append(names)
         if "match no typing rule" in line:
@@ -212,9 +213,22 @@ def find_occurrence(structure, ffjson, work, names, kind):
 
 
 # ------------------------------------------------------------------ bonds and bends
-def class_of(ffjson, kind):
+def atom_types_of(ffjson):
+    """{name: atom type} of a force field as CAPS loads it: the types of the file it extends first, its own on top"""
     d = json.load(open(ffjson))
-    return {t["name"]: (t.get("equivalence") or {}).get(kind, t["name"]) for t in d["atom_types"]}
+    types = {}
+    if isinstance(d.get("extends"), str):
+        base = d["extends"]
+        if not os.path.isabs(base):
+            base = os.path.join(os.path.dirname(os.path.abspath(ffjson)), base)
+        types.update(atom_types_of(os.path.normpath(base)))
+    for t in d.get("atom_types", []):
+        types[t["name"]] = t
+    return types
+
+
+def class_of(ffjson, kind):
+    return {n: (t.get("equivalence") or {}).get(kind, n) for n, t in atom_types_of(ffjson).items()}
 
 
 def fit_stretch_or_bend(structure, ffjson, work, names, kind, model):
@@ -387,9 +401,16 @@ def fit_torsions(structure, ffjson, work, model, step, hold):
 
 def combined_ff(ffjson, extra, path):
     d = json.load(open(ffjson))
-    # a library names its typing rules relative to itself (../typing/...): the copy keeps the absolute path
-    if isinstance(d.get("typing"), str) and not os.path.isabs(d["typing"]):
-        d["typing"] = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(ffjson)), d["typing"]))
+    # a library names the files it reads relative to itself (../typing/..., the force field it extends, its pair table):
+    # the copy, written elsewhere, keeps the absolute paths
+    here = os.path.dirname(os.path.abspath(ffjson))
+    def absolute(holder, key):
+        if isinstance(holder.get(key), str) and holder[key] and not os.path.isabs(holder[key]):
+            holder[key] = os.path.normpath(os.path.join(here, holder[key]))
+    for key in ("typing", "extends", "pair_table", "molecule_templates", "charge_increments_from"):
+        absolute(d, key)
+    if isinstance(d.get("typing_settings"), dict):
+        absolute(d["typing_settings"], "martini_small_molecules")
     for kind in ("bonds", "angles", "dihedrals"):
         d.setdefault(kind, [])
         d[kind] = [r for r in d[kind] if r.get("match") not in [e["match"] for e in extra.get(kind, [])]] + extra.get(kind, [])

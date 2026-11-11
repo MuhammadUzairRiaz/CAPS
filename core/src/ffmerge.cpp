@@ -236,9 +236,11 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
       if (type_part[size_t(a)] == type_part[size_t(b)]) continue;
       ++cross;
       const std::pair<int, int> key{a, b};
+      // a pair of two 9-6 sites stays 9-6 (the system's own form) with the native parameters; any 12-6 site makes it 12-6
+      const bool pair126 = mixed_forms && !(type_is96[size_t(a)] && type_is96[size_t(b)]);
       auto site = [&](int t) {   // the site as 12-6 when the cross pair is 12-6
         PairType s = M.lj[size_t(t)];
-        if (mixed_forms && type_is96[size_t(t)]) {
+        if (pair126 && type_is96[size_t(t)]) {
           if (o.cross96 == "area") s.eps *= lj96_to_126_depth_ratio(s.sigma, o.refit_cutoff);   // same r_min, same ∫ U r² dr
           s.sigma /= std::pow(2.0, 1.0 / 6);   // 9-6 σ is r_min
         }
@@ -259,7 +261,7 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
           pt.eps = o.eps_rule == "geometric" ? std::sqrt(A.eps * B.eps) : 0.5 * (A.eps + B.eps);
         }
       }
-      if (mixed_forms) M.pair_func[key] = PairFunc{kPairSdk126, pt.eps, pt.sigma, 0};
+      if (pair126) M.pair_func[key] = PairFunc{kPairSdk126, pt.eps, pt.sigma, 0};
       else M.pair_override[key] = pt;
     }
   if (M.manybody.on()) {
@@ -277,8 +279,8 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
          (auto_note.empty() ? std::string() : " · " + auto_note));
     if (mixed_forms)
       note(o.cross96 == "area"
-               ? "9-6 and 12-6 parts: every pair with a 12-6 site is 4ε[(σ/r)¹² − (σ/r)⁶] (LAMMPS lj/sdk lj12_6 beside lj/class2); a 9-6 site enters a cross pair as the 12-6 curve with its minimum r_min and the well depth that gives the same ∫ U r² dr from r_min to " + fmt(o.refit_cutoff) + " Å (σ₁₂ = r_min / 2^(1/6))"
-               : "9-6 and 12-6 parts: every pair with a 12-6 site is 4ε[(σ/r)¹² − (σ/r)⁶] (LAMMPS lj/sdk lj12_6 beside lj/class2); a 9-6 site enters a cross pair with its own ε and minimum r_min (σ₁₂ = r_min / 2^(1/6))");
+               ? "9-6 and 12-6 parts: every pair with a 12-6 site is 4ε[(σ/r)¹² − (σ/r)⁶] (LAMMPS lj/sdk lj12_6 beside lj/class2), a pair of two 9-6 sites stays 9-6; a 9-6 site enters a 12-6 cross pair as the 12-6 curve with its minimum r_min and the well depth that gives the same ∫ U r² dr from r_min to " + fmt(o.refit_cutoff) + " Å (σ₁₂ = r_min / 2^(1/6))"
+               : "9-6 and 12-6 parts: every pair with a 12-6 site is 4ε[(σ/r)¹² − (σ/r)⁶] (LAMMPS lj/sdk lj12_6 beside lj/class2), a pair of two 9-6 sites stays 9-6; a 9-6 site enters a 12-6 cross pair with its own ε and minimum r_min (σ₁₂ = r_min / 2^(1/6))");
   }
   for (auto& s : said) M.notes.push_back(s);
   if (notes) *notes = said;

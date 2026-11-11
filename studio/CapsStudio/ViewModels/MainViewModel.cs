@@ -171,10 +171,12 @@ public sealed partial class MainViewModel : ObservableObject
                 QueueSelBar();   // the bar, and the hidden / ghosted counts, of the new document
                 PackDocumentChanged();   // Packing's last result belongs to the structure it made
                 OrDocumentChanged();     // so do Orientation's curves
+                SeriesDocumentChanged(); // and Visualize's time series
                 Raise(nameof(DpdHasBeads)); Raise(nameof(DpdViewTitle));   // the DPD page shows its run's beads only while they are the open structure
                 _rxAimDc = true;         // a new structure: the crosslinking panel sets the target again
                 _tagOnly = null;
                 Probes.Clear(); ProbeCards.Clear(); Raise(nameof(HasProbes)); Raise(nameof(HasProbeCards));   // probes are a structure's atoms
+                ClearMonitors();         // so are the pinned measurements
                 if (value == null) RefreshLayers();   // no structure: no layers (a closed one's rows gone)
                 RaiseStepDots();                      // the tab dots are the active structure's
                 QueueRxSites();          // the chains' reactive sites of this structure
@@ -211,7 +213,7 @@ public sealed partial class MainViewModel : ObservableObject
     public string ProjectionText => _perspective ? (Math.Abs(ViewFov - 35) < 0.5 ? "Perspective" : $"Perspective {ViewFov:0}°") : "Orthographic";
     private bool _measureTool;
     /// <summary>Measure tool: clicks add atoms to the measurement (as ⇧ click does).</summary>
-    public bool MeasureTool { get => _measureTool; set => Set(ref _measureTool, value); }
+    public bool MeasureTool { get => _measureTool; set { if (Set(ref _measureTool, value)) Raise(nameof(IsSelectTool)); } }
     public int ColourIndex
     {
         get => _colour;
@@ -483,12 +485,13 @@ public sealed partial class MainViewModel : ObservableObject
     private static readonly string[] Crumbs = ["Polymer cell › Amorphous cell", "Analyze › Properties", "Minimise", "Dynamics › Run",
         "Equilibrate › Protocol", "Packing › Molecules & regions", "React › Crosslinking", "Force field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render", "Analyze › Visualize", "Export › Data", "Analyze › Batch", "Analyze › Compare", "Analyze › Visualize › Colour by", "Studio › Viewports", "Export › Figure bundle", "Open file", "Analyze › Visualize › Save pipeline", "Builders › Crystal", "", "Builders › Solvation", "Studio › Trajectory", "Studio › Torsion scan", "Studio › Split view", "Studio › Fragment library", "Studio › Macro recorder", "Jobs › Provenance", "Analyze › Mechanics", "Analyze › Scattering", "Analyze › Free volume", "Theory manual", "Project", "Jobs › Sweep", "Builders › Coarse-grained", "React › Template editor", "Settings › Colour vision", "Analyze › Glass transition", "Analyze › Interface", "Analyze › Diffusion", "Studio › Charges", "Studio › Periodic box", "Analyze › Orientation", "Jobs › Recipes", "Export › Figure composer", "Analyze › Chains", "Packing › Density calculator", "Analyze › Surface area", "Studio › Unit cell",
         "Polymer cell › Polydispersity", "Builders › Copolymer", "Analyze › Solvent screen", "Builders › Polymer › Tacticity", "Analyze › Blend phase diagram", "Dynamics › Electrostatics",
-        "Studio › Display styles", "Studio › Add hydrogens", "Studio › Model resolution", "Export", "Force field › Type by hand", "Analyze › Adsorption locator", "Analyze › Sorption", "Polymer cell › Mesoscale (DPD)", "Studio › Reader", "Analyze › Study table"];
+        "Studio › Display styles", "Studio › Add hydrogens", "Studio › Model resolution", "Export", "Force field › Type by hand", "Analyze › Adsorption locator", "Analyze › Sorption", "Polymer cell › Mesoscale (DPD)", "Studio › Reader", "Analyze › Study table",
+        "DFT › 2D sheets & terminations", "DFT › Adsorption set", "DFT › VASP set designer", "DFT › Runs", "DFT › Results", "Builders › Coarse-grained › Workflow", "Builders › Semicrystalline stack", "Analyze › Thermal conductivity", "React › Bond exchange"];
     /// <summary>The number of module pages, and a page's place in the top bar ("" for none), for the GUI sweep.</summary>
     internal static int ModuleCount => Crumbs.Length;
     internal static string ModuleCrumb(int m) => m >= 0 && m < Crumbs.Length ? Crumbs[m] : "";
     /// <summary>Where the user is (top bar).</summary>
-    public string Crumb => _module == 8 ? "" : Crumbs[_module];
+    public string Crumb => _module == 8 ? "" : ModuleCrumb(_module);
     /// <summary>Where calculations run (top bar).</summary>
     public string ComputeText
     {
@@ -791,9 +794,9 @@ public sealed partial class MainViewModel : ObservableObject
     public bool Growing { get => _growing; private set { if (Set(ref _growing, value)) { Raise(nameof(NotGrowing)); RaiseBusy(); } } }
     public bool NotGrowing => !_growing;
     /// <summary>No build or minimisation is running (the document can be replaced or edited).</summary>
-    public bool Idle => !_growing && !_relaxing && !_mdRunning && !_eqRunning && !_packing && !_reacting && !_analyzing && !_adsRunning && !_sorbRunning && !_dpdRunning && !_exRunning;
+    public bool Idle => !_growing && !_relaxing && !_mdRunning && !_eqRunning && !_packing && !_reacting && !_analyzing && !_adsRunning && !_sorbRunning && !_dpdRunning && !_exRunning && !_thRunning && !_scRunning;
     /// <summary>The core is working on the open document (Relax or Dynamics): no rendering or edits until it is done.</summary>
-    public bool Busy => _relaxing || _mdRunning || _eqRunning || _reacting || _analyzing || _recipeRunning || _adsRunning || _sorbRunning || _dpdRunning;
+    public bool Busy => _relaxing || _mdRunning || _eqRunning || _reacting || _analyzing || _recipeRunning || _adsRunning || _sorbRunning || _dpdRunning || _thRunning;
     private bool _analyzing;
     private void RaiseBusy()
     {
@@ -968,6 +971,7 @@ public sealed partial class MainViewModel : ObservableObject
             Raise(nameof(GrowTacticityName));
             Raise(nameof(GrowComponentName));
             Raise(nameof(GrowSizeLabel));
+            if (name == nameof(GrowChains)) RaiseGrowDispersity();   // drawn lengths apply only while their count matches
         }
     }
 
@@ -1532,6 +1536,15 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The pre-flight at once (tests).</summary>
     public Task PreflightNow() { _preflightTimer?.Stop(); return RefreshPreflightNow(); }
+
+    /// <summary>The input for the engine and settings as they are now, written off the UI thread: Save and Copy use this,
+    /// not the preview, which is rebuilt only after the settings rest and not at all while a job runs.</summary>
+    public Task<string> MdDeckNow()
+    {
+        var doc = _doc ?? throw new InvalidOperationException("no structure is open");
+        var gromacs = _mdGromacs;
+        return Task.Run(() => gromacs ? GromacsDeck(doc) : LammpsDeck(doc));
+    }
 
     private async Task RefreshPreflightNow()
     {
@@ -2889,7 +2902,7 @@ public sealed partial class MainViewModel : ObservableObject
         _frame = 0;
         Raise(nameof(Frame));
         Raise(nameof(FrameLabel));
-        Camera = new CapsCamera { Yaw = 0.55, Pitch = 0.40, Zoom = 1.0, Perspective = _perspective ? 1 : 0 };
+        Camera = new CapsCamera { Yaw = 0.55, Pitch = 0.40, Zoom = 1.0, Perspective = _perspective ? 1 : 0, FovDeg = Camera.FovDeg };   // the chosen field of view stays
         _selection.Clear();
         Raise(nameof(CanAddRestraint));
         RefreshSelection();
@@ -3109,7 +3122,7 @@ public sealed partial class MainViewModel : ObservableObject
         return o;
     }
 
-    public void ResetView() => FlyTo(new CapsCamera { Yaw = 0.55, Pitch = 0.40, Zoom = 1, Perspective = Camera.Perspective });
+    public void ResetView() => FlyTo(new CapsCamera { Yaw = 0.55, Pitch = 0.40, Zoom = 1, Perspective = Camera.Perspective, FovDeg = Camera.FovDeg });
 
-    public void SetView(double yaw, double pitch) => FlyTo(new CapsCamera { Yaw = yaw, Pitch = pitch, Zoom = Camera.Zoom, Perspective = Camera.Perspective });
+    public void SetView(double yaw, double pitch) => FlyTo(new CapsCamera { Yaw = yaw, Pitch = pitch, Zoom = Camera.Zoom, Perspective = Camera.Perspective, FovDeg = Camera.FovDeg });
 }

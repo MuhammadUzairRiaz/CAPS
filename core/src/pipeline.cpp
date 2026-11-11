@@ -220,6 +220,7 @@ void step_colour_coding(PipelineState& st, const Json& p, StepStatus& out) {
   bool integral = true;
   for (size_t i = 0; i < n; ++i) {
     if (only_sel && !st.selected[i]) continue;
+    if (!std::isfinite(v[i])) continue;   // no value: kept out of the ordered set (NaN has no order)
     integral &= std::fabs(v[i] - std::round(v[i])) < 1e-9;
     if (distinct.size() <= 64) distinct.insert(v[i]);
   }
@@ -232,6 +233,7 @@ void step_colour_coding(PipelineState& st, const Json& p, StepStatus& out) {
     for (double x : distinct) col[x] = prop == "Element" ? element(int(x)).rgb : kCat[k++ % 10];   // elements keep their own colours
     for (size_t i = 0; i < n; ++i) {
       if (only_sel && !st.selected[i]) continue;
+      if (!std::isfinite(v[i])) { st.colour[i] = 0x808080; continue; }   // no value: grey, as the continuous ramp
       unsigned c = col[v[i]];
       if (lighten && st.system.atoms[i].element == 1) c = lerp_rgb(c, 0xFFFFFF, 0.55);
       st.colour[i] = c;
@@ -379,7 +381,11 @@ void step_cluster(PipelineState& st, const Json& p, StepStatus& out) {
       for_pairs(s, f, [&](uint32_t i, uint32_t j, double, const Vec3&) { if (!heavy || (s.atoms[i].element != 1 && s.atoms[j].element != 1)) un(i, j); });
       if (whole) {
         std::map<int, uint32_t> first;
-        for (uint32_t i = 0; i < n; ++i) { auto [it, fresh] = first.emplace(molid[i], i); if (!fresh) un(it->second, i); }
+        for (uint32_t i = 0; i < n; ++i) {
+          if (only_sel && !st.selected[i]) continue;   // as the main pass: anchors are selected atoms
+          auto [it, fresh] = first.emplace(molid[i], i);
+          if (!fresh) un(it->second, i);
+        }
       }
       std::map<uint32_t, std::set<int>> mols;
       std::map<uint32_t, int> atoms;
@@ -1115,6 +1121,7 @@ void appearance_by(PipelineState& st, const Json& p, StepStatus& out, const std:
   const std::string prop = p.text("property", "Position.Z");
   std::vector<double> v;
   if (!property_values(st, prop, v)) throw std::invalid_argument("no property " + prop);
+  if (v.empty() || n == 0) { out.level = "warning"; out.summary = "no particles to set " + target + " on"; return; }
   double a = p.has("start") && p["start"].is_number() ? p["start"].number() : *std::min_element(v.begin(), v.end());
   double b = p.has("end") && p["end"].is_number() ? p["end"].number() : *std::max_element(v.begin(), v.end());
   if (!(b > a)) b = a + 1;
@@ -1873,17 +1880,30 @@ void step_combine(PipelineState& st, const Json& p, StepStatus& out) {
   const System add = t.frame(std::min<size_t>(size_t(std::max(0.0, p.num("frame", 0))), t.frames() - 1));
   System& s = st.system;
   const uint32_t off = uint32_t(s.atoms.size());
-  auto mol_off = decltype(Atom::mol){0};
+  // molecule ids: when the added file numbers its molecules and ours does not, ours take ids from their bonds first
+  if (!s.has_mol && add.has_mol) {
+    const auto bm = s.molecules();
+    for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].mol = bm[i] + 1;
+    s.has_mol = true;
+  }
+  auto mol_off = decltype(Atom::mol){0}, add_max = decltype(Atom::mol){0};
   for (const auto& a : s.atoms) mol_off = std::max(mol_off, a.mol);
+  for (const auto& a : add.atoms) add_max = std::max(add_max, a.mol);
+  const auto add_m = add.molecules();   // for added particles with no molecule id (0 = none): one new id per molecule
   int64_t id_off = s.atoms.empty() ? 0 : s.atoms.back().id;
-  for (auto a : add.atoms) {
-    a.mol += mol_off;
+  for (size_t k = 0; k < add.atoms.size(); ++k) {
+    Atom a = add.atoms[k];
+    if (a.mol) a.mol += mol_off;
+    else if (s.has_mol) a.mol = mol_off + add_max + 1 + add_m[k];
     a.id += id_off;
     s.atoms.push_back(a);
   }
   for (auto b : add.bonds) { b.i += off; b.j += off; s.bonds.push_back(b); }
-  // per-particle arrays follow: new particles take zeros and are not selected
+  // per-particle arrays follow: new particles take zeros, are not selected, keep the view's colouring and come from
+  // no source frame (origin -1, as frame-based steps already read it)
   st.selected.resize(s.atoms.size(), 0);
+  st.colour.resize(s.atoms.size(), kNoColour);
+  st.origin.resize(s.atoms.size(), -1);
   for (auto& [name, v] : st.props) v.resize(s.atoms.size(), 0);
   if (!s.velocities.empty() || !add.velocities.empty()) {
     s.velocities.resize(off, Vec3{0, 0, 0});
@@ -2460,10 +2480,10 @@ void step_trajectory_lines(PipelineState& st, const Json& p, StepStatus& out) {
   // what to trace: molecule centres of mass, or the selected particles (by their frame index)
   const System& s0 = st.system;
   const auto mol = s0.molecules();
-  std::vector<int> picks;
+  std::vector<int> picks, pick_mol;   // frame index of each traced particle, and its molecule here (for the colour)
   if (!centres)
     for (size_t i = 0; i < s0.atoms.size() && picks.size() < 2000; ++i)
-      if (st.selected[i]) picks.push_back(st.origin[i]);
+      if (st.selected[i] && st.origin[i] >= 0) picks.push_back(st.origin[i]), pick_mol.push_back(mol[i]);
   if (!centres && picks.empty()) throw std::invalid_argument("select the particles to trace (or trace molecule centres)");
   int nm = 0;
   st.traj->topology.molecules(&nm);
@@ -2488,7 +2508,7 @@ void step_trajectory_lines(PipelineState& st, const Json& p, StepStatus& out) {
       const auto shapes = molecule_shapes(fr);
       for (size_t m = 0; m < tracks && m < shapes.size(); ++m) now[m] = shapes[m].com;
     } else {
-      for (size_t k = 0; k < tracks; ++k) now[k] = fr.atoms[size_t(picks[k])].pos;
+      for (size_t k = 0; k < tracks; ++k) now[k] = size_t(picks[k]) < fr.atoms.size() ? fr.atoms[size_t(picks[k])].pos : first ? Vec3{0, 0, 0} : prev[k];
     }
     for (size_t k = 0; k < tracks; ++k) {
       if (first) { path[k] = now[k]; start[k] = now[k]; }
@@ -2497,7 +2517,7 @@ void step_trajectory_lines(PipelineState& st, const Json& p, StepStatus& out) {
         if (fr.cell.valid() && !fr.unwrapped) d = fr.cell.minimum_image(d);   // follow across the boundary
         const Vec3 next = path[k] + d;
         travelled[k] += norm(d);
-        st.segments.push_back({path[k], next, shade(kCat[(centres ? k : size_t(mol[size_t(std::max(0, picks[k]))])) % 10], f), radius, false});
+        st.segments.push_back({path[k], next, shade(kCat[(centres ? k : size_t(std::max(0, pick_mol[k]))) % 10], f), radius, false});
         path[k] = next;
         ++segs;
       }
@@ -3240,7 +3260,13 @@ void step_python(PipelineState& st, const Json& p, StepStatus& out) {
   FILE* pipe = _popen(cmd.c_str(), "r");
 #else
   setenv("PYTHONPATH", (pkg + (old.empty() ? "" : ":" + old)).c_str(), 1);
-  const std::string cmd = "'" + python + "' -m caps.runner '" + script + "' '" + fin.string() + "' '" + fout.string() + "' 2>&1";
+  // each word single-quoted for sh, a ' inside closed, escaped and reopened ('\'') so any path stays one word
+  auto q = [](const std::string& w) {
+    std::string r = "'";
+    for (char c : w) r += c == '\'' ? std::string("'\\''") : std::string(1, c);
+    return r + "'";
+  };
+  const std::string cmd = q(python) + " -m caps.runner " + q(script) + " " + q(fin.string()) + " " + q(fout.string()) + " 2>&1";
   FILE* pipe = popen(cmd.c_str(), "r");
 #endif
   if (pipe) {

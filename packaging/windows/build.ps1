@@ -11,16 +11,25 @@ $Version = (Select-String -Path "$Root\CMakeLists.txt" -Pattern 'project\(CAPS V
 $Work = "$Root\build-pkg\windows"
 $App = "$Work\app"
 $Dist = "$Root\dist"
-$Native = (Resolve-Path (Join-Path $Root $Native)).Path
+# a relative -Native is taken from the repo root, an absolute one as it is
+if (-not [System.IO.Path]::IsPathRooted($Native)) { $Native = Join-Path $Root $Native }
+$Native = (Resolve-Path $Native).Path
+$Setup = "$Dist\CAPS-$Version-windows-x64-setup.exe"
+$Portable = "$Dist\CAPS-$Version-windows-x64-portable.zip"
 Remove-Item -Recurse -Force $App -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $Work, $App, $Dist | Out-Null
+# this version's outputs from an earlier run go first, so a failed step never leaves an old installer behind
+Remove-Item -Force $Setup, $Portable -ErrorAction SilentlyContinue
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = "1"
 
 if (-not (Test-Path "$Native\capi\caps.dll")) { throw "no native core at $Native (build it with MinGW-w64 first)" }
 
 Write-Host "== Studio (.NET, self-contained, win-x64)"
+# the full output goes to a log; a native exit code never stops the script by itself, so it is checked here
+$PublishLog = "$Work\dotnet-publish.log"
 dotnet publish "$Root\studio\CapsStudio\CapsStudio.csproj" -c Release -r win-x64 --self-contained true `
-  -p:CapsNativeDir="$Native\capi" -p:Version=$Version -o $App | Out-Null
+  -p:CapsNativeDir="$Native\capi" -p:Version=$Version -o $App | Set-Content -Path $PublishLog
+if ($LASTEXITCODE -ne 0) { Get-Content $PublishLog; throw "dotnet publish failed (exit $LASTEXITCODE, log: $PublishLog)" }
 Copy-Item "$Native\cli\caps.exe" $App
 New-Item -ItemType Directory -Force "$App\data" | Out-Null
 # every data folder (a new one is never left out), without Python caches
@@ -54,5 +63,7 @@ Write-Host "== installer"
 $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
 if (-not $iscc) { $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
 & $iscc /Q "/DVersion=$Version" "/DSource=$App" "/DOutDir=$Dist" "$Root\packaging\windows\caps.iss"
-Compress-Archive -Path "$App\*" -DestinationPath "$Dist\CAPS-$Version-windows-x64-portable.zip" -Force
+if ($LASTEXITCODE -ne 0) { throw "ISCC failed (exit $LASTEXITCODE)" }
+if (-not (Test-Path $Setup)) { throw "ISCC finished but wrote no $Setup" }
+Compress-Archive -Path "$App\*" -DestinationPath $Portable -Force
 Get-ChildItem $Dist

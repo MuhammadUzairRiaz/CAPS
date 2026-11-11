@@ -43,7 +43,9 @@ public sealed partial class MainViewModel
         var thermostat = _mdEnsemble is 1 or 2 ? th[Math.Clamp(_mdThermostat, 0, 2)] : "none";
         var barostat = _mdEnsemble == 2 ? ba[Math.Clamp(_mdBarostat, 0, 2)] : _mdEnsemble == 3 ? "berendsen" : "none";
         sb.Append($"doc.md(steps={_mdSteps}, dt={Num(_mdDt)}, temperature={Num(_mdTemp)}, thermostat=\"{thermostat}\", barostat=\"{barostat}\", pressure={Num(_mdPressure)}, " +
-                  $"seed={_mdSeed}, frame_every={_mdFrameEvery}, cutoff={Num(_relaxCutoff)}");
+                  $"seed={_mdSeed}, frame_every={_mdFrameEvery}, cutoff={Num(_relaxCutoff)}, tau_t={Num(_mdTauT)}, tau_p={Num(_mdTauP)}, " +
+                  $"coulomb={Py(_relaxCoulomb)}, tail={Py(TailFlag != 0)}");
+        if (_mdNewVelocities) sb.Append(", new_velocities=True");
         if (RespaSteps > 1) sb.Append($", respa={RespaSteps}");
         if (_mdConstraints > 0) sb.Append($", constraints=\"{cons[Math.Clamp(_mdConstraints, 0, 2)]}\", constraint_solver=\"{solver[Math.Clamp(_mdConstraintSolver, 0, 1)]}\"");
         if (_mdHmr) sb.Append(", hmr=3.024");
@@ -64,6 +66,8 @@ public sealed partial class MainViewModel
                   $"coulomb={(o.Coulomb != 0 ? "True" : "False")}, tail={(o.Tail != 0 ? "True" : "False")}, frame_ps={Num(o.FramePs)}, thermo_ps={Num(o.ThermoPs)}");
         if (o.UntilConverged != 0) sb.Append($", until_converged=True, block_ps={Num(o.BlockPs)}, max_blocks={o.MaxBlocks}");
         if (o.Constraints > 0) sb.Append($", constraints=\"{cons[Math.Clamp(o.Constraints, 0, 2)]}\", constraint_solver=\"{solver[Math.Clamp(o.ConstraintAlgorithm, 0, 1)]}\"");
+        if (o.Hmr > 0) sb.Append($", hmr={Num(o.Hmr)}");
+        if (o.Precision == 1) sb.Append(", precision=\"double\"");
         sb.Append(")\n");
         if (target) sb.Append("# the Studio also checked the internal distances against a target curve (not passed here)\n");
         sb.Append("print(doc.report)\ndoc.save(\"final.data\")\n");

@@ -81,7 +81,8 @@ public sealed partial class MainViewModel
             TemplateText = string.Join("\n", lines);
         }
     }
-    public int TemplateIndex { get => _tplIndex; set { if (Set(ref _tplIndex, value)) ShowTemplate(); } }
+    // the tab strip writes -1 while its tabs are cleared and refilled; the current reaction stays as it was
+    public int TemplateIndex { get => _tplIndex; set { if (value >= 0 && Set(ref _tplIndex, value)) ShowTemplate(); } }
     public string TemplateTitle { get => _tplTitle; private set => Set(ref _tplTitle, value); }
     public string TemplateError { get => _tplError; private set { if (Set(ref _tplError, value)) Raise(nameof(TemplateHasError)); } }
     public bool TemplateHasError => _tplError.Length > 0;
@@ -131,7 +132,7 @@ public sealed partial class MainViewModel
             foreach (var v in _tplViews) TemplateTabs.Add(v!["name"]!.GetValue<string>());
         }
         catch (Exception e) { TemplateError = e.Message; }
-        if (_tplIndex >= TemplateTabs.Count) _tplIndex = 0;
+        if (_tplIndex < 0 || _tplIndex >= TemplateTabs.Count) _tplIndex = 0;
         Raise(nameof(TemplateIndex));
         ShowTemplate();
     }
@@ -142,7 +143,7 @@ public sealed partial class MainViewModel
         TemplateChecks.Clear();
         TemplateFormed.Clear();
         TemplateBroken.Clear();
-        var v = _tplViews != null && _tplIndex < _tplViews.Count ? _tplViews[_tplIndex] : null;
+        var v = _tplViews != null && _tplIndex >= 0 && _tplIndex < _tplViews.Count ? _tplViews[_tplIndex] : null;
         TemplatePre = v?["pre"];
         TemplatePost = v?["post"];
         if (v != null)

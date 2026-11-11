@@ -74,7 +74,8 @@ public sealed partial class MainViewModel
     public FilmPolymer? SweepPolymer { get => _swPolymer ?? SweepPolymers.FirstOrDefault(); set { if (Set(ref _swPolymer, value)) PlanSweep(); } }
     /// <summary>Every homopolymer of the library (rubbers first).</summary>
     public ObservableCollection<FilmPolymer> SweepPolymers { get; } = new();
-    public string SweepFolder { get => _swFolder; set => Set(ref _swFolder, value ?? ""); }
+    // each run's file path comes from the folder, so a new folder plans the runs again (a new folder is a new sweep)
+    public string SweepFolder { get => _swFolder; set { if (Set(ref _swFolder, value ?? "")) PlanSweep(); } }
     public string SweepSummary { get => _swSummary; private set => Set(ref _swSummary, value); }
     public string SweepError { get => _swError; private set => Set(ref _swError, value); }
     public bool SweepRunning { get => _swRunning; private set { if (Set(ref _swRunning, value)) { Raise(nameof(SweepIdle)); Raise(nameof(SweepPauseText)); } } }
@@ -102,8 +103,11 @@ public sealed partial class MainViewModel
     {
         LoadSurface();   // the polymer library
         if (_swFolder.Length == 0)
-            SweepFolder = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "CAPS", "sweeps",
-                                                 "sweep-" + DateTime.Now.ToString("yyyyMMdd-HHmm", CultureInfo.InvariantCulture));
+        {   // the field directly: the runs are planned below, once the polymer is chosen
+            _swFolder = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "CAPS", "sweeps",
+                                               "sweep-" + DateTime.Now.ToString("yyyyMMdd-HHmm", CultureInfo.InvariantCulture));
+            Raise(nameof(SweepFolder));
+        }
         // tacticity needs a stereocentre in the backbone: polystyrene first, else the library's first polymer
         if (SweepPolymers.Count == 0)
             foreach (var p in PolymerLibrary.Where(p => !p.Copolymer).OrderByDescending(p => p.Rubber))
@@ -169,7 +173,7 @@ public sealed partial class MainViewModel
                     if (p["atoms"]?.GetValue<double>() is double a) atoms = ((int)(a * (double)_swChains)).ToString("N0", CultureInfo.InvariantCulture);
                 }
                 catch { }
-                SweepSizes.Add(new ProvRow(dp.ToString(CultureInfo.InvariantCulture), atoms, (seeds.Count * SweepTacticities().Count).ToString(CultureInfo.InvariantCulture)));
+                SweepSizes.Add(new ProvRow(dp.ToString(CultureInfo.InvariantCulture), atoms, _sweepRuns.Count(r => r.Dp == dp).ToString(CultureInfo.InvariantCulture)));
             }
         RaiseSweep();
     }
@@ -387,6 +391,7 @@ public sealed partial class MainViewModel
                 r.Detail = old.Detail;
                 r.Density = old.Density;
                 r.Rg = old.Rg;
+                r.Tg = old.Tg;
             }
         RaiseSweep();
     }

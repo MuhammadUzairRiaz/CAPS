@@ -109,6 +109,18 @@ public sealed partial class MainViewModel
             if (diff > 0) { c[i]++; diff--; }
             else if (c[i] > 0) { c[i]--; diff++; }
         }
+        // rounding can leave a minor gas with none: give each gas with y > 0 one molecule when N covers them all,
+        // taken from the largest count that can spare one (more than one, or a gas with y = 0)
+        if (t > 0 && n >= y.Count(v => v > 0))
+            for (var i = 0; i < c.Length; ++i)
+            {
+                if (y[i] <= 0 || c[i] > 0) continue;
+                var j = -1;
+                for (var k = 0; k < c.Length; ++k)
+                    if ((c[k] > 1 || (c[k] == 1 && y[k] <= 0)) && (j < 0 || c[k] > c[j])) j = k;
+                if (j < 0) break;
+                c[j]--; c[i]++;
+            }
         return c;
     }
 
@@ -290,7 +302,10 @@ public sealed partial class MainViewModel
         {
             if (double.TryParse(m.Groups[1].Value, NumberStyles.Float, inv, out var a) && double.TryParse(m.Groups[2].Value, NumberStyles.Float, inv, out var b) &&
                 int.TryParse(m.Groups[3].Value, out var n) && a > 0 && b > 0 && n >= 2)
-                for (var k = 0; k < Math.Min(n, 50); ++k) outp.Add(a * Math.Pow(b / a, k / (double)(n - 1)));
+            {
+                n = Math.Min(n, 50);   // at most 50 points, still spanning a to b
+                for (var k = 0; k < n; ++k) outp.Add(a * Math.Pow(b / a, k / (double)(n - 1)));
+            }
             return " ";
         });
         foreach (var t in rest.Split([',', ' ', ';'], StringSplitOptions.RemoveEmptyEntries))

@@ -31,7 +31,15 @@ public partial class SplitPage : PageBase
             a.CameraChanged += cam => { if (vm.SyncCamera) b.Camera = cam; };
             b.CameraChanged += cam => { if (vm.SyncCamera) a.Camera = cam; };
             a.AtomClicked += i => { vm.Pick(i); vm.RefreshSplitSelection(); };
-            b.AtomClicked += i => { if (vm.SyncSelection) { vm.Pick(i); vm.RefreshSplitSelection(); } };
+            // a click in B picks the same index in A, so only indices that exist in A pass;
+            // past A's last atom the selection is cleared instead
+            b.AtomClicked += i =>
+            {
+                if (!vm.SyncSelection) return;
+                var countA = vm.Document?.Summary().Atoms ?? 0;
+                vm.Pick(i < countA ? i : -1);
+                vm.RefreshSplitSelection();
+            };
         };
     }
 

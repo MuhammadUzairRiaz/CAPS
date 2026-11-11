@@ -4814,9 +4814,10 @@ internal static class SelfTest
         }
 
         // The session: the project tree kept on quitting and restored from Start, with its job folders
-        var keptItems = vm.ProjectItems.Select(p => p.Name.Replace(" (unsaved)", "")).ToList();
+        // names come back whole: a structure never saved keeps its " (unsaved)" title
+        var keptItems = vm.ProjectItems.Select(p => p.Name).ToList();
         var keptJobs = vm.ProjectItems.Sum(p => p.Jobs.Count);
-        var keptActive = vm.ActiveItem?.Name.Replace(" (unsaved)", "");
+        var keptActive = vm.ActiveItem?.Name;
         // Jobs filtered and sorted: finished ones only, then a search; the list follows the full one back
         {
             vm.JobState = 2;

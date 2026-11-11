@@ -49,13 +49,18 @@ std::string str_or(const Json& j, const char* k, const std::string& d) { return 
 double num_or(const Json& j, const char* k, double d) { return j.has(k) && j[k].is_number() ? j[k].number() : d; }
 bool bool_or(const Json& j, const char* k, bool d) { return j.has(k) && j[k].kind() == Json::Bool ? j[k].boolean() : d; }
 
-// "2G" per core × cores → "32gb" (PBS asks for the node's total)
+// "2G" per core × cores → "32gb" (PBS asks for the node's total); the unit is the letter after the number
+// (K, M, G, T, each with an optional B as PBS writes them, or B alone for bytes); no unit: gigabytes
 std::string total_mem(const std::string& per_cpu, int cpus) {
   if (per_cpu.empty()) return "";
-  double v = std::atof(per_cpu.c_str());
-  const char u = char(std::toupper(static_cast<unsigned char>(per_cpu.back())));
+  char* end = nullptr;
+  double v = std::strtod(per_cpu.c_str(), &end);
+  while (end && *end == ' ') ++end;
+  const char u = end && *end ? char(std::toupper(static_cast<unsigned char>(*end))) : 'G';
+  if (u == 'K') v /= 1024.0 * 1024.0;
   if (u == 'M') v /= 1024;
   if (u == 'T') v *= 1024;
+  if (u == 'B') v /= 1024.0 * 1024.0 * 1024.0;
   if (v <= 0) return "";
   char b[32];
   std::snprintf(b, sizeof b, "%.0fgb", std::ceil(v * std::max(1, cpus)));
@@ -94,7 +99,26 @@ std::string command_script(const std::string& command) {
     if (c[i] == ';') { out += ';'; ++i; at_start = chained = true; continue; }
     out += c[i++];
   }
-  return "#!/bin/bash\n# the command of this CAPS job (cmd.txt as written; caps is the installed program, $CAPS)\n" + std::string(chained ? "" : "exec ") + out + "\n";
+  const std::string head = "#!/bin/bash\n# the command of this CAPS job (cmd.txt as written; caps is the installed program, $CAPS)\n";
+  if (!chained) return head + "exec " + out + "\n";
+  // several commands: this shell stays, so the USR1 job.sh sends near the time limit lands here; each caps runs in
+  // the background and the signal is passed on to it (its checkpoint), and no further command starts after it
+  return head +
+         "CAPS_BIN=$CAPS; CAPS_CHILD=\"\"; CAPS_STOP=0; CAPS_SIG=0\n"
+         "caps_on_usr1() { CAPS_STOP=1; CAPS_SIG=1; [ -n \"$CAPS_CHILD\" ] && kill -USR1 \"$CAPS_CHILD\" 2>/dev/null; }\n"
+         "caps_fg() {\n"
+         "  [ \"$CAPS_STOP\" = 1 ] && exit 1\n"
+         "  CAPS=\"$CAPS_BIN\" \"$CAPS_BIN\" \"$@\" <&0 &\n"   // <&0: a background job's stdin would be /dev/null
+         "  CAPS_CHILD=$!\n"
+         "  local rc\n"
+         "  while :; do CAPS_SIG=0; wait \"$CAPS_CHILD\"; rc=$?; [ \"$CAPS_SIG\" = 1 ] && [ \"$rc\" -gt 128 ] || break; done\n"
+         "  CAPS_CHILD=\"\"\n"
+         "  [ \"$CAPS_STOP\" = 1 ] && exit \"$rc\"\n"
+         "  return \"$rc\"\n"
+         "}\n"
+         "trap caps_on_usr1 USR1\n"
+         "CAPS=caps_fg\n" +
+         out + "\n";
 }
 
 void write_task(const fs::path& dir, const std::string& title, const std::string& job, const std::string& command,
@@ -103,7 +127,9 @@ void write_task(const fs::path& dir, const std::string& title, const std::string
   for (const auto& in : inputs) {
     if (in.empty()) continue;
     if (!fs::exists(in)) throw std::invalid_argument("input not found: " + in);
-    const fs::path to = dir / fs::path(in).lexically_normal().filename();
+    fs::path src = fs::path(in).lexically_normal();
+    if (src.filename().empty()) src = src.parent_path();   // "tables/" (a shell's completion): the folder's own name
+    const fs::path to = dir / src.filename();
     std::error_code ec;
     if (fs::is_directory(in)) {   // a folder the command reads (a coarse-graining stage's tables): copied whole
       fs::copy(in, to, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
@@ -270,7 +296,7 @@ const char* kPbsHead =
     "#PBS -N caps-{job}\n"
     "#PBS -A {account}\n"
     "#PBS -q {partition}\n"
-    "#PBS -l select=1:ncpus={cpus}:mem={mem_total}\n"
+    "#PBS -l {pbs_select}\n"
     "#PBS -l walltime={time}\n"
     "#PBS -o {jobdir}/pbs.out\n"
     "#PBS -e {jobdir}/pbs.err\n"
@@ -281,7 +307,7 @@ const char* kBody =
     "# CAPS job {title} / {job} (written by caps job new, CAPS {version}); edit freely, the Studio's Reset restores it.\n"
     "# CAPS runs threads, not MPI ranks: one node, one task, {cpus} cores.\n"
     "set -u\n"
-    "JOBDIR={jobdir}\n"
+    "JOBDIR={jobdir_sh}\n"
     "TASK=${SLURM_ARRAY_TASK_ID:-${PBS_ARRAY_INDEX:-${CAPS_TASK:-}}}\n"
     "if [ -n \"$TASK\" ] && [ -f \"$JOBDIR/tasks.txt\" ]; then JOBDIR=$(sed -n \"$((TASK + 1))p\" \"$JOBDIR/tasks.txt\"); fi\n"
     "TITLE=$(basename \"$(dirname \"$JOBDIR\")\"); JOB=$(basename \"$JOBDIR\")\n"
@@ -397,11 +423,16 @@ std::map<std::string, std::string> template_values(const HostProfile& h, const J
   v["title"] = title;
   v["job"] = job;
   v["jobdir"] = jobdir;
+  std::string q = "'";   // the folder as one single-quoted shell word (a root may hold spaces or $)
+  for (char c : jobdir) q += c == '\'' ? std::string("'\\''") : std::string(1, c);
+  v["jobdir_sh"] = q + "'";
   v["account"] = h.account;
   v["partition"] = !r.partition.empty() ? r.partition : h.partition;
   v["cpus"] = std::to_string(cpus);
   v["mem"] = mem;
   v["mem_total"] = total_mem(mem, cpus);
+  // PBS takes cores and memory on one line: no memory leaves out only its part, never the cores
+  v["pbs_select"] = "select=1:ncpus=" + std::to_string(cpus) + (v["mem_total"].empty() ? "" : ":mem=" + v["mem_total"]);
   v["time"] = !r.time.empty() ? r.time : h.time;
   std::string mail;
   if (!h.mail_user.empty()) {

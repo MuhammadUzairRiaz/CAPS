@@ -81,18 +81,30 @@ public static class FigureFiles
 
     public static void WritePdf(string path, byte[] rgba, int w, int h, double widthPt, double heightPt)
     {
+        // The pixels are straight alpha. Colour goes in the image, coverage in a soft mask, so a transparent
+        // background stays transparent instead of turning black when alpha is dropped.
         var rgb = new byte[w * h * 3];
-        for (var i = 0; i < w * h; ++i) { rgb[i * 3] = rgba[i * 4]; rgb[i * 3 + 1] = rgba[i * 4 + 1]; rgb[i * 3 + 2] = rgba[i * 4 + 2]; }
-        byte[] packed;
-        using (var ms = new MemoryStream())
+        var alpha = new byte[w * h];
+        var opaque = true;
+        for (var i = 0; i < w * h; ++i)
         {
-            using (var z = new ZLibStream(ms, CompressionLevel.Optimal, true)) z.Write(rgb, 0, rgb.Length);
-            packed = ms.ToArray();
+            rgb[i * 3] = rgba[i * 4]; rgb[i * 3 + 1] = rgba[i * 4 + 1]; rgb[i * 3 + 2] = rgba[i * 4 + 2];
+            alpha[i] = rgba[i * 4 + 3];
+            if (alpha[i] != 255) opaque = false;
         }
+        static byte[] Deflate(byte[] raw)
+        {
+            using var ms = new MemoryStream();
+            using (var z = new ZLibStream(ms, CompressionLevel.Optimal, true)) z.Write(raw, 0, raw.Length);
+            return ms.ToArray();
+        }
+        var packed = Deflate(rgb);
+        var mask = opaque ? null : Deflate(alpha);
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         var content = Encoding.ASCII.GetBytes(string.Format(inv, "q {0:0.###} 0 0 {1:0.###} 0 0 cm /Im0 Do Q\n", widthPt, heightPt));
         using var f = File.Create(path);
-        var offsets = new long[6];
+        var count = mask == null ? 6 : 7;
+        var offsets = new long[count];
         void W(string s) { var b = Encoding.ASCII.GetBytes(s); f.Write(b, 0, b.Length); }
         W("%PDF-1.4\n");
         offsets[1] = f.Position; W("1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n");
@@ -101,11 +113,18 @@ public static class FigureFiles
         W(string.Format(inv, "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 {0:0.###} {1:0.###}] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >> endobj\n", widthPt, heightPt));
         offsets[4] = f.Position; W($"4 0 obj << /Length {content.Length} >> stream\n"); f.Write(content); W("endstream endobj\n");
         offsets[5] = f.Position;
-        W($"5 0 obj << /Type /XObject /Subtype /Image /Width {w} /Height {h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length {packed.Length} >> stream\n");
+        var smask = mask == null ? "" : " /SMask 6 0 R";
+        W($"5 0 obj << /Type /XObject /Subtype /Image /Width {w} /Height {h} /ColorSpace /DeviceRGB /BitsPerComponent 8{smask} /Filter /FlateDecode /Length {packed.Length} >> stream\n");
         f.Write(packed); W("\nendstream endobj\n");
+        if (mask != null)
+        {
+            offsets[6] = f.Position;
+            W($"6 0 obj << /Type /XObject /Subtype /Image /Width {w} /Height {h} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode /Length {mask.Length} >> stream\n");
+            f.Write(mask); W("\nendstream endobj\n");
+        }
         var xref = f.Position;
-        W("xref\n0 6\n0000000000 65535 f \n");
-        for (var k = 1; k <= 5; ++k) W($"{offsets[k]:D10} 00000 n \n");
-        W($"trailer << /Size 6 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n");
+        W($"xref\n0 {count}\n0000000000 65535 f \n");
+        for (var k = 1; k < count; ++k) W($"{offsets[k]:D10} 00000 n \n");
+        W($"trailer << /Size {count} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n");
     }
 }

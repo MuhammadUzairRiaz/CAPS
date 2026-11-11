@@ -301,14 +301,19 @@ InternalDistances internal_distances(const System& s) {
   std::vector<long> cnt(lmax, 0);
   double b2 = 0;
   long nb = 0;
+  std::vector<Vec3> x;
   for (const auto& p : bb) {
+    // Consecutive backbone atoms are bonded: chain minimum-image bond vectors so a chain that crosses the cell
+    // (or runs through it as an infinite crystal chain) is measured unwrapped, with no bond spanning the box.
+    x.assign(1, s.atoms[p[0]].pos);
+    for (size_t k = 1; k < p.size(); ++k) x.push_back(x.back() + s.cell.minimum_image(s.atoms[p[k]].pos - s.atoms[p[k - 1]].pos));
     for (size_t i = 0; i < p.size(); ++i)
       for (size_t j = i + 1; j < p.size(); ++j) {
-        const Vec3 d = s.atoms[p[j]].pos - s.atoms[p[i]].pos;
+        const Vec3 d = x[j] - x[i];
         sum[j - i] += dot(d, d);
         ++cnt[j - i];
       }
-    r.r2_end += dot(s.atoms[p.back()].pos - s.atoms[p.front()].pos, s.atoms[p.back()].pos - s.atoms[p.front()].pos);
+    r.r2_end += dot(x.back() - x.front(), x.back() - x.front());
   }
   b2 = cnt[1] ? sum[1] / cnt[1] : 0;
   nb = cnt[1];

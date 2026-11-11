@@ -36,15 +36,18 @@ struct Grid {
     frac.resize(s.atoms.size());
     for (size_t i = 0; i < s.atoms.size(); ++i) {
       Vec3 f = cell.to_fractional(s.atoms[i].pos);
-      for (int k = 0; k < 3; ++k) {
-        if (cell.periodic[k]) f[k] -= std::floor(f[k]);
-        f[k] = std::clamp(f[k], 0.0, 1.0 - 1e-12);
-      }
+      // Periodic axes are wrapped into [0, 1). Non-periodic axes keep the true coordinate, so sep() stays
+      // exact for atoms beyond a non-periodic face; bin() clamps those into the edge bin.
+      for (int k = 0; k < 3; ++k)
+        if (cell.periodic[k]) f[k] = std::clamp(f[k] - std::floor(f[k]), 0.0, 1.0 - 1e-12);
       frac[i] = f;
       bins[index(bin(f, 0), bin(f, 1), bin(f, 2))].push_back(static_cast<uint32_t>(i));
     }
   }
-  int bin(const Vec3& f, int k) const { return std::min(n[k] - 1, static_cast<int>(f[k] * n[k])); }
+  int bin(const Vec3& f, int k) const {
+    const double t = std::clamp(f[k], 0.0, 1.0 - 1e-12);
+    return std::min(n[k] - 1, static_cast<int>(t * n[k]));
+  }
   size_t index(int x, int y, int z) const { return (static_cast<size_t>(x) * n[1] + y) * n[2] + z; }
 
   // Minimum-image separation from fractional coordinates (exact for cells that are not strongly skewed).

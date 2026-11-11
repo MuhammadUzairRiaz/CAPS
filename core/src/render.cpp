@@ -250,6 +250,28 @@ unsigned background_rgb(Background b, unsigned custom) {
   return 0x0F1113;
 }
 
+// The ambient-occlusion cache key: a 64-bit FNV-1a hash over everything the accessibility depends on (every
+// position, every radius, which atoms take part) plus the caller's extra terms, kept to 53 bits so the double holds it exactly.
+static double ao_cache_key(const System& s, const std::vector<double>& radius, const std::vector<char>& show, double extra) {
+  uint64_t h = 1469598103934665603ull;
+  auto mix = [&](const void* p, size_t len) {
+    const unsigned char* c = static_cast<const unsigned char*>(p);
+    for (size_t k = 0; k < len; ++k) h = (h ^ c[k]) * 1099511628211ull;
+  };
+  const size_t n = s.atoms.size();
+  mix(&n, sizeof n);
+  mix(&extra, sizeof extra);
+  for (size_t i = 0; i < n; ++i) {
+    const char on = show[i] ? 1 : 0;
+    mix(&on, 1);
+    if (!on) continue;
+    const Vec3& p = s.atoms[i].pos;
+    for (int k = 0; k < 3; ++k) { const double x = p[k]; mix(&x, sizeof x); }
+    mix(&radius[i], sizeof(double));
+  }
+  return double(h >> 11);
+}
+
 std::vector<float> ambient_accessibility(const System& s, const std::vector<double>& radius, const std::vector<char>& show) {
   const size_t n = s.atoms.size();
   std::vector<float> acc(n, 1.f);
@@ -549,18 +571,34 @@ int Renderer::pick_ray(const System& s, const Camera& cam, const RenderOptions& 
         if (!P.show[b.i] || !P.show[b.j]) continue;
         const Style si = P.style_of(b.i), sj = P.style_of(b.j);
         if (si == Style::SpaceFilling || sj == Style::SpaceFilling) continue;
-        if (norm(s.atoms[b.i].pos - s.atoms[b.j].pos) > half_cell) continue;
         const bool wire = si == Style::Wireframe || sj == Style::Wireframe;
         const double br = si == Style::Backbone && sj == Style::Backbone ? opt.bond_radius * 2.2 : P.bond_r;
-        const double k = (sk[b.i] + sk[b.j]) / 2;
-        const double R = std::max(wire ? 0.7 * ss : br * v.scale * k, rmin);
-        const double ex = sx[b.j] - sx[b.i], ey = sy[b.j] - sy[b.i], len2 = ex * ex + ey * ey;
-        const double t = std::clamp(len2 > 1e-12 ? ((px - sx[b.i]) * ex + (py - sy[b.i]) * ey) / len2 : 0.0, 0.0, 1.0);
-        const double qx = sx[b.i] + ex * t - px, qy = sy[b.i] + ey * t - py, d2 = qx * qx + qy * qy;
-        if (d2 > R * R) continue;
-        if (skip && opt.unpickable[t < 0.5 ? b.i : b.j]) continue;
-        const double front = sz[b.i] + (sz[b.j] - sz[b.i]) * t + (wire ? 0.0 : std::sqrt(std::max(0.0, R * R - d2)) / (v.scale * k));
-        if (front > best_z) best_z = front, best = int(t < 0.5 ? b.i : b.j);
+        // one drawn segment (screen ends, depths, perspective factors); owner < 0: the nearer atom of the two ends
+        auto test = [&](double x0, double y0, double z0, double k0, double x1, double y1, double z1, double k1, int owner) {
+          const double k = (k0 + k1) / 2;
+          const double R = std::max(wire ? 0.7 * ss : br * v.scale * k, rmin);
+          const double ex = x1 - x0, ey = y1 - y0, len2 = ex * ex + ey * ey;
+          const double t = std::clamp(len2 > 1e-12 ? ((px - x0) * ex + (py - y0) * ey) / len2 : 0.0, 0.0, 1.0);
+          const double qx = x0 + ex * t - px, qy = y0 + ey * t - py, d2 = qx * qx + qy * qy;
+          if (d2 > R * R) return;
+          const size_t who = owner >= 0 ? size_t(owner) : (t < 0.5 ? b.i : b.j);
+          if (skip && opt.unpickable[who]) return;
+          const double front = z0 + (z1 - z0) * t + (wire ? 0.0 : std::sqrt(std::max(0.0, R * R - d2)) / (v.scale * k));
+          if (front > best_z) best_z = front, best = int(who);
+        };
+        // across a periodic wall: as drawn, a stub from each atom towards the partner's nearest image
+        const Vec3 a = s.atoms[b.i].pos, c = s.atoms[b.j].pos;
+        const Vec3 d = s.cell.valid() ? s.cell.minimum_image(c - a) : c - a;
+        if (norm(c - a) > norm(d) + 1e-6) {
+          double mxi, myi, mzi, mki, mxj, myj, mzj, mkj;
+          v.project(a + d * 0.5, mxi, myi, mzi, mki);
+          v.project(c - d * 0.5, mxj, myj, mzj, mkj);
+          test(sx[b.i], sy[b.i], sz[b.i], sk[b.i], mxi, myi, mzi, mki, int(b.i));
+          test(mxj, myj, mzj, mkj, sx[b.j], sy[b.j], sz[b.j], sk[b.j], int(b.j));
+          continue;
+        }
+        if (norm(c - a) > half_cell) continue;
+        test(sx[b.i], sy[b.i], sz[b.i], sk[b.i], sx[b.j], sy[b.j], sz[b.j], sk[b.j], -1);
       }
     if (best >= 0) return best;
   }
@@ -626,11 +664,11 @@ Scene Renderer::scene(const System& s, const RenderOptions& opt) {
   // ambient occlusion per atom (as render(), all atoms in full detail), multiplied into the colours
   std::vector<RGB> colour = P.colour;
   if (opt.ambient_occlusion && n) {
-    double key = double(n) * 1e-3 + double(opt.style) * 7 + 0.5;
-    for (size_t i = 0; i < n; i += std::max<size_t>(1, n / 512)) key += s.atoms[i].pos[0] * 1.3 + s.atoms[i].pos[1] * 1.7 + s.atoms[i].pos[2] * 2.9;
+    std::vector<double> rad(n);
+    for (size_t i = 0; i < n; ++i) rad[i] = P.radius(i);
+    // every shown atom's position and radius and the show mask (layers, clipping, hidden atoms) are in the key
+    const double key = ao_cache_key(s, rad, P.show, double(opt.style) * 7 + 0.5);
     if (scene_ao_.size() != n || scene_ao_key_ != key) {
-      std::vector<double> rad(n);
-      for (size_t i = 0; i < n; ++i) rad[i] = P.radius(i);
       scene_ao_ = ambient_accessibility(s, rad, P.show);
       scene_ao_key_ = key;
     }
@@ -900,11 +938,11 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
     const bool lod = opt.lod_near > 0;
     std::vector<char> ao_show = show;
     if (lod) for (size_t i = 0; i < n; ++i) ao_show[i] = show[i] && tier[i] == 0;
-    double key = double(n) * 1e-3 + double(opt.style) * 7 + (lod ? opt.lod_near * 13 + double(stats.near) : 0);
-    for (size_t i = 0; i < n; i += std::max<size_t>(1, n / 512)) key += s.atoms[i].pos[0] * 1.3 + s.atoms[i].pos[1] * 1.7 + s.atoms[i].pos[2] * 2.9;
+    std::vector<double> rad(n);
+    for (size_t i = 0; i < n; ++i) rad[i] = radius(i);
+    // every occluding atom's position and radius and the mask itself (layers, clipping, hidden atoms, LOD tier) are in the key
+    const double key = ao_cache_key(s, rad, ao_show, double(opt.style) * 7 + (lod ? opt.lod_near * 13 + double(stats.near) : 0));
     if (ao_.size() != n || ao_key_ != key) {
-      std::vector<double> rad(n);
-      for (size_t i = 0; i < n; ++i) rad[i] = radius(i);
       ao_ = ambient_accessibility(s, rad, ao_show);
       ao_key_ = key;
     }
@@ -1019,7 +1057,9 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
   if (opt.depth_cue && zmax > zmin) {
     for (size_t k = 0; k < B.col.size(); ++k) {
       if (B.id[k] < 0) continue;
-      const float t = static_cast<float>(0.35 * (zmax - B.z[k]) / (zmax - zmin));
+      // zmin/zmax are atom centres, B.z the front surface (up to a radius nearer): keep t in [0, 0.35] so a thin or
+      // face-on flat structure does not extrapolate the colour away from the background
+      const float t = static_cast<float>(std::clamp(0.35 * (zmax - B.z[k]) / (zmax - zmin), 0.0, 0.35));
       B.col[k] = opt.background == Background::Transparent ? mixc(B.col[k], {0, 0, 0}, t * 0.6f) : mixc(B.col[k], bg, t);
     }
   }

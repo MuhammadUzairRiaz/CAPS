@@ -34,7 +34,7 @@ CRYSTALS = [
     ("molybdenite", "2H-MoS₂", "194", (3.160, 3.160, 12.294, 90, 90, 120), "Mo1 Mo 0.33333333 0.66666667 0.25; S1 S 0.33333333 0.66666667 0.621", 5.06,
      "solid lubricant filler", (0, 0, 1), "Dickinson & Pauling, J. Am. Chem. Soc. 45, 1466 (1923); Bronsema et al., Z. Anorg. Allg. Chem. 540, 15 (1986)"),
     ("silicon-carbide", "3C-SiC (β, zinc blende)", "216", (4.3596, 4.3596, 4.3596, 90, 90, 90), "Si1 Si 0 0 0; C1 C 0.25 0.25 0.25", 3.21,
-     "SiC particle and whisker reinforcement", (1, 1, 1), "Taylor & Jones, Phys. Rev. 1960; a = 4.3596 Å"),
+     "SiC particle and whisker reinforcement", (1, 1, 1), "Taylor & Jones, in Silicon Carbide: A High Temperature Semiconductor, eds. O'Connor & Smiltens (Pergamon, 1960), p. 147; a = 4.3596 Å"),
     ("silicon", "Silicon (diamond)", "227:1", (5.4307, 5.4307, 5.4307, 90, 90, 90), "Si1 Si 0 0 0", 2.33,
      "silicon particles, wafers", (1, 1, 1), "Okada & Tokumaru, J. Appl. Phys. 56, 314 (1984)"),
     ("sphalerite", "Sphalerite ZnS", "216", (5.4093, 5.4093, 5.4093, 90, 90, 90), "Zn1 Zn 0 0 0; S1 S 0.25 0.25 0.25", 4.10,
@@ -63,6 +63,7 @@ def main():
     tmp = os.path.join(ROOT, "build", "fillers")
     os.makedirs(tmp, exist_ok=True)
     bad = 0
+    written = set()
     for cid, name, grp, cell, sites, rho, use, hkl, ref in CRYSTALS:
         out = os.path.join(tmp, cid + ".cif")
         r = subprocess.run([CAPS, "crystal", "--group", grp, "--cell", ",".join(str(x) for x in cell), "--sites", sites, "-o", out], capture_output=True, text=True)
@@ -75,13 +76,15 @@ def main():
             text = open(out).read()
             head = f"# {name} — {grp} a b c α β γ = {' '.join(str(x) for x in cell)}; sites {sites}\n# {ref}; built by tools/make_filler_crystals.py\n"
             open(os.path.join(OUT, cid + ".cif"), "w").write(head + text)
+            written.add(cid)
     if write:
-        # the catalogue keeps one line per crystal: new ones are appended in that style
+        # the catalogue keeps one line per crystal: new ones are appended in that style,
+        # and only for crystals whose CIF was written in this run
         cat_path = os.path.join(OUT, "catalogue.json")
         text = open(cat_path).read()
         have = {c["id"] for c in json.loads(text)["crystals"]}
         lines = [json.dumps({"id": cid, "name": name, "file": cid + ".cif", "use": use, "hkl": list(hkl)}, ensure_ascii=False)
-                 for cid, name, grp, cell, sites, rho, use, hkl, ref in CRYSTALS if cid not in have]
+                 for cid, name, grp, cell, sites, rho, use, hkl, ref in CRYSTALS if cid in written and cid not in have]
         if lines:
             end = text.rindex("}", 0, text.rindex("]"))
             text = text[:end + 1] + "".join(",\n    " + l for l in lines) + text[end + 1:]

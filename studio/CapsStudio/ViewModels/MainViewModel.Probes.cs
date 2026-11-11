@@ -115,6 +115,7 @@ public sealed partial class MainViewModel
             var title = measure switch
             {
                 "distance" when b?.Kind == "plane" => $"{a.Name} ↑ {b.Name}",
+                "distance" when a.Kind == "plane" => $"{b?.Name} ↑ {a.Name}",
                 "distance" => $"{a.Name} ↔ {b?.Name}",
                 "angle" => $"{a.Name} ∠ {b?.Name}",
                 "rms" => $"{a.Name} flatness",
@@ -123,6 +124,7 @@ public sealed partial class MainViewModel
             var sub = measure switch
             {
                 "distance" when b?.Kind == "plane" => "centre → plane, along its normal",
+                "distance" when a.Kind == "plane" => "centre → plane, along its normal",
                 "distance" => "between centres, minimum image",
                 "angle" => a.Kind == "plane" && b?.Kind == "plane" ? "between the planes" : (a.Kind == "plane") != (b?.Kind == "plane") ? "axis to the plane" : "between the axes",
                 "rms" => "rms distance of its atoms from the plane",

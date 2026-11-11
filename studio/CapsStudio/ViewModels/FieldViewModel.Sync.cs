@@ -149,14 +149,17 @@ public sealed partial class FieldViewModel
     public static string MlNoteStatic => MlAvailable
         ? "Fit missing terms: CAPS finds every bond, angle and torsion the force field lacks for this structure, scans each on a fragment with its machine-learned potential and fits the term, now, and saves the fit as an overlay file that is merged (caps ff complete). To have this done at every assignment instead, tick \"Fill missing terms with CAPS ML at every assignment\" under Missing before run."
         : MlMissingNote;
-    public bool CanComplete => MlAvailable && Assigned && HasMissing && !IsGrouped && Selected is { Id: not "uff" } && NotWorking;
+    // the fit works on the force field assigned (what HasMissing describes), not on whatever the dropdown shows now:
+    // caps_ff_complete merges its overlay only when it is given the assigned file
+    private FfEntry? AssignedEntry => Library.FirstOrDefault(x => x.Id == _assignedId);
+    public bool CanComplete => MlAvailable && Assigned && HasMissing && !IsGrouped && AssignedEntry is { Id: not "uff" } && NotWorking;
     private string _completeText = "";
     public string CompleteText { get => _completeText; private set => Set(ref _completeText, value); }
 
     /// <summary>caps ff complete on the open structure; the overlay goes beside it (or in ~/CAPS/overlays) and is merged.</summary>
     public async Task CompleteWithModel(string? structurePath)
     {
-        if (!CanComplete || Selected is not { } e) return;
+        if (!CanComplete || AssignedEntry is not { } e) return;
         var doc = _doc();
         if (doc == null) return;
         var dir = structurePath is { Length: > 0 } sp && System.IO.Path.GetDirectoryName(sp) is { Length: > 0 } d0 ? d0

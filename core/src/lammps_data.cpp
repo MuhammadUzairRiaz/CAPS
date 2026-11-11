@@ -958,8 +958,13 @@ ForceField forcefield_in_metal_units(const ForceField& ff0) {
   for (auto& p : ff.lj14_types) p.eps *= f;
   for (auto& [k, p] : ff.pair_override) p.eps *= f;
   for (auto& [k, p] : ff.pair_func) {
+    if (p.form == kPairTable) continue;    // a is the index into ff.tables, whose E and F are converted below
     if (p.form == 1 || p.form == kPairRydberg) p.a *= f, p.c *= f;   // Buckingham A, C; Rydberg A, C
     else p.a *= f;                         // Morse D0; SDK, lj/gromacs and cosine/squared ε
+  }
+  for (auto& t : ff.tables) {             // tabulated pairs: E and F = −dE/dr
+    for (double& x : t.e) x *= f;
+    for (double& x : t.f) x *= f;
   }
   for (auto& t : ff.lj_pairs) t.eps *= f;
   for (auto& t : ff.bonds) t.k *= f;
@@ -1052,6 +1057,7 @@ static bool tip4p_reduce(const System& s, const ForceField& ff, System& rs, Forc
     v = std::move(o);
   };
   keep_per_type(rf.type_names), keep_per_type(rf.lj), keep_per_type(rf.lj14_types), keep_per_type(rf.manybody.element), keep_per_type(rf.manybody.entry);
+  keep_per_type(rf.type_part);
   auto remap_pairs = [&](auto& m) {
     std::decay_t<decltype(m)> o;
     for (const auto& [k, v] : m)
@@ -1373,8 +1379,9 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
   }
   if (s.velocities.size() == s.atoms.size()) {
     out << "\nVelocities\n\n";
+    const double vu = metal ? 1000.0 : 1.0;   // Å/fs → Å/ps under units metal
     for (size_t i = 0; i < na; ++i) {
-      std::snprintf(buf, sizeof buf, "%zu %.8f %.8f %.8f\n", i + 1, s.velocities[i][0], s.velocities[i][1], s.velocities[i][2]);
+      std::snprintf(buf, sizeof buf, "%zu %.8f %.8f %.8f\n", i + 1, s.velocities[i][0] * vu, s.velocities[i][1] * vu, s.velocities[i][2] * vu);
       out << buf;
     }
   }
@@ -1643,7 +1650,8 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   if (!ff.tables.empty()) {   // tabulated pairs: caps_pairs.table beside the input, one section per table (r, E, F = −dE/dr)
     const size_t slash = path.find_last_of('/');
     std::ofstream tf((slash == std::string::npos ? std::string() : path.substr(0, slash + 1)) + "caps_pairs.table");
-    tf << "# tabulated pair potentials written by CAPS (r in Å, E in kcal/mol, F = -dE/dr in kcal/mol/Å)\n";
+    tf << "# tabulated pair potentials written by CAPS (r in Å, E in " << (metal ? "eV" : "kcal/mol") << ", F = -dE/dr in "
+       << (metal ? "eV/Å" : "kcal/mol/Å") << ")\n";
     for (size_t k = 0; k < ff.tables.size(); ++k) {
       const auto& tb = ff.tables[k];
       char hb[160];

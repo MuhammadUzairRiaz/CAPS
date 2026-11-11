@@ -56,6 +56,26 @@ std::array<double, 3> eig3(double a[3][3]) {
   return e;
 }
 
+// The hydrogens each written atom carries, stated so the SMILES reads back as the same molecule. An atom's hydrogens
+// that are not written as atoms of their own are its perceived count less the hydrogen neighbours in the graph (the
+// * stand-ins included). A bracket atom states them; an organic-subset atom keeps the short form only where the
+// reader's own rule gives the same count, else it is bracketed (pyrrole's N-H as [nH], not a bare n).
+void state_hydrogens(MolGraph& g, const System& m, const Perception& p, const std::vector<int>& gi) {
+  MolGraph read = g;
+  for (auto& a : read.atoms) if (!a.bracket) a.hcount = -1;
+  add_hydrogens(read);
+  for (uint32_t i = 0; i < m.atoms.size(); ++i) {
+    if (gi[i] < 0) continue;
+    MolAtom& a = g.atoms[size_t(gi[i])];
+    if (a.element == 0) continue;
+    int want = p.hcount[i];
+    for (uint32_t w : p.nb[i]) if (m.atoms[w].element == 1 && gi[w] >= 0) --want;
+    want = std::max(0, want);
+    if (a.bracket) a.hcount = want;
+    else if (read.atoms[size_t(gi[i])].hcount != want) { a.bracket = true; a.hcount = want; }
+  }
+}
+
 }  // namespace
 
 MoleculeInfo molecule_info(const System& s0, uint32_t atom) {
@@ -135,8 +155,7 @@ MoleculeInfo molecule_info(const System& s0, uint32_t atom) {
     a.charge = p.charge[i];
     const bool organic = a.element == 5 || a.element == 6 || a.element == 7 || a.element == 8 || a.element == 9 || a.element == 15 ||
                          a.element == 16 || a.element == 17 || a.element == 35 || a.element == 53;
-    a.bracket = !organic || a.charge != 0;
-    a.hcount = a.bracket ? p.hcount[i] : -1;
+    a.bracket = !organic || a.charge != 0;   // the hydrogens: state_hydrogens below
     gi[i] = int(g.atoms.size());
     g.atoms.push_back(a);
   }
@@ -156,6 +175,7 @@ MoleculeInfo molecule_info(const System& s0, uint32_t atom) {
         if (!triple) ++r.rotatable;
       }
     }
+  state_hydrogens(g, m, p, gi);
   g.heavy = int(g.atoms.size());
   try { r.smiles = write_smiles(g); } catch (const std::exception&) { r.smiles = ""; }
   return r;
@@ -265,11 +285,7 @@ std::string repeat_unit_smiles(const System& s0, uint32_t head, uint32_t tail) {
     a.charge = dummy ? 0 : p.charge[i];
     const int z = a.element;
     const bool organic = z == 0 || z == 5 || z == 6 || z == 7 || z == 8 || z == 9 || z == 15 || z == 16 || z == 17 || z == 35 || z == 53;
-    a.bracket = !organic || a.charge != 0;
-    // a bracket atom states its hydrogens: the perceived count less the one that became *
-    int h = dummy ? 0 : p.hcount[i];
-    if (!dummy) for (uint32_t w : p.nb[i]) if (w == hp || w == tp) --h;
-    a.hcount = a.bracket ? std::max(0, h) : -1;
+    a.bracket = !organic || a.charge != 0;   // the hydrogens (the perceived count less the one that became *): state_hydrogens below
     gi[i] = int(g.atoms.size());
     g.atoms.push_back(a);
   }
@@ -282,6 +298,7 @@ std::string repeat_unit_smiles(const System& s0, uint32_t head, uint32_t tail) {
       b.order = p.arom_bond[i][k] ? 4 : p.order[i][k];
       g.bonds.push_back(b);
     }
+  state_hydrogens(g, m, p, gi);
   g.heavy = int(g.atoms.size());
   return write_smiles(g);
 }
@@ -331,10 +348,7 @@ std::string fragment_smiles(const System& s0, const std::vector<uint32_t>& atoms
     a.charge = star ? 0 : p.charge[i];
     const int z = a.element;
     const bool organic = z == 0 || z == 5 || z == 6 || z == 7 || z == 8 || z == 9 || z == 15 || z == 16 || z == 17 || z == 35 || z == 53;
-    a.bracket = !organic || a.charge != 0;
-    int h = star ? 0 : p.hcount[i];
-    if (!star) for (uint32_t w : p.nb[i]) if (dummy.count(w)) --h;
-    a.hcount = a.bracket ? std::max(0, h) : -1;
+    a.bracket = !organic || a.charge != 0;   // the hydrogens (the perceived count less the * ones): state_hydrogens below
     gi[i] = int(g.atoms.size());
     g.atoms.push_back(a);
   }
@@ -347,6 +361,7 @@ std::string fragment_smiles(const System& s0, const std::vector<uint32_t>& atoms
       b.order = p.arom_bond[i][k] ? 4 : p.order[i][k];
       g.bonds.push_back(b);
     }
+  state_hydrogens(g, m, p, gi);
   g.heavy = int(g.atoms.size());
   return write_smiles(g);
 }

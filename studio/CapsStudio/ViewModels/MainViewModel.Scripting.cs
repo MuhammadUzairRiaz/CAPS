@@ -64,9 +64,13 @@ public sealed partial class MainViewModel
                 {
                     using var p = Process.Start(psi)!;
                     var err = p.StandardError.ReadToEndAsync();
-                    var output = p.StandardOutput.ReadToEnd();
+                    var outTask = p.StandardOutput.ReadToEndAsync();
                     if (!p.WaitForExit(20000)) { try { p.Kill(true); } catch { } return (false, "the interpreter did not answer within 20 s"); }
-                    return (p.ExitCode == 0, (output + (p.ExitCode != 0 ? err.Result.Trim().Split('\n').LastOrDefault() ?? "" : "")).Trim());
+                    // A process it started may still hold the pipes open after Python ends; do not wait on it for long.
+                    Task.WaitAll(new Task[] { outTask, err }, 5000);
+                    var output = outTask.IsCompletedSuccessfully ? outTask.Result : "";
+                    var errText = err.IsCompletedSuccessfully ? err.Result : "";
+                    return (p.ExitCode == 0, (output + (p.ExitCode != 0 ? errText.Trim().Split('\n').LastOrDefault() ?? "" : "")).Trim());
                 }
                 catch (Exception e) { return (false, $"cannot run {exe}: {e.Message}"); }
             });

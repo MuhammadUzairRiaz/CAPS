@@ -15,13 +15,35 @@ std::string piece_json(const System& s, const std::vector<size_t>& atoms, const 
   std::vector<size_t> list;
   for (size_t i : atoms) if (i < s.atoms.size()) list.push_back(i);
   if (list.empty()) throw std::runtime_error("nothing to copy");
-  // the piece whole: each atom at the image nearest the first one (a molecule across a wall stays in one piece)
-  std::vector<Vec3> pos(list.size());
-  for (size_t k = 0; k < list.size(); ++k) {
-    const Vec3 d = s.atoms[list[k]].pos - s.atoms[list[0]].pos;
-    pos[k] = s.atoms[list[0]].pos + (s.cell.valid() ? s.cell.minimum_image(d) : d);
-    c = c + pos[k];
+  // the piece whole: walked along its bonds, each atom at the image nearest the bonded atom it was reached from (a chain
+  // longer than half the cell stays in one piece); the first atom of each bonded part at the image nearest the first atom
+  auto mi = [&](const Vec3& d) { return s.cell.valid() ? s.cell.minimum_image(d) : d; };
+  std::map<size_t, size_t> slot;
+  for (size_t k = 0; k < list.size(); ++k) slot.emplace(list[k], k);
+  std::vector<std::vector<size_t>> nb(list.size());
+  for (const auto& bd : s.bonds) {
+    auto i = slot.find(bd.i), j = slot.find(bd.j);
+    if (i == slot.end() || j == slot.end() || i->second == j->second) continue;
+    nb[i->second].push_back(j->second), nb[j->second].push_back(i->second);
   }
+  std::vector<Vec3> pos(list.size());
+  std::vector<char> placed(list.size(), 0);
+  for (size_t r = 0; r < list.size(); ++r) {
+    if (placed[r]) continue;
+    pos[r] = s.atoms[list[0]].pos + mi(s.atoms[list[r]].pos - s.atoms[list[0]].pos);
+    placed[r] = 1;
+    std::vector<size_t> queue{r};
+    for (size_t h = 0; h < queue.size(); ++h) {
+      const size_t u = queue[h];
+      for (size_t v : nb[u]) {
+        if (placed[v]) continue;
+        pos[v] = pos[u] + mi(s.atoms[list[v]].pos - s.atoms[list[u]].pos);
+        placed[v] = 1;
+        queue.push_back(v);
+      }
+    }
+  }
+  for (size_t k = 0; k < list.size(); ++k) c = c + pos[k];
   c = c * (1.0 / double(list.size()));
   std::map<size_t, size_t> at;
   std::map<int64_t, int> mols;
@@ -91,9 +113,31 @@ StampResult stamp_piece(System& s, const std::string& piece, const Vec3& at, con
   double rad = 0;
   for (const auto& q : p) { const Vec3 d = q - at; rad = std::max(rad, std::sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2])); }
   const double reach = rad + 12.0 + clear;
-  auto dvec = [&](const Vec3& a, const Vec3& b) { const Vec3 d = a - b; return s.cell.valid() ? s.cell.minimum_image(d) : d; };
+  // every periodic image of a structure atom within reach of the point, not only the one nearest it: a piece atom far
+  // from the point (a large piece, a small cell, a shifted piece) can sit close to another image of the same atom
+  const bool pbc = s.cell.valid();
+  int span[3] = {0, 0, 0};
+  if (pbc) {
+    const Vec3* e[3] = {&s.cell.a, &s.cell.b, &s.cell.c};
+    const double v = std::abs(dot(s.cell.a, cross(s.cell.b, s.cell.c)));
+    for (int k = 0; k < 3; ++k) {
+      if (!s.cell.periodic[k]) continue;
+      const Vec3 w = cross(*e[(k + 1) % 3], *e[(k + 2) % 3]);
+      const double h = v / std::sqrt(dot(w, w));   // the cell's height across this vector
+      span[k] = int(std::ceil(reach / h + 1.5));
+    }
+  }
   std::vector<Vec3> near;
-  for (const auto& x : s.atoms) { const Vec3 d = dvec(x.pos, at); if (d[0] * d[0] + d[1] * d[1] + d[2] * d[2] <= reach * reach) near.push_back(at + d); }
+  for (const auto& x : s.atoms) {
+    const Vec3 base = at + (pbc ? s.cell.minimum_image(x.pos - at) : x.pos - at);
+    for (int i = -span[0]; i <= span[0]; ++i)
+      for (int jj = -span[1]; jj <= span[1]; ++jj)
+        for (int k = -span[2]; k <= span[2]; ++k) {
+          const Vec3 y = base + s.cell.a * double(i) + s.cell.b * double(jj) + s.cell.c * double(k);
+          const Vec3 d = y - at;
+          if (dot(d, d) <= reach * reach) near.push_back(y);
+        }
+  }
   auto closest = [&](const Vec3& shift) {
     double m2 = 1e300;
     for (const auto& q : p)
@@ -132,6 +176,7 @@ StampResult stamp_piece(System& s, const std::string& piece, const Vec3& at, con
   int64_t id = 0;
   for (const auto& x : s.atoms) id = std::max(id, x.id);
   const size_t base = s.atoms.size();
+  std::map<std::pair<int, std::string>, int> made;   // unlabelled piece type (number, or element when it has none) to the new type
   for (size_t k = 0; k < A.size(); ++k) {
     const Json& x = A[k];
     Atom a;
@@ -143,14 +188,24 @@ StampResult stamp_piece(System& s, const std::string& piece, const Vec3& at, con
     a.mol = mol0 + int64_t(x.num("mol", 1));
     a.id = ++id;
     const std::string lab = x.text("label");
+    const int ptype = int(x.num("type", 0));
+    const double pmass = x.num("mass", element(a.element).mass);
     int type = 0;
     if (!lab.empty()) for (const auto& t : s.types) if (t.label == lab) type = t.type;
-    if (type == 0 && (!s.types.empty() || x.num("type", 0) > 0)) {
+    // an unlabelled type: the structure's unlabelled type of the same number and mass (a piece stamped back where it
+    // came from), else the one already made for it in this stamp, so each piece type gives one new type, not one per atom
+    const std::pair<int, std::string> key{ptype, ptype > 0 ? std::string() : element(a.element).symbol};
+    if (lab.empty() && ptype > 0)
+      for (const auto& t : s.types)
+        if (t.type == ptype && t.label.empty() && std::abs(t.mass - pmass) < 1e-3) type = t.type;
+    if (lab.empty() && type == 0) { auto f = made.find(key); if (f != made.end()) type = f->second; }
+    if (type == 0 && (!s.types.empty() || ptype > 0)) {
       for (const auto& t : s.types) type = std::max(type, t.type);
       ++type;
       TypeInfo ti;
-      ti.type = type, ti.mass = x.num("mass", element(a.element).mass), ti.label = lab.empty() ? element(a.element).symbol : lab;
+      ti.type = type, ti.mass = pmass, ti.label = lab.empty() ? element(a.element).symbol : lab;
       s.types.push_back(ti);
+      if (lab.empty()) made[key] = type;
     }
     a.type = type;
     r.added.push_back(s.atoms.size());

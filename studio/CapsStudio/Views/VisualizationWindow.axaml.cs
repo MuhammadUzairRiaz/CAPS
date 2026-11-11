@@ -16,7 +16,7 @@ public partial class VisualizationWindow : Window
 {
     private readonly MainViewModel _vm;
     private readonly bool _live;
-    private CapsDocument? _copy;     // the structure's copy (static view), disposed on close
+    private CapsDocument? _copy;     // the copy shown (of the structure, or of the latest live snapshot), disposed on close
     private CapsDocument? _shown;
     private string _expr = "";
 
@@ -86,15 +86,22 @@ public partial class VisualizationWindow : Window
 
     private void OnVm(object? s, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainViewModel.RunLiveDoc) && _vm.RunLiveDoc is { } d) Show(d);
+        if (e.PropertyName != nameof(MainViewModel.RunLiveDoc) || _vm.RunLiveDoc is not { } d) return;
+        // a copy of each snapshot: the wrap and "show only" set here go on the copy, not on the snapshot the main view draws
+        CapsDocument next;
+        try { next = d.Copy("live view"); } catch { return; }
+        var old = _copy;
+        _copy = next;
+        Show(next);
+        old?.Dispose();
     }
 
-    /// <summary>What to show: the run's latest snapshot, else a copy of the open structure.</summary>
+    /// <summary>What to show: a copy of the run's latest snapshot, else a copy of the open structure.</summary>
     private CapsDocument? Source()
     {
-        if (_live && _vm.RunLiveDoc is { } d) return d;
-        if (_vm.Document is not { } doc) return null;
-        try { _copy = doc.Copy("view"); } catch { return null; }
+        var doc = _live && _vm.RunLiveDoc is { } d ? d : _vm.Document;
+        if (doc == null) return null;
+        try { _copy = doc.Copy(_live && _vm.RunLiveDoc != null ? "live view" : "view"); } catch { return null; }
         return _copy;
     }
 

@@ -21,17 +21,35 @@ void pairs_within(const System& s, double rc, F&& visit) {
   const size_t n = s.atoms.size();
   if (n < 2) return;
   const bool periodic = s.cell.valid();
+  // Bin in fractional coordinates when there is a cell, so that bins follow the cell faces and wrap with them even in
+  // tilted cells. Along axis k a bin is at least rc across in the direction normal to the other two cell vectors, so
+  // any pair within rc (under any image) sits in neighbouring bins. Without a cell, bin Cartesian positions.
+  double width[3] = {1, 1, 1};
+  bool wrap_axis[3] = {false, false, false};
+  if (periodic) {
+    const double v = s.cell.volume();
+    width[0] = v / norm(cross(s.cell.b, s.cell.c));
+    width[1] = v / norm(cross(s.cell.c, s.cell.a));
+    width[2] = v / norm(cross(s.cell.a, s.cell.b));
+    for (int k = 0; k < 3; ++k) wrap_axis[k] = s.cell.periodic[k];
+  }
   Vec3 lo{1e300, 1e300, 1e300}, hi{-1e300, -1e300, -1e300};
-  std::vector<Vec3> p(n);
+  std::vector<Vec3> p(n), f(n);
   for (size_t i = 0; i < n; ++i) {
     p[i] = periodic ? s.cell.wrap(s.atoms[i].pos) : s.atoms[i].pos;
-    for (int k = 0; k < 3; ++k) lo[k] = std::min(lo[k], p[i][k]), hi[k] = std::max(hi[k], p[i][k]);
+    f[i] = periodic ? s.cell.to_fractional(p[i]) : p[i];
+    for (int k = 0; k < 3; ++k) {
+      if (wrap_axis[k]) f[i][k] -= std::floor(f[i][k]);
+      lo[k] = std::min(lo[k], f[i][k]), hi[k] = std::max(hi[k], f[i][k]);
+    }
   }
+  for (int k = 0; k < 3; ++k)
+    if (wrap_axis[k]) lo[k] = 0, hi[k] = 1;
   int nb[3];
-  for (int k = 0; k < 3; ++k) nb[k] = std::clamp(int((hi[k] - lo[k]) / rc), 1, 200);
+  for (int k = 0; k < 3; ++k) nb[k] = std::clamp(int((hi[k] - lo[k]) * width[k] / rc), 1, 200);
   auto bin_of = [&](const Vec3& q, int k) { return std::clamp(int((q[k] - lo[k]) / ((hi[k] - lo[k]) / nb[k] + 1e-12)), 0, nb[k] - 1); };
   std::vector<std::vector<uint32_t>> bins(static_cast<size_t>(nb[0]) * nb[1] * nb[2]);
-  for (size_t i = 0; i < n; ++i) bins[(size_t(bin_of(p[i], 0)) * nb[1] + bin_of(p[i], 1)) * nb[2] + bin_of(p[i], 2)].push_back(uint32_t(i));
+  for (size_t i = 0; i < n; ++i) bins[(size_t(bin_of(f[i], 0)) * nb[1] + bin_of(f[i], 1)) * nb[2] + bin_of(f[i], 2)].push_back(uint32_t(i));
   const double rc2 = rc * rc;
   for (int x = 0; x < nb[0]; ++x)
     for (int y = 0; y < nb[1]; ++y)
@@ -42,8 +60,10 @@ void pairs_within(const System& s, double rc, F&& visit) {
           for (int dy = -1; dy <= 1; ++dy)
             for (int dz = -1; dz <= 1; ++dz) {
               int X = x + dx, Y = y + dy, Z = z + dz;
-              if (periodic) X = (X + nb[0]) % nb[0], Y = (Y + nb[1]) % nb[1], Z = (Z + nb[2]) % nb[2];
-              else if (X < 0 || Y < 0 || Z < 0 || X >= nb[0] || Y >= nb[1] || Z >= nb[2]) continue;
+              if (wrap_axis[0]) X = (X + nb[0]) % nb[0];
+              if (wrap_axis[1]) Y = (Y + nb[1]) % nb[1];
+              if (wrap_axis[2]) Z = (Z + nb[2]) % nb[2];
+              if (X < 0 || Y < 0 || Z < 0 || X >= nb[0] || Y >= nb[1] || Z >= nb[2]) continue;
               const size_t key = (size_t(X) * nb[1] + Y) * nb[2] + Z;
               if (!seen.insert(key).second) continue;
               for (uint32_t i : here)
@@ -65,7 +85,7 @@ int molecules_across_edge(const System& s) {
   const auto mol = s.molecules();
   std::set<int> cut;
   for (size_t i = 0; i < s.atoms.size(); ++i) {
-    const Vec3 f = s.cell.to_fractional(s.atoms[i].pos - s.cell.origin);
+    const Vec3 f = s.cell.to_fractional(s.atoms[i].pos);
     for (int k = 0; k < 3; ++k)
       if (f[k] < -1e-6 || f[k] >= 1 + 1e-6) { cut.insert(mol[i]); break; }
   }
@@ -167,7 +187,7 @@ InteractionReport find_interactions(const System& s, const InteractionOptions& o
     if (val == 0) continue;
     double sum = 0;
     for (const auto& bd : s.bonds)
-      if (bd.i == i || bd.j == i) sum += bd.order == 2 ? 2 : bd.order == 3 ? 3 : bd.order == 4 ? 1.5 : 1;
+      if (bd.i == i || bd.j == i) sum += bd.order == kBondDative ? 0 : bd.order == 2 ? 2 : bd.order == 3 ? 3 : bd.order == 4 ? 1.5 : 1;
     if (sum > val + 0.6) { ++over; if (over_atoms.size() < 500) over_atoms.push_back(uint32_t(i)); }
     else if (z != 1 && sum < val - 0.6 && !s.bonds.empty()) { ++lacking; if (lack_atoms.size() < 500) lack_atoms.push_back(uint32_t(i)); }
   }

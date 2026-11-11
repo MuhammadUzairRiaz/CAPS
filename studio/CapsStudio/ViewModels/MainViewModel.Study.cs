@@ -218,6 +218,14 @@ public sealed class StudyTableDoc
         var labelCol = body.Count > 0 && body.All(b => b.Count > 0 && b[0].Length > 0 && !IsNum(b[0]));
         var names = Enumerable.Range(0, width).Select(k => header && k < first.Count && first[k].Length > 0 ? first[k] : $"column {k + 1}").ToList();
         var start = labelCol ? 1 : 0;
+        // a name repeated in the file is a separate column ("E", "E 2"), not a merge into the first one
+        var used = new HashSet<string>();
+        for (var k = start; k < names.Count; ++k)
+        {
+            var nm = names[k];
+            for (var j = 2; !used.Add(nm); ++j) nm = $"{names[k]} {j}";
+            names[k] = nm;
+        }
         foreach (var nm in names.Skip(start)) if (Columns.All(c => c.Name != nm)) AddColumn(nm);
         var n0 = Rows.Count;
         foreach (var b in body)
@@ -281,6 +289,7 @@ public sealed partial class MainViewModel
     private void StudyRefresh()
     {
         var (x, y) = (StudyXLabel, StudyYLabel);
+        var colourBy = _studyColour > 0 && _studyColour <= StudyColumnNames.Count ? StudyColumnNames[_studyColour - 1] : "";
         StudyColumnNames.Clear();
         foreach (var c in Study.Columns) StudyColumnNames.Add(c.Name);
         var picked = StudyPicks.Where(p => p.On).Select(p => p.Name).ToHashSet();
@@ -295,7 +304,11 @@ public sealed partial class MainViewModel
         _studyX = Math.Max(0, StudyColumnNames.IndexOf(x));
         _studyY = StudyColumnNames.IndexOf(y) is var iy && iy >= 0 ? iy : Math.Min(1, Math.Max(0, StudyColumnNames.Count - 1));
         Raise(nameof(StudyX)); Raise(nameof(StudyY)); Raise(nameof(StudySummary));
-        _studyColour = 0; Raise(nameof(StudyColourNames)); Raise(nameof(StudyColour));
+        // keep colouring by the same column (by name) and redo the fills, since the values or rows may have changed
+        Raise(nameof(StudyColourNames));
+        _studyColour = colourBy.Length > 0 ? StudyColumnNames.IndexOf(colourBy) + 1 : 0;
+        Raise(nameof(StudyColour));
+        StudyApplyColour();
         StudyPlot();
         StudyStatsRun();
     }

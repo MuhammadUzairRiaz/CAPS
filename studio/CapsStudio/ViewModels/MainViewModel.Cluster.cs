@@ -31,7 +31,7 @@ public sealed partial class MainViewModel
         var root = (h.Root.Length > 0 ? h.Root : "~/CAPS").TrimEnd('/');
         var p = sub.Length > 0 ? root + "/" + sub : root;
         if (p == "~") return "\"$HOME\"";
-        return p.StartsWith("~/", StringComparison.Ordinal) ? "\"$HOME/" + p[2..].Replace("\"", "\\\"").Replace("$", "\\$") + "\"" : Q(p);
+        return p.StartsWith("~/", StringComparison.Ordinal) ? "\"$HOME/" + p[2..].Replace("\\", "\\\\").Replace("`", "\\`").Replace("\"", "\\\"").Replace("$", "\\$") + "\"" : Q(p);
     }
     internal static string CapsOnHost(RemoteHost h) => RootPath(h, "bin/caps");
 
@@ -39,9 +39,19 @@ public sealed partial class MainViewModel
     private static string[] SharedConnection()
     {
         if (OperatingSystem.IsWindows()) return [];
-        var dir = Path.Combine(Path.GetTempPath(), "caps-ssh");
-        try { Directory.CreateDirectory(dir); } catch { return []; }
-        return ["-o", "ControlMaster=auto", "-o", "ControlPersist=10m", "-o", "ControlPath=" + Path.Combine(dir, "%C")];
+        // a short folder of the user's own under /tmp: the socket path (folder, the 40-character %C hash and the 17
+        // characters ssh adds while it binds) must fit a Unix socket's 104 bytes, which macOS's long $TMPDIR does not
+        var user = new string(Environment.UserName.Where(char.IsAsciiLetterOrDigit).Take(16).ToArray());
+        var dir = "/tmp/caps-ssh-" + (user.Length > 0 ? user : "user");
+        if (dir.Length + 1 + 40 + 17 > 103) return [];
+        try
+        {
+            const UnixFileMode owner = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+            Directory.CreateDirectory(dir, owner);
+            File.SetUnixFileMode(dir, owner);   // fails when the folder belongs to someone else: then no shared connection
+        }
+        catch { return []; }
+        return ["-o", "ControlMaster=auto", "-o", "ControlPersist=10m", "-o", "ControlPath=" + dir + "/%C"];
     }
 
     /// <summary>The profile written on the host (root/host.json): the CLI there and the Studio read the same file.</summary>
@@ -261,6 +271,14 @@ public sealed partial class MainViewModel
 
     /// <summary>The build's state (build.state) and the end of its log.</summary>
     private async Task PollInstall(Job j, RemoteHost h, RemoteRun r)
+    {
+        if (r.Checking) return;
+        r.Checking = true;
+        r.LastPoll = DateTime.Now;
+        try { await PollInstallOnce(j, h, r); }
+        finally { r.Checking = false; }
+    }
+    private async Task PollInstallOnce(Job j, RemoteHost h, RemoteRun r)
     {
         var st = await Tool("ssh", [.. SharedConnection(), .. SshArgs(h, $"cat {RootPath(h, "build.state")} 2>/dev/null; echo ---; tail -n 15 {RootPath(h, "build.log")} 2>/dev/null")], 30000);
         var parts = st.Out.Split("---", 2);
@@ -601,6 +619,14 @@ public sealed partial class MainViewModel
 
     private async Task PollScaling(Job j, RemoteHost h, RemoteRun r)
     {
+        if (r.Checking) return;
+        r.Checking = true;
+        r.LastPoll = DateTime.Now;
+        try { await PollScalingOnce(j, h, r); }
+        finally { r.Checking = false; }
+    }
+    private async Task PollScalingOnce(Job j, RemoteHost h, RemoteRun r)
+    {
         var res = await Tool("ssh", [.. SharedConnection(), .. SshArgs(h, $"{CapsOnHost(h)} job collect-bench {Q(r.Dir)} --json")], 60000);
         if (res.Code != 0 || JsonNode.Parse(res.Out.Split('\n').Last(l => l.Length > 0)) is not JsonObject t) { j.Add($"{r.Host} not reached: {FirstLine(res.Err, res.Code)}"); return; }
         var rows = (t["rows"] as JsonArray ?? []).OfType<JsonObject>().ToList();
@@ -663,7 +689,7 @@ public sealed partial class MainViewModel
                 var dir = (string?)s["dir"] ?? "";
                 if (dir.Length == 0 || known.Contains(dir)) continue;
                 var name = (string?)s["job"] ?? "job";
-                var kind = name.Split('-')[0];
+                var kind = name.Split('-')[0] is { Length: > 0 } k ? k : "job";
                 var state = (string?)s["state"] ?? "";
                 var job = new Job
                 {

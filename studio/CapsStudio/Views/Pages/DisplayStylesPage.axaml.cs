@@ -18,7 +18,7 @@ public partial class DisplayStylesPage : PageBase
             _hooked = vm;
             vm.PropertyChanged += (_, e) =>
             {
-                if (IsVisible && e.PropertyName is nameof(MainViewModel.DsStyle) or nameof(MainViewModel.ColourIndex) or nameof(MainViewModel.DisplayStatus)) Show(vm);
+                if (IsVisible && e.PropertyName is nameof(MainViewModel.DsStyle) or nameof(MainViewModel.DsAtoms) or nameof(MainViewModel.ColourIndex) or nameof(MainViewModel.DisplayStatus)) Show(vm);
             };
         };
     }

@@ -81,7 +81,11 @@ struct AtomState {
   std::string label, why;
 };
 
-double bond_order_value(const Perception& p, uint32_t a, size_t k) { return p.arom_bond[a][k] ? 1.5 : double(p.order[a][k]); }
+// A coordinate (dative) bond reaches here with order 0; UFF's log(order) terms need a positive order, so it counts as single.
+double bond_order_value(const Perception& p, uint32_t a, size_t k) {
+  if (p.arom_bond[a][k]) return 1.5;
+  return p.order[a][k] > 0 ? double(p.order[a][k]) : 1.0;
+}
 
 // Is the angle between two neighbours of c (from positions) near 180°? Used for square planar and axial pairs.
 double cos_angle(const System& s, uint32_t c, uint32_t a, uint32_t b) {
@@ -519,7 +523,7 @@ ForceField assign_uff(const System& s, const UffOptions& o) {
   if (o.qeq) {
     QEqReport qr;
     ff.charge = qeq_charges(s, QEqOptions{}, &qr);
-    ff.notes.push_back(qr.notes.front());
+    if (!qr.notes.empty()) ff.notes.push_back(qr.notes.front());
   } else {
     ff.notes.push_back(o.keep_charges && s.has_charges ? "charges from the structure" : "no charges (UFF clean-up)");
   }

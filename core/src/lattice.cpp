@@ -214,6 +214,13 @@ System find_primitive_cell(const System& s, double tol, int* kout) {
   if (kout) *kout = k;
   if (k == 1) return s;
   if (n % size_t(k) != 0) throw std::runtime_error("the translations found do not divide the atoms evenly: loosen or tighten the tolerance");
+  // k lattice points form a group, so k * t is an integer vector: snap each translation to
+  // multiples of 1/k so rounded input coordinates (0.3333, 0.6667) still give an exact basis
+  for (auto& t : trans) {
+    Vec3 snap = t;
+    for (auto& x : snap) { x = std::round(x * k) / k; x -= std::floor(x); }
+    if (dist(snap - t) < tol) t = snap;
+  }
   // lattice vectors: the translations and the cell vectors, shortest first
   struct L { Vec3 fr; double len; };
   std::vector<L> vs;

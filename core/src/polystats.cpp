@@ -104,11 +104,20 @@ SequenceModel terminal_model(const std::vector<double>& feed, const std::vector<
   m.units = n, m.order = 1;
   m.P.assign(size_t(n * n), 0.0);
   for (int i = 0; i < n; ++i) {
+    // r_ij = 0 (k_ii = 0, the unit does not add itself, e.g. maleic anhydride) is the limit of f_j / r_ij: those units
+    // take the whole row in proportion to their feed, P_ii = 0; when none of them is left in the feed they drop out
+    double zero_feed = 0;
+    for (int j = 0; j < n; ++j) {
+      if (i == j) continue;
+      const double rij = r[size_t(i * n + j)];
+      if (!(rij >= 0)) throw std::invalid_argument("terminal model: r_" + std::to_string(i + 1) + std::to_string(j + 1) + " must not be negative");
+      if (rij == 0) zero_feed += f[size_t(j)];
+    }
     double s = 0;
     for (int j = 0; j < n; ++j) {
       const double rij = i == j ? 1.0 : r[size_t(i * n + j)];
-      if (i != j && !(rij > 0)) throw std::invalid_argument("terminal model: r_" + std::to_string(i + 1) + std::to_string(j + 1) + " must be positive");
-      m.P[size_t(i * n + j)] = f[size_t(j)] / rij;
+      if (zero_feed > 0) m.P[size_t(i * n + j)] = i != j && rij == 0 ? f[size_t(j)] : 0.0;
+      else m.P[size_t(i * n + j)] = i != j && rij == 0 ? 0.0 : f[size_t(j)] / rij;
       s += m.P[size_t(i * n + j)];
     }
     for (int j = 0; j < n; ++j) m.P[size_t(i * n + j)] = s > 0 ? m.P[size_t(i * n + j)] / s : (i == j ? 1.0 : 0.0);
@@ -216,8 +225,9 @@ SequenceStats sequence_statistics(const std::vector<std::vector<int>>& chains, i
       if (c[i] < 0 || c[i] >= n) continue;
       s.composition[size_t(c[i])] += 1, ++s.count;
       if (i == 0 || c[i] != c[i - 1]) runs[size_t(c[i])] += 1;
-      if (i + 1 < c.size()) s.dyads[size_t(c[i] * n + c[i + 1])] += 1, nd += 1;
-      if (i + 2 < c.size()) s.triads[size_t((c[i] * n + c[i + 1]) * n + c[i + 2])] += 1, nt += 1;
+      auto ok = [&](size_t q) { return q < c.size() && c[q] >= 0 && c[q] < n; };   // pairs and triples of known units only
+      if (ok(i + 1)) s.dyads[size_t(c[i] * n + c[i + 1])] += 1, nd += 1;
+      if (ok(i + 1) && ok(i + 2)) s.triads[size_t((c[i] * n + c[i + 1]) * n + c[i + 2])] += 1, nt += 1;
     }
   }
   for (int a = 0; a < n; ++a) s.run_length[size_t(a)] = runs[size_t(a)] > 0 ? s.composition[size_t(a)] / runs[size_t(a)] : 0;

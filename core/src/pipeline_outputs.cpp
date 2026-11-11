@@ -43,9 +43,17 @@ double minor_of(double step) {
   const double f = step / std::pow(10.0, std::floor(std::log10(step)));
   return step / (std::fabs(f - 2) < 1e-9 ? 4 : 5);
 }
+// the multiples of `step` in [lo, hi]; an integer counter, and no more than 1000 of them, so a step that is tiny next to
+// the values (where a double counter no longer changes on k += 1) cannot loop forever
 std::vector<double> ticks(double lo, double hi, double step) {
   std::vector<double> t;
-  for (double k = std::ceil(lo / step - 1e-9); k * step <= hi + 1e-9 * step; k += 1) t.push_back(std::fabs(k * step) < 1e-9 * step ? 0.0 : k * step);
+  if (!(step > 0)) return t;
+  const double first = std::ceil(lo / step - 1e-9), last = std::floor(hi / step + 1e-9);
+  if (!std::isfinite(first) || !std::isfinite(last) || std::fabs(first) > 1e15 || std::fabs(last) > 1e15 || !(last - first < 1000)) return t;
+  for (long long k = static_cast<long long>(first), n = static_cast<long long>(last); k <= n; ++k) {
+    const double v = static_cast<double>(k) * step;
+    t.push_back(std::fabs(v) < 1e-9 * step ? 0.0 : v);
+  }
   return t;
 }
 // a tick value with the decimals its step needs, a true minus sign
@@ -100,8 +108,10 @@ std::string table_svg(const DataTable& t, int width, int height) {
   }
   if (!(x1 >= x0)) x0 = 0, x1 = 1;
   if (!(y1 >= y0)) y0 = 0, y1 = 1;
-  if (x1 == x0) x0 -= 0.5, x1 += 0.5;
-  if (y1 == y0) { const double d = y0 == 0 ? 1 : std::fabs(y0) * 0.05; y0 -= d, y1 += d; }
+  // a range no wider than rounding noise counts as one value and is widened, so its tick step stays well above an ulp
+  auto flat = [](double a, double b) { return b - a <= 1e-12 * std::max(std::fabs(a), std::fabs(b)); };
+  if (flat(x0, x1)) { const double d = std::max(0.5, std::fabs(x0) * 1e-6); x0 -= d, x1 += d; }
+  if (flat(y0, y1)) { const double d = y0 == 0 ? 1 : std::fabs(y0) * 0.05; y0 -= d, y1 += d; }
   const double ypad = 0.04 * (y1 - y0);
   if (!(y0 >= 0 && y0 < 0.3 * (y1 - y0))) y0 -= ypad;   // a quantity that comes near zero starts at zero
   else y0 = 0;

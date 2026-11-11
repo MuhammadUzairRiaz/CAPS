@@ -222,6 +222,81 @@ const std::map<std::string, std::string>& builtins() {
        "form 5 1\n"
        "break 1 3\n"
        "move 7 3\n"},
+      {"urethane_exchange",
+       "reaction urethane_exchange   # urethane + alcohol (transcarbamoylation): the alcohol's oxygen takes the carbamoyl group and\n"
+       "                             # the urethane's oxygen takes the alcohol's H. Both alcohols are network strands, so nothing\n"
+       "                             # leaves; the way back is the same reaction. No capture distance read yet: 5 Å, the default\n"
+       "                             # of a template made from a scheme\n"
+       "atom 1 C degree=3 not_aromatic   # the carbamate carbon\n"
+       "atom 2 O degree=1 bonded 1       # its C=O\n"
+       "atom 3 N degree=3 bonded 1       # its nitrogen\n"
+       "atom 4 O H=0 degree=2 bonded 1   # the urethane oxygen: leaves the carbamoyl group, becomes an alcohol's\n"
+       "atom 5 C degree=4 bonded 4       # its sp3 carbon\n"
+       "atom 6 O H=1 degree=2            # the alcohol oxygen: becomes the urethane oxygen\n"
+       "atom 7 C degree=4 bonded 6       # its sp3 carbon (an alcohol, not an acid)\n"
+       "atom 8 H bonded 6\n"
+       "initiators 6 1\n"
+       "capture 5.0\n"
+       "probability 1.0\n"
+       "min_path 4   # not a hydroxyl next to the urethane\n"
+       "form 6 1\n"
+       "break 1 4\n"
+       "move 8 4\n"},
+      {"vinylogous_amine_exchange",
+       "reaction vinylogous_amine_exchange   # vinylogous urethane or urea + primary amine (transamination): the free amine's nitrogen\n"
+       "                                     # takes the enamine carbon and the old nitrogen takes one of its H, a free amine again.\n"
+       "                                     # Both amines are network strands, so nothing leaves. No capture distance read\n"
+       "                                     # yet: 5 Å, a scheme template's\n"
+       "atom 1 C degree=3 not_aromatic   # the enamine carbon\n"
+       "atom 2 C degree=3 bonded 1       # its C=C partner\n"
+       "atom 3 C degree=3 bonded 2       # the carbonyl carbon (an ester's in a urethane, an amide's in a urea)\n"
+       "atom 4 O degree=1 bonded 3       # its C=O\n"
+       "atom 5 N H=1 degree=3 bonded 1   # the enamine nitrogen: leaves, a free amine\n"
+       "atom 6 C degree=4 bonded 5       # its sp3 carbon\n"
+       "atom 7 N H=2 degree=3            # the free amine: becomes the enamine nitrogen\n"
+       "atom 8 C degree=4 bonded 7       # its sp3 carbon (an amine, not an amide)\n"
+       "atom 9 H bonded 7\n"
+       "initiators 7 1\n"
+       "capture 5.0\n"
+       "probability 1.0\n"
+       "min_path 4\n"
+       "form 7 1\n"
+       "break 1 5\n"
+       "move 9 5\n"},
+      {"imine_amine_exchange",
+       "reaction imine_amine_exchange   # imine + primary amine (transimination): the free amine's nitrogen takes the imine carbon and\n"
+       "                                # the old nitrogen takes both its H, a free amine again. Both amines are network strands, so\n"
+       "                                # nothing leaves. No capture distance read yet: 5 Å, a scheme template's\n"
+       "atom 1 C degree=3 not_aromatic   # the imine carbon\n"
+       "atom 2 N H=0 degree=2 bonded 1   # the imine nitrogen: leaves, a free amine\n"
+       "atom 3 C bonded 2                # its carbon\n"
+       "atom 4 N H=2 degree=3            # the free amine: becomes the imine nitrogen\n"
+       "atom 5 C bonded 4                # its carbon\n"
+       "atom 6 H bonded 4\n"
+       "atom 7 H bonded 4\n"
+       "initiators 4 1\n"
+       "capture 5.0\n"
+       "probability 1.0\n"
+       "min_path 4\n"
+       "form 4 1\n"
+       "break 1 2\n"
+       "move 6 2\n"
+       "move 7 2\n"},
+      {"thiol_disulfide_exchange",
+       "reaction thiol_disulfide_exchange   # thiol + disulfide: the thiol's sulfur takes one sulfur of the S–S bond and the other\n"
+       "                                    # sulfur takes the thiol's H, a free thiol again. Both strands stay in the network, so\n"
+       "                                    # nothing leaves. No capture distance read yet: 5 Å, a scheme template's\n"
+       "atom 1 S H=0 degree=2            # the disulfide sulfur the thiol attacks\n"
+       "atom 2 S H=0 degree=2 bonded 1   # its partner: leaves, a thiol\n"
+       "atom 3 S H=1 degree=2            # the thiol sulfur: joins the disulfide\n"
+       "atom 4 H bonded 3\n"
+       "initiators 3 1\n"
+       "capture 5.0\n"
+       "probability 1.0\n"
+       "min_path 4\n"
+       "form 3 1\n"
+       "break 1 2\n"
+       "move 4 2\n"},
       {"polysulfide_exchange",
        "reaction polysulfide_exchange   # S–S metathesis of di- and polysulfide bridges (sulfur-cured rubber, disulfide vitrimers):\n"
        "                                # two S–S bonds trade partners, Sx + Sy → Sx' + Sy', every sulfur kept. Capture: twice the\n"
@@ -946,6 +1021,16 @@ int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, con
   s.bonds.clear();
   for (auto [a, b] : bonds)
     if (remap[a] >= 0 && remap[b] >= 0) s.bonds.push_back({uint32_t(remap[a]), uint32_t(remap[b])});
+  // velocities follow the atoms that stay: the reacted atoms start from rest, every other atom keeps its own
+  if (s.velocities.size() == n) {
+    std::vector<Vec3> v;
+    v.reserve(atoms.size());
+    for (size_t i = 0; i < n; ++i)
+      if (!dead[i]) v.push_back(used[i] ? Vec3{0, 0, 0} : s.velocities[i]);
+    s.velocities = std::move(v);
+  } else {
+    s.velocities.clear();
+  }
   s.atoms = std::move(atoms);
   if (tag && tag->size() == n) {
     std::vector<int64_t> kept;
@@ -963,7 +1048,6 @@ int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, con
     for (uint32_t c : centres) if (remap[c] >= 0) kept_centres.push_back(uint32_t(remap[c]));
     repair_inverted_hydrogens(s, &kept_centres);
   }
-  s.velocities.clear();
   s.has_charges = keep && applied > 0;   // else charges are recomputed for the new chemistry
   s.bonds_from_file = true;
   // molecules follow the new bonds
@@ -1162,11 +1246,11 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
                   "stabilised by a local capped-force minimisation (the rest held), no global minimisation", o.temperature, o.md_ps);
     rep.notes.push_back(b);
   }
-  // REACTER-style: the reacted sites (atom ids, the atoms within two bonds and within 5 Å of those) settle by a local
-  // minimisation, everything else held
-  auto stabilise = [&](const std::set<int64_t>& ids, CycleRow& row, const std::shared_ptr<const ForceField>& ff) {
+  // REACTER-style: the reacted sites (their atoms by index after the reaction, the atoms within two bonds and within 5 Å
+  // of those) settle by a local minimisation, everything else held
+  auto stabilise = [&](const std::vector<char>& seeds, CycleRow& row, const std::shared_ptr<const ForceField>& ff) {
     std::vector<char> site(s.atoms.size(), 0);
-    for (size_t i = 0; i < s.atoms.size(); ++i) site[i] = ids.count(s.atoms[i].id) ? 1 : 0;
+    for (size_t i = 0; i < s.atoms.size() && i < seeds.size(); ++i) site[i] = seeds[i] ? 1 : 0;
     const auto nb = s.neighbours();
     for (int ring = 0; ring < 2; ++ring) {   // and the atoms within two bonds
       std::vector<char> grow = site;
@@ -1230,6 +1314,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
   double top_capture = 0;
   for (const auto& t : o.templates) top_capture = std::max(top_capture, t.capture);
   if (o.auto_capture && o.capture_max < top_capture) throw ReactError("auto capture: the largest capture must be at least the templates' own");
+  if (o.auto_capture && !(o.capture_step > 0)) throw ReactError("auto capture: the capture step must be greater than zero");
   auto weight_of = [&](size_t k) { return k < o.weights.size() && o.weights[k] > 0 ? o.weights[k] : o.templates[k].weight; };
 
   int stall = 0;
@@ -1384,9 +1469,11 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
         take(m);
       }
     }
-    std::set<int64_t> site_ids;
+    // the reacted atoms, marked by index; compacted below with the atoms that stay, so they still point at the same atoms
+    // after apply_matches drops the leaving ones and renumbers the rest
+    std::vector<char> site_seeds(s.atoms.size(), 0);
     for (const auto& m : chosen)
-      for (uint32_t a : m.atoms) site_ids.insert(s.atoms[a].id);
+      for (uint32_t a : m.atoms) site_seeds[a] = 1;
     if (!chosen.empty()) {
       // the linked atoms follow the compaction: deleted atoms (and byproducts, unless kept) leave, the rest keep their order
       std::vector<char> gone(linked.size(), 0);
@@ -1404,10 +1491,12 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
           if (!gone[at(x)] && !gone[at(y)]) reacted[at(x)] = reacted[at(y)] = 1;
         }
       }
-      std::vector<char> next, next_r;
-      for (size_t i = 0; i < linked.size(); ++i) if (!gone[i]) next.push_back(linked[i]), next_r.push_back(reacted[i]);
+      std::vector<char> next, next_r, next_s;
+      for (size_t i = 0; i < linked.size(); ++i)
+        if (!gone[i]) next.push_back(linked[i]), next_r.push_back(reacted[i]), next_s.push_back(i < site_seeds.size() ? site_seeds[i] : 0);
       linked = std::move(next);
       reacted = std::move(next_r);
+      site_seeds = std::move(next_s);
     }
     applied = chosen.empty() ? 0 : apply_matches(s, o.templates, chosen, o.keep_byproducts, &rep.byproducts, &tag, &carry);
     // links join chains across the cell walls: every molecule (now the network) whole again, so each cycle's frame and the
@@ -1434,8 +1523,12 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     if (applied > 0) {
       stall = 0;
       ff = field_now(cycle);
-      if (o.during_md) stabilise(site_ids, row, ff);
-      else relax_now(row, ff);
+      if (o.during_md) {
+        stabilise(site_seeds, row, ff);
+      } else {
+        s.velocities.clear();   // a global minimisation: the dynamics after it starts from fresh velocities
+        relax_now(row, ff);
+      }
     } else {
       ++stall;
     }
@@ -1652,6 +1745,13 @@ int remove_pendant_sulfur(System& s, int* atoms, std::vector<char>* removed) {
   std::vector<std::vector<uint32_t>> nb(n);
   for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
   auto el = [&](uint32_t i) { return s.atoms[i].element; };
+  // a hydrogen on a carbon as the structure came: its numeric type (and mass) for a new hydrogen whose carbon has no other
+  int ch = -1;
+  for (uint32_t i = 0; i < n && ch < 0; ++i)
+    if (el(i) == 1)
+      for (uint32_t y : nb[i]) if (el(y) == 6) { ch = int(i); break; }
+  const int ch_type = ch >= 0 ? s.atoms[ch].type : 0;
+  const std::string ch_name = ch >= 0 ? s.atoms[ch].name : std::string("H");
   std::vector<char> seen(n, 0), gone(n, 0);
   int count = 0, nat = 0;
   for (uint32_t i = 0; i < n; ++i) {
@@ -1684,6 +1784,9 @@ int remove_pendant_sulfur(System& s, int* atoms, std::vector<char>* removed) {
     Atom& h = s.atoms[first];
     if (r > 1e-9) h.pos = s.atoms[c].pos + d * (1.09 / r);
     h.element = 1, h.name = "H", h.charge = 0;
+    // no sibling: a C-H hydrogen's type from elsewhere, else the pendant's own hydrogen's, never the sulfur's (its mass)
+    if (ch >= 0) h.type = ch_type, h.name = ch_name;
+    else h.type = s.atoms[hydrogens[0]].type;
     for (uint32_t y : nb[c])
       if (y != first && el(y) == 1 && !std::count(hydrogens.begin(), hydrogens.end(), y)) { h.type = s.atoms[y].type, h.name = s.atoms[y].name, h.charge = s.atoms[y].charge; break; }
     for (uint32_t x : run) if (x != first) gone[x] = 1, ++nat;

@@ -90,8 +90,9 @@ CASES = [
     ("PE/PS pattern AAB 10x30", "chains", {"units": [unit(PE, "E"), unit(PS, "S")], "dp": 30, "sequence": "pattern", "pattern": "AAB"},
      dict(chains=10, density=0.8, contact_scale=A)),
     # tacticity
-    ("PS isotactic 10x30", "chains", {"units": [unit(PS)], "dp": 30, "tacticity": "isotactic"}, dict(chains=10, density=0.8, contact_scale=A)),
-    ("PS syndiotactic 10x30", "chains", {"units": [unit(PS)], "dp": 30, "tacticity": "syndiotactic"}, dict(chains=10, density=0.8, contact_scale=A)),
+    # (GrowOpts.tacticity overrides the spec's tacticity in the C library, so it goes there: 1 isotactic, 2 syndiotactic)
+    ("PS isotactic 10x30", "chains", {"units": [unit(PS)], "dp": 30}, dict(chains=10, density=0.8, contact_scale=A, tacticity=1)),
+    ("PS syndiotactic 10x30", "chains", {"units": [unit(PS)], "dp": 30}, dict(chains=10, density=0.8, contact_scale=A, tacticity=2)),
     # Rosenbluth methods
     ("PE rosenbluth 10x100", "chains", {"units": [unit(PE)], "dp": 100, "method": "rosenbluth"}, dict(chains=10, density=0.8, contact_scale=A)),
     ("PE rosenbluth_lj 10x100", "chains", {"units": [unit(PE)], "dp": 100, "method": "rosenbluth_lj"}, dict(chains=10, density=0.8, contact_scale=A)),
@@ -195,7 +196,7 @@ def closest_contact(pos, bonds, box):
 
 def run_case(L, case, seed, check, tmp):
     name, kind, spec, opt = case
-    g = GrowOpts(opt.get("chains", 1), opt.get("dp", 0), 0, opt.get("seed", seed), opt.get("box", 0.0), opt.get("density", 0.0),
+    g = GrowOpts(opt.get("chains", 1), opt.get("dp", 0), opt.get("tacticity", 0), opt.get("seed", seed), opt.get("box", 0.0), opt.get("density", 0.0),
                  opt.get("contact_scale", 1.0), 1)
     rep = C.create_string_buffer(8192)
     snaps = [0]

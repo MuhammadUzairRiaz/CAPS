@@ -559,7 +559,8 @@ public sealed partial class MainViewModel
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(JobsFile)!);
-            var arr = new JsonArray(Jobs.Where(j => (!j.IsRunning || j.IsRemote) && !j.IsQueued).Take(40).Select(j => (JsonNode)j.ToJson(false)).ToArray());
+            // a remote job goes on (running or still queued on the host); a local one is kept once it has ended
+            var arr = new JsonArray(Jobs.Where(j => j.IsRemote || (!j.IsRunning && !j.IsQueued)).Take(40).Select(j => (JsonNode)j.ToJson(false)).ToArray());
             File.WriteAllText(JobsFile, arr.ToJsonString(JsonOut));
         }
         catch { }
@@ -687,7 +688,7 @@ public sealed partial class MainViewModel
 
     private async Task StartNextQueued()
     {
-        while (_queue.Count > 0 && Idle)
+        while (_queue.Count > 0 && Idle && _ownRun == null)
         {
             var q = _queue[0];
             _queue.RemoveAt(0);
@@ -700,6 +701,7 @@ public sealed partial class MainViewModel
                 continue;
             }
             _starting = q.Job;
+            if (q.Job.Kind == "Glass") { await RunQueuedGlass(q); continue; }   // the next one starts once its last replica is pooled
             await q.Start();
             if (q.Job.IsQueued)   // the page refused (a field missing …): it never started
             {
@@ -712,6 +714,45 @@ public sealed partial class MainViewModel
             }
             return;   // the next one starts when this run ends
         }
+        Raise(nameof(JobsSummary));
+    }
+
+    /// <summary>A queued glass transition. Its replicas run as Analyze scans, each its own Analyze job, so no Track call
+    /// picks this entry up: it is marked running around the whole scan, and the queue holds between replicas (Idle is
+    /// true there) until the last one is pooled.</summary>
+    private Job? _ownRun;
+    private async Task RunQueuedGlass(QueuedRun q)
+    {
+        var job = q.Job;
+        _starting = null;
+        _ownRun = job;
+        job.Status = "running";
+        job.Started = DateTime.Now;
+        Jobs.Remove(job);
+        Jobs.Insert(0, job);
+        AttachJob(job, _activeItem);
+        job.Add($"{job.Title} started on {job.Document}");
+        SelectedJob = job;
+        Raise(nameof(JobsSummary));
+        var pooled = GtPoints;   // PoolGlass sets a new array once at least one replica gave a scan
+        try { await q.Start(); }
+        finally { _ownRun = null; }
+        job.Ended = DateTime.Now;
+        if (ReferenceEquals(GtPoints, pooled))
+        {
+            job.Status = GtStatus.Contains("ancelled") ? "cancelled" : "failed";
+            if (job.IsFailed) job.Error = GtStatus.Length > 0 ? GtStatus : "The cooling scan gave no result";
+            job.Add(GtStatus.Length > 0 ? GtStatus : job.Error);
+        }
+        else
+        {
+            job.Status = GtLines == null ? "stopped" : "done";   // stopped: the scan ran but showed no break
+            if (job.IsDone) { job.Progress = 1; job.Provenance.Add(new JobFact("result", "Tg " + GtTg.Value)); }
+            job.Add(GtStatus);
+        }
+        Announcement = $"{job.Title} {(job.IsDone ? "finished" : job.Status)}" + (GtStatus.Length > 0 ? ". " + GtStatus : ".");
+        SaveJobs();
+        Raise(nameof(HasJobs));
         Raise(nameof(JobsSummary));
     }
 
@@ -735,6 +776,7 @@ public sealed partial class MainViewModel
             case "React": CancelReact(); break;
             case "Grow": CancelGrow(); break;
             case "Analyze": Analyze.Cancel(); break;
+            case "Glass": Analyze.Cancel(); break;   // a queued glass scan: stops the replica running now, the scan ends there
             case "Bench": CancelBench(); break;
         }
     }

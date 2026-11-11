@@ -117,7 +117,7 @@ struct GrowReport {
   double contact_scale = 1.0;            // the contact scale the cell was grown at
   double min_scale = 1.0;                // the lowest contact scale any growth step was placed at (eased steps)
   int eased_steps = 0;                   // units of the cell placed with eased limits (GrowOptions::ease_floor)
-  std::vector<std::vector<int>> sequences;   // the unit index along each chain and side-chain segment grown
+  std::vector<std::vector<int>> sequences;   // the unit index along each chain and side-chain segment grown (reversed units as their unit; graft segments as their template index, past the backbone units)
   std::vector<std::string> notes;
 };
 

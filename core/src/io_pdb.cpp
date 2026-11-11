@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdio>
 #include <fstream>
+#include <set>
 #include <unordered_map>
 
 #include "caps/elements.hpp"
@@ -46,9 +47,13 @@ Trajectory read_pdb(const std::string& path) {
     if (pos.empty()) return;
     if (!first_done) {
       cur.cell = cell;
+      // A bond may be listed from either end, from both, or repeated (the bond-order convention); keep each pair once.
+      std::set<std::pair<uint32_t, uint32_t>> seen;
       for (auto [a, b] : conect) {
         auto i = serial.find(a), j = serial.find(b);
-        if (i != serial.end() && j != serial.end() && i->second < j->second) cur.bonds.push_back({i->second, j->second});
+        if (i == serial.end() || j == serial.end() || i->second == j->second) continue;
+        const auto key = std::minmax(i->second, j->second);
+        if (seen.insert({key.first, key.second}).second) cur.bonds.push_back({key.first, key.second});
       }
       cur.bonds_from_file = !cur.bonds.empty();
       tr.topology = cur;

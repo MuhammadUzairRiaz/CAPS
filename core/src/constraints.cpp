@@ -48,7 +48,7 @@ ConstraintSet make_constraints(const System& s, const ForceField& ff, Constraint
   for (const auto& b : ff.bonds2) r0[key(b.i, b.j)] = b.r0;
   for (const auto& b : ff.bonds_x) {
     if (b.form == 1) r0[key(b.i, b.j)] = b.c;        // Morse
-    else if (b.form == 0) r0[key(b.i, b.j)] = b.b;   // GROMOS quartic
+    else if (b.form == 2) r0[key(b.i, b.j)] = b.b;   // GROMOS quartic
   }
   std::map<std::tuple<uint32_t, uint32_t, uint32_t>, double> th0;   // (end, vertex, end), ends ordered
   auto akey = [](uint32_t a, uint32_t j, uint32_t b) { return a < b ? std::make_tuple(a, j, b) : std::make_tuple(b, j, a); };

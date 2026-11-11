@@ -267,6 +267,14 @@ struct caps_doc {
     std::string what;
     std::shared_ptr<const caps::Trajectory> whole;   // a change of atoms in every frame (force-field groups): undone whole
     std::vector<uint32_t> held;                      // with `whole`: the atoms held then (their indices changed too)
+    // an edit that renumbered atoms (delete, H autopilot, a new cell): the held atoms and restraints as they were then
+    struct AtomSets {
+      std::vector<uint32_t> fixed;
+      std::vector<caps::RelaxOptions::Restraint> restraints;
+      std::vector<caps::RelaxOptions::DihedralRestraint> dihedrals;
+      std::vector<caps::Restraint> set;
+    };
+    std::shared_ptr<const AtomSets> sets;
   };
   std::vector<Snapshot> undo, redo;                // caps_edit history
   std::vector<std::vector<Snapshot>> branches;     // redo steps set aside when an edit followed an undo (newest last)
@@ -373,8 +381,8 @@ int32_t guard(F&& f) {
   return -1;
 }
 
-// what the pipeline's result on this frame depends on besides the steps: FNV-1a over positions, bonds, cell and the
-// trajectory's length (steps read other frames)
+// what the pipeline's result on this frame depends on besides the steps: FNV-1a over positions, the atoms' types, names,
+// molecules and tags, bonds, the type table, cell and the trajectory's length (steps read other frames)
 uint64_t frame_fingerprint(const caps_doc* d) {
   uint64_t h = 1469598103934665603ull;
   auto mix = [&](const void* p, size_t n) {
@@ -383,8 +391,21 @@ uint64_t frame_fingerprint(const caps_doc* d) {
   };
   const size_t n = d->frame.atoms.size(), nb = d->frame.bonds.size(), nf = d->traj.frames();
   mix(&n, sizeof n), mix(&nb, sizeof nb), mix(&nf, sizeof nf);
-  for (const auto& a : d->frame.atoms) mix(a.pos.data(), sizeof(double) * 3), mix(&a.element, sizeof a.element), mix(&a.charge, sizeof a.charge);
+  const std::hash<std::string> hs;
+  for (const auto& a : d->frame.atoms) {
+    mix(a.pos.data(), sizeof(double) * 3), mix(&a.element, sizeof a.element), mix(&a.charge, sizeof a.charge);
+    const size_t nh = hs(a.name), rh = hs(a.resname);
+    mix(&a.type, sizeof a.type), mix(&nh, sizeof nh), mix(&rh, sizeof rh), mix(&a.resid, sizeof a.resid), mix(&a.mol, sizeof a.mol), mix(&a.tags, sizeof a.tags);
+  }
   for (const auto& b : d->frame.bonds) mix(&b.i, sizeof b.i), mix(&b.j, sizeof b.j);
+  for (const auto& t : d->frame.types) {
+    const size_t lh = hs(t.label);
+    mix(&t.type, sizeof t.type), mix(&t.mass, sizeof t.mass), mix(&lh, sizeof lh);
+  }
+  for (const auto& t : d->frame.tags) {
+    const size_t th = hs(t.name);
+    mix(&th, sizeof th);
+  }
   for (const auto* v : {&d->frame.cell.a, &d->frame.cell.b, &d->frame.cell.c, &d->frame.cell.origin}) mix(v->data(), sizeof(double) * 3);
   return h;
 }
@@ -474,6 +495,7 @@ std::string write_gromacs_freeze(const caps_doc* d, const caps::System& s, const
 
 void run_doc_pipeline(caps_doc* d) {
   d->pstate.reset();
+  d->bb_p = nullptr;   // the next result may sit at the same address: its backbone mask is worked out again
   d->shown_of.clear();
   d->pstate_cached = false;
   if (!d->pipeline) { d->pcache.clear(); return; }
@@ -638,8 +660,7 @@ std::function<void(const caps::EnergyTerms&, const std::vector<double>&, const c
   auto user = d->live_user;
   auto last = std::make_shared<std::chrono::steady_clock::time_point>();   // the first step shows at once
   auto base = std::make_shared<caps::System>(topo);
-  double mass = 0;
-  for (const auto& a : topo.atoms) mass += caps::element(a.element).mass;
+  const double mass = topo.total_mass();   // the type table's masses where it has them (united atoms, beads), as the run's own density
   return [fn, user, last, base, mass, dt_fs](const caps::EnergyTerms&, const std::vector<double>& x, const caps::Cell& c, int64_t step) {
     const auto now = std::chrono::steady_clock::now();
     if (now - *last < std::chrono::milliseconds(250)) return;
@@ -1584,7 +1605,8 @@ extern "C" caps_doc* caps_open_cif(const char* path, const char* json, char* out
     const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
     const caps::CifDisorder o = cif_disorder_from(j);
     caps::CifDisorderReport rep;
-    auto* d = new caps_doc;
+    auto owned = std::make_unique<caps_doc>();   // freed if reading fails
+    caps_doc* d = owned.get();
     d->traj.topology = caps::read_cif(path ? path : "", o, &rep);
     std::vector<caps::Vec3> p;
     for (const auto& a : d->traj.topology.atoms) p.push_back(a.pos);
@@ -1600,7 +1622,7 @@ extern "C" caps_doc* caps_open_cif(const char* path, const char* json, char* out
     caps::Json r = cif_disorder_json(rep);
     r["ok"] = true;
     report_out(r.dump(0), out, cap);
-    return d;
+    return owned.release();
   } catch (const std::exception& e) {
     g_error = e.what();
     json_error(e, out, cap);
@@ -1610,12 +1632,13 @@ extern "C" caps_doc* caps_open_cif(const char* path, const char* json, char* out
 
 caps_doc* caps_open(const char* path, const char* topology_path) {
   try {
-    auto* d = new caps_doc;
+    auto owned = std::make_unique<caps_doc>();   // freed if reading fails
+    caps_doc* d = owned.get();
     d->traj = caps::open_file(path, topology_path ? topology_path : "");
     refresh(d);
     prov_opened(d, path, topology_path ? topology_path : "", "io.read");
     install_file_field(d);
-    return d;
+    return owned.release();
   } catch (const std::exception& e) {
     g_error = e.what();
   } catch (...) {
@@ -1630,14 +1653,15 @@ caps_doc* caps_open_many(const char* paths_json, const char* topology_path) {
     std::vector<std::string> paths;
     for (const auto& x : j.items()) paths.push_back(x.str());
     if (paths.empty()) throw std::invalid_argument("no files");
-    auto* d = new caps_doc;
+    auto owned = std::make_unique<caps_doc>();   // freed if reading fails
+    caps_doc* d = owned.get();
     std::vector<std::string> notes;
     d->traj = caps::open_files(paths, topology_path ? topology_path : "", &notes);
     for (const auto& n : notes) d->traj.topology.notes.push_back(n);
     refresh(d);
     prov_opened(d, paths[0], topology_path ? topology_path : "", "io.read");
     install_file_field(d);
-    return d;
+    return owned.release();
   } catch (const std::exception& e) {
     g_error = e.what();
   } catch (...) {
@@ -1651,12 +1675,13 @@ caps_doc* caps_open_staged(const char* path, const char* topology_path, int32_t 
     caps::OpenProgress p;
     p.max_frames = max_frames > 0 ? static_cast<size_t>(max_frames) : 0;
     if (progress) p.report = [&](int stage, double f, const std::string& detail) { return progress(stage, f, detail.c_str(), user) == 0; };
-    auto* d = new caps_doc;
+    auto owned = std::make_unique<caps_doc>();   // freed if reading fails
+    caps_doc* d = owned.get();
     d->traj = caps::open_file(path, topology_path ? topology_path : "", p);
     refresh(d);
     prov_opened(d, path, topology_path ? topology_path : "", "io.read");
     install_file_field(d);
-    return d;
+    return owned.release();
   } catch (const std::exception& e) {
     g_error = e.what();
   } catch (...) {
@@ -1674,19 +1699,15 @@ caps_doc* caps_open_frames(const char* path, const char* topology_path, int64_t 
     p.frames.last = last >= 0 ? static_cast<size_t>(last) : SIZE_MAX;
     p.frames.stride = stride > 1 ? static_cast<size_t>(stride) : 1;
     if (progress) p.report = [&](int stage, double f, const std::string& detail) { return progress(stage, f, detail.c_str(), user) == 0; };
-    auto* d = new caps_doc;
-    try {
-      d->traj = caps::open_file(path, topology_path ? topology_path : "", p);
-      if (!p.frames.all() && d->traj.frames_read == 0 && p.frames.first >= d->traj.frames())
-        throw std::runtime_error(std::string(path) + ": frame " + std::to_string(p.frames.first) + " is past the file's " + std::to_string(d->traj.frames()));
-    } catch (...) {
-      delete d;
-      throw;
-    }
+    auto owned = std::make_unique<caps_doc>();   // freed if reading fails
+    caps_doc* d = owned.get();
+    d->traj = caps::open_file(path, topology_path ? topology_path : "", p);
+    if (!p.frames.all() && d->traj.frames_read == 0 && p.frames.first >= d->traj.frames())
+      throw std::runtime_error(std::string(path) + ": frame " + std::to_string(p.frames.first) + " is past the file's " + std::to_string(d->traj.frames()));
     refresh(d);
     prov_opened(d, path, topology_path ? topology_path : "", "io.read");
     install_file_field(d);
-    return d;
+    return owned.release();
   } catch (const std::exception& e) {
     g_error = e.what();
   } catch (...) {
@@ -1700,11 +1721,15 @@ int32_t caps_adopt_frames(caps_doc* dst, caps_doc* src) {
   dst->traj.positions = std::move(src->traj.positions);
   dst->traj.cells = std::move(src->traj.cells);
   dst->traj.timesteps = std::move(src->traj.timesteps);
+  dst->traj.velocities = std::move(src->traj.velocities);   // per frame, like the positions
+  dst->traj.columns = std::move(src->traj.columns);
   for (const auto& n : src->traj.topology.notes)
     if (std::find(dst->traj.topology.notes.begin(), dst->traj.topology.notes.end(), n) == dst->traj.topology.notes.end()) dst->traj.topology.notes.push_back(n);
   src->traj.positions.clear();
   src->traj.cells.clear();
   src->traj.timesteps.clear();
+  src->traj.velocities.clear();
+  src->traj.columns.clear();
   if (dst->current >= dst->traj.frames()) dst->current = 0;
   refresh(dst);
   return static_cast<int32_t>(dst->traj.frames());
@@ -3616,9 +3641,14 @@ int32_t caps_bond_react_export(caps_doc* d, const char* templates, const char* d
     const std::string ffpath = o.text("forcefield", "");
     if (!ffpath.empty()) {
       auto F = std::make_shared<FieldState>(d->field ? *d->field : FieldState{});
+      const std::string old_name = F->base.name;
       F->ff_path = ffpath;
       F->base = caps::is_uff(ffpath) ? caps::uff_definition() : caps::load_forcefield(ffpath);
       F->extra = {}, F->fill = {}, F->imported.clear(), F->groups.clear(), F->model.clear(), F->mixing.clear();
+      // the library file is loaded as it is: the old assignment's overlays and typing rules do not apply to it
+      F->overlays.clear(), F->rules_path.clear();
+      // what CAPS ML fitted, and the types set by hand, belong to the old force field (as caps_field_assign keeps them)
+      if (F->base.name != old_name) F->ml = {}, F->ml_fitted.clear(), F->ml_left.clear(), F->ml_tried.clear(), F->ml_error.clear(), F->overrides.clear();
       const std::string ch = o.text("charges", "auto");
       if (ch != "auto" && ch != "forcefield" && ch != "gasteiger" && ch != "qeq") throw std::runtime_error("charges: auto, forcefield, gasteiger or qeq");
       F->auto_charges = ch == "auto";
@@ -4637,10 +4667,12 @@ int32_t caps_field_import_ex(caps_doc* d, const char* path, const char* options)
     if (!d->field->groups.empty())
       throw caps::FFError("the force field is assigned by group: overrides, entered and imported parameters apply to one force field. Change the group's force field, or give its pairs in the group settings");
     const std::string p = path ? path : "";
-    auto ends = [&](const char* e) { const std::string x = e; return p.size() > x.size() && p.compare(p.size() - x.size(), x.size(), x) == 0; };
-    std::string lower_p = p;
-    for (auto& ch : lower_p) ch = char(std::tolower(static_cast<unsigned char>(ch)));
-    const bool frcmod = lower_p.find("frcmod") != std::string::npos || ends(".dat");
+    // the format from the file's own name (not its folders), in any case
+    const auto name_at = p.find_last_of("/\\");
+    std::string lower_name = name_at == std::string::npos ? p : p.substr(name_at + 1);
+    for (auto& ch : lower_name) ch = char(std::tolower(static_cast<unsigned char>(ch)));
+    auto ends = [&](const char* e) { const std::string x = e; return lower_name.size() > x.size() && lower_name.compare(lower_name.size() - x.size(), x.size(), x) == 0; };
+    const bool frcmod = lower_name.find("frcmod") != std::string::npos || ends(".dat");
     const bool gmx = ends(".itp") || ends(".top");
     caps::FFDef imp = ends(".lt") ? caps::import_moltemplate(p) : frcmod ? caps::import_frcmod(p) : gmx ? caps::import_gromacs_params(p) : caps::load_forcefield(p);
     // parameters only: types the force field already has keep their definitions, typing rules stay the library's
@@ -9179,6 +9211,54 @@ std::vector<uint32_t> atoms_of(caps_doc* d, const caps::Json& j) {
   return out;
 }
 
+caps_doc::Snapshot::AtomSets atom_sets_of(const caps_doc* d) {
+  return {d->fixed_atoms, d->restraints, d->dihedral_restraints, d->restraint_set};
+}
+
+void put_atom_sets(caps_doc* d, const caps_doc::Snapshot::AtomSets& a) {
+  d->fixed_atoms = a.fixed, d->restraints = a.restraints, d->dihedral_restraints = a.dihedrals, d->restraint_set = a.set;
+}
+
+// The held atoms and the restraints renumbered with the atoms (to_new: each old atom's new index, −1 gone); those on an
+// atom that is gone are dropped. Returns how many were dropped.
+size_t remap_atom_sets(caps_doc* d, const std::vector<int64_t>& to_new) {
+  auto at = [&](uint32_t i, uint32_t& out) {
+    if (i >= to_new.size() || to_new[i] < 0) return false;
+    out = uint32_t(to_new[i]);
+    return true;
+  };
+  size_t lost = 0;
+  std::vector<uint32_t> fixed;
+  for (uint32_t i : d->fixed_atoms) {
+    uint32_t k;
+    if (at(i, k)) fixed.push_back(k);
+    else ++lost;
+  }
+  d->fixed_atoms = std::move(fixed);
+  std::vector<caps::RelaxOptions::Restraint> rs;
+  for (auto r : d->restraints) {
+    if (at(r.i, r.i) && at(r.j, r.j)) rs.push_back(r);
+    else ++lost;
+  }
+  d->restraints = std::move(rs);
+  std::vector<caps::RelaxOptions::DihedralRestraint> ds;
+  for (auto r : d->dihedral_restraints) {
+    if (at(r.i, r.i) && at(r.j, r.j) && at(r.k, r.k) && at(r.l, r.l)) ds.push_back(r);
+    else ++lost;
+  }
+  d->dihedral_restraints = std::move(ds);
+  std::vector<caps::Restraint> set;
+  for (auto r : d->restraint_set) {
+    const size_t n = r.kind == caps::Restraint::Kind::Position ? 1 : r.kind == caps::Restraint::Kind::Distance ? 2 : r.kind == caps::Restraint::Kind::Angle ? 3 : 4;
+    bool ok = true;
+    for (size_t q = 0; q < n && ok; ++q) ok = at(r.atoms[q], r.atoms[q]);
+    if (ok) set.push_back(r);
+    else ++lost;
+  }
+  d->restraint_set = std::move(set);
+  return lost;
+}
+
 void push_undo(caps_doc* d, const std::string& what) {
   // snapshots taken in the undone steps now belong to the branch those steps become
   if (!d->redo.empty())
@@ -9300,6 +9380,11 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
     const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
     const std::string op = j.text("op");
     caps::System s = d->traj.frame(d->current);
+    // each atom's index before the edit rides through it on the atom's chain number (put back after), so the held atoms and
+    // restraints follow their atoms whatever the edit removes, adds or reorders
+    const size_t n_before = s.atoms.size();
+    std::vector<int64_t> chain_before(n_before);
+    for (size_t i = 0; i < n_before; ++i) chain_before[i] = s.atoms[i].chain, s.atoms[i].chain = -int64_t(i) - 1;
     std::string what;
     caps::Json added = caps::Json::array();
     auto element_of = [&](const std::string& sym) {
@@ -9763,7 +9848,27 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
     } else {
       throw std::invalid_argument("unknown edit '" + op + "'");
     }
+    // each old atom's new index (−1: gone; a copied atom keeps its first copy), and the chain numbers put back
+    std::vector<int64_t> to_new(n_before, -1);
+    for (size_t i = 0; i < s.atoms.size(); ++i) {
+      caps::Atom& a = s.atoms[i];
+      if (a.chain >= 0) continue;
+      const size_t o = size_t(-(a.chain + 1));
+      if (o < n_before) {
+        if (to_new[o] < 0) to_new[o] = int64_t(i);
+        a.chain = chain_before[o];
+      } else {
+        a.chain = 0;
+      }
+    }
+    bool renumbered = false;
+    for (size_t i = 0; i < n_before && !renumbered; ++i) renumbered = to_new[i] != int64_t(i);
     push_undo(d, what);
+    size_t sets_lost = 0;
+    if (renumbered && (!d->fixed_atoms.empty() || !d->restraints.empty() || !d->dihedral_restraints.empty() || !d->restraint_set.empty())) {
+      d->undo.back().sets = std::make_shared<const caps_doc::Snapshot::AtomSets>(atom_sets_of(d));
+      sets_lost = remap_atom_sets(d, to_new);
+    }
     {
       // consecutive builder edits are one step listing its operations
       if (d->prov.steps.empty() || d->prov.steps.back().engine != "edit.builder") {
@@ -9786,6 +9891,8 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
     r["field_cleared"] = had_field && !d->field;
     r["field_reassigned"] = had_field && d->field != nullptr;
     r["what"] = had_field && !d->field ? what + " · force field cleared: assign it again before a run" : what;
+    if (sets_lost)
+      r["what"] = r["what"].str() + " · " + std::to_string(sets_lost) + " held atom(s) or restraint(s) were on removed atoms and were dropped";
     r["atoms"] = double(s.atoms.size());
     r["added"] = added;
   } catch (const std::exception& e) {
@@ -9806,6 +9913,8 @@ extern "C" int32_t caps_undo(caps_doc* d, int32_t redo) {
     now.positions = d->traj.positions.at(d->current);
     now.what = from.back().what;
     if (from.back().whole) now.whole = std::make_shared<caps::Trajectory>(d->traj), now.held = d->fixed_atoms;
+    if (from.back().sets) now.sets = std::make_shared<const caps_doc::Snapshot::AtomSets>(atom_sets_of(d));
+    const auto sets = from.back().sets;
     to.push_back(std::move(now));
     std::unique_ptr<FieldState> rerun;
     // labels apart: an assignment writes its type names over the atoms' after the state undone to was saved
@@ -9820,7 +9929,23 @@ extern "C" int32_t caps_undo(caps_doc* d, int32_t redo) {
       d->traj.topology = from.back().topology;
       d->traj.positions[d->current] = from.back().positions;
       if (d->current < d->traj.cells.size()) d->traj.cells[d->current] = d->traj.topology.cell;   // a cell edit comes back too
+      // frames of other atoms (a run made after the edit undone) cannot go with the atoms put back: the structure becomes
+      // the one frame restored, as it was when the edit was made
+      const size_t na = d->traj.topology.atoms.size();
+      bool fits = true;
+      for (const auto& f : d->traj.positions) fits = fits && f.size() == na;
+      if (!fits) {
+        const int64_t ts = d->current < d->traj.timesteps.size() ? d->traj.timesteps[d->current] : 0;
+        d->traj.positions = {from.back().positions};
+        d->traj.cells = {d->traj.topology.cell};
+        d->traj.timesteps = {ts};
+        d->traj.velocities.clear();
+        d->traj.columns.clear();
+        d->current = 0;
+        d->scan_frames.clear();
+      }
     }
+    if (sets) put_atom_sets(d, *sets);   // the held atoms and restraints in the numbering of the atoms put back
     from.pop_back();
     d->field.reset();
     d->selection.assign(d->traj.topology.atoms.size(), 0);
@@ -11133,8 +11258,8 @@ extern "C" caps_doc* caps_martini_melt(const char* options_json, caps_progress_f
     packed.title = "MARTINI melt";
     // the force field on the loose cell, for the compression
     std::unique_ptr<caps_doc> tmp(doc_of(packed));
-    if (caps_field_assign(tmp.get(), ff_path.c_str(), nullptr, 2) < 0)   // the charges of the bead SMILES throw std::runtime_error(g_error);
-    if (!tmp->field->complete) throw std::runtime_error(def.name + " does not describe every bead of " + repeat + ": see Field for the untyped beads and missing terms");
+    if (caps_field_assign(tmp.get(), ff_path.c_str(), nullptr, 2) < 0) throw std::runtime_error(g_error);   // the charges of the bead SMILES
+    if (!tmp->field || !tmp->field->complete) throw std::runtime_error(def.name + " does not describe every bead of " + repeat + ": see Field for the untyped beads and missing terms");
     caps::RelaxOptions ro;
     ro.field = tmp->field->ff;
     ro.energy = elec();
@@ -11359,12 +11484,23 @@ extern "C" int32_t caps_set_cell(caps_doc* d, const char* json) {
     if (j.has("symmetric") && j["symmetric"].kind() == caps::Json::Bool && j["symmetric"].boolean() && !d->traj.topology.symmetry.ops.empty())
       nc = caps::symmetric_cell(nc, d->traj.topology.symmetry);
     const bool scale = !j.has("scale") || j["scale"].kind() != caps::Json::Bool || j["scale"].boolean();
-    const caps::Cell old = d->traj.topology.cell;
+    // the shown frame's own cell (a trajectory's box changes from frame to frame)
+    auto cell_of = [&](size_t f) { return f < d->traj.cells.size() ? d->traj.cells[f] : d->traj.topology.cell; };
+    const caps::Cell old = cell_of(d->current);
     push_undo(d, "Cell " + g6(j.num("a", 10)) + " × " + g6(j.num("b", 10)) + " × " + g6(j.num("c", 10)) + (scale ? " (atoms scaled)" : ""));
+    if (d->traj.frames() > 1) {   // every frame changes: undone whole
+      d->undo.back().whole = std::make_shared<caps::Trajectory>(d->traj);
+      d->undo.back().held = d->fixed_atoms;
+    }
     caps::Cell c = nc;
     c.origin = old.valid() ? old.origin : caps::Vec3{0, 0, 0};
-    if (scale && old.valid())
-      for (auto& p : d->traj.positions.at(d->current)) p = c.to_cartesian(old.to_fractional(p));
+    // each frame scaled from its own cell, so every frame sits in the new cell as it sat in its old one
+    if (scale)
+      for (size_t f = 0; f < d->traj.positions.size(); ++f) {
+        const caps::Cell of = cell_of(f);
+        if (of.valid())
+          for (auto& p : d->traj.positions[f]) p = c.to_cartesian(of.to_fractional(p));
+      }
     d->traj.topology.cell = c;
     for (auto& cc : d->traj.cells) cc = c;
     d->field.reset();
@@ -11417,19 +11553,36 @@ extern "C" int32_t caps_symmetry(caps_doc* d, const char* json, char* out, int32
 extern "C" int32_t caps_supercell(caps_doc* d, int32_t na, int32_t nb, int32_t nc) {
   return guard([&] {
     if (na < 1 || nb < 1 || nc < 1 || na * nb * nc > 1000) throw std::invalid_argument("supercell: 1 … 1000 copies");
-    const caps::Cell cell = d->traj.topology.cell;
+    // the shown frame's own cell (a trajectory's box changes from frame to frame)
+    const caps::Cell cell = d->current < d->traj.cells.size() ? d->traj.cells[d->current] : d->traj.topology.cell;
     if (!cell.valid()) throw std::runtime_error("the structure has no cell to repeat");
     push_undo(d, "Supercell " + std::to_string(na) + " × " + std::to_string(nb) + " × " + std::to_string(nc));
+    if (d->traj.frames() > 1) {   // the other frames go: undone whole
+      d->undo.back().whole = std::make_shared<caps::Trajectory>(d->traj);
+      d->undo.back().held = d->fixed_atoms;
+    }
     caps::System top = d->traj.topology;
     const auto pos = d->traj.positions.at(d->current);
     const size_t n = top.atoms.size();
     int64_t maxmol = 0;
     for (const auto& a : top.atoms) maxmol = std::max(maxmol, a.mol);
+    // a bond across the cell's wall (its minimum image) joins the neighbouring copy, so chains and networks run on
+    // through the supercell: its lattice shift from the fractional difference, as caps::supercell does
+    std::vector<std::array<int, 3>> shift(top.bonds.size());
+    for (size_t q = 0; q < top.bonds.size(); ++q) {
+      const auto& bd = top.bonds[q];
+      if (bd.i >= pos.size() || bd.j >= pos.size()) continue;
+      const caps::Vec3 fi = cell.to_fractional(pos[bd.i]), fj = cell.to_fractional(pos[bd.j]);
+      for (int k = 0; k < 3; ++k) shift[q][size_t(k)] = int(std::lround(fj[size_t(k)] - fi[size_t(k)]));
+    }
+    const int reps[3] = {na, nb, nc};
     std::vector<caps::Vec3> out;
     caps::System s = top;
     s.symmetry = {};   // the operations belong to the old cell
     s.atoms.clear();
     s.bonds.clear();
+    s.velocities.clear();   // one per atom of the old cell
+    s.cell = cell;
     int copy = 0;
     for (int a = 0; a < na; ++a)
       for (int b = 0; b < nb; ++b)
@@ -11443,7 +11596,14 @@ extern "C" int32_t caps_supercell(caps_doc* d, int32_t na, int32_t nb, int32_t n
             s.atoms.push_back(at);
             out.push_back(pos[i] + t);
           }
-          for (const auto& bd : top.bonds) s.bonds.push_back({bd.i + off, bd.j + off, bd.order});
+          const int here[3] = {a, b, c};
+          for (size_t q = 0; q < top.bonds.size(); ++q) {
+            const auto& bd = top.bonds[q];
+            int to[3];
+            for (int k = 0; k < 3; ++k) to[k] = ((here[k] - shift[q][size_t(k)]) % reps[k] + reps[k]) % reps[k];   // the partner lies at j − shift·cell
+            const uint32_t other = uint32_t(size_t((to[0] * nb + to[1]) * nc + to[2]) * n);
+            s.bonds.push_back({bd.i + off, bd.j + other, bd.order});
+          }
         }
     s.cell.a = cell.a * double(na);
     s.cell.b = cell.b * double(nb);
@@ -11452,6 +11612,8 @@ extern "C" int32_t caps_supercell(caps_doc* d, int32_t na, int32_t nb, int32_t n
     d->traj.positions = {out};
     d->traj.cells = {s.cell};
     d->traj.timesteps = {0};
+    d->traj.velocities.clear();   // the old frames' per-atom values do not fit the new atoms
+    d->traj.columns.clear();
     d->current = 0;
     d->field.reset();
     refresh(d);
@@ -11936,8 +12098,19 @@ extern "C" int32_t caps_charges(caps_doc* d, const char* json, char* out, int32_
       d->field.reset();
       refresh(d);
     }
+    std::string saved;
+    if (j.has("save") && j["save"].kind() == caps::Json::String && !j["save"].str().empty()) {
+      // a copy of the shown frame with these charges written as caps_save would; the document is left untouched
+      saved = j["save"].str();
+      caps::System keep = d->frame;
+      struct Restore { caps_doc* d; caps::System& s; ~Restore() { d->frame = std::move(s); } } restore{d, keep};
+      for (size_t i = 0; i < d->frame.atoms.size() && i < rep.q.size(); ++i) d->frame.atoms[i].charge = rep.q[i];
+      d->frame.has_charges = true;
+      if (caps_save(d, saved.c_str()) != 0) throw std::runtime_error(g_error);
+    }
     auto arr = [](const std::vector<double>& v) { caps::Json a = caps::Json::array(); for (double x : v) a.push_back(caps::Json(x)); return a; };
     r["ok"] = true;
+    if (!saved.empty()) r["saved"] = saved;
     r["method"] = rep.method;
     r["q"] = arr(rep.q);
     r["net"] = rep.net;
@@ -14635,11 +14808,15 @@ extern "C" int32_t caps_exchange_run(caps_doc* d, const char* json, caps_stage_f
       po.progress = tell;
       if (protocol == "step_strain") {
         const double strain = j.num("strain", 0.05);
+        // σ is the normal stress difference of a volume-keeping stretch λ = 1 + ε, which for a rubber is G (λ² − 1/λ)
+        // (about 3 G ε when small): the shear relaxation modulus is σ over that, not σ / ε (the tensile modulus E)
+        const double lambda = 1.0 + strain, stretch = lambda * lambda - 1.0 / lambda;
+        if (!(std::fabs(stretch) > 1e-12)) throw std::invalid_argument("step strain: give a strain other than zero");
         const auto sr = caps::step_strain(s, po, axis, strain, j.num("ps", 10), int(j.num("sample_every", 10)));
         stats = sr.stats;
         r["t"] = numbers_json(sr.t_ps), r["stress"] = numbers_json(sr.stress);
         std::vector<double> g;
-        for (double x : sr.stress) g.push_back(x / strain);   // the relaxation modulus G(t) = σ(t) / ε
+        for (double x : sr.stress) g.push_back(x / stretch);   // the shear relaxation modulus G(t) = σ(t) / (λ² − 1/λ)
         r["g"] = numbers_json(g);
         r["strain"] = strain;
         r["kww_tau"] = std::isfinite(sr.kww_tau) ? caps::Json(sr.kww_tau) : caps::Json();
@@ -14648,6 +14825,7 @@ extern "C" int32_t caps_exchange_run(caps_doc* d, const char* json, caps_stage_f
         summary = "step strain " + g6(strain) + ", held " + g6(j.num("ps", 10)) + " ps at " + g6(temperature) + " K";
       } else if (protocol == "tv") {
         const auto tr = caps::tv_scan(s, po, j.num("t_from", 300), j.num("t_to", 500), j.num("t_step", 50), j.num("ps_per_step", 10));
+        stats = tr.stats;
         r["T"] = numbers_json(tr.T), r["v"] = numbers_json(tr.specific_volume), r["rate"] = numbers_json(tr.accepted_per_ps);
         r["tv"] = tr.fit.ok ? caps::Json(tr.fit.tg) : caps::Json();
         r["tv_err"] = tr.fit.ok ? caps::Json(tr.fit.tg_err) : caps::Json();

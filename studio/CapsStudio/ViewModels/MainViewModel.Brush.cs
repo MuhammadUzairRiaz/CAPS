@@ -79,7 +79,10 @@ public sealed class BrushHist : ObservableObject
         string R(double v) => Math.Round(v, 3).ToString("0.###", inv);
         if (Key == "hybrid")
         {
-            var parts = Enumerable.Range((int)a, (int)b - (int)a + 1).Where(k => k <= 2).Select(k => "hybrid " + new[] { "sp", "sp2", "sp3" }[k]).ToList();
+            if ((int)a <= 0 && (int)b >= 3) return "all";
+            // bar 3, "other": every atom that is none of sp, sp2, sp3
+            var parts = Enumerable.Range((int)a, (int)b - (int)a + 1).Where(k => k >= 0 && k <= 3)
+                .Select(k => k <= 2 ? "hybrid " + new[] { "sp", "sp2", "sp3" }[k] : "not (hybrid sp or hybrid sp2 or hybrid sp3)").ToList();
             return parts.Count == 0 ? "none" : parts.Count == 1 ? parts[0] : "(" + string.Join(" or ", parts) + ")";
         }
         if (Key.StartsWith("distance:", StringComparison.Ordinal))
@@ -88,6 +91,13 @@ public sealed class BrushHist : ObservableObject
             return a <= Lo + 1e-9 ? $"within {R(b)} of {of}" : $"(within {R(b)} of {of} and not within {R(a)} of {of})";
         }
         if (Key == "bonds") return $"bonds {Math.Ceiling(a - 1e-9).ToString(inv)}..{Math.Floor(b + 1e-9).ToString(inv)}";
+        if (Key == "molecule")   // whole molecule numbers in the selector's form: "molecule 3-8"
+        {
+            var m0 = (long)Math.Max(1, Math.Ceiling(a - 1e-9));
+            var m1 = (long)Math.Floor(b + 1e-9);
+            if (m1 < m0) return "none";
+            return m0 == m1 ? $"molecule {m0.ToString(inv)}" : $"molecule {m0.ToString(inv)}-{m1.ToString(inv)}";
+        }
         return $"{Key} {R(a)}..{R(b)}";
     }
 }

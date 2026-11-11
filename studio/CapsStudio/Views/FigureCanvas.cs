@@ -16,7 +16,7 @@ public sealed class FigureCanvas : Control
     private double _scale = 1;
     private Point _origin;
 
-    public string ScaleText => $"{Math.Round(_scale / 0.75 * 100)} % · {Math.Round(_scale * 72)} px per inch";
+    public string ScaleText => $"{Math.Round(_scale * 0.75 * 100)} % · {Math.Round(_scale * 72)} px per inch";
 
     public override void Render(DrawingContext ctx)
     {

@@ -58,6 +58,8 @@ public sealed partial class MainViewModel
         if (!_relaxPushoff) sb.Append(" --no-pushoff");
         sb.Append($" --cutoff {C(_relaxCutoff)}");
         if (!_relaxCoulomb) sb.Append(" --no-coulomb");
+        if (_relaxPushoff && _relaxPushoffMd) sb.Insert(0, "# the push-off by MD has no command-line option: the command runs the push-off without the MD stage\n");
+        if (_relaxBox && _relaxBoxMode > 0) sb.Insert(0, "# relaxing the box axis by axis has no command-line option: the command relaxes the box isotropically\n");
         sb.Append(ff).Append('\n');
         return sb.ToString();
     }

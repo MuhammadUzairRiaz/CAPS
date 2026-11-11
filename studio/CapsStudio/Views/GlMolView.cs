@@ -222,10 +222,12 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         gl.Viewport(0, 0, pw, ph);
         gl.Disable(GL_SCISSOR_TEST);
         var sc = _scene;
+        // depth cue fades toward the raw background and the shaders apply seen() once per fragment;
+        // only the clear colour, which no shader touches, takes the colour-vision transform here
         var bg = sc?.Background ?? 0x0F1113u;
-        if (sc is { Vision.Length: 9 }) bg = SeenRgb(bg, sc.Vision, sc.VisionSeverity);
+        var clear = sc is { Vision.Length: 9 } ? SeenRgb(bg, sc.Vision, sc.VisionSeverity) : bg;
         if (sc?.Transparent == true) gl.ClearColor(0, 0, 0, 0);
-        else gl.ClearColor(((bg >> 16) & 255) / 255f, ((bg >> 8) & 255) / 255f, (bg & 255) / 255f, 1);
+        else gl.ClearColor(((clear >> 16) & 255) / 255f, ((clear >> 8) & 255) / 255f, (clear & 255) / 255f, 1);
         gl.ClearDepth(1);
         gl.DepthMask(1);
         gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

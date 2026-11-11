@@ -71,3 +71,39 @@ begin
     if not RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Paths) then begin Result := True; exit; end;
   Result := Pos(';' + Uppercase(Dir) + ';', ';' + Uppercase(Paths) + ';') = 0;
 end;
+
+// Uninstall: take the install folder back out of the Path the addtopath task wrote to (the same root as at install).
+procedure RemoveFromPath(Dir: string);
+var RootKey: Integer; SubKey, Paths, Wrapped, Needle: string; I: Integer; Changed: Boolean;
+begin
+  if IsAdminInstallMode then begin
+    RootKey := HKEY_LOCAL_MACHINE;
+    SubKey := 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment';
+  end else begin
+    RootKey := HKEY_CURRENT_USER;
+    SubKey := 'Environment';
+  end;
+  if not RegQueryStringValue(RootKey, SubKey, 'Path', Paths) then exit;
+  Wrapped := ';' + Paths + ';';
+  Needle := ';' + Uppercase(Dir) + ';';
+  Changed := False;
+  I := Pos(Needle, Uppercase(Wrapped));
+  while I > 0 do begin
+    // drop ';<dir>' and keep the separator after it
+    Delete(Wrapped, I, Length(Needle) - 1);
+    Changed := True;
+    I := Pos(Needle, Uppercase(Wrapped));
+  end;
+  if not Changed then exit;
+  if Length(Wrapped) > 2 then
+    Paths := Copy(Wrapped, 2, Length(Wrapped) - 2)
+  else
+    Paths := '';
+  RegWriteExpandStringValue(RootKey, SubKey, 'Path', Paths);
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  if CurUninstallStep = usPostUninstall then
+    RemoveFromPath(ExpandConstant('{app}'));
+end;

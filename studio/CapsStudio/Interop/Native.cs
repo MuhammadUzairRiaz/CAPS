@@ -811,9 +811,10 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Takes the document's lock (a using scope). A long run (longRun) first copies the shown frame into a shadow
     /// document; while the run holds the lock every other thread's calls work on that shadow (under the shadow's own
     /// lock) instead of waiting, so the window stays live however long the run — pages open, the view turns. What they
-    /// change there goes with the shadow when the run ends. exclusive: the document itself, always (closing it). With
-    /// CAPS_LOCKTRACE=1 a caller that waits more than 200 ms prints its stack to stderr.</summary>
-    private Held Hold(bool longRun = false, bool exclusive = false)
+    /// change there goes with the shadow when the run ends. exclusive: the document itself, always (closing it). A closed
+    /// document throws ObjectDisposedException here, so no call passes the core a null handle; closedOk lets Dispose and
+    /// IsDisposed through. With CAPS_LOCKTRACE=1 a caller that waits more than 200 ms prints its stack to stderr.</summary>
+    private Held Hold(bool longRun = false, bool exclusive = false, bool closedOk = false)
     {
         if (t_shadowOf == this)
         {
@@ -833,6 +834,11 @@ public sealed class CapsDocument : IDisposable
                 traced = true;
                 Console.Error.WriteLine($"[lock] thread {Environment.CurrentManagedThreadId} waits on {Path}:\n{Environment.StackTrace}");
             }
+        }
+        if (_h == IntPtr.Zero && !closedOk)
+        {
+            Monitor.Exit(_lock);
+            throw new ObjectDisposedException(nameof(CapsDocument));
         }
         if (longRun && !_longRun && _h != IntPtr.Zero)
         {
@@ -949,8 +955,20 @@ public sealed class CapsDocument : IDisposable
         return new CapsDocument(h, path);
     }
 
-    /// <summary>Moves the frames of other (the same file read in full) into this document; returns the frame count, or -1.</summary>
-    public int AdoptFrames(CapsDocument other) => Native.AdoptFrames(_h, other._h);
+    /// <summary>Moves the frames of other (the same file read in full) into this document; returns the frame count, or -1.
+    /// Both documents change, so both are held (never a shadow) and a render on another thread waits for it.</summary>
+    public int AdoptFrames(CapsDocument other)
+    {
+        using (Hold(exclusive: true))
+        {
+            Alive();
+            using (other.Hold(exclusive: true))
+            {
+                other.Alive();
+                return Native.AdoptFrames(H, other.H);
+            }
+        }
+    }
 
     /// <summary>Grow a cell. The progress callback runs on the calling (worker) thread; return false to cancel.</summary>
     public static (CapsDocument Doc, string Report) Grow(CapsGrowOpts o, Func<int, int, int, bool>? progress, string label)
@@ -1071,7 +1089,7 @@ public sealed class CapsDocument : IDisposable
     public static string EwaldParams(CapsDocument? doc, string json)
     {
         if (doc == null) return JsonCallOnce((b, c) => Native.EwaldParams(IntPtr.Zero, json, b, c));
-        lock (doc._lock) { doc.Alive(); return JsonCallOnce((b, c) => Native.EwaldParams(doc._h, json, b, c)); }
+        using (doc.Hold()) { doc.Alive(); return JsonCallOnce((b, c) => Native.EwaldParams(doc.H, json, b, c)); }
     }
     /// <summary>Solvents and salts for the solvation builder (caps_solvent_library).</summary>
     public static string SolventLibrary() => JsonCall(Native.SolventLibrary);
@@ -1079,7 +1097,7 @@ public sealed class CapsDocument : IDisposable
     public static string SolvatePlan(CapsDocument? solute, string options)
     {
         if (solute == null) return JsonCallOnce((b, c) => Native.SolvatePlan(IntPtr.Zero, options, b, c));
-        lock (solute._lock) return JsonCallOnce((b, c) => Native.SolvatePlan(solute._h, options, b, c));
+        using (solute.Hold()) { solute.Alive(); return JsonCallOnce((b, c) => Native.SolvatePlan(solute.H, options, b, c)); }
     }
     /// <summary>Solvent and ions packed around the solute (caps_solvate): a new document.</summary>
     public static (CapsDocument Doc, string Report) Solvate(CapsDocument? solute, string options, Func<int, int, int, double, int, bool>? progress, string label)
@@ -1088,7 +1106,7 @@ public sealed class CapsDocument : IDisposable
         CapsStageProgress? cb = progress == null ? null : (st, l, n, d, b, _) => progress(st, l, n, d, b) ? 0 : 1;
         IntPtr h;
         if (solute == null) h = Native.Solvate(IntPtr.Zero, options, cb, IntPtr.Zero, report, report.Length);
-        else lock (solute._lock) h = Native.Solvate(solute._h, options, cb, IntPtr.Zero, report, report.Length);
+        else using (solute.Hold()) { solute.Alive(); h = Native.Solvate(solute.H, options, cb, IntPtr.Zero, report, report.Length); }
         GC.KeepAlive(cb);
         GC.KeepAlive(solute);
         if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
@@ -1354,7 +1372,7 @@ public sealed class CapsDocument : IDisposable
     public string Thermal(string json, Func<double, bool>? progress)
     {
         CapsProgress? cb = progress == null ? null : (d, t, _, _) => progress(t > 0 ? (double)d / t : 0) ? 0 : 1;
-        using (Hold())
+        using (Hold(longRun: true))
         {
             Alive();
             var buf = new byte[1 << 22];
@@ -2191,6 +2209,17 @@ public sealed class CapsDocument : IDisposable
 
     public int Pick(int x, int y) { using (Hold()) return Native.Pick(H, x, y); }
 
+    /// <summary>Renders and then picks under one lock, so no other render can replace the pick buffer in between.</summary>
+    public unsafe int RenderPick(in CapsCamera cam, in CapsRenderOpts opt, byte[] rgba, int x, int y)
+    {
+        using (Hold())
+        {
+            Alive();
+            fixed (byte* p = rgba) Check(Native.Render(H, cam, opt, p));
+            return Native.Pick(H, x, y);
+        }
+    }
+
     /// <summary>The scene caps_render would draw, copied for the GPU view.</summary>
     public CapsSceneData RenderScene(in CapsRenderOpts opt)
     {
@@ -2732,11 +2761,11 @@ public sealed class CapsDocument : IDisposable
         }
     }
 
-    public bool IsDisposed { get { using (Hold()) return _h == IntPtr.Zero; } }
+    public bool IsDisposed { get { using (Hold(closedOk: true)) return _h == IntPtr.Zero; } }
 
     public void Dispose()
     {
-        using (Hold(exclusive: true))
+        using (Hold(exclusive: true, closedOk: true))
         {
             if (_h != IntPtr.Zero) { Native.Close(_h); _h = IntPtr.Zero; }
         }

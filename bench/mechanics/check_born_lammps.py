@@ -9,7 +9,7 @@
   argon crystal: LAMMPS numdiff against the lattice sum Σ(φ'' − φ'/r)X⁴/r², and LAMMPS's analytic pair Born term,
       which differs from both (reported).
 
-usage: check_born_lammps.py [DATA] [--ff ID] [--keep DIR]   (default: out/ps500.data, gaff-amber25)
+usage: check_born_lammps.py [DATA] [--ff ID] [--keep DIR]   (default: out/ps500.data, gaff2-2.2.20-ambertools)
 Needs LMP (default ~/.local/bin/lmp) with EXTRA-COMPUTE, MOLECULE, EXTRA-MOLECULE.
 """
 import os, re, subprocess, sys, tempfile
@@ -21,7 +21,7 @@ LMP = os.environ.get("LMP", os.path.expanduser("~/.local/bin/lmp"))
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 data = args[0] if args else os.path.join(ROOT, "out", "ps500.data")
-ff = os.path.join(ROOT, "data", "forcefields", arg("--ff", "gaff-amber25") + ".json")
+ff = os.path.join(ROOT, "data", "forcefields", arg("--ff", "gaff2-2.2.20-ambertools") + ".json")
 work = arg("--keep", "") or tempfile.mkdtemp()
 os.makedirs(work, exist_ok=True)
 NAMES = ["C11", "C22", "C33", "C44", "C55", "C66", "C12", "C13", "C14", "C15", "C16", "C23", "C24", "C25", "C26", "C34", "C35", "C36",
@@ -39,6 +39,8 @@ def lammps_born(which, delta=None):
     txt = open(os.path.join(work, "case.in")).read()
     txt = re.sub(r"thermo_style.*\n|thermo_modify.*\n|run 0\n", "", txt)
     txt = txt.replace("pair_modify shift yes\n", "")
+    # the reference pair styles below carry no long-range Coulomb part, so PPPM/Ewald from the CAPS input must go too
+    txt = re.sub(r"^\s*kspace_(style|modify)\b.*\n", "", txt, flags=re.M)
     if which == "bonded":
         txt = re.sub(r"pair_style .*", "pair_style zero 10.0 nocoeff", txt)
         txt += "compute vir all pressure NULL virial\ncompute born all born/matrix numdiff 1.0e-6 vir\n"

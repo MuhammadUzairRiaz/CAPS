@@ -164,12 +164,12 @@ CellRelaxReport relax_cell(System& s, const std::function<ForceField(const Syste
   auto cell_gradient = [&](const Eval& e, const M3& h, const std::array<double, 6>& p) {
     const M3 Wm = {{{e.W[0], e.W[3], e.W[4]}, {e.W[3], e.W[1], e.W[5]}, {e.W[4], e.W[5], e.W[2]}}};
     const M3 hi = inverse(h);
-    const double sgn = det(h) > 0 ? 1.0 : -1.0;
+    // e.V = |det h| and ∂|det h|/∂h = |det h| h⁻ᵀ for either handedness, so no sign factor here
     M3 D{};
     for (int i = 0; i < 3; ++i)
       for (int j = 0; j < 3; ++j) {
         double v = 0;
-        for (int k = 0; k < 3; ++k) v += ((i == k ? P * e.V * sgn : 0.0) - Wm[i][k]) * hi[j][k];
+        for (int k = 0; k < 3; ++k) v += ((i == k ? P * e.V : 0.0) - Wm[i][k]) * hi[j][k];
         D[i][j] = v;
       }
     std::array<double, 6> gp{};
@@ -248,6 +248,7 @@ CellRelaxReport relax_cell(System& s, const std::function<ForceField(const Syste
       slope = 0, pmax = 0;
       for (size_t v = 0; v < nv; ++v) p[v] = -g[v] / 100.0, slope += p[v] * g[v], pmax = std::max(pmax, std::fabs(p[v]));
     }
+    const bool fresh = S.empty();   // a steepest-descent direction, no curvature history behind it
     double step = pmax > 0.2 ? 0.2 / pmax : 1.0;
     bool ok = false;
     std::vector<double> zn(nv), gn;
@@ -261,7 +262,8 @@ CellRelaxReport relax_cell(System& s, const std::function<ForceField(const Syste
       }
       step *= 0.5;
     }
-    if (!ok) { S.clear(), Y.clear(), rho.clear(); if (step < 1e-12) { stalled = true; break; } continue; }
+    // a failed L-BFGS direction gets one retry along steepest descent; a failed steepest descent ends the run
+    if (!ok) { if (fresh) { stalled = true; break; } S.clear(), Y.clear(), rho.clear(); continue; }
     std::vector<double> sv(nv), yv(nv);
     double sy = 0;
     for (size_t v = 0; v < nv; ++v) sv[v] = zn[v] - z[v], yv[v] = gn[v] - g[v], sy += sv[v] * yv[v];

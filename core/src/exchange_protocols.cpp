@@ -191,6 +191,7 @@ TvScanResult tv_scan(System& s, ProtocolOptions& o, double t_from, double t_to, 
     r.specific_volume.push_back(rho > 0 ? 1.0 / rho : 0.0);
     r.accepted_per_ps.push_back(double(total.accepted - before) / ps_per_step);
   }
+  r.stats = total;
   r.fit = fit_bilinear(r.T, r.specific_volume);
   std::vector<double> tau;
   for (double k : r.accepted_per_ps) tau.push_back(k > 0 ? 1.0 / k : 0.0);

@@ -432,7 +432,9 @@
    "density_paper": 1.24,
    "density": 1.2389,
    "hydrogens": "added (tools/make_polymer_crystals.py)",
-   "corrections": [],
+   "corrections": [
+    "O kept as printed (x = -0.371, p. 49), which gives C=O 1.35 A and C(O)-N 1.38 A against about 1.24 and 1.33 A; the paper put O out of the chain plane, near the 010 plane, to fit the intensities and doubts whether that is genuine (p. 49), so relax the cell before MD or DFT (VASP, or caps cellrelax with a force field)"
+   ],
    "min_contacts": {
     "HH": 2.014,
     "HX": 2.432,

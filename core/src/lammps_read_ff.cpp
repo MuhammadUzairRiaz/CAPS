@@ -89,6 +89,9 @@ void count(const Coef& c, size_t n, const std::string& what) {
 
 bool close(double a, double b, double rel = 1e-9) { return std::fabs(a - b) <= rel * std::max({1.0, std::fabs(a), std::fabs(b)}); }
 
+// Half a unit in the sixth decimal, the rounding a coefficient written at the default precision carries (with a little room)
+constexpr double kCoefHalfUnit = 6e-7;
+
 // The LJ / Buckingham / Morse base of a pair style ("lj/cut/coul/long" → "lj/cut"); "" for a Coulomb-only sub-style
 std::string pair_base(const std::string& st) {
   if (st.rfind("coul/", 0) == 0 || st.rfind("tip4p/", 0) == 0) return "";
@@ -266,15 +269,23 @@ ForceField build(const System& s, const LammpsFileTerms& d, const std::unordered
     } else if (c.style == "fourier") {   // UFF's general bend: θ0 from C1 = −4 C2 cos θ0, the C's as UFF sets them
       count(c, 4, "angle");
       need(v[3] > 0, "angle fourier with C2 ≤ 0 is not UFF's form");
+      // C2 = 1/(4 sin²θ0) and C0 = C2 (2 cos²θ0 + 1) are, without θ0, C1² = 4 C2 (4 C2 − 1) and C0 = 3 C2 − 1/2. Each
+      // coefficient may be off by half a unit in the sixth decimal (the file's default precision), so each relation is
+      // held to the error those roundings can make in it. At θ0 = 180° the writer caps C2 at 1/(4·1e-8), where these
+      // relations no longer hold, so the C's recomputed from θ0 the same way are accepted too
       const double c0 = std::clamp(-v[2] / (4 * v[3]), -1.0, 1.0), s0 = 1 - c0 * c0;
-      need(close(v[3], 1 / (4 * std::max(s0, 1e-8)), 1e-7) && close(v[1], v[3] * (2 * c0 * c0 + 1), 1e-7),
-           "angle fourier type " + std::to_string(t.type) + " is not UFF's form (C0, C1, C2 from θ0)");
+      const bool rounded = std::fabs(v[1] - (3 * v[3] - 0.5)) <= 4 * kCoefHalfUnit &&
+                           std::fabs(v[2] * v[2] - 4 * v[3] * (4 * v[3] - 1)) <= (2 * std::fabs(v[2]) + 32 * v[3] + 4) * kCoefHalfUnit;
+      const bool capped = close(v[3], 1 / (4 * std::max(s0, 1e-8)), 1e-7) && close(v[1], v[3] * (2 * c0 * c0 + 1), 1e-7);
+      need(rounded || capped, "angle fourier type " + std::to_string(t.type) + " is not UFF's form (C0, C1, C2 from θ0)");
       F.angles_x.push_back({i, j, k, 3, v[0], std::acos(c0)});
     } else if (c.style == "cosine/periodic") {   // UFF's linear, trigonal, square and octahedral bends
       count(c, 3, "angle");
       const int m = int(std::lround(v[2])), B = int(std::lround(v[1]));
       need(m >= 1 && m <= 6 && B == (m == 1 ? 1 : (m % 2 ? -1 : 1)), "angle cosine/periodic type " + std::to_string(t.type) + " is not UFF's form");
-      F.angles_x.push_back({i, j, k, 10 + m, 2 * v[0], 0});
+      // θ0 is not in the file; the engine's small-angle wall needs one, so take the minimum of the n-fold term as UFF
+      // places it (linear 180°, trigonal 120°, square 90°): 2π/n, and π for n = 1 and n = 2
+      F.angles_x.push_back({i, j, k, 10 + m, 2 * v[0], m <= 2 ? kPi : 2 * kPi / m});
     } else {
       need(false, "angle style " + c.style);
     }
@@ -373,7 +384,8 @@ ForceField build(const System& s, const LammpsFileTerms& d, const std::unordered
       } else {
         need(v[3] == 1, "improper fourier type " + std::to_string(t.type) + " is not UFF's form");
         const double w0 = std::acos(std::clamp(-v[2] / 4, -1.0, 1.0));
-        need(close(v[1], -(v[2] * std::cos(w0) + std::cos(2 * w0)), 1e-7), "improper fourier type " + std::to_string(t.type) + " is not UFF's form");
+        // C0 to within the rounding of C0 and C1 at the file's default six decimals
+        need(std::fabs(v[1] + (v[2] * std::cos(w0) + std::cos(2 * w0))) <= (1 + std::fabs(v[2]) / 4) * kCoefHalfUnit, "improper fourier type " + std::to_string(t.type) + " is not UFF's form");
         F.inversions.push_back({q[0], q[1], q[2], q[3], 3 * v[0], w0, 2});
       }
     } else {

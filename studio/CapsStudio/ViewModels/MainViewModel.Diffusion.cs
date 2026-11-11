@@ -35,10 +35,17 @@ public sealed partial class MainViewModel
     private double _dfPbc = double.NaN;
     public event Action? DfChanged;
 
+    private CapsDocument? _dfLDoc;   // the structure DfL was filled for; a user edit is kept only while that structure stays open
+
     public void OpenDiffusion()
     {
         SetModule(49);
-        if (_doc != null && _dfL == 0 && _doc.Summary() is { CellValid: not 0 } s) DfL = (decimal)Math.Round(Math.Pow(s.Volume, 1.0 / 3) / 10, 3);   // Å → nm, the cube of the same volume
+        if (_doc != null && (_dfL == 0 || !ReferenceEquals(_dfLDoc, _doc)))
+        {
+            // Å → nm, the cube of the same volume; a structure without a cell leaves L empty rather than keeping the last box
+            DfL = _doc.Summary() is { CellValid: not 0 } s ? (decimal)Math.Round(Math.Pow(s.Volume, 1.0 / 3) / 10, 3) : 0m;
+            _dfLDoc = _doc;
+        }
         DfCorrect();
         DfChanged?.Invoke();
     }

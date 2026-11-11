@@ -130,8 +130,10 @@ std::map<std::string, std::string> read_zip(const std::string& path) {
   std::ifstream f(path, std::ios::binary);
   if (!f) throw std::runtime_error("cannot open " + path);
   const std::string s((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+  // every offset below comes from the file, so each one is checked against its size before it is read
+  if (s.size() < 22) throw std::runtime_error(path + " is not a zip file");
   size_t eocd = std::string::npos;
-  for (size_t p = s.size() >= 22 ? s.size() - 22 : 0; p != std::string::npos && s.size() - p < 70000; --p) {
+  for (size_t p = s.size() - 22; p != std::string::npos && s.size() - p < 70000; --p) {
     if (get32(s, p) == 0x06054b50) { eocd = p; break; }
     if (p == 0) break;
   }
@@ -145,8 +147,12 @@ std::map<std::string, std::string> read_zip(const std::string& path) {
     const uint32_t csize = get32(s, p + 20), usize = get32(s, p + 24);
     const uint16_t nlen = get16(s, p + 28), xlen = get16(s, p + 30), clen = get16(s, p + 32);
     const uint32_t local = get32(s, p + 42);
+    if (p + 46 + size_t(nlen) > s.size()) throw std::runtime_error("corrupt zip directory");
+    if (method != 0 && method != 8) throw std::runtime_error("unsupported zip compression method " + std::to_string(method));
     const std::string name = s.substr(p + 46, nlen);
-    const size_t data = local + 30 + get16(s, local + 26) + get16(s, local + 28);
+    if (size_t(local) + 30 > s.size() || get32(s, local) != 0x04034b50) throw std::runtime_error("corrupt zip entry " + name);
+    const size_t data = size_t(local) + 30 + get16(s, local + 26) + get16(s, local + 28);
+    if (data > s.size() || csize > s.size() - data) throw std::runtime_error("corrupt zip entry " + name);
     const std::string comp = s.substr(data, csize);
     files[name] = method == 0 ? comp : inflate_raw(comp, usize);
     p += 46 + nlen + xlen + clen;
@@ -307,9 +313,15 @@ bool reproduce_bundle(const std::string& path, std::vector<std::string>& report)
   const auto dir = std::filesystem::temp_directory_path() / ("caps_reproduce_" + std::to_string(std::hash<std::string>{}(path)));
   std::filesystem::create_directories(dir);
   auto extract = [&](const std::string& name) {
+    // the name comes from the bundle, so it must be a bare file name that stays inside dir
+    const std::filesystem::path np(name);
+    if (name.empty() || name == "." || name == ".." || np.filename().string() != name || np.has_root_path() ||
+        name.find('/') != std::string::npos || name.find('\\') != std::string::npos)
+      throw std::runtime_error("the bundle names an unsafe input file: " + name);
     const auto f = files.find("input/" + name);
     if (f == files.end()) throw std::runtime_error("input/" + name + " missing from the bundle");
-    const auto p = dir / name;
+    const auto p = dir / np;
+    if (p.parent_path() != dir) throw std::runtime_error("the bundle names an unsafe input file: " + name);
     std::ofstream o(p, std::ios::binary);
     o.write(f->second.data(), std::streamsize(f->second.size()));
     return p.string();

@@ -464,6 +464,7 @@ CgMapping cg_mapping_from_json(const Json& j, const System& aa) {
   for (const auto& e : j["beads"].items()) {
     std::vector<uint32_t> v;
     for (const auto& x : e["atoms"].items()) v.push_back(at(x.number()));
+    if (v.empty()) throw std::invalid_argument("bead " + std::to_string(m.bead_atoms.size() + 1) + " of the mapping has no atoms");
     double mass = 0;
     for (uint32_t a : v) mass += aa.mass_of(aa.atoms[a]);
     m.bead_atoms.push_back(v);
@@ -795,8 +796,8 @@ CgTrajectoryReport map_lammps_dump(const CgMapping& m, const System& aa, const s
       if (id <= 0 || id > maxid || index[size_t(id)] < 0) throw std::invalid_argument("the dump has atom id " + std::to_string(id) + ", which the structure does not");
       const size_t a = size_t(index[size_t(id)]);
       Vec3 r{v[size_t(cx)], v[size_t(cy)], v[size_t(cz)]};
-      if (mode >= 2) r = cell.to_cartesian(r) + cell.origin;
-      if (mode == 1 && images) r = r + cell.a * v[size_t(ix)] + cell.b * v[size_t(iy)] + cell.c * v[size_t(iz)];
+      if (mode >= 2) r = cell.to_cartesian(r);   // to_cartesian already adds the origin
+      if ((mode == 1 || mode == 2) && images) r = r + cell.a * v[size_t(ix)] + cell.b * v[size_t(iy)] + cell.c * v[size_t(iz)];
       pos[a] = r;
       got[a] = 1;
     }
@@ -901,8 +902,8 @@ size_t for_each_dump_frame(const std::string& path, size_t natoms,
       const int64_t id = int64_t(v[size_t(cid)]);
       if (id < 1 || size_t(id) > natoms) throw std::invalid_argument(path + ": atom id " + std::to_string(id) + " outside 1 … " + std::to_string(natoms));
       Vec3 r{v[size_t(cx)], v[size_t(cy)], v[size_t(cz)]};
-      if (mode >= 2) r = cell.to_cartesian(r) + cell.origin;
-      if (mode == 1 && images) r = r + cell.a * v[size_t(ix)] + cell.b * v[size_t(iy)] + cell.c * v[size_t(iz)];
+      if (mode >= 2) r = cell.to_cartesian(r);   // to_cartesian already adds the origin
+      if ((mode == 1 || mode == 2) && images) r = r + cell.a * v[size_t(ix)] + cell.b * v[size_t(iy)] + cell.c * v[size_t(iz)];
       pos[size_t(id - 1)] = r;
       got[size_t(id - 1)] = 1;
     }

@@ -148,11 +148,20 @@ CgTopology cg_topology_from_map(const Json& j) {
   if (j.text("format") != "caps-cg-map") throw std::invalid_argument("not a CAPS mapping (format caps-cg-map)");
   CgTopology t;
   for (const auto& b : j["beads"].items()) t.kind.push_back(b["kind"].str()), t.mol.push_back(int(b.num("mol", 0)));
-  for (const auto& b : j["bonds"].items()) t.bonds.push_back({int(b[0].number()), int(b[1].number())});
+  const auto bead = [&](const Json& x, const char* what) {
+    const double v = x.number();
+    if (!(v >= 0) || v >= double(t.kind.size())) {
+      char buf[160];
+      std::snprintf(buf, sizeof buf, "the mapping's %s name bead %g, but it has only %zu beads", what, v, t.kind.size());
+      throw std::invalid_argument(buf);
+    }
+    return int(v);
+  };
+  for (const auto& b : j["bonds"].items()) t.bonds.push_back({bead(b[0], "bonds"), bead(b[1], "bonds")});
   if (j.has("chains"))
     for (const auto& c : j["chains"].items()) {
       std::vector<int> v;
-      for (const auto& x : c.items()) v.push_back(int(x.number()));
+      for (const auto& x : c.items()) v.push_back(bead(x, "chains"));
       t.chains.push_back(v);
     }
   std::vector<std::vector<int>> nbr(t.kind.size());

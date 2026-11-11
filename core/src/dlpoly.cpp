@@ -210,11 +210,40 @@ std::vector<std::string> write_dlpoly(const System& s, const ForceField& ff, con
   for (const auto& [what, count] : dropped) notes.push_back(std::to_string(count) + " " + what + (what.find("written as") == std::string::npos ? " left out (DL_POLY has no such term)" : ""));
 
   // ---- molecular types: consecutive identical molecules share one
-  auto type_name = [&](uint32_t a) {
+  // DL_POLY atom names hold 8 characters and its van der Waals table is keyed by name, so every
+  // type needs a name of its own: a name that fits, or stays unique when cut to 8, is kept; the
+  // others are cut shorter and numbered.
+  auto key_of = [&](uint32_t a) {
     std::string t = ff.type_index[a] >= 0 && size_t(ff.type_index[a]) < ff.type_names.size() ? ff.type_names[size_t(ff.type_index[a])] : element(s.atoms[a].element).symbol;
     for (char& c : t) if (c == ' ') c = '_';
-    return t.substr(0, 8);
+    return std::make_pair(ff.type_index[a], t);
   };
+  std::vector<std::string> atom_name(n);
+  {
+    std::map<std::pair<int, std::string>, std::string> dl_name;   // (type index, full name) -> name written
+    for (uint32_t a = 0; a < n; ++a) dl_name.emplace(key_of(a), std::string());
+    std::map<std::string, int> cut_count;
+    for (const auto& kv : dl_name) ++cut_count[kv.first.second.substr(0, 8)];
+    std::set<std::string> used;
+    for (auto& [k, nm] : dl_name) {
+      const std::string cut = k.second.substr(0, 8);
+      if ((k.second.size() <= 8 || cut_count[cut] == 1) && used.insert(cut).second) nm = cut;
+    }
+    std::string renamed;
+    size_t n_renamed = 0;
+    for (auto& [k, nm] : dl_name) {
+      if (!nm.empty()) continue;
+      for (int c = 1; nm.empty(); ++c) {
+        const std::string suf = std::to_string(c);
+        const std::string t = k.second.substr(0, 8 - suf.size()) + suf;
+        if (used.insert(t).second) nm = t;
+      }
+      renamed += (n_renamed++ ? ", " : "") + k.second + " as " + nm;
+    }
+    if (n_renamed) notes.push_back(std::to_string(n_renamed) + " atom type" + (n_renamed == 1 ? "" : "s") + " renamed to fit DL_POLY's 8-character names: " + renamed);
+    for (uint32_t a = 0; a < n; ++a) atom_name[a] = dl_name.at(key_of(a));
+  }
+  auto type_name = [&](uint32_t a) -> const std::string& { return atom_name[a]; };
   auto mass_of = [&](uint32_t a) { return a < ff.mass.size() ? ff.mass[a] : s.mass_of(s.atoms[a]); };
   auto charge_of = [&](uint32_t a) { return a < ff.charge.size() ? ff.charge[a] : s.atoms[a].charge; };
   auto body = [&](size_t m) {

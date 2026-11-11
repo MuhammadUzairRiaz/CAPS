@@ -85,7 +85,7 @@ public partial class MainViewModel
         }
         catch { /* no selection support */ }
         if (idx.Length == 0) idx = _selection.ToArray();
-        var target = idx.Length == 0 ? new CapsCamera { Yaw = Camera.Yaw, Pitch = Camera.Pitch, Zoom = 1, Perspective = Camera.Perspective } : _doc.Focus(Camera, idx);
+        var target = idx.Length == 0 ? new CapsCamera { Yaw = Camera.Yaw, Pitch = Camera.Pitch, Zoom = 1, Perspective = Camera.Perspective, FovDeg = Camera.FovDeg } : _doc.Focus(Camera, idx);
         FlyTo(target);
         Status = idx.Length == 0 ? "Framed the whole structure" : $"Framed {idx.Length} selected atom{(idx.Length == 1 ? "" : "s")}";
     }

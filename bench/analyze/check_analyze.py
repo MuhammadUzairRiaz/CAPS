@@ -45,7 +45,9 @@ from MDAnalysis.analysis import rdf as mdrdf, msd as mdmsd
 
 u = mda.Universe(data, dump, format="LAMMPSDUMP", lammps_coordinate_convention="unwrapped", dt=frame_ps)
 masses = u.atoms.masses
-elem = np.array([{12: 6, 1: 1, 14: 7, 16: 8}.get(int(round(m)), 0) for m in masses])
+# element from mass: nearest standard atomic mass within 0.5 u, for every element BONDI covers; 0 when none matches
+MASS = {1: 1.008, 6: 12.011, 7: 14.007, 8: 15.999, 9: 18.998, 14: 28.086, 15: 30.974, 16: 32.06, 17: 35.45}
+elem = np.array([next((z for z, mz in MASS.items() if abs(m - mz) <= 0.5), 0) for m in masses])
 nf = len(u.trajectory)
 
 # ---- g(r) C–C, all pairs
@@ -126,6 +128,9 @@ fv = caps_props("ffv", ["--first", str(nf - 1), "--grid", "0.3"])["ffv"]
 wrapped = pos - np.floor(pos / L) * L
 tree = cKDTree(wrapped, boxsize=L)
 pts = rng.random((400000, 3)) * L
+unknown = sorted({round(float(m), 3) for m, z in zip(masses, elem) if z not in BONDI})
+if unknown:
+    sys.exit(f"free volume: no Bondi radius for atoms of mass {', '.join(map(str, unknown))} u")
 rad = np.array([BONDI[z] for z in elem])
 free = np.ones(len(pts), bool)
 near = tree.query_ball_point(pts, r=max(rad))

@@ -209,9 +209,9 @@ public sealed partial class MainViewModel
     private int _atomLabelColour, _bondLabelColour = 1;   // bonds in the accent colour
     private string _atomLabelHex = "#FF7A00", _bondLabelHex = "#3E7BFA";
     public int AtomLabelColour { get => _atomLabelColour; set { if (Set(ref _atomLabelColour, Math.Clamp(value, 0, LabelColours.Length - 1))) { Raise(nameof(AtomLabelCustom)); LabelsChanged(); } } }
-    public int BondLabelColour { get => _bondLabelColour; set { if (Set(ref _bondLabelColour, Math.Clamp(value, 0, LabelColours.Length - 2))) { Raise(nameof(BondLabelCustom)); RenderRequested?.Invoke(); } } }
+    public int BondLabelColour { get => _bondLabelColour; set { if (Set(ref _bondLabelColour, Math.Clamp(value, 0, BondLabelColours.Length - 1))) { Raise(nameof(BondLabelCustom)); RenderRequested?.Invoke(); } } }
     public bool AtomLabelCustom => _atomLabelColour == LabelColours.Length - 1;
-    public bool BondLabelCustom => _bondLabelColour == LabelColours.Length - 1;
+    public bool BondLabelCustom => _bondLabelColour == BondLabelColours.Length - 1;
     /// <summary>The custom colours as #RRGGBB.</summary>
     public string AtomLabelHex { get => _atomLabelHex; set { if (Set(ref _atomLabelHex, value ?? "")) RenderRequested?.Invoke(); } }
     public string BondLabelHex { get => _bondLabelHex; set { if (Set(ref _bondLabelHex, value ?? "")) RenderRequested?.Invoke(); } }

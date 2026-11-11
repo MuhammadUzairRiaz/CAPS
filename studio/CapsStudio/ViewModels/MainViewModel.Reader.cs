@@ -23,6 +23,7 @@ public sealed partial class MainViewModel
     private DateTime _rdStamp;
     private Avalonia.Threading.DispatcherTimer? _rdTimer;
     private const int ReaderMaxChars = 4_000_000;   // a longer file shows its last 4 MB (the tables come from the whole file)
+    private int _rdDroppedLines;   // whole lines of the file cut off above the shown text (table line numbers count from the file's start)
     public string ReaderPath => _rdPath;
     public string ReaderName => Path.GetFileName(_rdPath);
     public string ReaderText { get => _rdText; private set => Set(ref _rdText, value); }
@@ -113,6 +114,7 @@ public sealed partial class MainViewModel
         var inv = CultureInfo.InvariantCulture;
         var lines = 1 + text.Count(c => c == '\n');
         var shown = text.Length > ReaderMaxChars ? text[^ReaderMaxChars..] : text;
+        _rdDroppedLines = shown.Length < text.Length ? text.AsSpan(0, text.Length - shown.Length).Count('\n') : 0;
         ReaderText = shown;
         var kind = TextTables.Kind(_rdPath, text) switch
         {
@@ -210,7 +212,9 @@ public sealed partial class MainViewModel
     public void ReaderGoToTable()
     {
         if (_rdTable >= ReaderTables.Count) return;
-        var line = ReaderTables[_rdTable].Line;
+        // the shown text may be the file's tail: count lines from where it starts
+        var line = ReaderTables[_rdTable].Line - _rdDroppedLines;
+        if (line < 1) { Status = "This table starts before the last 4 MB of the file, which is the part shown."; return; }
         var pos = 0;
         for (var k = 1; k < line && pos >= 0; ++k) { pos = _rdText.IndexOf('\n', pos); if (pos >= 0) ++pos; }
         if (pos >= 0) ReaderSelect?.Invoke(pos, 0);

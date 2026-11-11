@@ -44,6 +44,20 @@ Json typing_json(const std::vector<TypingRule>& rules) {
       o["overrides"] = ov;
     }
     if (!r.description.empty()) o["description"] = r.description;
+    // the rule's conditions, as typing_from reads them back
+    for (auto [key, vec] : {std::make_pair("requires", &r.needs_elements), std::make_pair("excludes", &r.no_elements)})
+      if (!vec->empty()) {
+        Json e = Json::array();
+        for (int z : *vec) e.push_back(element(z).symbol);
+        o[std::string(key)] = e;
+      }
+    if (!r.atom_name.empty()) o["atom_name"] = r.atom_name;
+    for (auto [key, vec] : {std::make_pair("in_molecule", &r.in_molecule), std::make_pair("not_in_molecule", &r.not_in_molecule)})
+      if (!vec->empty()) {
+        Json m = Json::array();
+        for (const auto& x : *vec) m.push_back(x);
+        o[std::string(key)] = m;
+      }
     a.push_back(o);
   }
   return a;
@@ -82,60 +96,9 @@ std::vector<TypingRule> typing_from(const Json& a, const std::string& where) {
   return out;
 }
 
-}  // namespace
-
-void load_typing(FFDef& ff, const std::string& path) {
-  {
-    std::error_code ec;
-    const std::string key = std::filesystem::weakly_canonical(path, ec).string();
-    if (std::find(ff.typing_files.begin(), ff.typing_files.end(), key) != ff.typing_files.end()) return;
-    ff.typing_files.push_back(key);
-  }
-  std::ifstream in(path);
-  if (!in) throw FFError("cannot open typing rules " + path);
-  std::stringstream ss;
-  ss << in.rdbuf();
-  Json j;
-  try { j = Json::parse(ss.str()); } catch (const JsonError& e) { throw FFError(path + ": " + e.what()); }
-  if (j.text("format") != "caps-typing") throw FFError(path + ": not a CAPS typing-rules file");
-  auto rules = typing_from(j["rules"], path);
-  std::set<std::string> known;
-  for (const auto& t : ff.types) known.insert(t.name);
-  // A rule may name a type by its short label: an alias, or the leading label of moltemplate's encoded names
-  // ("135" for 135_bCT_aCT_dCT_iCT in OPLS-AA, "c4" for c4~pc4~bc4~… in COMPASS). Used only when unambiguous.
-  {
-    std::map<std::string, std::string> shortname;
-    std::set<std::string> ambiguous;
-    auto add = [&](const std::string& k, const std::string& full) {
-      if (k.empty() || k == full || known.count(k)) return;
-      auto [it, fresh] = shortname.emplace(k, full);
-      if (!fresh && it->second != full) ambiguous.insert(k);
-    };
-    for (const auto& t : ff.types) {
-      for (const auto& a : t.aliases) add(a, t.name);
-      const size_t b = t.name.find("_b"), w = t.name.find('~');
-      if (b != std::string::npos && b > 0) add(t.name.substr(0, b), t.name);
-      if (w != std::string::npos && w > 0) add(t.name.substr(0, w), t.name);
-    }
-    auto resolve = [&](std::string& n) {
-      if (known.count(n)) return;
-      auto it = shortname.find(n);
-      if (it != shortname.end() && !ambiguous.count(n)) n = it->second;
-    };
-    for (auto& r : rules) {
-      resolve(r.type);
-      for (auto& o : r.overrides) resolve(o);
-    }
-  }
-  std::string unknown;
-  for (const auto& r : rules)
-    if (!known.count(r.type) && unknown.find(" " + r.type + ",") == std::string::npos) unknown += " " + r.type + ",";
-  // "unknown_types": "untyped" — rules shared with a larger version of the force field (antechamber's ordered GAFF table
-  // on moltemplate's GAFF): a rule for a type this file lacks stays in its place, so it still stops later, more general
-  // rules from taking those atoms, and the atoms it matches are reported untyped
-  if (!unknown.empty() && j.text("unknown_types") != "untyped")
-    throw FFError(path + ": rules for types not in " + ff.name + ":" + unknown.substr(0, unknown.size() - 1));
-  ff.typing.insert(ff.typing.end(), rules.begin(), rules.end());
+// The settings of a typing file beyond its rules ("charge_rules", "shells", "bonds": "defined", "beads" ...), read from j
+// (a caps-typing file, or a saved force field's "typing_settings"); paths in it are relative to path's folder
+void typing_file_keys(FFDef& ff, const Json& j, const std::string& path) {
   if (j.has("charge_rules")) {
     auto cr = typing_from(j["charge_rules"], path);
     ff.charge_typing.insert(ff.charge_typing.end(), cr.begin(), cr.end());
@@ -204,6 +167,133 @@ void load_typing(FFDef& ff, const std::string& path) {
   if (j.text("pair_mode") == "double_same") ff.typing_pairs_double_same = true;
   else if (!j.text("pair_mode").empty() && j.text("pair_mode") != "double_differs")
     throw FFError(path + ": pair_mode is double_differs (GAFF) or double_same (CGenFF)");
+}
+
+// The same settings of ff as typing_file_keys reads them; paths relative to dir
+Json typing_file_keys_json(const FFDef& ff, const std::filesystem::path& dir) {
+  Json j = Json::object();
+  if (!ff.charge_typing.empty()) j["charge_rules"] = typing_json(ff.charge_typing);
+  if (ff.typing_unknown_untyped) j["unknown_types"] = "untyped";
+  if (ff.united_atom) j["united_atom"] = true;
+  if (ff.united_atom_hosts != std::vector<int>{6}) {
+    Json a = Json::array();
+    for (int z : ff.united_atom_hosts) a.push_back(z > 0 ? element(z).symbol : "");
+    j["united_atom_hosts"] = a;
+  }
+  auto strings = [](const std::vector<std::string>& v) {
+    Json a = Json::array();
+    for (const auto& x : v) a.push_back(x);
+    return a;
+  };
+  if (!ff.united_atom_keep.empty()) j["united_atom_keep"] = strings(ff.united_atom_keep);
+  if (ff.keep_defined_bonds) j["bonds"] = "defined";
+  if (!ff.unbonded_types.empty()) j["unbonded_types"] = strings(ff.unbonded_types);
+  if (ff.coarse_grained) j["coarse_grained"] = true;
+  if (!ff.martini_small.empty()) j["martini_small_molecules"] = std::filesystem::absolute(ff.martini_small).lexically_proximate(dir).generic_string();
+  if (!ff.exclude_type_pairs.empty()) {
+    Json a = Json::array();
+    for (const auto& [x, y] : ff.exclude_type_pairs) a.push_back(strings({x, y}));
+    j["exclude_pairs"] = a;
+  }
+  if (!ff.bead_rules.empty()) {
+    Json a = Json::array();
+    for (const auto& r : ff.bead_rules) {
+      Json o = Json::object();
+      o["types"] = strings(r.types);
+      o["smarts"] = r.smarts;
+      if (!r.description.empty()) o["description"] = r.description;
+      a.push_back(o);
+    }
+    j["beads"] = a;
+  }
+  if (!ff.bead_groups.empty()) {
+    Json a = Json::array();
+    for (const auto& g : ff.bead_groups) {
+      Json o = Json::object();
+      o["type"] = g.type;
+      o["molecule"] = g.molecule;
+      o["count"] = g.count;
+      if (!g.description.empty()) o["description"] = g.description;
+      a.push_back(o);
+    }
+    j["bead_groups"] = a;
+  }
+  if (!ff.shells.empty()) {
+    Json o = Json::object();
+    for (const auto& [core, shell] : ff.shells) o[core] = shell;
+    j["shells"] = o;
+  }
+  if (!ff.type_variants.empty()) {
+    Json o = Json::object();
+    for (const auto& [base, v] : ff.type_variants) o[base] = strings(v);
+    j["variants"] = o;
+  }
+  if (!ff.analogies.empty()) {
+    Json o = Json::object();
+    for (const auto& [ty, v] : ff.analogies) o[ty] = strings(v);
+    j["analogies"] = o;
+    j["analogy_source"] = ff.analogy_source;
+  }
+  if (ff.bond_k_per_order != 0) j["bond_k_per_order"] = ff.bond_k_per_order;
+  if (ff.bond_conjugated_single != 1.0) j["conjugated_single_order"] = ff.bond_conjugated_single;
+  return j;
+}
+
+}  // namespace
+
+void load_typing(FFDef& ff, const std::string& path) {
+  {
+    std::error_code ec;
+    const std::string key = std::filesystem::weakly_canonical(path, ec).string();
+    if (std::find(ff.typing_files.begin(), ff.typing_files.end(), key) != ff.typing_files.end()) return;
+    ff.typing_files.push_back(key);
+  }
+  std::ifstream in(path);
+  if (!in) throw FFError("cannot open typing rules " + path);
+  std::stringstream ss;
+  ss << in.rdbuf();
+  Json j;
+  try { j = Json::parse(ss.str()); } catch (const JsonError& e) { throw FFError(path + ": " + e.what()); }
+  if (j.text("format") != "caps-typing") throw FFError(path + ": not a CAPS typing-rules file");
+  auto rules = typing_from(j["rules"], path);
+  std::set<std::string> known;
+  for (const auto& t : ff.types) known.insert(t.name);
+  // A rule may name a type by its short label: an alias, or the leading label of moltemplate's encoded names
+  // ("135" for 135_bCT_aCT_dCT_iCT in OPLS-AA, "c4" for c4~pc4~bc4~… in COMPASS). Used only when unambiguous.
+  {
+    std::map<std::string, std::string> shortname;
+    std::set<std::string> ambiguous;
+    auto add = [&](const std::string& k, const std::string& full) {
+      if (k.empty() || k == full || known.count(k)) return;
+      auto [it, fresh] = shortname.emplace(k, full);
+      if (!fresh && it->second != full) ambiguous.insert(k);
+    };
+    for (const auto& t : ff.types) {
+      for (const auto& a : t.aliases) add(a, t.name);
+      const size_t b = t.name.find("_b"), w = t.name.find('~');
+      if (b != std::string::npos && b > 0) add(t.name.substr(0, b), t.name);
+      if (w != std::string::npos && w > 0) add(t.name.substr(0, w), t.name);
+    }
+    auto resolve = [&](std::string& n) {
+      if (known.count(n)) return;
+      auto it = shortname.find(n);
+      if (it != shortname.end() && !ambiguous.count(n)) n = it->second;
+    };
+    for (auto& r : rules) {
+      resolve(r.type);
+      for (auto& o : r.overrides) resolve(o);
+    }
+  }
+  std::string unknown;
+  for (const auto& r : rules)
+    if (!known.count(r.type) && unknown.find(" " + r.type + ",") == std::string::npos) unknown += " " + r.type + ",";
+  // "unknown_types": "untyped": rules shared with a larger version of the force field (antechamber's ordered GAFF table
+  // on moltemplate's GAFF): a rule for a type this file lacks stays in its place, so it still stops later, more general
+  // rules from taking those atoms, and the atoms it matches are reported untyped
+  if (!unknown.empty() && j.text("unknown_types") != "untyped")
+    throw FFError(path + ": rules for types not in " + ff.name + ":" + unknown.substr(0, unknown.size() - 1));
+  ff.typing.insert(ff.typing.end(), rules.begin(), rules.end());
+  typing_file_keys(ff, j, path);
   if (j.has("pairs"))
     for (const auto& pr : j["pairs"].items()) {
       if (pr.size() != 2) throw FFError(path + ": each entry of \"pairs\" names two types");
@@ -498,6 +588,30 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   }
   if (!ff.oop_scheme.empty()) j["oop_scheme"] = ff.oop_scheme;
   if (!ff.typing.empty()) j["typing"] = typing_json(ff.typing);
+  {   // the typing file's other settings (shells, "bonds": "defined", beads ...), which the inline rules alone lose
+    const Json ts = typing_file_keys_json(ff, std::filesystem::absolute(std::filesystem::path(path)).parent_path());
+    if (!ts.members().empty()) j["typing_settings"] = ts;
+  }
+  if (!ff.site_rules.empty()) {
+    Json a = Json::array();
+    for (const auto& r : ff.site_rules) {
+      Json o = Json::object(), from = Json::array(), w = Json::array();
+      o["smarts"] = r.smarts;
+      o["type"] = r.type;
+      for (int x : r.from) from.push_back(x);
+      for (double x : r.w) w.push_back(x);
+      o["from"] = from;
+      o["w"] = w;
+      if (r.c != 0) o["c"] = r.c;
+      a.push_back(o);
+    }
+    j["virtual_sites"] = a;
+  }
+  if (!ff.bead_templates.empty()) {
+    Json o = Json::object();
+    for (const auto& [k, v] : ff.bead_templates) o[k] = v;
+    j["bead_templates"] = o;
+  }
   if (ff.typing_ordered) j["typing_ordered"] = true;
   if (ff.typing_pairs_double_same) j["typing_pair_mode"] = "double_same";
   if (!ff.typing_pairs.empty()) {
@@ -762,8 +876,17 @@ FFDef load_forcefield(const std::string& path) {
         for (const auto& pr : j["typing_pairs"].items()) ff.typing_pairs.push_back({pr[0].str(), pr[1].str()});
     }
   }
+  // a saved force field's typing-file settings (save_forcefield writes its rules inline, these beside them)
+  if (j.has("typing_settings") && !(j.has("typing") && j["typing"].is_string())) typing_file_keys(ff, j["typing_settings"], path);
   for (const auto& t : ff.types)
-    if (!t.smarts.empty()) ff.typing.push_back({t.name, t.smarts, t.description, t.overrides, t.priority});
+    if (!t.smarts.empty()) {
+      // a rule already listed (a saved force field's "typing" holds its types' rules too) is not added twice
+      const bool listed = std::any_of(ff.typing.begin(), ff.typing.end(), [&](const TypingRule& r) {
+        return r.type == t.name && r.smarts == t.smarts && r.priority == t.priority && r.overrides == t.overrides && r.needs_elements.empty() &&
+               r.no_elements.empty() && r.atom_name.empty() && r.in_molecule.empty() && r.not_in_molecule.empty();
+      });
+      if (!listed) ff.typing.push_back({t.name, t.smarts, t.description, t.overrides, t.priority});
+    }
   return ff;
 }
 
@@ -1170,6 +1293,11 @@ FFDef import_moltemplate(const std::string& path) {
     if (!v.empty() && !numeric(v[0])) { r.style = v[0]; k = 1; }
     for (; k < v.size(); ++k)
       if (numeric(v[k])) r.params.push_back(std::stod(v[k]));
+    // lj/charmm*: eps sigma eps14 sigma14, the last two CHARMM's own 1-4 parameters (the "lj14" group parameterize reads)
+    if ((r.style.empty() ? ff.pair_style : r.style).rfind("lj/charmm", 0) == 0 && r.params.size() == 4) {
+      r.cross["lj14"] = {r.params[2], r.params[3]};
+      r.params.resize(2);
+    }
     r.comment = pair_comment[ab];
     ff.pairs.push_back(r);
   }
@@ -1538,7 +1666,8 @@ int recognise_molecule_templates(System& s, const FFDef& ff, std::vector<std::st
     std::set<std::pair<uint32_t, uint32_t>> sb;
     for (const auto& [i, j] : mbonds[m]) sb.insert({local[i], local[j]});
     const ExplicitTopology* hit = nullptr;
-    if (auto it = by_types.find(ty); it != by_types.end())
+    std::vector<std::string> fit;   // every template with these beads and bonds (and charges, when the structure has them)
+    if (auto it = by_types.find(ty); it != by_types.end()) {
       for (const auto& name : it->second) {
         auto it2 = built.find(name);
         if (it2 == built.end()) it2 = built.emplace(name, template_molecule(name, (*ff.molecule_templates)[name], ff, 1)).first;
@@ -1549,14 +1678,51 @@ int recognise_molecule_templates(System& s, const FFDef& ff, std::vector<std::st
         // Cl- are both TQ5)
         bool same_q = true;
         for (size_t k = 0; k < at.size() && s.has_charges; ++k) same_q = same_q && std::fabs(s.atoms[at[k]].charge - t.atoms[k].charge) < 1e-4;
-        if (tb == sb && same_q) {
-          hit = t.topology.get();
-          for (size_t k = 0; k < at.size(); ++k) s.atoms[at[k]].charge = t.atoms[k].charge, s.atoms[at[k]].resname = name;
-          break;
-        }
+        if (tb == sb && same_q) fit.push_back(name);
       }
+      // templates alike in beads and bonds (Na+ and Cl-; TMA+, BF4- and ClO4-; IBA and TBA, whose bond constants differ):
+      // the molecule's residue name picks one; templates the same in every term are one
+      std::string pick = fit.size() == 1 ? fit[0] : std::string();
+      if (fit.size() > 1) {
+        auto key = [](std::string x) {
+          x.erase(std::remove_if(x.begin(), x.end(), [](unsigned char c) { return std::isspace(c); }), x.end());
+          for (auto& c : x) c = char(std::toupper(static_cast<unsigned char>(c)));
+          return x;
+        };
+        const std::string rn = key(s.atoms[at[0]].resname);
+        for (const auto& name : fit)
+          if (!rn.empty() && key(name) == rn) { pick = name; break; }
+        // a PDB keeps three characters of a residue name (CLO4 comes back as CLO): the one template it begins
+        if (pick.empty() && rn.size() == 3) {
+          std::vector<std::string> pre;
+          for (const auto& name : fit)
+            if (key(name).rfind(rn, 0) == 0) pre.push_back(name);
+          if (pre.size() == 1) pick = pre[0];
+        }
+        auto body = [&](const std::string& name) {
+          Json o = Json::object();
+          for (const auto& [k, x] : (*ff.molecule_templates)[name].members())
+            if (k != "source") o[k] = x;
+          return o.dump(0);
+        };
+        if (pick.empty() && std::all_of(fit.begin() + 1, fit.end(), [&](const std::string& x) { return body(x) == body(fit[0]); })) pick = fit[0];
+      }
+      if (!pick.empty()) {
+        const System& t = built.at(pick);
+        hit = t.topology.get();
+        for (size_t k = 0; k < at.size(); ++k) s.atoms[at[k]].charge = t.atoms[k].charge, s.atoms[at[k]].resname = pick;
+      }
+    }
     if (!hit) {
-      if (unmatched && ty.size()) unmatched->push_back(ty.front() + (ty.size() > 1 ? " +" + std::to_string(ty.size() - 1) : std::string()));
+      if (unmatched && ty.size()) {
+        std::string u = ty.front() + (ty.size() > 1 ? " +" + std::to_string(ty.size() - 1) : std::string());
+        if (fit.size() > 1) {   // more than one template fits and nothing tells which
+          u += " (";
+          for (size_t q = 0; q < fit.size(); ++q) u += (q ? q + 1 == fit.size() ? " or " : ", " : "") + fit[q];
+          u += "? its residue name does not say)";
+        }
+        unmatched->push_back(u);
+      }
       continue;
     }
     ++found;
@@ -2785,7 +2951,8 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   }
   // CHARMM: impropers where the topology's IMPR records place them (FFDef::improper_placement)
   const std::set<std::string> unlisted(def.impropers_unlisted.begin(), def.impropers_unlisted.end());
-  for (uint32_t c = 0; def.oop_scheme != "msi2lmp" && c < n; ++c) {
+  // (none with an explicit topology: its impropers are among its dihedrals, like its other bonded terms)
+  for (uint32_t c = 0; def.oop_scheme != "msi2lmp" && !use_topo && c < n; ++c) {
     const auto& nbc = nb[c];
     if (nbc.size() < 3) continue;
     if (def.improper_max_neighbours > 0 && int(nbc.size()) > def.improper_max_neighbours) continue;
@@ -3019,7 +3186,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
             // a zero term adds nothing (class II impropers with K = 0 still carry angle-angle terms)
             bool zero = !best->params.empty() && best->params[0] == 0 && best->style != "fourier";
             for (const auto& [g, v] : best->cross)
-              for (double x : v) zero = zero && (g != "aa" || x == 0 || &x - v.data() >= 3);
+              for (size_t k = 0; k < v.size(); ++k) zero = zero && (g != "aa" || k >= 3 || v[k] == 0);   // aa: M1..M3 only
             if (zero) continue;
           }
             uint32_t q4[4];
@@ -3103,6 +3270,13 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   // every atom of their molecule
   if (!def.site_rules.empty()) {
     std::vector<char> used(n, 0);
+    // molecules: the structure's own ids, else its bonded fragments (a structure without ids has mol 0 on every atom);
+    // a site has no bonds, so it belongs to the molecule of the atoms its rule matched
+    int nmol = 0;
+    std::vector<int> mol = s.molecules(&nmol);
+    std::vector<std::vector<uint32_t>> members(size_t(std::max(nmol, 0)));
+    for (uint32_t j = 0; j < n; ++j)
+      if (mol[j] >= 0) members[size_t(mol[j])].push_back(j);
     for (const auto& [k, e] : site_matches(s, def)) {
       const auto& r = def.site_rules[k];
       const Vec3 pos = site_position(s, r, e);
@@ -3114,8 +3288,18 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
         ff.vsites.push_back(vs);
         ff.mass[i] = 0;
         used[i] = 1;
-        for (uint32_t j = 0; j < n; ++j)
-          if (j != i && s.atoms[j].mol == s.atoms[i].mol) add_ex(i, j);
+        const int m = mol[e[size_t(r.from[0])]];
+        if (m < 0) break;
+        if (mol[i] != m) {
+          if (mol[i] >= 0) {
+            auto& was = members[size_t(mol[i])];
+            was.erase(std::remove(was.begin(), was.end(), i), was.end());
+          }
+          mol[i] = m;
+          members[size_t(m)].push_back(i);
+        }
+        for (uint32_t j : members[size_t(m)])
+          if (j != i) add_ex(i, j);
         break;
       }
     }

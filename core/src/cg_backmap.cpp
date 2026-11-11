@@ -161,6 +161,7 @@ std::pair<int, int> orienting(size_t p, size_t L) {
 }  // namespace
 
 BackmapLibrary backmap_library(const LammpsFull& aa, const Json& mj, int conformers) {
+  if (conformers < 1) throw std::invalid_argument("conformers must be at least 1 (got " + std::to_string(conformers) + ")");
   BackmapLibrary lib;
   // a System for the mapping (ids, masses by type, bonds)
   System s;
@@ -220,9 +221,11 @@ BackmapLibrary backmap_library(const LammpsFull& aa, const Json& mj, int conform
       std::sort(at.begin(), at.end(), [&](uint32_t x, uint32_t y) { return s.atoms[x].id < s.atoms[y].id; });
       BackmapLibrary::Fragment fr;
       const Vec3 ref = s.atoms[at.front()].pos;
+      // the bead centre seen from this reference atom (the centre was made whole about another atom, so it may sit a box vector away)
+      const Vec3 ref_c = aa.cell.valid() ? aa.cell.minimum_image(ref - com[size_t(b)]) : ref - com[size_t(b)];
       for (uint32_t a : at) {
-        const Vec3 pa = ref + (aa.cell.valid() ? aa.cell.minimum_image(s.atoms[a].pos - ref) : s.atoms[a].pos - ref);
-        fr.type.push_back(s.atoms[a].type), fr.q.push_back(s.atoms[a].charge), fr.rel.push_back(pa - com[size_t(b)]);
+        const Vec3 da = aa.cell.valid() ? aa.cell.minimum_image(s.atoms[a].pos - ref) : s.atoms[a].pos - ref;
+        fr.type.push_back(s.atoms[a].type), fr.q.push_back(s.atoms[a].charge), fr.rel.push_back(ref_c + da);
       }
       if (!ci.instances.empty() && fr.type != ci.instances.front().type) { skipped[cls[size_t(b)]]++; continue; }
       const auto [n1, n2] = orienting(p, m.chains[c].size());
@@ -320,6 +323,7 @@ BackmapResult backmap_fragments(const BackmapLibrary& lib, const CgTopology& t, 
     std::vector<std::vector<int64_t>> ids(L);
     for (size_t p = 0; p < L; ++p) {
       const auto& ci = lib.classes[size_t(cls[p])];
+      if (ci.instances.empty()) throw std::invalid_argument("the reference has no conformer for bead class " + ci.kind + " (" + ci.role + ")");
       const auto& fr = ci.instances[size_t(unit01() * double(ci.instances.size())) % ci.instances.size()];
       // the target bead's orienting neighbours (whole along the chain by minimum images)
       const auto [n1, n2] = orienting(p, L);
@@ -340,6 +344,39 @@ BackmapResult backmap_fragments(const BackmapLibrary& lib, const CgTopology& t, 
         R3 = {{{1 - 2 * (q2 * q2 + q3 * q3), 2 * (q1 * q2 - q0 * q3), 2 * (q1 * q3 + q0 * q2)},
                {2 * (q1 * q2 + q0 * q3), 1 - 2 * (q1 * q1 + q3 * q3), 2 * (q2 * q3 - q0 * q1)},
                {2 * (q1 * q3 - q0 * q2), 2 * (q2 * q3 + q0 * q1), 1 - 2 * (q1 * q1 + q2 * q2)}}};
+        const double lt = norm(td[0]), lf = norm(fr.dirs[0]);
+        if (n1 >= 0 && lt > 1e-9 && lf > 1e-9) {
+          // rotation about unit axis k with the given cosine and sine of the angle (Rodrigues)
+          auto turn = [](const Vec3& k, double co, double si) {
+            std::array<std::array<double, 3>, 3> M{};
+            for (int i = 0; i < 3; ++i)
+              for (int j = 0; j < 3; ++j) M[size_t(i)][size_t(j)] = (i == j ? co : 0.0) + (1 - co) * k[size_t(i)] * k[size_t(j)];
+            M[0][1] -= si * k[2], M[0][2] += si * k[1];
+            M[1][0] += si * k[2], M[1][2] -= si * k[0];
+            M[2][0] -= si * k[1], M[2][1] += si * k[0];
+            return M;
+          };
+          const Vec3 f = fr.dirs[0] * (1.0 / lf), tt = td[0] * (1.0 / lt);
+          // the fragment's neighbour direction turned onto the target's
+          const Vec3 ax = cross(f, tt);
+          const double sa = norm(ax), ca = std::max(-1.0, std::min(1.0, dot(f, tt)));
+          std::array<std::array<double, 3>, 3> A{{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};
+          if (sa > 1e-9) A = turn(ax * (1.0 / sa), ca, sa);
+          else if (ca < 0) {
+            // opposite: half a turn about any axis normal to f
+            Vec3 o = cross(f, std::abs(f[0]) < 0.9 ? Vec3{1, 0, 0} : Vec3{0, 1, 0});
+            A = turn(o * (1.0 / norm(o)), -1.0, 0.0);
+          }
+          // then a random spin about that direction
+          const double ph = 2 * kPi * u1;
+          const auto S = turn(tt, std::cos(ph), std::sin(ph));
+          for (int i = 0; i < 3; ++i)
+            for (int j = 0; j < 3; ++j) {
+              double x = 0;
+              for (int k = 0; k < 3; ++k) x += S[size_t(i)][size_t(k)] * A[size_t(k)][size_t(j)];
+              R3[size_t(i)][size_t(j)] = x;
+            }
+        }
       }
       for (size_t k = 0; k < fr.type.size(); ++k) {
         LammpsFull::Atom a;

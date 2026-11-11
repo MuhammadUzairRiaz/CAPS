@@ -163,9 +163,12 @@ public sealed partial class MainViewModel
         RefreshParameters();
     }
 
-    /// <summary>The literal selected in the editor becomes a parameter of the macro's function (its default).</summary>
-    public string? PromoteToParameter(string literal, string? name = null)
+    /// <summary>The literal selected in the editor becomes a parameter of the macro's function (its default).
+    /// <paramref name="at"/> is where the selection starts in the script; that occurrence is the one replaced. Without it,
+    /// the first occurrence that stands as a whole token is used.</summary>
+    public string? PromoteToParameter(string literal, string? name = null, int? at = null)
     {
+        var start = at is int a0 ? a0 + literal.Length - literal.TrimStart().Length : -1;   // past the selection's leading blanks
         literal = literal.Trim();
         if (literal.Length == 0) return "Select a number or a quoted string in the script first";
         var isString = literal.Length >= 2 && (literal[0] == '"' && literal[^1] == '"' || literal[0] == '\'' && literal[^1] == '\'');
@@ -174,7 +177,37 @@ public sealed partial class MainViewModel
         name ??= isString ? $"text_{MacroParameters.Count + 1}" : $"value_{MacroParameters.Count + 1}";
         var type = isString ? "str" : literal.Contains('.') || literal.Contains('e') ? "float" : "int";
         var body = _macroText;
-        var idx = body.IndexOf(literal, StringComparison.Ordinal);
+        // a whole token only: not the tail of a longer number or name, not inside a comment
+        bool IsToken(int i)
+        {
+            static bool Part(char c) => char.IsLetterOrDigit(c) || c == '_' || c == '.';
+            if (i < 0 || i + literal.Length > body.Length || string.CompareOrdinal(body, i, literal, 0, literal.Length) != 0) return false;
+            if (!isString && (i > 0 && Part(body[i - 1]) || i + literal.Length < body.Length && Part(body[i + literal.Length]))) return false;
+            // nor the exponent of a longer number (the 5 of 1e-5)
+            if (!isString && i >= 3 && (body[i - 1] == '-' || body[i - 1] == '+') && (body[i - 2] == 'e' || body[i - 2] == 'E')
+                && (char.IsDigit(body[i - 3]) || body[i - 3] == '.')) return false;
+            var lineStart = i == 0 ? 0 : body.LastIndexOf('\n', i - 1) + 1;
+            var quote = '\0';
+            foreach (var c in body.AsSpan(lineStart, i - lineStart))
+            {
+                if (quote != '\0') { if (c == quote) quote = '\0'; }
+                else if (c == '"' || c == '\'') quote = c;
+                else if (c == '#') return false;
+            }
+            return isString || quote == '\0';   // a number inside a string is text, not a literal
+        }
+        int idx;
+        if (start >= 0)
+        {
+            if (!IsToken(start)) return "Select a whole number or quoted string in the code (not part of a longer word or a comment)";
+            idx = start;
+        }
+        else
+        {
+            idx = -1;
+            for (var i = body.IndexOf(literal, StringComparison.Ordinal); i >= 0; i = body.IndexOf(literal, i + 1, StringComparison.Ordinal))
+                if (IsToken(i)) { idx = i; break; }
+        }
         if (idx < 0) return "That text is not in the script";
         body = body[..idx] + name + body[(idx + literal.Length)..];
         // add to the signature: def macro(…):
@@ -293,20 +326,24 @@ public sealed partial class MainViewModel
             }
             using var proc = Process.Start(psi) ?? throw new InvalidOperationException("cannot start " + psi.FileName);
             _macroProc = proc;
+            // the readers append to sb themselves (under a lock) and only the display is posted, so once both pipes are
+            // drained sb holds the whole output, whatever is still queued on the UI thread
             var sb = new StringBuilder(MacroOutput);
-            void Pump(StreamReader r) => Task.Run(async () =>
+            var gate = new object();
+            void Show() => Avalonia.Threading.Dispatcher.UIThread.Post(() => { lock (gate) MacroOutput = sb.ToString(); });
+            Task Pump(StreamReader r) => Task.Run(async () =>
             {
                 string? line;
                 while ((line = await r.ReadLineAsync()) != null)
                 {
-                    var l = line;
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => { sb.AppendLine(l); MacroOutput = sb.ToString(); });
+                    lock (gate) sb.AppendLine(line);
+                    Show();
                 }
             });
-            Pump(proc.StandardOutput);
-            Pump(proc.StandardError);
+            var pumps = Task.WhenAll(Pump(proc.StandardOutput), Pump(proc.StandardError));
             await proc.WaitForExitAsync();
-            await Task.Delay(100);
+            // the pipes reach end of file once the script has exited, unless a process it left running still holds them
+            await Task.WhenAny(pumps, Task.Delay(10000));
             var code = proc.ExitCode;
             if (host != null && code == 0)   // the result, when the script handed one back
             {
@@ -315,12 +352,14 @@ public sealed partial class MainViewModel
             }
             var opened = code == 0 && File.Exists(result);
             if (opened) Open(result);
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            string all;
+            lock (gate)
             {
+                all = sb.ToString();
                 sb.AppendLine(code == 0 ? (opened ? "done · the result is open" : "done") : $"exit code {code}");
-                MacroOutput = sb.ToString();
-            });
-            var problems = ParseMacroProblems(sb.ToString(), _macroName);
+            }
+            Show();
+            var problems = ParseMacroProblems(all, _macroName);
             Avalonia.Threading.Dispatcher.UIThread.Post(() => SetMacroProblems(problems));
             Status = code == 0 ? $"{_macroName} finished{(opened ? " · its result is open" : "")}" : $"{_macroName} stopped with exit code {code}";
         }

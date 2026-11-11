@@ -46,13 +46,14 @@ void List::build(const std::vector<double>& x, const Cell& cell_in, double rl, c
   std::vector<uint32_t> col(n);
   std::vector<size_t> cstart(size_t(nu) * nv + 1, 0);
   for (size_t i = 0; i < n; ++i) {
+    // wrapped along periodic axes only: along a non-periodic axis an atom outside the cell keeps its place (the slot
+    // offset stays a lattice vector), and only its column is clamped to the edge
     Vec3 f = cell.to_fractional({x[3 * i], x[3 * i + 1], x[3 * i + 2]});
-    for (int k = 0; k < 3; ++k) {
-      if (cell.periodic[k]) f[k] -= std::floor(f[k]);
-      f[k] = std::clamp(f[k], 0.0, 1.0 - 1e-12);
-    }
+    for (int k = 0; k < 3; ++k)
+      if (cell.periodic[k]) f[k] = std::clamp(f[k] - std::floor(f[k]), 0.0, 1.0 - 1e-12);
     fr[i] = f;
-    const int cu = std::min(nu - 1, int(f[0] * nu)), cv = std::min(nv - 1, int(f[1] * nv));
+    const double fu = std::clamp(f[0], 0.0, 1.0 - 1e-12), fv = std::clamp(f[1], 0.0, 1.0 - 1e-12);
+    const int cu = std::min(nu - 1, int(fu * nu)), cv = std::min(nv - 1, int(fv * nv));
     col[i] = uint32_t(cu * nv + cv);
     ++cstart[col[i] + 1];
   }

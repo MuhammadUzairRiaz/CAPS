@@ -48,6 +48,8 @@ System graft_chains(const System& host, const ChainSpec& graft, const ChainGraft
   if (graft.units.empty()) throw GrowError("graft: the grafts' repeat units");
   if (o.sites.empty()) throw GrowError("graft: choose the site atoms");
   if (o.per_site < 1) throw GrowError("graft: at least one graft per site");
+  if (o.max_grafts > 0 && o.max_grafts < o.per_site)
+    throw GrowError("graft: the most grafts allowed (" + std::to_string(o.max_grafts) + ") is fewer than the grafts on one site (" + std::to_string(o.per_site) + ")");
   const auto nb = host.neighbours();
   const size_t n = host.atoms.size();
   // candidates
@@ -91,7 +93,7 @@ System graft_chains(const System& host, const ChainSpec& graft, const ChainGraft
   caps::shuffle(order.begin(), order.end(), rng);
   std::vector<uint32_t> pick;
   for (uint32_t a : order) {
-    if (o.max_grafts > 0 && int(pick.size()) * o.per_site >= o.max_grafts) break;
+    if (o.max_grafts > 0 && (int(pick.size()) + 1) * o.per_site > o.max_grafts) break;   // one more site would pass the cap
     if (U(rng) >= o.probability) continue;
     int hs = 0;
     for (uint32_t j : nb[a]) hs += host.atoms[j].element == 1;

@@ -345,8 +345,8 @@ std::vector<double> atom_column(const System& s, const std::string& name) {
   } else if (name == "mass") {
     for (size_t i = 0; i < n; ++i) v[i] = s.mass_of(s.atoms[i]);
   } else if (name == "molecule") {
-    const auto mol = s.molecules();
-    for (size_t i = 0; i < n; ++i) v[i] = s.has_mol ? double(s.atoms[i].mol) : double(mol[i] + 1);
+    const auto mol = s.molecules();   // the same numbering the "molecule" selector uses, so a brushed bar selects its atoms
+    for (size_t i = 0; i < n; ++i) v[i] = double(mol[i] + 1);
   } else if (name == "bonds" || name == "hybrid") {
     std::vector<int> deg(n, 0), doubles(n, 0), triples(n, 0), aromatic(n, 0);
     for (const auto& b : s.bonds) {

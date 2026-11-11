@@ -69,6 +69,10 @@ public sealed partial class MainViewModel
     public (double X, double Y)[] ScatterNeutronCurve { get; private set; } = [];
     public (double X, double Y)[] ScatterExperiment { get; private set; } = [];
     private (double X, double Y)[] _expRaw = [];
+    // the measured file as read (x in q or 2θ) and its name: a 2θ file is converted to q again whenever the source changes
+    private (double X, double Y)[] _expFilePts = [];
+    private bool _expTwoTheta;
+    private string _expFile = "";
     public bool ScatterHasCurve => ScatterXrayCurve.Length > 1 || ScatterNeutronCurve.Length > 1;
     public string ScatterFooter => _doc == null ? "" : $"{Analyze.FramesText} · {_doc.Summary().Atoms:N0} atoms";
 
@@ -197,21 +201,29 @@ public sealed partial class MainViewModel
         }
         if (pts.Count < 3) return "No two-column data found";
         if (!twoTheta && pts.Max(p => p.Item1) > 20) twoTheta = true;
-        var src = BeamSources[Math.Min(_xraySource, BeamSources.Length - 1)];
-        var lambda = src.Lambda;
-        _expRaw = pts.Select(p => twoTheta ? (4 * Math.PI * Math.Sin(p.Item1 * Math.PI / 360) / lambda, p.Item2) : p).OrderBy(p => p.Item1).ToArray();
+        _expFilePts = pts.ToArray();
+        _expTwoTheta = twoTheta;
+        _expFile = Path.GetFileName(path);
         ExperimentPath = twoTheta ? path : "";   // a pattern in 2θ can be refined against (MainViewModel.Refine.cs)
-        ExperimentName = Path.GetFileName(path) + (twoTheta ? $" · 2θ with {XraySources[_xraySource].Name}" : " · q");
         ScaleExperiment();
         ScatterChanged?.Invoke();
         return null;
     }
 
-    public void ClearExperiment() { _expRaw = []; ScatterExperiment = []; ExperimentName = ""; ExperimentPath = ""; ScatterChanged?.Invoke(); }
+    public void ClearExperiment()
+    {
+        _expFilePts = []; _expTwoTheta = false; _expFile = "";
+        _expRaw = []; ScatterExperiment = []; ExperimentName = ""; ExperimentPath = ""; ScatterChanged?.Invoke();
+    }
 
+    /// <summary>Puts the measured file on the q axis with the current source (2θ files) and normalises it.</summary>
     private void ScaleExperiment()
     {
-        if (_expRaw.Length < 3) { ScatterExperiment = []; return; }
+        if (_expFilePts.Length < 3) { _expRaw = []; ScatterExperiment = []; return; }
+        var src = BeamSources[Math.Min(_xraySource, BeamSources.Length - 1)];
+        var lambda = src.Lambda;
+        _expRaw = _expFilePts.Select(p => _expTwoTheta ? (4 * Math.PI * Math.Sin(p.X * Math.PI / 360) / lambda, p.Y) : p).OrderBy(p => p.Item1).ToArray();
+        ExperimentName = _expFile + (_expTwoTheta ? $" · 2θ with {src.Name}" : " · q");
         var max = _expRaw.Where(p => p.X >= 0.2).Select(p => p.Y).DefaultIfEmpty(1).Max();
         ScatterExperiment = max > 0 ? _expRaw.Select(p => (p.X, p.Y / max)).ToArray() : _expRaw;
     }

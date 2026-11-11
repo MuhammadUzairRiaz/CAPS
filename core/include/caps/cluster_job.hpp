@@ -61,9 +61,9 @@ void save_host_profile(const HostProfile& h, const std::string& path);
 std::string default_host_profile_path();             // $HOME/CAPS/host.json
 std::string expand_home(const std::string& path);    // a leading ~ → $HOME
 
-// The built-in job script; placeholders {title} {job} {jobdir} {account} {partition} {cpus} {mem} {time} {mail_lines}
-// {modules} {scratch_setup} {command} {keep_workspace} {array} {caps} {version}. A #SBATCH line whose placeholder is
-// empty is left out.
+// The built-in job script; placeholders {title} {job} {jobdir} {jobdir_sh} (shell-quoted) {account} {partition} {cpus}
+// {mem} {mem_total} {pbs_select} {time} {mail_lines} {modules} {scratch_setup} {command} {keep_workspace} {array} {caps}
+// {version}. A #SBATCH line whose placeholder is empty is left out.
 std::string default_job_template();               // SLURM
 std::string job_template_for(const std::string& scheduler);   // slurm | pbs | direct
 std::string fill_job_template(const std::string& tmpl, const std::map<std::string, std::string>& values);

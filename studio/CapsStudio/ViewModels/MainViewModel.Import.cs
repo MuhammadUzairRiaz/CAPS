@@ -170,10 +170,12 @@ public sealed partial class MainViewModel
         old?.Dispose();
     }
 
+    private int _impCloses;
     public void CloseImport()
     {
         ImportOpen = false;
         ++_impGen;
+        ++_impCloses;
         var old = ImportFragmentDoc;
         ImportFragmentDoc = null;
         ImportFragmentChanged?.Invoke();
@@ -185,10 +187,19 @@ public sealed partial class MainViewModel
     {
         if (_importPath.Length == 0 || _impBusy) return;
         var (path, opts) = (_importPath, ImportOptionsJson());
+        var closes = _impCloses;
         ImportBusy = true;
         CapsDocument doc;
         try { doc = await Task.Run(() => CapsDocument.Import(path, null, opts)); }
-        catch (Exception e) { ImportBusy = false; ImportError = e.Message; return; }
+        catch (Exception e)
+        {
+            // A dialog reopened meanwhile owns ImportBusy through its own preview.
+            if (closes == _impCloses) { ImportBusy = false; ImportError = e.Message; }
+            else if (!ImportOpen) ImportBusy = false;
+            return;
+        }
+        // Cancel, Esc or the backdrop closed the dialog while the file was read: drop the result.
+        if (closes != _impCloses) { if (!ImportOpen) ImportBusy = false; doc.Dispose(); return; }
         ImportBusy = false;
         CloseImport();
         if (!IsStudio) SetModule(8);

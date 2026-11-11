@@ -536,22 +536,45 @@ std::vector<Analog> enumerate_analogs(const std::string& core, const std::vector
     }
     return sub.substr(0, end) + closure + sub.substr(end);
   };
+  // two-digit closures already written in the core or a substituent; a marker used more than once
+  // takes one of the free ones for each further occurrence, so every copy of the substituent closes its own ring bond
+  std::vector<bool> used(100, false);
+  auto mark_used = [&used](const std::string& s) {
+    for (size_t i = 0; i + 2 < s.size(); ++i)
+      if (s[i] == '%' && std::isdigit(static_cast<unsigned char>(s[i + 1])) && std::isdigit(static_cast<unsigned char>(s[i + 2])))
+        used[size_t((s[i + 1] - '0') * 10 + (s[i + 2] - '0'))] = true;
+  };
+  mark_used(core);
+  for (const auto& [k, subs] : groups)
+    for (const auto& sub : subs) mark_used(sub);
+  for (int k = 1; k <= 9; ++k) used[size_t(90 + k)] = true;
   std::vector<Analog> out;
   std::vector<size_t> idx(groups.size(), 0);
   while (out.size() < max) {
     std::string smi = core, tail, name;
+    int spare = 89;  // the next free closure number to try for a repeated marker
     for (size_t g = 0; g < groups.size(); ++g) {
       const int k = groups[g].first;
       const std::string& sub = groups[g].second[idx[g]];
-      const std::string mark = "[*:" + std::to_string(k) + "]", closure = "%9" + std::to_string(k);
+      const std::string mark = "[*:" + std::to_string(k) + "]";
       const bool hydrogen = sub == "H" || sub == "[H]";
-      // the marker becomes the closure (or, for hydrogen, nothing: the core atom's own hydrogen)
-      for (size_t p; (p = smi.find(mark)) != std::string::npos;) {
+      // each marker becomes a closure (or, for hydrogen, nothing: the core atom's own hydrogen)
+      for (size_t p, n = 0; (p = smi.find(mark)) != std::string::npos; ++n) {
         // a marker in a branch "(…)" alone disappears with its parentheses when it is hydrogen
-        if (hydrogen && p > 0 && smi[p - 1] == '(' && p + mark.size() < smi.size() && smi[p + mark.size()] == ')') smi.erase(p - 1, mark.size() + 2);
-        else smi.replace(p, mark.size(), hydrogen ? "" : closure);
+        if (hydrogen) {
+          if (p > 0 && smi[p - 1] == '(' && p + mark.size() < smi.size() && smi[p + mark.size()] == ')') smi.erase(p - 1, mark.size() + 2);
+          else smi.erase(p, mark.size());
+          continue;
+        }
+        std::string closure = "%9" + std::to_string(k);
+        if (n > 0) {
+          while (spare >= 10 && used[size_t(spare)]) --spare;
+          if (spare < 10) throw std::invalid_argument("the core has too many R group markers");
+          closure = "%" + std::to_string(spare--);
+        }
+        smi.replace(p, mark.size(), closure);
+        tail += "." + attach(sub, closure);
       }
-      if (!hydrogen) tail += "." + attach(sub, closure);
       name += (name.empty() ? "" : ", ") + std::string("R") + std::to_string(k) + "=" + sub;
     }
     out.push_back({smi + tail, name});

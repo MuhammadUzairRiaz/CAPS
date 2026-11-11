@@ -230,9 +230,11 @@ SceneExportReport write_obj(const Scene& sc, const std::string& path, int detail
   SceneExportReport rep;
   const Soup s = tessellate(sc, detail, rep);
   // colours as materials (a companion .mtl beside it, one material per colour), the portable way every OBJ reader knows
+  // the extension's dot is looked for in the file name only, so a dot in a directory name never cuts the path
   std::string mtl = path;
+  const auto sep = mtl.find_last_of("/\\");
   const auto dot = mtl.find_last_of('.');
-  mtl = (dot == std::string::npos ? mtl : mtl.substr(0, dot)) + ".mtl";
+  mtl = (dot == std::string::npos || (sep != std::string::npos && dot < sep) ? mtl : mtl.substr(0, dot)) + ".mtl";
   const std::string mtl_name = mtl.substr(mtl.find_last_of("/\\") == std::string::npos ? 0 : mtl.find_last_of("/\\") + 1);
   std::map<uint32_t, int> mats;   // packed 8-bit RGB + opacity → material index
   auto key = [&](uint32_t v) {
@@ -283,6 +285,17 @@ SceneExportReport write_gltf(const Scene& sc, const std::string& path, int detai
   SceneExportReport rep;
   const Soup s = tessellate(sc, detail, rep);
   const size_t nv = s.pos.size() / 3;
+  if (!nv || s.idx.empty()) {
+    // nothing shown: a valid glTF with an empty scene (zero-length buffers, views and accessors are not allowed)
+    std::string json = "{\"asset\":{\"version\":\"2.0\",\"generator\":\"CAPS\"},\"scene\":0,\"scenes\":[{\"name\":\"CAPS structure\"}]}";
+    while (json.size() % 4) json += ' ';
+    auto f = open_out(path, true);
+    auto u32 = [&](uint32_t v) { f.write(reinterpret_cast<const char*>(&v), 4); };
+    u32(0x46546C67); u32(2); u32(uint32_t(12 + 8 + json.size()));
+    u32(uint32_t(json.size())); u32(0x4E4F534A); f.write(json.data(), std::streamsize(json.size()));
+    if (!f) throw std::runtime_error("could not write " + path);
+    return rep;
+  }
   // one binary buffer: positions, normals, colours (RGBA float), indices (uint32)
   std::vector<uint8_t> bin;
   auto put = [&](const void* p, size_t bytes) { const auto* c = static_cast<const uint8_t*>(p); bin.insert(bin.end(), c, c + bytes); while (bin.size() % 4) bin.push_back(0); };
@@ -293,7 +306,6 @@ SceneExportReport write_gltf(const Scene& sc, const std::string& path, int detai
   float lo[3] = {1e30f, 1e30f, 1e30f}, hi[3] = {-1e30f, -1e30f, -1e30f};
   for (size_t k = 0; k < nv; ++k)
     for (int c = 0; c < 3; ++c) lo[c] = std::min(lo[c], s.pos[3 * k + size_t(c)]), hi[c] = std::max(hi[c], s.pos[3 * k + size_t(c)]);
-  if (!nv) lo[0] = lo[1] = lo[2] = hi[0] = hi[1] = hi[2] = 0;
   bool alpha = false;
   for (size_t k = 3; k < s.col.size(); k += 4) if (s.col[k] < 0.999f) { alpha = true; break; }
   char j[4096];
@@ -305,7 +317,7 @@ SceneExportReport write_gltf(const Scene& sc, const std::string& path, int detai
     "\"buffers\":[{\"byteLength\":%zu}],"
     "\"bufferViews\":[{\"buffer\":0,\"byteOffset\":%zu,\"byteLength\":%zu,\"target\":34962},{\"buffer\":0,\"byteOffset\":%zu,\"byteLength\":%zu,\"target\":34962},"
     "{\"buffer\":0,\"byteOffset\":%zu,\"byteLength\":%zu,\"target\":34962},{\"buffer\":0,\"byteOffset\":%zu,\"byteLength\":%zu,\"target\":34963}],"
-    "\"accessors\":[{\"bufferView\":0,\"componentType\":5126,\"count\":%zu,\"type\":\"VEC3\",\"min\":[%g,%g,%g],\"max\":[%g,%g,%g]},"
+    "\"accessors\":[{\"bufferView\":0,\"componentType\":5126,\"count\":%zu,\"type\":\"VEC3\",\"min\":[%.9g,%.9g,%.9g],\"max\":[%.9g,%.9g,%.9g]},"
     "{\"bufferView\":1,\"componentType\":5126,\"count\":%zu,\"type\":\"VEC3\"},{\"bufferView\":2,\"componentType\":5126,\"count\":%zu,\"type\":\"VEC4\"},"
     "{\"bufferView\":3,\"componentType\":5125,\"count\":%zu,\"type\":\"SCALAR\"}]}",
     alpha ? "BLEND" : "OPAQUE", bin.size(), o_pos, s.pos.size() * 4, o_nrm, s.nrm.size() * 4, o_col, s.col.size() * 4, o_idx, s.idx.size() * 4,

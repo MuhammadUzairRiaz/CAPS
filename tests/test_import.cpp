@@ -152,8 +152,9 @@ TEST(Import, MaterialsStudioCarRoundTrip) {
   for (size_t m = 0; m < 2; ++m) {
     Vec3 c{0, 0, 0};
     for (size_t i = 3 * m; i < 3 * m + 3; ++i) c = c + b.atoms[i].pos;
-    const Vec3 f = b.cell.to_fractional(c);
-    for (int k = 0; k < 3; ++k) EXPECT_TRUE(f[k] * 3 >= -1e-9 && f[k] * 3 < 3 + 1e-9);
+    const Vec3 f = b.cell.to_fractional(c * (1.0 / 3));   // the molecule's centre
+    for (int k = 0; k < 3; ++k) EXPECT_TRUE(f[k] >= -1e-9 && f[k] < 1 + 1e-9) << "molecule " << m << " axis " << k << ": " << f[k];
+    for (size_t i = 3 * m; i < 3 * m + 3; ++i) EXPECT_GT(norm(b.atoms[i].pos - a.atoms[i].pos) + norm(b.atoms[i].pos), 0.5);   // not collapsed to the origin
   }
   EXPECT_NEAR(norm(b.cell.b), norm(a.cell.b), 1e-6);
   EXPECT_NEAR(dot(b.cell.a, b.cell.b), dot(a.cell.a, a.cell.b), 1e-4);

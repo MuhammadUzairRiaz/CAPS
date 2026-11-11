@@ -69,7 +69,10 @@ int cap_edges(System& s) {
       if (honeycomb_element(s.atoms[i].element) && deg[i] <= 1) { again = true; continue; }
       add(t, s.atoms[i].element, s.atoms[i].pos, s.atoms[i].mol);
     }
-    if (again) s = std::move(t);
+    if (again) {   // keep the System's title and flags: only its atoms and types change
+      s.atoms = std::move(t.atoms);
+      s.types = std::move(t.types);
+    }
   }
   const auto bonds = crystal_bonds(s);
   std::vector<std::vector<Vec3>> dirs(s.atoms.size());
@@ -408,11 +411,13 @@ System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* re
     Vec3 centre = c.origin + (c.a + c.b) * 0.5;
     if (o.on_atom) {
       double best = 1e300;
+      Vec3 pick = centre;
       for (const auto& at : bulk.atoms) {
         Vec3 d = c.minimum_image(at.pos - centre);
         d[2] = 0;
-        if (norm(d) < best) best = norm(d), centre = centre + Vec3{d[0], d[1], 0};
+        if (norm(d) < best) best = norm(d), pick = centre + d;
       }
+      centre = pick;
     }
     System s;
     s.cell.a = {box, 0, 0};
@@ -822,6 +827,7 @@ System build_pore(const PoreOptions& o, PoreReport* rep) {
     const double ztop = zlast + o.width;           // the upper wall's inner sheet
     const double zmax = ztop + (layers - 1) * gap;
     walls.cell = sheet.cell;
+    walls.types = sheet.types;
     walls.cell.c = {0, 0, o.vacuum ? zmax + std::max(5.0, o.vacuum_gap) : zmax + gap};
     if (o.vacuum) walls.cell.periodic = {true, true, false};
     const double z0 = sheet.atoms.empty() ? 0 : sheet.atoms[0].pos[2];
@@ -893,6 +899,7 @@ System build_pore(const PoreOptions& o, PoreReport* rep) {
       for (int k = 0; k < 3; ++k) if (std::fabs((*v)[k]) < 1e-9 * l) (*v)[k] = 0;
     }
     walls.cell.origin = c.origin;
+    walls.types = bulk.types;   // wall atoms keep the bulk's type numbers; passivation H and O are numbered after them
     const Vec3 axis = c.origin + (walls.cell.a + walls.cell.b) * 0.5;
     const double R = o.width / 2;
     // tile the crystal over the block (enough a, b translations to cover a rotated cell), wrap, drop duplicates

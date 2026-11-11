@@ -297,7 +297,7 @@ void swap_model_terms(const ForceField& ff, const std::vector<double>& x, const 
   for (int c : S.site) maxc = std::max(maxc, c);
   for (const auto& p : S.pairs) maxc = std::max(maxc, std::max(p.a, p.b));
   const size_t M = size_t(maxc) + 1;
-  struct Par { double eps, sg, rc, rc2, lam, rmin, vshift; int n, m; };
+  struct Par { double eps, sg, rc, rc2, lam, rmin, vshift; int n, m; double depth; };
   std::vector<Par> par;
   std::vector<int> pidx(M * M, -1);
   double maxrc = 0;
@@ -307,11 +307,14 @@ void swap_model_terms(const ForceField& ff, const std::vector<double>& x, const 
     return 4 * q.eps * (sn - sm);
   };
   for (const auto& p : S.pairs) {
-    if (p.n <= p.m || p.eps <= 0 || p.sigma <= 0 || p.rc <= 0) throw FieldError("swap model: needs n > m and positive ε, σ and cut-off");
-    Par q{p.eps, p.sigma, p.rc, p.rc * p.rc, p.lambda, p.sigma * std::pow(2.0, 1.0 / (p.n - p.m)), 0, p.n, p.m};
+    if (p.m <= 0 || p.n <= p.m || p.eps <= 0 || p.sigma <= 0 || p.rc <= 0) throw FieldError("swap model: needs n > m > 0 and positive ε, σ and cut-off");
+    // the pair's minimum is at (n/m)^{1/(n−m)} σ (2^{1/(n−m)} σ for n = 2m), and v̂ is scaled by the well's depth there so
+    // it is 1 on both sides of r_min whatever n, m and the shift (the depth is ε for n = 2m unshifted, as in the papers)
+    Par q{p.eps, p.sigma, p.rc, p.rc * p.rc, p.lambda, p.sigma * std::pow(double(p.n) / p.m, 1.0 / (p.n - p.m)), 0, p.n, p.m, 0};
     if (q.rmin >= q.rc) throw FieldError("swap model: the pair's minimum lies beyond its cut-off");
     double d;
     if (p.shift) q.vshift = raw(q, p.rc, d);
+    q.depth = q.vshift - raw(q, q.rmin, d);
     pidx[size_t(p.a) * M + size_t(p.b)] = pidx[size_t(p.b) * M + size_t(p.a)] = int(par.size());
     par.push_back(q);
     maxrc = std::max(maxrc, p.rc);
@@ -393,8 +396,8 @@ void swap_model_terms(const ForceField& ff, const std::vector<double>& x, const 
     if (r <= q.rmin) { dh = 0; return 1.0; }
     double dvdr;
     const double v = raw(q, r, dvdr) - q.vshift;
-    dh = -dvdr / q.eps;
-    return -v / q.eps;
+    dh = -dvdr / q.depth;
+    return -v / q.depth;
   };
   for (uint32_t i = 0; i < n; ++i) {
     const auto& L = nbs[i];
@@ -921,9 +924,11 @@ void Evaluator::build(const std::vector<double>& x, const Cell& cell_in) {
     Vec3 f = cell.to_fractional({x[3 * i], x[3 * i + 1], x[3 * i + 2]});
     int bi[3];
     for (int k = 0; k < 3; ++k) {
-      if (cell.periodic[k]) f[k] -= std::floor(f[k]);
-      f[k] = std::clamp(f[k], 0.0, 1.0 - 1e-12);
-      bi[k] = std::min(nb[k] - 1, static_cast<int>(f[k] * nb[k]));
+      // periodic: wrapped into the cell; non-periodic: the true coordinate is kept (an atom past the face stays where
+      // it is) and only its bin is clamped to the edge bin
+      if (cell.periodic[k]) f[k] = std::clamp(f[k] - std::floor(f[k]), 0.0, 1.0 - 1e-12);
+      const double fb = std::clamp(f[k], 0.0, 1.0 - 1e-12);
+      bi[k] = std::min(nb[k] - 1, static_cast<int>(fb * nb[k]));
     }
     fra[i] = f;
     bina[i] = static_cast<uint32_t>(index(bi[0], bi[1], bi[2]));
@@ -2210,7 +2215,9 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
         if (q[i] == 0 || q[j] == 0) continue;
         const Vec3 d = mi(pos(j) - pos(i));
         const double r2 = dot(d, d);
-        if (r2 >= rc2) continue;
+        // beyond the cut-off the damped sum and the reaction field leave the pair out, but the Ewald reciprocal sum
+        // still holds it: under PME the pair goes on to the correction below
+        if (r2 >= rc2 && !pme) continue;
         const double r = std::sqrt(r2), qq = kCoulomb * q[i] * q[j];
         double ex2, fr;
         if (rf) {

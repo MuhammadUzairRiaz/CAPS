@@ -23,6 +23,8 @@ public sealed class BatchInput : INotifyPropertyChanged
     private string[] _values = [];
     public string State { get => _state; set { _state = value; Raise(nameof(State)); Raise(nameof(StateBrush)); } }
     public string Time { get => _time; set { _time = value; Raise(nameof(Time)); } }
+    /// <summary>Elapsed seconds of the last attempt (NaN before it ran); Time is only its display text.</summary>
+    public double Seconds { get; set; } = double.NaN;
     public string Error { get => _error; set { _error = value; Raise(nameof(Error)); } }
     public string[] Values { get => _values; set { _values = value; Raise(nameof(Values)); } }
     public Dictionary<string, double> Attributes { get; } = new();
@@ -158,7 +160,7 @@ public sealed partial class MainViewModel
         var sha = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(pipeline))).ToLowerInvariant();
         var last = _batchFrame == 0;
         var workers = new[] { 1, 2, 4, 8 }[_batchWorkers];
-        foreach (var b in BatchInputs) { b.State = "queued"; b.Time = "—"; b.Error = ""; b.Values = []; b.Attributes.Clear(); }
+        foreach (var b in BatchInputs) { b.State = "queued"; b.Time = "—"; b.Seconds = double.NaN; b.Error = ""; b.Values = []; b.Attributes.Clear(); }
         BatchRunning = true;
         _batchStop = false;
         _batchPaused = false;
@@ -208,12 +210,14 @@ public sealed partial class MainViewModel
                     });
                     foreach (var (k, v) in attrs) b.Attributes[k] = v;
                     b.State = "done";
-                    b.Time = FormatSeconds(t0.Elapsed.TotalSeconds);
+                    b.Seconds = t0.Elapsed.TotalSeconds;
+                    b.Time = FormatSeconds(b.Seconds);
                     RefreshBatchTable();
                 }
                 catch (Exception e)
                 {
-                    b.Time = FormatSeconds(t0.Elapsed.TotalSeconds);
+                    b.Seconds = t0.Elapsed.TotalSeconds;
+                    b.Time = FormatSeconds(b.Seconds);
                     bool again;
                     lock (gate) again = _batchOnError == 1 && retried.Add(b);
                     if (again)
@@ -242,7 +246,7 @@ public sealed partial class MainViewModel
             var csv = new StringBuilder();
             csv.AppendLine(string.Join(",", new[] { "input", "state", "seconds", "pipeline_sha256" }.Concat(_batchKeys)));
             foreach (var b in BatchInputs)
-                csv.AppendLine(string.Join(",", new[] { Quote(b.Path), b.State, b.Time.Replace(" s", "").Replace("—", ""), sha }
+                csv.AppendLine(string.Join(",", new[] { Quote(b.Path), b.State, double.IsFinite(b.Seconds) ? b.Seconds.ToString("F1", CultureInfo.InvariantCulture) : "", sha }
                     .Concat(_batchKeys.Select(k => b.Attributes.TryGetValue(k, out var v) && double.IsFinite(v) ? v.ToString("R", CultureInfo.InvariantCulture) : ""))));
             File.WriteAllText(Path.Combine(dir, "results.csv"), csv.ToString());
             File.WriteAllText(Path.Combine(dir, "pipeline.json"), pipeline.Length > 0 ? pipeline : "{\"steps\":[]}");

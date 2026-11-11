@@ -53,10 +53,11 @@ double energy(const ForceField& ff, const std::vector<double>& x, const Cell& c)
 
 // The model written out directly (all pairs by the minimum image): the reference for the evaluator's sums.
 double reference(const std::vector<int>& cls, const SwapModel::Pair& p, const std::vector<double>& x, const Cell& c) {
-  const double rmin = p.sigma * std::pow(2.0, 1.0 / (p.n - p.m));
+  const double rmin = p.sigma * std::pow(double(p.n) / p.m, 1.0 / (p.n - p.m));
   auto v = [&](double r) { return 4 * p.eps * (std::pow(p.sigma / r, p.n) - std::pow(p.sigma / r, p.m)); };
   const double vs = p.shift ? v(p.rc) : 0;
-  auto hat = [&](double r) { return r <= rmin ? 1.0 : -(v(r) - vs) / p.eps; };
+  const double depth = vs - v(rmin);   // the well's depth: ε for n = 2m unshifted
+  auto hat = [&](double r) { return r <= rmin ? 1.0 : -(v(r) - vs) / depth; };
   const size_t n = cls.size();
   auto dist = [&](size_t i, size_t j) {
     Vec3 d{x[3 * j] - x[3 * i], x[3 * j + 1] - x[3 * i + 1], x[3 * j + 2] - x[3 * i + 2]};

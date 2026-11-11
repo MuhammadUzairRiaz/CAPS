@@ -85,7 +85,14 @@ std::vector<TensionSample> tension_samples(const ThermoLog& log, int axis, doubl
   for (const auto& row : log.rows) {
     TensionSample x;
     x.pn = row[size_t(pn)], x.pt1 = row[size_t(p1)], x.pt2 = row[size_t(p2)];
-    x.ln = len >= 0 ? row[size_t(len)] : hi >= 0 && lo >= 0 ? row[size_t(hi)] - row[size_t(lo)] : cell_length;
+    // a run in the same log that did not print these columns leaves NaN in its rows: skip them
+    if (!std::isfinite(x.pn) || !std::isfinite(x.pt1) || !std::isfinite(x.pt2)) continue;
+    // the cell length: L column, else hi - lo, else the given length, taking the first one this row has
+    x.ln = NAN;
+    if (len >= 0) x.ln = row[size_t(len)];
+    if (!std::isfinite(x.ln) && hi >= 0 && lo >= 0) x.ln = row[size_t(hi)] - row[size_t(lo)];
+    if (!std::isfinite(x.ln) && cell_length > 0) x.ln = cell_length;
+    if (!std::isfinite(x.ln)) continue;
     out.push_back(x);
   }
   return out;

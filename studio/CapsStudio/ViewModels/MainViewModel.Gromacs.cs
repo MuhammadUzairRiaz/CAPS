@@ -78,9 +78,10 @@ public sealed partial class MainViewModel
                 doc.Save(Path.Combine(dir, "system.data"));
                 var deck = doc.LammpsInput("system.data");
                 // a many-body potential (Tersoff, AIREBO …): LAMMPS's van der Waals includes it, CAPS does not evaluate it —
-                // its energy is computed apart and taken out of the comparison
+                // its energy is computed apart and taken out of the comparison. Stillinger-Weber (sw) and the Coulomb
+                // sub-styles (coul/long, born/coul/dsf/cs …) are also written for all pairs, but CAPS evaluates those
                 var mbStyle = deck.Split('\n').Select(l => l.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-                                  .FirstOrDefault(w => w.Length > 4 && w[0] == "pair_coeff" && w[1] == "*" && w[2] == "*" && !w[3].StartsWith("coul", StringComparison.Ordinal))?[3];
+                                  .FirstOrDefault(w => w.Length > 4 && w[0] == "pair_coeff" && w[1] == "*" && w[2] == "*" && w[3] != "sw" && !w[3].Contains("coul", StringComparison.Ordinal))?[3];
                 File.WriteAllText(Path.Combine(dir, "system.in"), deck + (mbStyle != null ? $"\ncompute mb all pair {mbStyle}" : "") +
                     "\nthermo_style custom step pe ebond eangle edihed eimp evdwl ecoul elong press" + (mbStyle != null ? " c_mb" : "") + "\nthermo_modify format float %.10f\nrun 0\n");
                 // metal units (eV): back to kcal/mol by LAMMPS's own factor
@@ -153,17 +154,25 @@ public sealed partial class MainViewModel
     {
         var inv = CultureInfo.InvariantCulture;
         var nb = doc.Gromacs(null);
+        var berendsen = _mdEnsemble == 3 || _mdBarostat == 1;
+        var mttk = MdHasBarostat && !berendsen && _mdBarostat == 2;   // GROMACS runs MTTK with the velocity Verlet integrator only
         var respa = RespaSteps > 1 && !(MdHasThermostat && _mdThermostat == 1);
+        var mts = respa && !mttk;   // GROMACS's multiple time stepping needs the leap-frog md integrator
         var dtPs = _mdDt / 1000 / (respa ? RespaSteps : 1);
         var steps = (long)_mdSteps * (respa ? RespaSteps : 1);
         var every = (long)_mdFrameEvery * (respa ? RespaSteps : 1);
+        // nstenergy and nstlog: a tenth of the frame interval, kept a multiple of the r-RESPA factor as GROMACS requires
+        var nstEnergy = (long)Math.Max(1, _mdFrameEvery / 10) * (respa ? RespaSteps : 1);
         var sb = new System.Text.StringBuilder();
         sb.Append("; GROMACS run parameters written by CAPS Studio: the same force field and settings as this Dynamics run\n");
-        sb.Append(MdHasThermostat && _mdThermostat == 1 ? "integrator               = sd          ; Langevin\n" : "integrator               = md\n");
+        sb.Append(MdHasThermostat && _mdThermostat == 1 ? "integrator               = sd          ; Langevin\n"
+                : mttk ? "integrator               = md-vv       ; velocity Verlet, as MTTK needs\n" : "integrator               = md\n");
         sb.Append(string.Format(inv, "dt                       = {0:0.######}\nnsteps                   = {1}\n", dtPs, steps));
-        if (respa)
+        if (mts)
             sb.Append(string.Format(inv, "mts                      = yes         ; r-RESPA: bonded forces every step, non-bonded every {0}\nmts-levels               = 2\nmts-level2-forces        = longrange-nonbonded nonbonded pair\nmts-level2-factor        = {0}\n", RespaSteps));
-        sb.Append(string.Format(inv, "nstxout-compressed       = {0}\nnstenergy                = {1}\nnstlog                   = {1}\n", every, Math.Max(1, every / 10)));
+        else if (respa)
+            sb.Append(string.Format(inv, "; r-RESPA ({0} inner steps) has no md-vv form in GROMACS: every force at the inner step instead\n", RespaSteps));
+        sb.Append(string.Format(inv, "nstxout-compressed       = {0}\nnstenergy                = {1}\nnstlog                   = {1}\n", every, nstEnergy));
         if (_mdConstraints > 0)
         {   // the core's settings say every bond is flexible: this run holds some
             nb = string.Join("\n", nb.Split('\n').Where(l => !l.StartsWith("constraints ", StringComparison.Ordinal)));
@@ -187,8 +196,6 @@ public sealed partial class MainViewModel
         else sb.Append("tcoupl                   = no\n");
         if (MdHasBarostat)
         {
-            var berendsen = _mdEnsemble == 3 || _mdBarostat == 1;
-            var mttk = !berendsen && _mdBarostat == 2;
             sb.Append(string.Format(inv, "pcoupl                   = {0}\npcoupltype               = isotropic\ntau-p                    = {1:0.####}\nref-p                    = {2:0.#####}\ncompressibility          = 4.5e-5\n",
                 berendsen ? "Berendsen" : mttk ? "MTTK" : "C-rescale", _mdTauP / 1000, _mdPressure * 1.01325));
             if (mttk) sb.Append("nstcalcenergy            = 1           ; MTTK needs the energies every step\n");

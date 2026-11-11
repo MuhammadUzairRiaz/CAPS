@@ -643,17 +643,20 @@ class Document:
     def md(self, steps: int = 10000, dt: float = 1.0, temperature: float = 300.0, thermostat: str = "bussi", barostat: str = "none",
            pressure: float = 1.0, seed: int = 1, frame_every: int = 1000, thermo_every: int = 100, cutoff: float = 10.0,
            respa: int = 1, constraints: str = "none", constraint_solver: str = "shake", couple_axes: str = "",
-           efield: tuple = (0.0, 0.0, 0.0), full_shape: bool = False, hmr: float = 0.0, precision: str = "mixed") -> str:
-        """Molecular dynamics from the current frame; the frames recorded become the document's frames. respa > 1: r-RESPA,
+           efield: tuple = (0.0, 0.0, 0.0), full_shape: bool = False, hmr: float = 0.0, precision: str = "mixed",
+           tau_t: float = 100.0, tau_p: float = 1000.0, coulomb: bool = True, tail: bool = True, new_velocities: bool = False) -> str:
+        """Molecular dynamics from the current frame; the frames recorded become the document's frames. tau_t and tau_p
+        (fs) are the thermostat and barostat coupling times; new_velocities draws fresh velocities at temperature (seed);
+        coulomb=False leaves the charges out, tail=False the LJ tail correction. respa > 1: r-RESPA,
         the bonded forces every dt / respa (e.g. dt=2, respa=4 with hydrogens). constraints "h-bonds" (bonds to hydrogen,
         rigid water) or "all-bonds": SHAKE/RATTLE, for dt=2 (the alternative to respa). thermostat "nose-hoover" with
         barostat "mtk" runs as LAMMPS's fix nvt / fix npt iso. constraint_solver "lincs" puts the positions back on the
         constraints with LINCS (as GROMACS), "shake" with SHAKE (as LAMMPS); the same result to the tolerance. hmr > 0
         (3.024 usual) gives the hydrogens that mass, taken from their bonded atoms: the same equilibrium, slower hydrogens
         (with h-bonds, dt up to 3 fs; 4 fs does not hold the energy on polystyrene)."""
-        o = _MdOpts(dt, steps, temperature, {"none": 0, "bussi": 1, "langevin": 2, "nose-hoover": 3}[thermostat], 100.0,
-                    {"none": 0, "crescale": 1, "berendsen": 2, "mtk": 3}[barostat], pressure, 1000.0, 0, seed, thermo_every, frame_every,
-                    cutoff, 1, 1, 0, respa, {"none": 0, "h-bonds": 1, "all-bonds": 2}[constraints], 0, 0,
+        o = _MdOpts(dt, steps, temperature, {"none": 0, "bussi": 1, "langevin": 2, "nose-hoover": 3}[thermostat], tau_t,
+                    {"none": 0, "crescale": 1, "berendsen": 2, "mtk": 3}[barostat], pressure, tau_p, int(new_velocities), seed,
+                    thermo_every, frame_every, cutoff, int(coulomb), int(tail), 0, respa, {"none": 0, "h-bonds": 1, "all-bonds": 2}[constraints], 0, 0,
                     {"shake": 0, "lincs": 1}[constraint_solver])
         o.efield[:] = [float(e) for e in efield]   # V/Å on the partial charges (LAMMPS fix efield)
         o.hmr = float(hmr)
@@ -946,16 +949,34 @@ class Document:
         """Properties of the frames (the ids of caps analyze: density, rdf, sq, xray, electron, neutron, rg, ree, cn,
         persistence, msd, diffusion, ced, ffv (radii="bondi" | "uff" | "forcefield"), zprofile / adhesion / interaction /
         orientation (surface="1-3,7" molecule ids, axis="x" | "y" | "z", zbin=0.5) …; tg runs a stepwise cooling of a copy, t_start/t_end/t_step/ps_per_step in options). A list of
-        {id, name, value, error, unit, ...}."""
+        {id, name, value, error, unit, ...}. axis also sets the direction of tensile and pull_shear / pull_normal ("x", "y",
+        "z" or 0, 1, 2; tensile also "xyz", the three averaged). Other options are the fields of the analysis settings
+        (frame_ps, timestep_fs, rdf_rmax, rdf_dr, elem_a, elem_b, inter_only, qmax, dq, fit_from, fit_to, probe, grid, cutoff …)
+        or of the run settings (temperature, rate, max_strain, …); an option that is neither raises TypeError."""
         ids = ",".join(_PROPERTY_ALIASES.get(p, p) for p in ([properties] if isinstance(properties, str) else properties))
+        # axis: the interface axis of the analysis (1..3, 0 = its default) and the run's axis (0..2, 3 = x, y and z averaged)
+        axes = {"": (0, 0), "x": (1, 0), "a": (1, 0), "0": (1, 0), "y": (2, 1), "b": (2, 1), "1": (2, 1),
+                "z": (3, 2), "c": (3, 2), "2": (3, 2), "xyz": (0, 3), "all": (0, 3), "3": (0, 3)}
+        axis_key = str(options.pop("axis", "")).strip().lower()
+        if axis_key not in axes:
+            raise ValueError("axis must be x, y, z (or xyz for a tensile test averaged over the three)")
+        surface_axis, run_axis = axes[axis_key]
         o = _AnalyzeOpts(first, last, stride, 0, 0, blocks, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, threads, int(options.pop("deuterate", 0)),
                          _enc(options.pop("group", "")),   # group: "selection", "molecules:1-4,7", "exclude-held"
                          _enc(options.pop("radii", "")),   # free volume: bondi | uff | forcefield
                          float(options.pop("zbin", 0)),    # interfaces: profile bin (Å)
-                         {"": 0, "x": 1, "a": 1, "y": 2, "b": 2, "z": 3, "c": 3}[str(options.pop("axis", "")).lower()],
+                         surface_axis,
                          _enc(str(options.pop("surface", ""))))   # the surface / filler molecule ids, "1-3,7"
-        if "tg" in ids.split(",") or options:   # the run's settings: tg's scan, the temperature of fluct / dielectric / cij_fluct
+        analyze_fields = {name for name, _ in _AnalyzeOpts._fields_}
+        for k in [k for k in options if k in analyze_fields]:   # frame_ps, rdf_rmax, elem_a, qmax, cutoff, …
+            setattr(o, k, options.pop(k))
+        run_fields = {name for name, _ in _MechOpts._fields_}
+        unknown = sorted(k for k in options if k not in run_fields)
+        if unknown:
+            raise TypeError(f"analyze() got unknown option(s): {', '.join(unknown)}")
+        if "tg" in ids.split(",") or options or run_axis:   # the run's settings: tg's scan, the temperature of fluct / dielectric / cij_fluct
             m = _MechOpts()
+            m.axis = run_axis   # tensile, pull_shear, pull_normal
             for k, v in options.items():
                 if k == "precision" and isinstance(v, str):   # tensile, tg: "mixed" (as the CLI's default) | "double"
                     v = {"mixed": 0, "double": 1}[v]
@@ -1000,12 +1021,17 @@ class Document:
         """Writes stem.top, stem.gro and stem.mdp for GROMACS with the same force field (a single-point run; energies and
         forces checked against GROMACS by bench/ff/check_gromacs.py). Returns the .mdp non-bonded settings, with
         "; note:" lines where GROMACS computes differently (DSF becomes PME; no cell)."""
-        need = library().caps_gromacs(self._h, None, None, 0)
+        need = library().caps_gromacs(self._h, None, None, 0)   # an estimate: writing adds restraint and freeze-group notes
         if need < 0:
             raise _error()
-        buf = C.create_string_buffer(need)
-        if library().caps_gromacs(self._h, _enc(str(stem)), buf, need) < 0:
+        buf = C.create_string_buffer(need + (1 << 16))
+        n = library().caps_gromacs(self._h, _enc(str(stem)), buf, len(buf))
+        if n < 0:
             raise _error()
+        if n > len(buf):   # the written text is longer still: write once more (the same files) with room for all of it
+            buf = C.create_string_buffer(int(n))
+            if library().caps_gromacs(self._h, _enc(str(stem)), buf, len(buf)) < 0:
+                raise _error()
         return buf.value.decode(errors="replace")
 
     def cg_map(self, scheme: str = "unit", per_bead: int = 3, temperature: float = 300.0, ibi: Optional[dict] = None,
@@ -1212,17 +1238,26 @@ def _tag(self, name: str, atoms=None, colour: str = "", op: str = "set") -> int:
     return k
 
 
-def _doc_json(self, fn: str, payload: dict) -> dict:
+def _doc_json(self, fn: str, payload: dict, changes_document: bool = False) -> dict:
+    """One call of fn(doc, json, out, cap) with room for its reply. A call that changes the document (conformer search, mode
+    animation) runs exactly once, so it gets a large buffer and is never repeated; a read-only call is repeated with a
+    bigger buffer when its reply did not fit."""
     lib = library()
     f = getattr(lib, fn)
     f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
     f.restype = C.c_int32
     arg = json.dumps(payload).encode()
-    n = f(self._h, arg, None, 0)
+    buf = C.create_string_buffer(1 << 24 if changes_document else 1 << 16)
+    n = f(self._h, arg, buf, len(buf))
     if n < 0:
         raise _error()
-    buf = C.create_string_buffer(n + 1)
-    f(self._h, arg, buf, n + 1)
+    if n > len(buf):
+        if changes_document:
+            raise CapsError(f"{fn}: the reply ({n} bytes) is larger than its buffer ({len(buf)} bytes)")
+        buf = C.create_string_buffer(int(n))
+        n = f(self._h, arg, buf, len(buf))
+        if n < 0:
+            raise _error()
     return json.loads(buf.value.decode(errors="replace"))
 
 
@@ -1266,7 +1301,7 @@ def _animate_mode(self, mode: int, amplitude: float = 0.3, frames: int = 20, sel
     """The document's frames become one period of normal mode `mode` (1 = the lowest), the largest atom displacement
     `amplitude` Å. Returns {wavenumber, modes, reduced_mass, ir, frames, notes}."""
     return _doc_json(self, "caps_mode_animate", {"mode": int(mode), "amplitude": float(amplitude), "frames": int(frames),
-                                                  "atoms": "selection" if selection else "all"})
+                                                  "atoms": "selection" if selection else "all"}, changes_document=True)
 
 
 def _conformers(self, trials: int = 50, method: str = "torsions", selection: bool = False, window: float = 10.0, rmsd: float = 0.5,
@@ -1275,7 +1310,8 @@ def _conformers(self, trials: int = 50, method: str = "torsions", selection: boo
     quenched snapshots of a 1000 K run ("anneal"), minimised and clustered by heavy-atom RMSD. The document's frames become
     the conformers, lowest first. Returns {conformers: [{energy, relative, population, found}], rotors, trials, notes}."""
     return _doc_json(self, "caps_conformer_frames", {"trials": int(trials), "method": method, "selection": bool(selection), "window": float(window),
-                                                      "rmsd": float(rmsd), "temperature": float(temperature), "seed": int(seed)})
+                                                      "rmsd": float(rmsd), "temperature": float(temperature), "seed": int(seed)},
+                     changes_document=True)
 
 
 def _rigid(self, molecules: str = "") -> int:

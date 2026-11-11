@@ -41,7 +41,9 @@ public sealed partial class FieldViewModel
         var doc = _doc();
         var dir = Paths.ForceFields;
         if (doc == null || dir == null) return;
-        var current = Selected?.Id;
+        // the force field actually assigned, not the one the library dropdown shows (the two differ until Assign);
+        // none for an assignment by group or from the structure's own file, where no single library entry applies
+        var current = !Assigned || IsGrouped || _assignedId is "" or "file" ? null : _assignedId;
         if (auto && Complete) { ClearCoverage(); return; }
         var ticket = ++_coverageTicket;
         CoverageBusy = true;

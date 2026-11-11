@@ -131,14 +131,22 @@ public partial class ExportDialog : PageBase
         else await Vm.ExportDialogImage(path, Marks);
     }
 
-    /// <summary>The image at full size on the clipboard.</summary>
+    /// <summary>The image at full size on the clipboard (PNG formats only: SVG and 3D scenes are not bitmaps).</summary>
     private async void OnCopy(object? s, RoutedEventArgs e)
     {
         var top = TopLevel.GetTopLevel(this);
         if (top?.Clipboard == null) return;
+        if (!Vm.ExportIsRaster) { Vm.Status = "Only PNG images can be copied to the clipboard. Pick PNG, or export the file"; return; }
         var path = Path.Combine(Path.GetTempPath(), "caps-export-" + Guid.NewGuid().ToString("N")[..8] + ".png");
-        if (await Vm.ExportDialogImage(path, Marks) == null) return;
-        using var bmp = new Avalonia.Media.Imaging.Bitmap(path);
+        byte[] bytes;
+        try
+        {
+            if (await Vm.ExportDialogImage(path, Marks) == null) return;
+            bytes = await File.ReadAllBytesAsync(path);
+        }
+        finally { try { File.Delete(path); } catch (IOException) { } catch (UnauthorizedAccessException) { } }
+        using var ms = new MemoryStream(bytes);
+        using var bmp = new Avalonia.Media.Imaging.Bitmap(ms);
         await top.Clipboard.SetBitmapAsync(bmp);
         Vm.Status = "Copied the image to the clipboard";
     }

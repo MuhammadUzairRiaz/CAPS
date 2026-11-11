@@ -69,8 +69,23 @@ public sealed partial class MainViewModel
         return _molOf;
     }
 
-    /// <summary>Where a walk starts: the focused atom, else the picked one, else the first.</summary>
-    private int FocusStart() => _focusAtom >= 0 ? _focusAtom : Picked >= 0 ? Picked : 0;
+    /// <summary>Where a walk starts: the focused atom, else the picked one, else the first (-1 when there are no atoms).</summary>
+    private int FocusStart()
+    {
+        var n = _doc == null ? 0 : _doc.Summary().Atoms;
+        if (n <= 0) return -1;
+        if (_focusAtom >= 0 && _focusAtom < n) return _focusAtom;
+        return Picked >= 0 && Picked < n ? Picked : 0;
+    }
+
+    /// <summary>Drops the focus when an edit has removed its atom (the index is past the current atom count).</summary>
+    private void DropStaleFocus()
+    {
+        if (_doc == null || _focusAtom < 0) return;
+        if (_focusAtom < _doc.Summary().Atoms) return;
+        _focusPrev = -1;
+        FocusAtom = -1;
+    }
 
     private void MoveFocus(int i)
     {
@@ -87,7 +102,8 @@ public sealed partial class MainViewModel
     public void FocusStep(int d)
     {
         if (_doc == null) return;
-        if (_focusAtom < 0) { MoveFocus(FocusStart()); return; }
+        DropStaleFocus();
+        if (_focusAtom < 0) { var start = FocusStart(); if (start >= 0) MoveFocus(start); return; }
         var mol = MolOf();
         var m = mol[_focusAtom];
         var i = _focusAtom;
@@ -103,6 +119,7 @@ public sealed partial class MainViewModel
     public void FocusMolecule(int d)
     {
         if (_doc == null) return;
+        DropStaleFocus();
         var mol = MolOf();
         var count = mol.Length == 0 ? 0 : mol.Max() + 1;
         if (count == 0) return;
@@ -115,7 +132,9 @@ public sealed partial class MainViewModel
     public void FocusBond()
     {
         if (_doc == null) return;
-        if (_focusAtom < 0) { MoveFocus(FocusStart()); return; }
+        DropStaleFocus();
+        if (_focusAtom < 0) { var start = FocusStart(); if (start >= 0) MoveFocus(start); return; }
+        if (_focusPrev >= _doc.Summary().Atoms) _focusPrev = -1;
         var bonded = _doc.Bonded(_focusAtom);
         if (bonded.Length == 0) { Announcement = $"Atom {SafeAtom(_focusAtom)?.Id} has no bonds."; return; }
         var onward = bonded.Where(b => b != _focusPrev)
@@ -126,6 +145,7 @@ public sealed partial class MainViewModel
     /// <summary>Space: select the focused atom (replacing the selection).</summary>
     public void FocusSelect()
     {
+        DropStaleFocus();
         if (!HasFocusAtom) return;
         Pick(_focusAtom);
         Announcement = "Selected. " + Describe(_focusAtom, 0);
@@ -134,6 +154,7 @@ public sealed partial class MainViewModel
     /// <summary>M: add the focused atom to the selection, measuring from the atoms selected before it.</summary>
     public void FocusMeasure()
     {
+        DropStaleFocus();
         if (!HasFocusAtom) return;
         Pick(_focusAtom, true);
         Announcement = HasMeasure ? MeasureText.Replace("\n", ". ") + "." : "Selected. " + Describe(_focusAtom, 0);

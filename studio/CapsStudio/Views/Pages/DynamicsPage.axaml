@@ -129,7 +129,10 @@
                 <TextBox Grid.Row="3" Text="{Binding LjTailText, Mode=OneWay}" IsReadOnly="True" ToolTip.Tip="Change it in Dynamics › Electrostatics (LJ)" />
                 <ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{x:Static vm:FieldViewModel.MixingChoices}" SelectedIndex="{Binding Field.MixingIndex}" HorizontalAlignment="Stretch"
                           ToolTip.Tip="{Binding Field.MixingRule, StringFormat='Unlike Lennard-Jones pairs: {0}. Another rule applies to every run and export (the force field assignment changes); explicit pair parameters still win'}" />
-                <TextBox Grid.Row="3" Grid.Column="2" Text="Double" IsReadOnly="True" />
+                <Panel Grid.Row="3" Grid.Column="2">
+                  <TextBox Text="Double" IsReadOnly="True" IsVisible="{Binding MdDoublePrecision}" ToolTip.Tip="Everything in double. Change it with Double precision (pair terms too) above" />
+                  <TextBox Text="Mixed" IsReadOnly="True" IsVisible="{Binding !MdDoublePrecision}" ToolTip.Tip="Pair terms in single precision with SIMD, sums in double. Change it with Double precision (pair terms too) above" />
+                </Panel>
               </Grid>
             </StackPanel>
           </Border>

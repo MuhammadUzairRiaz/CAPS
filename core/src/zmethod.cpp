@@ -113,9 +113,11 @@ ZResult z_method(const System& crystal, const ZMethodOptions& o) {
     m.seed = o.seed + uint64_t(1000 * t0);
     m.thermo_every = std::max(1, o.sample_every);
     m.frame_every = 0;
-    std::vector<double> order;
+    // one order sample per thermo row: the perfect crystal at step 0 (1 by construction of order0), then the same
+    // steps the thermo rows are written at, the last step included
+    std::vector<double> order{1.0};
     m.after_step = [&](const std::vector<double>& x, std::vector<double>&, const Cell&, int64_t step) {
-      if (step % m.thermo_every == 0) order.push_back(bragg_order(r.g, x.data(), n) / r.order0);
+      if (step % m.thermo_every == 0 || step == m.steps) order.push_back(bragg_order(r.g, x.data(), n) / r.order0);
     };
     const int idx = done;
     m.progress = [&](const ThermoRow& row) {

@@ -399,12 +399,24 @@ std::string citation_text(const std::string& key) {
           }
           if (done) continue;
           if (i + 2 < e.size()) {
-            const char a = e[i + 1], b = e[i + 2] == '{' && i + 3 < e.size() ? e[i + 3] : e[i + 2];
-            static const std::map<std::string, std::string> acc = {{"'e", "é"}, {"'a", "á"}, {"'o", "ó"}, {"'i", "í"}, {"`e", "è"}, {"\"a", "ä"}, {"\"o", "ö"}, {"\"u", "ü"}, {"\"U", "Ü"}};
-            if (auto it = acc.find(std::string{a, b}); it != acc.end()) {
-              out += it->second;
-              i += e[i + 2] == '{' ? 4 : 2;   // a closing brace after it is counted by the loop
-              continue;
+            // \'e, \'{e}, \'\i and \'{\i}: p ends on the accented letter (dotless \i reads as i)
+            const bool braced = e[i + 2] == '{';
+            size_t p = i + 2 + (braced ? 1 : 0);
+            if (p + 1 < e.size() && e[p] == '\\' && e[p + 1] == 'i') ++p;
+            if (p < e.size()) {
+              const char a = e[i + 1], b = e[p];
+              static const std::map<std::string, std::string> acc = {
+                  {"'e", "é"}, {"'a", "á"}, {"'o", "ó"}, {"'i", "í"}, {"'u", "ú"}, {"'c", "ć"}, {"'n", "ń"}, {"'s", "ś"}, {"'z", "ź"},
+                  {"'y", "ý"}, {"'E", "É"}, {"'A", "Á"}, {"'O", "Ó"}, {"'S", "Ś"},
+                  {"`e", "è"}, {"`a", "à"}, {"`o", "ò"}, {"`i", "ì"}, {"`u", "ù"},
+                  {"\"a", "ä"}, {"\"e", "ë"}, {"\"i", "ï"}, {"\"o", "ö"}, {"\"u", "ü"}, {"\"A", "Ä"}, {"\"O", "Ö"}, {"\"U", "Ü"},
+                  {"^a", "â"}, {"^e", "ê"}, {"^i", "î"}, {"^o", "ô"}, {"^u", "û"},
+                  {"~n", "ñ"}, {"~a", "ã"}, {"~o", "õ"}, {"cc", "ç"}, {"vc", "č"}, {"vs", "š"}, {"vz", "ž"}, {"vr", "ř"}, {"ve", "ě"}};
+              if (auto it = acc.find(std::string{a, b}); it != acc.end()) {
+                out += it->second;
+                i = p + (braced ? 1 : 0);   // on the letter, or on the brace closing it; the loop steps past
+                continue;
+              }
             }
           }
           continue;

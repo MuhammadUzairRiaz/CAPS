@@ -179,7 +179,9 @@ std::vector<CgRdf> CgRdfAccumulator::rdf(int si) const {
   const size_t ntp = types_.beads.size();
   size_t k = 0;
   const size_t nbin = size_t(std::ceil(o_.rmax / o_.dr));
-  const size_t nuse = std::min(nbin, size_t(rmax_used_ / o_.dr));
+  // whole bins inside the range counted; the small allowance keeps a range that ends on a bin edge (ibi-step sets rmax to
+  // the targets' last edge, r.back() + dr/2) from losing its last bin to rounding (e.g. 12.45 / 0.05 = 248.99999...)
+  const size_t nuse = std::min(nbin, size_t(rmax_used_ / o_.dr + 1e-6));
   for (size_t i = 0; i < ntp; ++i)
     for (size_t j = i; j < ntp; ++j, ++k) {
       CgRdf R;
@@ -213,6 +215,25 @@ std::vector<double> vec(const Json& a) {
   for (const auto& x : a.items()) v.push_back(x.number());
   return v;
 }
+
+// The grid ends where g(r) was measured. The accumulator bins to rmax, but a frame is counted only to half its cell width,
+// so g past that is 0 in every pair of every system. Kept, those bins read as -kT ln(1e-6) in the IBI start and the step
+// up at the half-box pulls the beads together. Cut r, g and counts back to the last bin any pair resolved (also for
+// targets.json files written before this).
+void trim_unresolved(CgTargets& t) {
+  size_t n = 0;
+  for (const auto& sys : t.rdf)
+    for (const auto& R : sys)
+      for (size_t b = R.g.size(); b > n; --b)
+        if (R.g[b - 1] > 0) { n = b; break; }
+  if (n < 2 || n >= t.r.size()) return;   // nothing measured (left as is) or nothing to cut
+  t.r.resize(n);
+  for (auto& sys : t.rdf)
+    for (auto& R : sys) {
+      if (R.g.size() > n) R.g.resize(n);
+      if (R.counts.size() > n) R.counts.resize(n);
+    }
+}
 }  // namespace
 
 CgTargets cg_targets(const CgRdfAccumulator& acc, double temperature, const std::vector<double>& pressure) {
@@ -225,6 +246,7 @@ CgTargets cg_targets(const CgRdfAccumulator& acc, double temperature, const std:
     t.rdf.push_back(acc.rdf(s));
     t.pressure.push_back(size_t(s) < pressure.size() ? pressure[size_t(s)] : 1.0);
   }
+  trim_unresolved(t);
   return t;
 }
 
@@ -280,6 +302,7 @@ CgTargets cg_targets_from_json(const Json& j) {
     }
     t.rdf.push_back(std::move(v));
   }
+  trim_unresolved(t);
   return t;
 }
 

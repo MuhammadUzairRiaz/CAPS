@@ -63,6 +63,43 @@ Cell lammps_cell(double xlo, double xhi, double ylo, double yhi, double zlo, dou
   return c;
 }
 
+// LAMMPS boxes are restricted triclinic: a along x, b in the xy plane, c with a positive z part. Any other cell is
+// turned into that form by a proper rotation about its origin, and positions are carried along with to_frame. A cell
+// already in that form is kept exactly as it is.
+struct LammpsFrame {
+  Cell cell;
+  bool rotated = false;
+  Vec3 ex{1, 0, 0}, ey{0, 1, 0}, ez{0, 0, 1};
+  Vec3 origin{0, 0, 0};   // the original cell's origin, the point the rotation turns about
+  Vec3 to_frame(const Vec3& r) const {
+    if (!rotated) return r;
+    const Vec3 d = r - origin;
+    return origin + Vec3{dot(d, ex), dot(d, ey), dot(d, ez)};
+  }
+};
+
+LammpsFrame lammps_frame(const Cell& c) {
+  LammpsFrame f;
+  f.cell = c;
+  f.origin = c.origin;
+  if (!c.valid()) return f;
+  const double tol = 1e-10 * std::max({norm(c.a), norm(c.b), norm(c.c), 1.0});
+  if (std::fabs(c.a[1]) <= tol && std::fabs(c.a[2]) <= tol && std::fabs(c.b[2]) <= tol && c.a[0] > 0 && c.b[1] > 0 && c.c[2] > 0) return f;
+  const Vec3 n = cross(c.a, c.b);
+  f.rotated = true;
+  f.ex = c.a * (1.0 / norm(c.a));
+  f.ez = n * (1.0 / norm(n));
+  f.ey = cross(f.ez, f.ex);
+  f.cell.a = {norm(c.a), 0, 0};
+  f.cell.b = {dot(c.b, f.ex), dot(c.b, f.ey), 0};
+  f.cell.c = {dot(c.c, f.ex), dot(c.c, f.ey), dot(c.c, f.ez)};
+  if (f.cell.c[2] < 0) {   // a left-handed cell: the same box, spanned by -c from the far face
+    f.cell.origin = f.cell.origin + f.cell.c;
+    f.cell.c = f.cell.c * -1.0;
+  }
+  return f;
+}
+
 void assign_elements(System& s) {
   int guessed = 0, sites = 0;
   for (auto& at : s.atoms) {
@@ -268,6 +305,13 @@ Trajectory read_lammps_dump(const std::string& path, const System* topology, siz
   bool first = true;
   std::vector<std::string> cols;
   size_t lineno = 0;
+  // A topology's atoms by id: frames are laid out in the topology's own order, which need not be by id (write_data
+  // from a parallel run lists atoms per processor). Without unique ids the frames are kept in id order.
+  std::unordered_map<int64_t, size_t> topo_index;
+  if (topology) {
+    for (size_t i = 0; i < topology->atoms.size(); ++i) topo_index.emplace(topology->atoms[i].id, i);
+    if (topo_index.size() != topology->atoms.size()) topo_index.clear();
+  }
 
   while (std::getline(in, line)) {
     ++lineno;
@@ -355,10 +399,26 @@ Trajectory read_lammps_dump(const std::string& path, const System* topology, siz
           xvals[e][i] = end && *end == 0 ? float(v) : std::numeric_limits<float>::quiet_NaN();
         }
       }
-      // Frames are stored in id order so topology indices line up (the extra columns follow the same order).
+      // Frames are stored in the topology's atom order, matched by id, else in id order (the extra columns follow the
+      // same order).
+      if (topology && topology->atoms.size() != atoms.size())
+        throw ReadError("dump has " + std::to_string(atoms.size()) + " atoms but the topology has " + std::to_string(topology->atoms.size()));
       std::vector<size_t> ord(atoms.size());
-      std::iota(ord.begin(), ord.end(), size_t(0));
-      std::sort(ord.begin(), ord.end(), [&](size_t x, size_t y) { return atoms[x].id < atoms[y].id; });
+      if (!topo_index.empty() && cid >= 0) {   // without an id column the file order is the topology's order
+        const size_t unset = std::numeric_limits<size_t>::max();
+        std::fill(ord.begin(), ord.end(), unset);
+        for (size_t i = 0; i < atoms.size(); ++i) {
+          auto it = topo_index.find(atoms[i].id);
+          if (it == topo_index.end())
+            throw ReadError(path + ": atom id " + std::to_string(atoms[i].id) + " at timestep " + std::to_string(step) + " is not in the topology");
+          if (ord[it->second] != unset)
+            throw ReadError(path + ": atom id " + std::to_string(atoms[i].id) + " appears twice at timestep " + std::to_string(step));
+          ord[it->second] = i;
+        }
+      } else {
+        std::iota(ord.begin(), ord.end(), size_t(0));
+        std::sort(ord.begin(), ord.end(), [&](size_t x, size_t y) { return atoms[x].id < atoms[y].id; });
+      }
       {
         std::vector<Atom> sorted(atoms.size());
         for (size_t i = 0; i < ord.size(); ++i) sorted[i] = atoms[ord[i]];
@@ -389,9 +449,7 @@ Trajectory read_lammps_dump(const std::string& path, const System* topology, siz
         System s;
         if (topology) {
           s = *topology;
-          if (s.atoms.size() != atoms.size())
-            throw ReadError("dump has " + std::to_string(atoms.size()) + " atoms but the topology has " + std::to_string(s.atoms.size()));
-          for (size_t i = 0; i < atoms.size(); ++i) {
+          for (size_t i = 0; i < atoms.size(); ++i) {   // atoms are in the topology's order (above)
             s.atoms[i].pos = atoms[i].pos;
             if (cq >= 0) s.atoms[i].charge = atoms[i].charge;
           }
@@ -457,7 +515,8 @@ void write_lammps_data(const System& s_in, const std::string& path) {
   int ntypes = 0;
   for (const auto& a : s.atoms) ntypes = std::max(ntypes, a.type);
   out << ntypes << " atom types\n" << (s.bonds.empty() ? 0 : 1) << " bond types\n\n";
-  Cell c = s.cell;
+  const LammpsFrame frame = lammps_frame(s.cell);   // the cell in LAMMPS form; positions follow it below
+  Cell c = frame.cell;
   if (!c.valid()) {   // no cell: a box around the atoms with 25 Å of vacuum on every side, at least 100 Å
     Vec3 mn{1e30, 1e30, 1e30}, mx{-1e30, -1e30, -1e30};
     for (const auto& at : s.atoms)
@@ -486,7 +545,8 @@ void write_lammps_data(const System& s_in, const std::string& path) {
     out << buf << (label.empty() ? "" : "  # " + label) << "\n";
   }
   out << "\nAtoms  # full\n\n";
-  const std::vector<Vec3> whole = whole_positions(s);   // consistent image flags along every bond
+  std::vector<Vec3> whole = whole_positions(s);   // consistent image flags along every bond
+  for (auto& r : whole) r = frame.to_frame(r);
   for (size_t ai = 0; ai < s.atoms.size(); ++ai) {
     const auto& a = s.atoms[ai];
     Vec3 f = c.valid() ? c.to_fractional(whole[ai]) : Vec3{0, 0, 0};
@@ -504,8 +564,10 @@ void write_lammps_data(const System& s_in, const std::string& path) {
   }
 }
 
-void write_lammps_dump_frame(std::ostream& out, const System& top, const std::vector<Vec3>& pos, const Cell& c, int64_t step) {
+void write_lammps_dump_frame(std::ostream& out, const System& top, const std::vector<Vec3>& pos, const Cell& cell, int64_t step) {
   char buf[256];
+  const LammpsFrame frame = lammps_frame(cell);   // the cell in LAMMPS form; positions follow it below
+  const Cell& c = frame.cell;
   const bool tri = std::fabs(c.b[0]) + std::fabs(c.c[0]) + std::fabs(c.c[1]) > 0;
   out << "ITEM: TIMESTEP\n" << step << "\nITEM: NUMBER OF ATOMS\n" << top.atoms.size() << "\n";
   // LAMMPS bounding-box form of the cell
@@ -522,8 +584,9 @@ void write_lammps_dump_frame(std::ostream& out, const System& top, const std::ve
   out << buf << "ITEM: ATOMS id mol type xu yu zu\n";
   for (size_t i = 0; i < top.atoms.size(); ++i) {
     const auto& a = top.atoms[i];
+    const Vec3 r = frame.to_frame(pos[i]);
     std::snprintf(buf, sizeof buf, "%lld %lld %d %.5f %.5f %.5f\n", static_cast<long long>(a.id), static_cast<long long>(a.mol), a.type,
-                  pos[i][0], pos[i][1], pos[i][2]);
+                  r[0], r[1], r[2]);
     out << buf;
   }
 }

@@ -13,6 +13,7 @@
 // Values are numbers, true/false, quoted or bare strings and flow lists [a, b, c].
 #include <cctype>
 #include <cstdio>
+#include <cstdlib>
 #include <sstream>
 #include <stdexcept>
 
@@ -29,8 +30,16 @@ std::string yaml_scalar(const Json& v) {
     case Json::Bool: return v.boolean() ? "true" : "false";
     case Json::String: {
       const std::string& s = v.str();
-      const bool bare = !s.empty() && s.find_first_of(":,{}[]#\"'&*!|>%@`") == std::string::npos && s.front() != ' ' && s.back() != ' ' &&
-                        s != "true" && s != "false" && !(std::isdigit(static_cast<unsigned char>(s[0])) || s[0] == '-' || s[0] == '.');
+      // bare only when Flow::value reads it back as this same string: no control characters (a raw newline splits the
+      // line), not a word it reads as true/false/null, and not anything strtod takes whole as a number (inf, nan, +5)
+      bool control = false;
+      for (char c : s) control = control || static_cast<unsigned char>(c) < 0x20 || c == 0x7f;
+      char* num_end = nullptr;
+      if (!s.empty()) (void)std::strtod(s.c_str(), &num_end);
+      const bool numeric = !s.empty() && num_end && *num_end == '\0';
+      const bool bare = !s.empty() && !control && !numeric && s.find_first_of(":,{}[]#\"'&*!|>%@`") == std::string::npos && s.front() != ' ' &&
+                        s.back() != ' ' && s != "true" && s != "false" && s != "null" && s != "~" &&
+                        !(std::isdigit(static_cast<unsigned char>(s[0])) || s[0] == '-' || s[0] == '.' || s[0] == '+');
       if (bare) return s;
       std::string q = "\"";
       for (char c : s) {

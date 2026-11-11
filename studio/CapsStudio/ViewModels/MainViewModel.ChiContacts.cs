@@ -24,7 +24,8 @@ public sealed partial class MainViewModel
     public bool SsCanContact => !_ssContactBusy && SsPolymerJson()?["unit"] is JsonValue && Gaff2Path != null;
     public bool SsHasContact => SsRows.Any(r => r.ChiC != "—");
 
-    private string SsKey(string solvent) => ((string?)SsPolymerJson()?["id"] ?? "?") + "|" + solvent;
+    private string SsKey(string solvent) => SsKey(SsPolymerJson(), solvent);
+    private static string SsKey(JsonObject? polymer, string solvent) => ((string?)polymer?["id"] ?? "?") + "|" + solvent;
 
     private (string Chi, string Pred, bool Agrees, bool Mismatch) SsContactFor(string solvent, double t, bool knownGood, bool knownBad, string known)
     {
@@ -54,7 +55,9 @@ public sealed partial class MainViewModel
     public async Task SsComputeContacts()
     {
         if (!SsCanContact || _solventData == null) return;
-        var unit = (string)SsPolymerJson()!["unit"]!;
+        // The polymer is fixed for the whole run: the picker stays live, so keys must not follow a later selection.
+        var polymer = SsPolymerJson()!;
+        var unit = (string)polymer["unit"]!;
         var ff = Gaff2Path!;
         var solvents = (_solventData["solvents"] as JsonArray ?? []).OfType<JsonObject>().Where(s => s["smiles"] is JsonValue).ToArray();
         SsContactBusy = true;
@@ -66,7 +69,7 @@ public sealed partial class MainViewModel
             for (var i = 0; i < solvents.Length; ++i)
             {
                 var name = (string?)solvents[i]["name"] ?? "";
-                if (_ssContact.ContainsKey(SsKey(name))) continue;
+                if (_ssContact.ContainsKey(SsKey(polymer, name))) continue;
                 var smiles = (string)solvents[i]["smiles"]!;
                 var k = i;
                 SsContactProgress = $"{name} ({k + 1} of {solvents.Length})";
@@ -80,7 +83,7 @@ public sealed partial class MainViewModel
                 var r = JsonNode.Parse(res)!;
                 if ((bool?)r["ok"] != true) { failed.Add($"{name}: {(string?)r["error"]}"); continue; }
                 var notes = string.Join("\n", (r["notes"] as JsonArray ?? []).Select(x => (string?)x));
-                _ssContact[SsKey(name)] = new ContactFit((double)r["fit_a"]!, (double)r["fit_b"]!, (double)r["chi_error"]!, (string?)r["forcefield"] ?? "", notes);
+                _ssContact[SsKey(polymer, name)] = new ContactFit((double)r["fit_a"]!, (double)r["fit_b"]!, (double)r["chi_error"]!, (string?)r["forcefield"] ?? "", notes);
                 SsRecompute();
                 Raise(nameof(SsHasContact));
             }

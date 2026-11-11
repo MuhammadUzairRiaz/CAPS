@@ -340,7 +340,10 @@ ThermalResult green_kubo_kappa(const std::vector<Vec3>& q0, double dt_fs, double
   };
   r.t_ps.resize(L + 1);
   for (size_t lag = 0; lag <= L; ++lag) r.t_ps[lag] = lag * dt_fs * 1e-3;
-  const int nb = std::clamp(blocks, 2, int(n / (2 * L + 2) + 1));
+  // at least two blocks, at most as many as hold a correlation window each (that bound drops below two when the window is
+  // half the run, so it is raised to two: std::clamp needs lo <= hi)
+  const int nb = std::clamp(blocks, 2, std::max(2, int(n / (2 * L + 2) + 1)));
+  int nb_used = 0;   // blocks long enough for the window (the same for every axis)
   for (int k = 0; k < 3; ++k) {
     std::vector<double> c;
     acf_of(0, n, k, c);
@@ -356,6 +359,7 @@ ThermalResult green_kubo_kappa(const std::vector<Vec3>& q0, double dt_fs, double
       acf_of(a, b, k, cb);
       kb.push_back(integral(cb, nullptr));
     }
+    nb_used = int(kb.size());
     if (kb.size() >= 2) {
       const double m = std::accumulate(kb.begin(), kb.end(), 0.0) / double(kb.size());
       double s2 = 0;
@@ -372,7 +376,9 @@ ThermalResult green_kubo_kappa(const std::vector<Vec3>& q0, double dt_fs, double
   r.kappa_mean = (r.kappa[0] + r.kappa[1] + r.kappa[2]) / 3;
   r.kappa_mean_error = std::sqrt(r.error[0] * r.error[0] + r.error[1] * r.error[1] + r.error[2] * r.error[2]) / 3;
   r.notes.push_back(std::to_string(n) + " heat-flux samples " + fmtd(dt_fs) + " fs apart; the integral to " + fmtd(L * dt_fs * 1e-3) +
-                    " ps, κ the running integral's mean over its last third; errors from " + std::to_string(nb) + " blocks");
+                    " ps, κ the running integral's mean over its last third; " +
+                    (nb_used >= 2 ? "errors from " + std::to_string(nb_used) + " blocks"
+                                  : std::string("no error: the run is too short to split into two blocks of the correlation window (run longer or give a shorter --corr-ps)")));
   if (!r.plateau) r.notes.push_back("the running integral has not levelled off over its last third: run longer (the noise of a Green–Kubo integral falls as 1/√(run length))");
   return r;
 }
@@ -503,6 +509,16 @@ ThermalResult thermal_conductivity(System& s, const ThermalOptions& o) {
     const Vec3 edge = ax == 0 ? s.cell.a : ax == 1 ? s.cell.b : s.cell.c;
     const double L = norm(edge);
     if (std::fabs(edge[ax] - L) > 1e-6 * L) throw std::invalid_argument("NEMD: the flux axis must be a cell edge along x, y or z");
+    // the slabs are cut by the Cartesian coordinate along the axis, which is periodic only when the other two edges have no
+    // component along it (a tilted cell, such as a hexagonal sheet with the flux along a, would put periodic images of one
+    // atom in different slabs)
+    {
+      const Vec3& o1 = ax == 0 ? s.cell.b : ax == 1 ? s.cell.c : s.cell.a;
+      const Vec3& o2 = ax == 0 ? s.cell.c : ax == 1 ? s.cell.a : s.cell.b;
+      if (std::fabs(o1[size_t(ax)]) > 1e-6 * L || std::fabs(o2[size_t(ax)]) > 1e-6 * L)
+        throw std::invalid_argument(std::string("NEMD: the other two cell edges must be perpendicular to the flux axis ") + char('x' + ax) +
+                                    " (build an orthogonal supercell for a tilted cell)");
+    }
     const double area = two ? s.cell.volume() / L / s.cell.c[2] * thick : s.cell.volume() / L;
     const size_t n = s.atoms.size();
     std::vector<double> tsl(size_t(ns), 0.0);

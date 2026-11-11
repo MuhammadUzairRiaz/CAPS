@@ -46,7 +46,7 @@ public partial class MacroPage : PageBase
     {
         var code = this.FindControl<TextBox>("Code")!;
         var note = this.FindControl<TextBlock>("PromoteNote")!;
-        var why = Vm.PromoteToParameter(code.SelectedText ?? "");
+        var why = Vm.PromoteToParameter(code.SelectedText ?? "", at: Math.Min(code.SelectionStart, code.SelectionEnd));
         note.Text = why ?? "Promoted: it is now an argument of macro(…) with its old value as the default.";
     }
 }

@@ -63,6 +63,9 @@ public sealed class ResultCard
     public string ValueText => !HasValue ? "—" : HasError ? (Value * F).ToString("F" + ShownDecimals, Inv) : Num(Value * F);
     public string ErrorText => HasError ? "± " + (Error * F).ToString("F" + ShownDecimals, Inv) : "";
     public string UnitText => DisplayUnits.For(Unit).Unit.Replace("^½", "½");
+    // the value and error in CAPS's own units (Unit), for files: display units never change what is written
+    internal string FileValueText => !HasValue ? "—" : HasError ? Value.ToString("F" + ErrorDecimals, Inv) : Num(Value);
+    internal string FileErrorText => HasError ? Error.ToString("F" + ErrorDecimals, Inv) : "";
     public string NotesText => string.Join("\n", Notes);
     public bool HasNotes => Notes.Length > 0;
     public string ExtraText => string.Join("\n", Extra.Select(e => $"{e.Key}: {Num(e.Value)}"));
@@ -739,7 +742,8 @@ public sealed class AnalyzeViewModel : ObservableObject
         sb.Append("\\begin{tabular}{llll}\n\\toprule\nProperty & Simulation & Experiment & Unit \\\\\n\\midrule\n");
         foreach (var c in Results.Where(c => c.HasValue))
         {
-            var sim = c.ValueText + (c.ErrorText.Length == 0 ? "" : " $\\pm$ " + c.ErrorText[2..]);
+            // CAPS units throughout the row, as in results.csv: the unit column and the reference range are in them too
+            var sim = c.FileValueText + (c.FileErrorText.Length == 0 ? "" : " $\\pm$ " + c.FileErrorText);
             var exp = c.Ref == null ? "--" : (c.Ref.Lo == c.Ref.Hi ? ResultCard.Num(c.Ref.Lo) : ResultCard.Num(c.Ref.Lo) + "--" + ResultCard.Num(c.Ref.Hi));
             sb.Append(Tex(c.Name)).Append(" & ").Append(sim).Append(" & ").Append(exp).Append(" & ").Append(Tex(c.Unit)).Append(" \\\\\n");
         }

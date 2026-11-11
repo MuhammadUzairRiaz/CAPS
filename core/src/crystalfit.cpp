@@ -1016,7 +1016,14 @@ std::vector<std::string> apply_fitted_terms(FFDef& def, const std::vector<Fitted
       if (exact(rr, n)) hit = &rr;   // the last exact rule is the one assigned
     const std::string style = t.kind == "lj" || t.style == "lj/cut" ? "" : t.style;
     if (hit) {
-      hit->params = t.values;
+      // same functional form: overwrite only the fitted leading values and keep any trailing ones (a buck/morse/rydberg
+      // pair's 4th entry is its own cut-off); a new form replaces the whole list
+      const bool same_form = style.empty() ? hit->style.empty() || hit->style.rfind("lj", 0) == 0
+                                           : hit->style == style || (style == "buck" && hit->style == "born");
+      if (same_form && hit->params.size() > t.values.size())
+        std::copy(t.values.begin(), t.values.end(), hit->params.begin());
+      else
+        hit->params = t.values;
       if (!style.empty()) hit->style = style;
       hit->comment = hit->comment.empty() ? "refitted to crystal data by CAPS"
                                           : "refitted to crystal data by CAPS (before: " + hit->comment + ")";

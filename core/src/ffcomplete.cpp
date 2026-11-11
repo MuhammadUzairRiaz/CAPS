@@ -53,8 +53,6 @@ std::set<int> side(const Nb& nb, int c, int b) {
   return seen;
 }
 
-bool in_ring(const Nb& nb, int b, int c) { return side(nb, c, b).count(b) > 0; }
-
 // the smallest ring through each ring bond, up to `limit` atoms
 std::vector<std::set<int>> small_rings(const Nb& nb, size_t limit = 8) {
   std::set<std::set<int>> out;
@@ -78,6 +76,15 @@ std::vector<std::set<int>> small_rings(const Nb& nb, size_t limit = 8) {
     }
   }
   return {out.begin(), out.end()};
+}
+
+// true when the bond b-c lies in one of the small rings (the rings a fragment keeps whole, so turning one side of the
+// bond would tear the ring). Larger cycles, such as a chain closed on itself through the periodic cell, are cut by the
+// fragment and do not count.
+bool in_ring(const std::vector<std::set<int>>& rings, int b, int c) {
+  for (const auto& r : rings)
+    if (r.count(b) && r.count(c)) return true;
+  return false;
 }
 
 int valence(int z) {
@@ -529,7 +536,7 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const std::
     Fragment f;
     std::vector<std::string> ft;
     std::string why = q.empty() ? "no occurrence found" : "";
-    if (why.empty() && in_ring(nb, q[1], q[2])) why = "the central bond is in a ring (not scanned)";
+    if (why.empty() && in_ring(rings, q[1], q[2])) why = "the central bond is in a ring (not scanned)";
     if (why.empty()) why = fragment_for(q, {q[1], q[2]}, f, ft);
     if (!why.empty()) {
       rep.terms.push_back({"dihedral", m.classes, "not_fitted", {}, 0, 0, 0, why});
@@ -558,6 +565,17 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const std::
     // the smaller side turns: c's side by +delta changes the dihedral by +delta, b's side by -delta
     std::set<int> moving = side(fnb, c, b);
     const std::set<int> other = side(fnb, b, c);
+    // a ring of more than 8 atoms can still lie whole in the fragment; then the two sides share atoms and no rigid turn
+    // about b-c keeps the ring intact
+    bool shared = false;
+    for (int a : moving) shared |= other.count(a) > 0;
+    if (shared) {
+      const std::string ring_why = "the central bond is in a ring (not scanned)";
+      rep.terms.push_back({"dihedral", m.classes, "not_fitted", {}, 0, 0, static_cast<int>(f.z.size()), ring_why});
+      done.insert(canonical(m.classes));
+      say("dihedral " + join(m.classes) + ": not fitted (" + ring_why + ")");
+      continue;
+    }
     int sign = 1;
     if (moving.size() > other.size()) { moving = other; sign = -1; }
     const std::vector<Vec3> x0 = relaxed(f, positions(f), {}).pos;

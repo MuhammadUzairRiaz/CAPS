@@ -918,8 +918,28 @@ namespace {
 // the feed of n units from the weights (equal when not given)
 std::vector<double> feed_of(const ChainSpec& spec, int nu) {
   std::vector<double> f(static_cast<size_t>(nu), 1.0);
+  if (nu == 2 && spec.weights.size() == 1) {   // one weight: the feed fraction of A, as the binary terminal draws read it
+    f[0] = std::clamp(spec.weights[0], 0.0, 1.0), f[1] = 1 - f[0];
+    return f;
+  }
   for (int k = 0; k < nu && k < int(spec.weights.size()); ++k) f[size_t(k)] = std::max(0.0, spec.weights[size_t(k)]);
   return f;
+}
+// the binary terminal model without a matrix: f1 the feed fraction of A, P(A→A) = r1 f1 / (r1 f1 + f2),
+// P(B→B) = r2 f2 / (r2 f2 + f1); r1 or r2 may be 0 (strictly alternating)
+struct BinaryTerminal {
+  double f1 = 0.5, paa = 0, pbb = 0, F1 = 0.5;
+};
+BinaryTerminal binary_terminal(const ChainSpec& spec) {
+  BinaryTerminal b;
+  double f1 = spec.weights.size() >= 2 ? spec.weights[0] / std::max(1e-12, spec.weights[0] + spec.weights[1]) : spec.weights.size() == 1 ? spec.weights[0] : 0.5;
+  f1 = std::clamp(f1, 0.0, 1.0);
+  const double f2 = 1 - f1, r1 = std::max(0.0, spec.r1), r2 = std::max(0.0, spec.r2);
+  b.f1 = f1;
+  b.paa = r1 * f1 + f2 > 0 ? r1 * f1 / (r1 * f1 + f2) : 0, b.pbb = r2 * f2 + f1 > 0 ? r2 * f2 / (r2 * f2 + f1) : 0;
+  const double den = r1 * f1 * f1 + 2 * f1 * f2 + r2 * f2 * f2;
+  b.F1 = den > 0 ? (r1 * f1 * f1 + f1 * f2) / den : f1;
+  return b;
 }
 // the model for a feed (Terminal with a matrix, Markov, Penultimate)
 SequenceModel model_for(const ChainSpec& spec, int nu, const std::vector<double>& f) {
@@ -1033,6 +1053,7 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
       // exact counts by largest remainders, then a random order
       std::vector<double> w = spec.weights;
       w.resize(size_t(nu), w.empty() ? 1.0 : 0.0);
+      for (double& x : w) x = std::max(0.0, x);   // a negative share counts as none
       const double tot = std::accumulate(w.begin(), w.end(), 0.0);
       if (tot <= 0) w.assign(size_t(nu), 1.0);
       const double sum = std::accumulate(w.begin(), w.end(), 0.0);
@@ -1049,7 +1070,7 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
       for (size_t q = 0; used < n && q < rem.size(); ++q, ++used) ++cnt[size_t(rem[q].second)];
       int i = 0;
       for (int k = 0; k < nu; ++k)
-        for (int c = 0; c < cnt[size_t(k)]; ++c) s[size_t(i++)] = k;
+        for (int c = 0; c < cnt[size_t(k)] && i < n; ++c) s[size_t(i++)] = k;
       caps::shuffle(s.begin(), s.end(), rng);
       break;
     }
@@ -1064,11 +1085,8 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
     case Sequence::Terminal: {
       // f1: A in the feed; P(A→A) = r1 f1 / (r1 f1 + f2), P(B→B) = r2 f2 / (r2 f2 + f1); the first unit from the
       // instantaneous copolymer composition F1 (Mayo & Lewis 1944)
-      double f1 = spec.weights.size() >= 2 ? spec.weights[0] / std::max(1e-12, spec.weights[0] + spec.weights[1]) : spec.weights.size() == 1 ? spec.weights[0] : 0.5;
-      f1 = std::clamp(f1, 0.0, 1.0);
-      const double f2 = 1 - f1, r1 = std::max(0.0, spec.r1), r2 = std::max(0.0, spec.r2);
-      const double paa = r1 * f1 + f2 > 0 ? r1 * f1 / (r1 * f1 + f2) : 0, pbb = r2 * f2 + f1 > 0 ? r2 * f2 / (r2 * f2 + f1) : 0;
-      const double den = r1 * f1 * f1 + 2 * f1 * f2 + r2 * f2 * f2, F1 = den > 0 ? (r1 * f1 * f1 + f1 * f2) / den : f1;
+      const BinaryTerminal bt = binary_terminal(spec);
+      const double paa = bt.paa, pbb = bt.pbb, F1 = bt.F1;
       auto u01 = [&] { return double(rng() >> 11) * (1.0 / 9007199254740992.0); };
       for (int i = 0; i < n; ++i) {
         if (i == 0) s[0] = u01() < F1 ? 0 : 1 % nu;
@@ -1120,7 +1138,10 @@ Json sequence_report(const ChainSpec& spec, const std::vector<std::vector<int>>&
   if (modelled) {
     const auto f0 = feed_of(spec, nu);
     if (!drifting) {
-      const SequenceModel m = model_for(spec, nu, f0);
+      // the binary terminal model without a matrix: the same transition probabilities the chains were drawn with
+      const bool binary = spec.sequence == Sequence::Terminal && spec.reactivity.empty() && nu == 2;
+      const BinaryTerminal bt = binary ? binary_terminal(spec) : BinaryTerminal{};
+      const SequenceModel m = binary ? transition_model({bt.paa, 1 - bt.paa, 1 - bt.pbb, bt.pbb}, 2) : model_for(spec, nu, f0);
       Json mj = Json::object();
       mj["composition"] = arr(m.composition), mj["dyads"] = arr(m.dyads), mj["triads"] = arr(m.triads), mj["run_length"] = arr(m.run_length);
       r["model"] = mj;
@@ -1231,10 +1252,16 @@ int replace_end_caps(System& s, const std::vector<uint32_t>& heads, const std::s
     if (s.cell.valid()) d = s.cell.minimum_image(d);
     where.push_back({parent[h], d});
   }
-  for (size_t k = 0; k < jobs.size(); ++k) attach_fragment(s, where[k].first, jobs[k].second, 0, false, &where[k].second);
+  // the cap hydrogens out first, so the roll search about each new bond sees only the atoms that stay
   std::vector<char> del(s.atoms.size(), 0);
   for (const auto& [h, smi] : jobs) del[h] = 1;
+  std::vector<uint32_t> renum(s.atoms.size(), 0);
+  for (uint32_t i = 0, k = 0; i < uint32_t(s.atoms.size()); ++i) {
+    renum[i] = k;
+    if (!del[i]) ++k;
+  }
   delete_atoms(s, del);
+  for (size_t k = 0; k < jobs.size(); ++k) attach_fragment(s, renum[where[k].first], jobs[k].second, 0, false, &where[k].second);
   return int(jobs.size());
 }
 
@@ -2763,7 +2790,16 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   s.bonds_from_file = true;
   rep.chains_placed = nchains;
   rep.sequences.clear();
-  for (const auto& ch : C) rep.sequences.push_back(ch.seq);
+  for (const auto& ch : C) {
+    std::vector<int> q = ch.seq;
+    if (ch.graft) {   // grafts keep their template index (gbase + k, never below nU), so the backbone statistics skip them
+      rep.sequences.push_back(std::move(q));
+      continue;
+    }
+    for (int& v : q)
+      if (v >= nU) v -= nU;   // a reversed unit (template nU + k) is still unit k
+    rep.sequences.push_back(std::move(q));
+  }
   char cb[96];
   if (ortho) std::snprintf(cb, sizeof cb, "cell %.2f × %.2f × %.2f Å", Lv[0], Lv[1], Lv[2]);
   else std::snprintf(cb, sizeof cb, "box %.3f Å", L);

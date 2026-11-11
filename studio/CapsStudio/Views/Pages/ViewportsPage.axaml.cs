@@ -70,7 +70,8 @@ public partial class ViewportsPage : PageBase
         border.PointerPressed += (_, e) =>
         {
             Focus();
-            Vm.ActivateViewport(t);
+            // the tile is made active on release, after the pick: activating can move and resize it (layouts 1, 2 x 1,
+            // 1 + 3), and the press point must stay in the geometry the user clicked on
             press = last = e.GetPosition(border);
             moved = false;
             e.Pointer.Capture(border);
@@ -93,6 +94,7 @@ public partial class ViewportsPage : PageBase
                 var sx = t.PixelW / Math.Max(1, border.Bounds.Width);
                 Vm.PickInViewport(t, (int)(p0.X * sx), (int)(p0.Y * sx), e.KeyModifiers.HasFlag(KeyModifiers.Shift));
             }
+            if (press != null) Vm.ActivateViewport(t);
             press = last = null;
             e.Pointer.Capture(null);
         };

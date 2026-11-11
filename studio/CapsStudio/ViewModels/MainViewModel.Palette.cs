@@ -170,12 +170,24 @@ public sealed partial class MainViewModel
             ("Render", 19, "eye", "render image movie frames ambient occlusion overlays label legend scale bar tripod"),
             ("Export figure", 18, "download", "figure png svg image picture paper journal slide poster transparent background dpi scale bar"),
         };
+        // Ids: "module.open " + the name's first word, which What's-new pages and saved shortcuts use. Where several pages
+        // share a first word (Export image, Export data ...), the first in the table keeps that id, so saved keys still
+        // open the page they opened before, and each later one takes its whole name ("module.open export-data").
+        var takenIds = new HashSet<string>();
         foreach (var (name, m, icon, words) in modules)
+        {
+            var id = $"module.open {name.Split(' ')[0].ToLowerInvariant()}";
+            if (!takenIds.Add(id))
+            {
+                id = "module.open " + System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
+                takenIds.Add(id);
+            }
             AddCommand(new PaletteCommand
             {
-                Title = $"Go to {name}", Id = $"module.open {name.Split(' ')[0].ToLowerInvariant()}", Icon = icon, Section = "Modules", Keywords = words,
+                Title = $"Go to {name}", Id = id, Icon = icon, Section = "Modules", Keywords = words,
                 Run = () => { if (m == 9) OpenBuilder(); else if (m == 14) OpenSurface(); else if (m == 15) OpenNano(); else if (m == 16) OpenBlend(); else if (m == 17) OpenChecks(); else if (m == 18) OpenFigure(); else if (m == 19) OpenRender(); else if (m == 20) OpenVisualize(); else if (m == 21) OpenExport(); else if (m == 22) OpenBatch(); else if (m == 23) OpenCompare(); else if (m == 24) OpenColourBy(); else if (m == 25) OpenViewports(); else if (m == 26) OpenBundle(); else if (m == 29) OpenCrystal(); else if (m == 31) OpenSolvation(); else if (m == 32) OpenTrajectory(); else if (m == 33) OpenTorsion(); else if (m == 34) OpenSplit(); else if (m == 35) OpenFragments(); else if (m == 36) OpenMacro(); else if (m == 37) OpenProvenance(); else if (m == 92) StartTour(); else if (m == 41) OpenManual(); else if (m == 42) OpenProject(); else if (m == 43) OpenSweep(); else if (m == 44) OpenCg(); else if (m == 45) OpenTemplateEditor(); else if (m == 46) OpenColourVision(); else if (m == 47) OpenGlass(); else if (m == 48) OpenInterface(); else if (m == 49) OpenDiffusion(); else if (m == 50) OpenCharges(); else if (m == 51) OpenPeriodic(); else if (m == 52) OpenOrientation(); else if (m == 53) OpenRecipes(); else if (m == 54) OpenComposer(); else if (m == 55) OpenChainStats(); else if (m == 56) OpenDensityCalc(); else if (m == 57) OpenSurfaceArea(); else if (m == 58) OpenCellEditor(); else if (m == 59) OpenPolydispersity(); else if (m == 60) OpenCopolymer(); else if (m == 61) OpenSolventScreen(); else if (m == 62) OpenTacticityStats(); else if (m == 63) OpenBlendPhase(); else if (m == 64) OpenElectrostatics(); else if (m == 65) OpenDisplayStyles(); else if (m == 66) _ = OpenAddHydrogens(); else if (m == 67) OpenModelResolution(); else if (m == 75) OpenSheets(); else if (m == 76) OpenAdsorbDft(); else if (m == 77) OpenDftJob(); else if (m == 78) OpenDftRuns(); else if (m == 79) OpenDftResults(); else if (m == 80) OpenCgw(); else if (m == 90) OpenExportDialog(); else if (m == 91) OpenExportDialog(1); else SetModule(m); },
             });
+        }
         AddCommand(new PaletteCommand { Title = "Start page", Id = "start.open", Icon = "cube", Section = "Modules", Keywords = "home recent new",
             Enabled = () => _doc == null, Run = () => SetModule(8) });
         AddCommand(new PaletteCommand { Title = "Close document", Id = "document.close", Icon = "close", Shortcut = "⌘W", Section = "File",

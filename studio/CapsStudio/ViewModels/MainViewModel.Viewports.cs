@@ -112,7 +112,9 @@ public sealed partial class MainViewModel
         if (i < 0 || i == _vpActive) return;
         _vpActive = i;
         foreach (var x in ViewportTiles) x.Active = x == t;
-        if (_vpLayout is 0 or 1 or 3) ArrangeViewports();
+        // a tile that comes into view (or changes size) is drawn again: a hidden ortho tile kept the picture from
+        // before the shared zoom and pan changed
+        if (_vpLayout is 0 or 1 or 3) { ArrangeViewports(); RenderViewports(); }
         Raise(nameof(ViewportActiveName));
         Raise(nameof(ActiveViewport));
     }
@@ -150,14 +152,16 @@ public sealed partial class MainViewModel
         foreach (var x in ViewportTiles.Where(x => x.Ortho && x.Shown && (_vpLinkZoom || x == t))) RenderViewport(x);
     }
 
-    /// <summary>A click picks the atom under it in that view (re-rendered at its size first so the pick buffer is its own).</summary>
+    /// <summary>A click picks the atom under it in that view (re-rendered at its size first so the pick buffer is its own;
+    /// render and pick run under one document lock so a background render of another tile cannot replace the buffer
+    /// in between). The page calls this before ActivateViewport, so px, py are in the geometry the user clicked on.</summary>
     public void PickInViewport(ViewportTile t, int px, int py, bool add)
     {
         if (_doc == null) return;
         var opt = ViewportOptions(t);
         var rgba = new byte[t.PixelW * t.PixelH * 4];
-        try { _doc.Render(CameraOf(t), opt, rgba); } catch { return; }
-        var hit = _doc.Pick(px, py);
+        int hit;
+        try { hit = _doc.RenderPick(CameraOf(t), opt, rgba, px, py); } catch { return; }
         if (hit >= 0) Pick(hit, add); else if (!add) ClearSelection();
         RenderViewports();
     }

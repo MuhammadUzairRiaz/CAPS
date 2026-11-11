@@ -22,13 +22,25 @@ public partial class FragmentPage : PageBase
                 detail.Highlights = f?.StarIndices ?? [];
                 var cats = this.FindControl<ListBox>("Cats")!;
                 var want = vm.FragmentCategories.FirstOrDefault(c => c.Name == vm.FragmentCategory);
-                if (want != null && !Equals(cats.SelectedItem, want)) cats.SelectedItem = want;
+                if (want != null && !Equals(cats.SelectedItem, want))
+                {
+                    // only mirrors the view model's category in the list; a running search must survive it
+                    _syncingCategory = true;
+                    try { cats.SelectedItem = want; }
+                    finally { _syncingCategory = false; }
+                }
             };
         };
     }
 
+    private bool _syncingCategory;
+
     private void OnBack(object? s, RoutedEventArgs e) => Vm.SetModule(8);
-    private void OnCategory(object? s, SelectionChangedEventArgs e) { if ((s as ListBox)?.SelectedItem is FragmentCategory c) { Vm.FragmentQuery = ""; Vm.FragmentCategory = c.Name; } }
+    private void OnCategory(object? s, SelectionChangedEventArgs e)
+    {
+        if (_syncingCategory) return;
+        if ((s as ListBox)?.SelectedItem is FragmentCategory c) { Vm.FragmentQuery = ""; Vm.FragmentCategory = c.Name; }
+    }
     private async void OnUse(object? s, RoutedEventArgs e) => await Vm.UseFragment();
     private async void OnTileDouble(object? s, TappedEventArgs e) => await Vm.UseFragment();
     private void OnSaveCopy(object? s, RoutedEventArgs e) => Vm.SaveFragmentCopy();

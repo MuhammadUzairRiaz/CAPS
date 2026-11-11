@@ -1025,7 +1025,8 @@ int32_t caps_supercell(caps_doc* d, int32_t na, int32_t nb, int32_t nc);
 /* v20 partial charges (design/boards/Charges): {"method": "gasteiger" | "qeq" | "forcefield" (the Field assignment) |
    "file" {path: .chg} | "keep", "apply": false} → {ok, error, method, q[], net, max_abs, groups: [{name, n, mean, lo, hi}],
    edges[], counts[], notes[]}. apply: true sets the charges on the structure (undoable, clears the Field assignment).
-   v97: "qeq": {kernel "ohno" | "slater" | "point", ewald (periodic cells), accuracy, lambda (Slater ζ scale, 0.4913),
+   save: a path; a copy of the frame with these charges is written there as caps_save writes it (reply saved), the
+   document unchanged. v97: "qeq": {kernel "ohno" | "slater" | "point", ewald (periodic cells), accuracy, lambda (Slater ζ scale, 0.4913),
    hydrogen (charge-dependent hardness), cutoff Å, total e, bounds {"O": [qmin, qmax], …}} with method "qeq". */
 int32_t caps_charges(caps_doc* d, const char* json, char* out, int32_t cap);
 /* v20 the k-th molecule / chain colour of the current palette (0xRRGGBB). */

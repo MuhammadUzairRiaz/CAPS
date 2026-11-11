@@ -97,7 +97,7 @@ RelaxStage minimise(Evaluator& ev, std::vector<double>& x, const Cell& cell, con
       const double dE = 2 * dr.kphi * dphi;   // dE/dφ
       const Vec3 gi = m * (-lb2 / m2), gl = nn * (lb2 / n2);
       const double s1 = dot(b1, b2) / (lb2 * lb2), s3 = dot(b3, b2) / (lb2 * lb2);
-      const Vec3 gj = gi * (s1 - 1) - gl * s3, gk = gl * (s3 - 1) - gi * s1;
+      const Vec3 gj = gi * (-s1 - 1) + gl * s3, gk = gi * s1 + gl * (-s3 - 1);   // b1 = r_j − r_i, so the s1/s3 signs flip vs F = r_i − r_j
       for (int c = 0; c < 3; ++c) {
         out[3 * dr.i + c] -= dE * gi[c];
         out[3 * dr.j + c] -= dE * gj[c];

@@ -400,7 +400,8 @@ bool has_bead_template(const FFDef& ff, const std::string& name);
 // Give a structure without an explicit topology its molecule templates' topology: every molecule (by molecule id, else
 // bonded component) whose bead types in order and bonds are a template's. Returns how many molecules were recognised;
 // `unmatched` gets the others' first bead types. Templates with the same beads and bonds (Martini 3's ions) are told apart by
-// the structure's charges when it has them, else the first by name is taken. Does nothing without molecule templates.
+// the structure's charges when it has them, then by the molecule's residue name; a molecule still fitting more than one
+// (different) template is not recognised, and its entry in `unmatched` names them. Does nothing without molecule templates.
 int recognise_molecule_templates(System& s, const FFDef& ff, std::vector<std::string>* unmatched = nullptr);
 
 // Build the evaluator force field for a structure whose atoms carry force-field type names (one per atom).

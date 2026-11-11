@@ -220,7 +220,7 @@ struct Indexer {
     else if (sys == "hexagonal") s.cell = {1 / std::sqrt(x[0]), 1 / std::sqrt(x[0]), 1 / std::sqrt(x[1]), 90, 90, 120};
     else if (sys == "orthorhombic") s.cell = {1 / std::sqrt(x[0]), 1 / std::sqrt(x[1]), 1 / std::sqrt(x[2]), 90, 90, 90};
     else {
-      if (x[0] <= 0 || x[2] <= 0) return;
+      if (x[0] <= 0 || x[1] <= 0 || x[2] <= 0) return;   // only the h*l term x[3] may be negative
       const double cosb = -x[3] / (2 * std::sqrt(x[0] * x[2]));
       if (std::fabs(cosb) >= 1) return;
       const double beta = std::acos(cosb) * kDeg, sn = std::sin(beta / kDeg);
@@ -529,6 +529,9 @@ SolveResult solve_structure(const MeasuredPattern& data, const System& mol, cons
     bool clash = false;
     double cur = rwp_of(crystal(geometry(s), &clash));
     if (clash) cur = 1e3;
+    // the starting state is a candidate too, so best_s is always a full state even when no move is accepted
+    // (rs == 0 also covers a NaN Rwp, e.g. an all-zero pattern, which no comparison would accept)
+    if (rs == 0 || cur < best) best = cur, best_s = s;
     for (int it = 0; it < o.steps; ++it, ++done) {
       if (o.progress && it % 50 == 0 && !o.progress("annealing", double(done) / total)) throw std::runtime_error("solve stopped");
       // the last fifth: downhill only, with small moves (a polish of the best region)

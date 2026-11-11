@@ -620,9 +620,13 @@ System read_vasp_poscar(const std::string& path, std::map<std::string, std::stri
   if (counts.size() != tok.size()) throw std::runtime_error(path + ": " + std::to_string(tok.size()) + " species, " + std::to_string(counts.size()) + " counts");
   size_t k = 7;
   bool selective = false;
-  if (!L.at(k).empty() && (std::tolower(static_cast<unsigned char>(L[k].find_first_not_of(' ') != std::string::npos ? L[k][L[k].find_first_not_of(' ')] : ' ')) == 's')) selective = true, ++k;
-  const std::string mode = L.at(k);
-  const char m0 = char(std::tolower(static_cast<unsigned char>(mode[mode.find_first_not_of(' ')])));
+  const auto first_char = [](const std::string& s) {
+    const size_t p = s.find_first_not_of(" \t");
+    return p == std::string::npos ? '\0' : char(std::tolower(static_cast<unsigned char>(s[p])));
+  };
+  if (first_char(L.at(k)) == 's') selective = true, ++k;
+  const char m0 = first_char(L.at(k));
+  if (m0 == '\0') throw std::runtime_error(path + ": line " + std::to_string(k + 1) + " should say Direct or Cartesian but is blank");
   const bool cart = m0 == 'c' || m0 == 'k';
   ++k;
   (void)selective;

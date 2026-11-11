@@ -150,16 +150,27 @@ std::string lammps_to_moltemplate(const std::string& data_path, const std::strin
     if (!r.v.empty()) o << "  pair_coeff " << atom_of(r.id) << " " << atom_of(r.v[0]) << " " << join(r.v, 1) << "\n";
   for (const auto& r : sec["Bond Coeffs"]) o << "  bond_coeff " << bond_name[r.id] << " " << join(r.v) << "\n";
   for (const auto& r : sec["Angle Coeffs"]) o << "  angle_coeff " << angle_name[r.id] << " " << join(r.v) << "\n";
-  for (const auto& r : sec["BondBond Coeffs"]) o << "  angle_coeff " << ensure(angle_name, "angle", r.id) << " bb " << join(r.v) << "\n";
-  for (const auto& r : sec["BondAngle Coeffs"]) o << "  angle_coeff " << ensure(angle_name, "angle", r.id) << " ba " << join(r.v) << "\n";
+  // a class II cross row: "kw values" for a plain class2 style; in a hybrid style the data row carries the sub-style
+  // first ("class2 values" or "skip"), and an input-script coeff line needs it ahead of the keyword ("class2 bb ...").
+  // A skip row leaves that type's coefficients alone, so it is not written.
+  auto cross = [&](const char* coeff, const std::string& name, const char* kw, const Row& r) {
+    if (!r.v.empty() && std::islower(static_cast<unsigned char>(r.v[0][0]))) {
+      if (r.v[0] == "skip") return;
+      o << "  " << coeff << " " << name << " " << r.v[0] << " " << kw << " " << join(r.v, 1) << "\n";
+    } else {
+      o << "  " << coeff << " " << name << " " << kw << " " << join(r.v) << "\n";
+    }
+  };
+  for (const auto& r : sec["BondBond Coeffs"]) cross("angle_coeff", ensure(angle_name, "angle", r.id), "bb", r);
+  for (const auto& r : sec["BondAngle Coeffs"]) cross("angle_coeff", ensure(angle_name, "angle", r.id), "ba", r);
   for (const auto& r : sec["Dihedral Coeffs"]) o << "  dihedral_coeff " << dih_name[r.id] << " " << join(r.v) << "\n";
-  for (const auto& r : sec["MiddleBondTorsion Coeffs"]) o << "  dihedral_coeff " << ensure(dih_name, "dihedral", r.id) << " mbt " << join(r.v) << "\n";
-  for (const auto& r : sec["EndBondTorsion Coeffs"]) o << "  dihedral_coeff " << ensure(dih_name, "dihedral", r.id) << " ebt " << join(r.v) << "\n";
-  for (const auto& r : sec["AngleTorsion Coeffs"]) o << "  dihedral_coeff " << ensure(dih_name, "dihedral", r.id) << " at " << join(r.v) << "\n";
-  for (const auto& r : sec["AngleAngleTorsion Coeffs"]) o << "  dihedral_coeff " << ensure(dih_name, "dihedral", r.id) << " aat " << join(r.v) << "\n";
-  for (const auto& r : sec["BondBond13 Coeffs"]) o << "  dihedral_coeff " << ensure(dih_name, "dihedral", r.id) << " bb13 " << join(r.v) << "\n";
+  for (const auto& r : sec["MiddleBondTorsion Coeffs"]) cross("dihedral_coeff", ensure(dih_name, "dihedral", r.id), "mbt", r);
+  for (const auto& r : sec["EndBondTorsion Coeffs"]) cross("dihedral_coeff", ensure(dih_name, "dihedral", r.id), "ebt", r);
+  for (const auto& r : sec["AngleTorsion Coeffs"]) cross("dihedral_coeff", ensure(dih_name, "dihedral", r.id), "at", r);
+  for (const auto& r : sec["AngleAngleTorsion Coeffs"]) cross("dihedral_coeff", ensure(dih_name, "dihedral", r.id), "aat", r);
+  for (const auto& r : sec["BondBond13 Coeffs"]) cross("dihedral_coeff", ensure(dih_name, "dihedral", r.id), "bb13", r);
   for (const auto& r : sec["Improper Coeffs"]) o << "  improper_coeff " << imp_name[r.id] << " " << join(r.v) << "\n";
-  for (const auto& r : sec["AngleAngle Coeffs"]) o << "  improper_coeff " << ensure(imp_name, "improper", r.id) << " aa " << join(r.v) << "\n";
+  for (const auto& r : sec["AngleAngle Coeffs"]) cross("improper_coeff", ensure(imp_name, "improper", r.id), "aa", r);
   o << "}\n\n";
 
   // the box
