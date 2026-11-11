@@ -69,6 +69,7 @@ public sealed partial class MainViewModel
         CapsDocument view;
         try { view = _molDoc.FrameCopy((MolFormula.Length > 0 ? MolFormula : "molecule") + " · molecule"); }
         catch (Exception e) { Status = "Could not show the molecule: " + e.Message; return; }
+        OrientMolecule(view);
         var status = Status;
         var prev = _molItem;
         if (prev != null && ProjectItems.Contains(prev))
@@ -78,8 +79,106 @@ public sealed partial class MainViewModel
         }
         Show(view, (MolFormula.Length > 0 ? MolFormula : "molecule") + " · molecule");
         _molItem = _activeItem;
+        // face-on, as the sketch is drawn: each rebuild then appears where the last one was, not at a new angle
+        Camera = new CapsCamera { Yaw = 0, Pitch = 0, Zoom = Camera.Zoom, Perspective = Camera.Perspective, FovDeg = Camera.FovDeg };
+        RenderRequested?.Invoke();
         if (prev != null && !ReferenceEquals(prev.Doc, _molDoc) && !ReferenceEquals(prev.Doc, view) && !prev.Doc.IsDisposed) prev.Doc.Dispose();
         Status = status;
+    }
+
+    /// <summary>Turns a built molecule onto its principal axes (the longest extent along x, the next along y, the flattest
+    /// along z, each axis pointing the way its third moment is positive). An embedding comes out at a random orientation:
+    /// without this, every rebuild while drawing showed the molecule at a new angle and the view seemed to shake.</summary>
+    private static void OrientMolecule(CapsDocument doc)
+    {
+        try
+        {
+            var n = (int)doc.Summary().Atoms;
+            if (n < 3) return;
+            var p = new double[n, 3];
+            double cx = 0, cy = 0, cz = 0;
+            for (var i = 0; i < n; i++) { var a = doc.Atom(i); p[i, 0] = a.X; p[i, 1] = a.Y; p[i, 2] = a.Z; cx += a.X; cy += a.Y; cz += a.Z; }
+            cx /= n; cy /= n; cz /= n;
+            var c = new double[3, 3];
+            for (var i = 0; i < n; i++)
+            {
+                double[] d = [p[i, 0] - cx, p[i, 1] - cy, p[i, 2] - cz];
+                for (var r = 0; r < 3; r++) for (var s = 0; s < 3; s++) c[r, s] += d[r] * d[s];
+            }
+            var (vals, vecs) = Jacobi3(c);
+            // axes by decreasing spread; each points where the atoms' third moment along it is positive
+            var order = new[] { 0, 1, 2 }.OrderByDescending(k => vals[k]).ToArray();
+            var e = new double[3][];
+            for (var k = 0; k < 3; k++)
+            {
+                var v = new[] { vecs[0, order[k]], vecs[1, order[k]], vecs[2, order[k]] };
+                double m3 = 0;
+                for (var i = 0; i < n; i++) { var x = (p[i, 0] - cx) * v[0] + (p[i, 1] - cy) * v[1] + (p[i, 2] - cz) * v[2]; m3 += x * x * x; }
+                if (m3 < 0) v = [-v[0], -v[1], -v[2]];
+                e[k] = v;
+            }
+            // a proper rotation: the third axis is the cross product of the first two
+            e[2] = [e[0][1] * e[1][2] - e[0][2] * e[1][1], e[0][2] * e[1][0] - e[0][0] * e[1][2], e[0][0] * e[1][1] - e[0][1] * e[1][0]];
+            // R has the axes as rows (x' = R x); its axis and angle for the core's rotate
+            double R(int r, int s) => e[r][s];
+            var tr = R(0, 0) + R(1, 1) + R(2, 2);
+            var ang = Math.Acos(Math.Clamp((tr - 1) / 2, -1, 1));
+            if (ang < 1e-6) return;
+            double[] axis;
+            if (Math.PI - ang > 1e-4)
+                axis = [R(2, 1) - R(1, 2), R(0, 2) - R(2, 0), R(1, 0) - R(0, 1)];
+            else
+            {
+                // 180°: the axis is a column of R + I
+                var k = new[] { 0, 1, 2 }.OrderByDescending(j => R(j, j)).First();
+                axis = [R(0, k) + (k == 0 ? 1 : 0), R(1, k) + (k == 1 ? 1 : 0), R(2, k) + (k == 2 ? 1 : 0)];
+            }
+            var all = Enumerable.Range(0, n).ToArray();
+            doc.Edit(JsonSerializer.Serialize(new { op = "rotate", atoms = all, axis, degrees = ang * 180 / Math.PI }));
+            // the rotate turns one way or the other: if x is not the longest extent now, it went the wrong way
+            double vx = 0, vz = 0, mx = 0, my = 0, mz = 0;
+            for (var i = 0; i < n; i++) { var a = doc.Atom(i); mx += a.X; my += a.Y; mz += a.Z; }
+            mx /= n; my /= n; mz /= n;
+            for (var i = 0; i < n; i++) { var a = doc.Atom(i); vx += (a.X - mx) * (a.X - mx); vz += (a.Z - mz) * (a.Z - mz); }
+            if (vx + 1e-9 < vz)
+                doc.Edit(JsonSerializer.Serialize(new { op = "rotate", atoms = all, axis, degrees = -2 * ang * 180 / Math.PI }));
+        }
+        catch { /* the molecule stays as built */ }
+    }
+
+    /// <summary>Eigenvalues and eigenvectors (columns) of a symmetric 3 × 3 matrix by Jacobi rotations.</summary>
+    private static (double[] Values, double[,] Vectors) Jacobi3(double[,] a0)
+    {
+        var a = (double[,])a0.Clone();
+        var v = new double[3, 3] { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
+        for (var sweep = 0; sweep < 50; sweep++)
+        {
+            double off = Math.Abs(a[0, 1]) + Math.Abs(a[0, 2]) + Math.Abs(a[1, 2]);
+            if (off < 1e-12) break;
+            for (var pi = 0; pi < 2; pi++)
+                for (var qi = pi + 1; qi < 3; qi++)
+                {
+                    if (Math.Abs(a[pi, qi]) < 1e-15) continue;
+                    var th = 0.5 * Math.Atan2(2 * a[pi, qi], a[qi, qi] - a[pi, pi]);
+                    double cs = Math.Cos(th), sn = Math.Sin(th);
+                    for (var k = 0; k < 3; k++)
+                    {
+                        double akp = a[k, pi], akq = a[k, qi];
+                        a[k, pi] = cs * akp - sn * akq; a[k, qi] = sn * akp + cs * akq;
+                    }
+                    for (var k = 0; k < 3; k++)
+                    {
+                        double apk = a[pi, k], aqk = a[qi, k];
+                        a[pi, k] = cs * apk - sn * aqk; a[qi, k] = sn * apk + cs * aqk;
+                    }
+                    for (var k = 0; k < 3; k++)
+                    {
+                        double vkp = v[k, pi], vkq = v[k, qi];
+                        v[k, pi] = cs * vkp - sn * vkq; v[k, qi] = sn * vkp + cs * vkq;
+                    }
+                }
+        }
+        return ([a[0, 0], a[1, 1], a[2, 2]], v);
     }
 
     /// <summary>A Studio edit of the builder's molecule: its SMILES (from the structure, implicit hydrogens) goes to the

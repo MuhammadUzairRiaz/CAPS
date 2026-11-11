@@ -5561,9 +5561,28 @@ internal static class SelfTest
             var naph = $"{F()} {mv.MolValence} max H {skc.MaxHydrogens}";
             Click(At(skc, skc.BondPoint(skc.OuterBond(1))));
             var three = $"{F()} {mv.MolValence} max H {skc.MaxHydrogens}";
+            // the timer-driven builds run as a user's would: count them over 6 s with nothing touched
             Check(benzene == "C₆H₆ ok max H 1" && naph == "C₁₀H₈ ok max H 1" && three == "C₁₄H₁₀ ok max H 1",
                   $"sketch rings fuse with conjugation: {benzene} · {naph} · {three} · {mv.MolSmiles}");
             Step("2: undo and redo with the buttons and the k");
+            // a Ring click that misses the bond (half a bond length off it, or inside a ring) still fuses: no ring over a ring
+            Press("ClearButton");
+            Press("ToolRing");
+            Click(At(skc, centre));
+            var b0 = skc.BondPoint(skc.OuterBond(1));
+            var c0 = skc.Centre();
+            var away = new Point(b0.X + (b0.X - c0.X) * 0.45, b0.Y + (b0.Y - c0.Y) * 0.45);
+            Click(At(skc, away));
+            var offBond = $"{F()} closest {skc.ClosestPair():F2}";
+            Click(At(skc, new Point(skc.Centre().X + 3, skc.Centre().Y + 2)));
+            var inside = $"{F()} closest {skc.ClosestPair():F2}";
+            Check(offBond.StartsWith("C₁₀H₈") && inside.StartsWith("C₁₄H₁₀") && skc.ClosestPair() > 0.9,
+                  $"Ring clicks off the bond fuse: half a bond off → {offBond} · inside the drawing → {inside}");
+            Press("ClearButton");
+            Press("ToolRing");
+            Click(At(skc, centre));
+            Click(At(skc, skc.BondPoint(skc.OuterBond(1))));
+            Click(At(skc, skc.BondPoint(skc.OuterBond(1))));
             // undo and redo with the buttons and the keyboard
             Press("UndoButton");
             var undone = F();
@@ -5663,6 +5682,10 @@ internal static class SelfTest
             while (!bt.IsCompleted) Pump(1);
             Pump(10);
             var built = mv.Document;
+            // the view's molecule lies on its principal axes: benzene flat in x-y, z its thinnest extent
+            double Spread(Func<Interop.CapsAtomInfo, double> f) { var v = Enumerable.Range(0, 12).Select(i => f(built!.Atom(i))).ToArray(); var m = v.Average(); return v.Sum(x => (x - m) * (x - m)); }
+            var (sx, sy, sz) = (Spread(a => a.X), Spread(a => a.Y), Spread(a => a.Z));
+            Check(sz < 0.05 * sy && sx >= sy - 1e-6, $"built molecule oriented: spread x {sx:F2} · y {sy:F2} · z {sz:F3} Å²");
             var hydrogen = Enumerable.Range(0, 12).First(i => mv.Document!.Atom(i).Element == 1);
             mv.Pick(hydrogen);
             mv.BuildElement = "Cl";

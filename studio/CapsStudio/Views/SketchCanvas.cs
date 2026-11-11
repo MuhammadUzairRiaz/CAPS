@@ -305,6 +305,45 @@ public sealed class SketchCanvas : Control
         return -1;
     }
 
+    /// <summary>What a Ring click lands on: an atom (spiro), a bond (fused), or neither (a free ring). Near the drawing a
+    /// click always means a bond: the nearest one, by its middle, within 1.8 bond lengths, so a ring is never dropped on
+    /// top of the ones drawn (the bond itself is a thin target when the drawing is zoomed out).</summary>
+    private (int Atom, int Bond) RingTarget(Point p)
+    {
+        var at = AtomAt(p);
+        if (at >= 0) return (at, -1);
+        bool Edge(int k) => Neighbours(_bonds[k].A).Count <= 2 && Neighbours(_bonds[k].B2).Count <= 2;
+        var bond = BondAt(p);
+        if (bond >= 0 && Edge(bond)) return (-1, bond);
+        var best = -1;
+        var bd = 1.8 * _scale;
+        for (var k = 0; k < _bonds.Count; k++)
+        {
+            // an edge a ring can fuse onto: both atoms with room (a shared bond inside a ring system has none)
+            if (!Edge(k)) continue;
+            var d = Dist(BondMid(k), p);
+            if (d < bd) { bd = d; best = k; }
+        }
+        if (best >= 0) return (-1, best);
+        // still near an atom (a lone one, or the end of a chain): spiro on it rather than a ring over it
+        var near = -1;
+        var nd = 1.0 * _scale;
+        for (var i = 0; i < _atoms.Count; i++)
+        {
+            if (Neighbours(i).Count > 2) continue;   // a spiro ring needs two free bonds on the atom
+            var d = Dist(ToScreen(_atoms[i].X, _atoms[i].Y), p);
+            if (d < nd) { nd = d; near = i; }
+        }
+        return (near, -1);
+    }
+
+    private Point BondMid(int k)
+    {
+        var a = ToScreen(_atoms[_bonds[k].A].X, _atoms[_bonds[k].A].Y);
+        var b = ToScreen(_atoms[_bonds[k].B2].X, _atoms[_bonds[k].B2].Y);
+        return new Point((a.X + b.X) / 2, (a.Y + b.Y) / 2);
+    }
+
     private static double Dist(Point a, Point b) => Math.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
 
     private List<int> Neighbours(int i)
@@ -492,6 +531,17 @@ public sealed class SketchCanvas : Control
         Enumerable.Range(0, _bonds.Count).Where(k => Neighbours(_bonds[k].A).Count == 2 && Neighbours(_bonds[k].B2).Count == 2)
                   .OrderByDescending(k => (_atoms[_bonds[k].A].X + _atoms[_bonds[k].B2].X) * towardsX).FirstOrDefault(-1);
     internal int Neighbours2(int i) => Neighbours(i).Count;
+    internal Point Centre() { if (_atoms.Count == 0) return default; return ToScreen(_atoms.Average(a => a.X), _atoms.Average(a => a.Y)); }
+    internal double BondPixels => _scale;
+    /// <summary>The closest two atoms (in bond lengths): below about 0.5 two rings were drawn over each other.</summary>
+    internal double ClosestPair()
+    {
+        var best = double.MaxValue;
+        for (var i = 0; i < _atoms.Count; i++)
+            for (var j = i + 1; j < _atoms.Count; j++)
+                best = Math.Min(best, Math.Sqrt((_atoms[i].X - _atoms[j].X) * (_atoms[i].X - _atoms[j].X) + (_atoms[i].Y - _atoms[j].Y) * (_atoms[i].Y - _atoms[j].Y)));
+        return best;
+    }
     internal int MaxHydrogens => _atoms.Count == 0 ? 0 : Enumerable.Range(0, _atoms.Count).Max(ImplicitH);
 
     // ---------------------------------------------------------------- input
@@ -540,8 +590,8 @@ public sealed class SketchCanvas : Control
             InvalidateVisual();
             return;
         }
-        var ha = AtomAt(p);
-        var hb = ha < 0 ? BondAt(p) : -1;
+        var (ha, hb) = Mode == Tool.Ring ? RingTarget(p) : (AtomAt(p), -1);
+        if (Mode != Tool.Ring && ha < 0) hb = BondAt(p);
         if (ha != _hoverAtom || hb != _hoverBond) { _hoverAtom = ha; _hoverBond = hb; InvalidateVisual(); }
     }
 
@@ -561,6 +611,13 @@ public sealed class SketchCanvas : Control
         _dragFrom = -1;
         var at = AtomAt(p);
         var bond = at < 0 ? BondAt(p) : -1;
+        // the click is where the pointer went down: a small slip while pressing (a trackpad tap) does not move it
+        if (!_dragging && Mode is not (Tool.Move) && Dist(p, _pressAt) < 8)
+        {
+            p = _pressAt;
+            at = AtomAt(p);
+            bond = at < 0 ? BondAt(p) : -1;
+        }
         switch (Mode)
         {
             case Tool.Move:
@@ -676,7 +733,8 @@ public sealed class SketchCanvas : Control
             case Tool.Ring:
                 {
                     var (mx, my) = ToModel(p);
-                    AddRing(mx, my, at, bond);
+                    var (ra, rb) = RingTarget(p);
+                    AddRing(mx, my, ra, rb);
                 }
                 break;
             case Tool.Erase:
