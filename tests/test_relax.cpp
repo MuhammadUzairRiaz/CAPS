@@ -525,7 +525,8 @@ TEST(LammpsData, RigidBodiesBeforeTheBarostat) {
 // A rigid model with no site (TraPPE-UA's CO2: every bond and angle constant 0, the force field's rigid mark) is a rigid
 // body in the LAMMPS input, as a sited one is: the group, the intra-body exclusion, fix rigid/nvt/small; the data file
 // has it at the model's geometry (C=O 1.16 A, not the builder's). GROMACS refuses it by name, and a half-rigid molecule
-// (TraPPE's thiophene: its CH_80 / S_79 bonds 0 beside the stiff aromatic CH_88 terms) is refused in both. With a LAMMPS
+// (TraPPE's thiophene: its CH_80 / S_79 bonds 0 beside the stiff aromatic CH_88 terms) is refused in both; a rigid diatomic
+// (N2) is written for GROMACS as one constraint with its centre site. With a LAMMPS
 // on the PATH, 1000 steps of NVT keep every C=O at 1.16 A.
 TEST(LammpsData, RigidModelsWithoutSitesAreRigidBodies) {
   const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/trappe-ua-umn.json");
@@ -596,6 +597,35 @@ TEST(LammpsData, RigidModelsWithoutSitesAreRigidBodies) {
   ASSERT_EQ(r0.size(), 16u);
   for (double r : r0) EXPECT_NEAR(r, 1.16, 1e-6);
   EXPECT_THROW(write_gromacs(s, ff, EnergyOptions{}, (dir / "co2").string()), FieldError);
+  // a rigid diatomic is one constraint: TraPPE's N2, its bond in [ constraints ] at 0.110 nm, its centre charge a
+  // virtual_sites2 at a = 0.5 (mass 0), the pairs inside the molecule excluded
+  {
+    System n2 = build_molecule("N#N").system;
+    n2.cell.a = {32, 0, 0}, n2.cell.b = {0, 32, 0}, n2.cell.c = {0, 0, 32};
+    std::string ch3 = "types";
+    prepare_for_forcefield(n2, def, ch3);
+    const TypingResult tn = assign_types(n2, def);
+    ASSERT_EQ(tn.untyped, 0);
+    ParamReport rn;
+    const ForceField fn = parameterize(n2, def, tn.types, "types", &rn, false);
+    ASSERT_FALSE(fn.vsites.empty());
+    ASSERT_NO_THROW(write_gromacs(n2, fn, EnergyOptions{}, (dir / "n2").string()));
+    std::ifstream it((dir / "n2.itp").string());
+    const std::string itp((std::istreambuf_iterator<char>(it)), {});
+    EXPECT_NE(itp.find("[ constraints ]"), std::string::npos);
+    EXPECT_NE(itp.find("1 0.11000000\n"), std::string::npos);
+    EXPECT_EQ(itp.find("[ bonds ]"), std::string::npos);
+    EXPECT_NE(itp.find("[ virtual_sites2 ]"), std::string::npos);
+    EXPECT_NE(itp.find("1 0.5\n"), std::string::npos);
+    EXPECT_NE(itp.find("[ exclusions ]"), std::string::npos);
+    std::ifstream md((dir / "n2.mdp").string());
+    const std::string mdp((std::istreambuf_iterator<char>(md)), {});
+    EXPECT_NE(mdp.find("lincs-iter               = 2"), std::string::npos);
+    if (std::system("command -v gmx > /dev/null 2>&1") == 0) {
+      const std::string cmd = "cd '" + dir.string() + "' && gmx -quiet grompp -f n2.mdp -c n2.gro -p n2.top -o n2.tpr -maxwarn 1 > n2.grompp 2>&1";
+      EXPECT_EQ(std::system(cmd.c_str()), 0) << "grompp refused the N2 topology: " << dir.string() << "/n2.grompp";
+    }
+  }
   // thiophene: half rigid, refused in both exports
   System th = build_molecule("c1ccsc1").system;
   std::string ch2 = "types";
