@@ -3,7 +3,7 @@
  "version": 1,
  "forcefield": "OPLS-AA (GROMACS oplsaa.ff)",
  "unknown_types": "untyped",
- "description": "CAPS's OPLS-AA rules in GROMACS's opls_NNN names (bench/typing/make_opls_gromacs_rules.py); types the GROMACS file lacks (caps_bza_c, caps_bza_ch, caps_bza_ch2, caps_bze_c, caps_bze_ch, caps_bze_ch2, caps_bzo_c, caps_bzo_ch, caps_bzo_ch2, caps_epx_c, caps_epx_ch, opls_1025, opls_1026, opls_1027, opls_1028, opls_1029, opls_1033, opls_1034, opls_1060, opls_1061, opls_1062, opls_1063, opls_1064, opls_1065, opls_1066, opls_1067, opls_1068, opls_1069, opls_1070, opls_1071, opls_1072, opls_1073, opls_1074, opls_1075, opls_1076, opls_1077, opls_1078, opls_399, opls_489, opls_495, opls_519, opls_769, opls_789, opls_919, opls_920, opls_921, opls_924, opls_966, opls_967, opls_972, opls_973, opls_974, opls_987, opls_988, opls_989, opls_9998, opls_9999) are left untyped",
+ "description": "CAPS's OPLS-AA rules in GROMACS's opls_NNN names (bench/typing/make_opls_gromacs_rules.py), with the OPLS-AA 2024 library's types (opls2024_NNN, caps_*) for groups GROMACS's numbers cannot balance; types neither file has (opls_9998, opls_9999) are left untyped",
  "rules": [
   {
    "type": "opls_135",
@@ -54,6 +54,36 @@
    "description": "alkene C (H2C=; one carrying a nitrile has its own number or none)"
   },
   {
+   "type": "opls2024_1154",
+   "smarts": "[CX3H2;$(*=[CX2]=[CX3])]",
+   "priority": 2,
+   "description": "allene terminal C (CH2=C=) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1155",
+   "smarts": "[CX3H1;!$(*~[!#6;!#1]);$(*=[CX2]=[CX3])]",
+   "priority": 2,
+   "description": "allene terminal C (RHC=C=) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1156",
+   "smarts": "[CX3H0;!$(*~[!#6;!#1]);$(*=[CX2]=[CX3])]",
+   "priority": 2,
+   "description": "allene terminal C (R2C=C=) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1157",
+   "smarts": "[CX2;!$(*~[!#6;!#1])](=[CX3])=[CX3]",
+   "priority": 2,
+   "description": "allene central C (=C=) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1153",
+   "smarts": "[H][CX3;$(*=[CX2]=[CX3])]",
+   "priority": 2,
+   "description": "allene H (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
    "type": "opls_144",
    "smarts": "[H][CX3]=[CX3]",
    "priority": 1,
@@ -82,6 +112,24 @@
    "smarts": "[c;R2;$(c(:c)(:c):c)]",
    "priority": 2,
    "description": "fused aromatic C (naphthalene C9)"
+  },
+  {
+   "type": "opls2024_165",
+   "smarts": "[c;!$(*~[!#6;!#1]);$(c[CX3;!a]=[CX3])]",
+   "priority": 3,
+   "description": "aromatic C bearing a vinyl C (styrene C(ipso)) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1004",
+   "smarts": "[c;!$(*~[!#6;!#1]);$(c[CX4]c)]",
+   "priority": 3,
+   "description": "ring C on a C bearing two aryl rings (diphenylmethane C(ipso)) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_519",
+   "smarts": "[c;$(c-!@c)]",
+   "priority": 3,
+   "description": "biphenyl junction C (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_148",
@@ -318,10 +366,46 @@
    "description": "H on ether alpha C"
   },
   {
+   "type": "caps_bzo_ch2",
+   "smarts": "[CX4H2;$(*c);$(*[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4,c])])]",
+   "priority": 6,
+   "description": "benzyl ether alpha C (CH2) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_bzo_ch",
+   "smarts": "[CX4H1;$(*c);$(*[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4,c])])]",
+   "priority": 6,
+   "description": "benzyl ether alpha C (CH) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_bzo_c",
+   "smarts": "[CX4H0;$(*c);$(*[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4,c])])]",
+   "priority": 6,
+   "description": "benzyl ether alpha C (C) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls_221",
+   "smarts": "c[CX4;$(*[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4,c])])]",
+   "priority": 6,
+   "description": "ring C of a benzyl ether (as a benzyl alcohol's, 221, with the caps_bzo alpha C) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
    "type": "opls_199",
    "smarts": "c[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)[CX4])]",
    "priority": 5,
    "description": "aryl ether C(O)"
+  },
+  {
+   "type": "opls2024_177",
+   "smarts": "[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)c)]",
+   "priority": 6,
+   "description": "diaryl ether O (diphenyl ether, OPLS/2020) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls_199",
+   "smarts": "c[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)c)]",
+   "priority": 6,
+   "description": "diaryl ether C(O) (as anisole's C(OMe), with diphenyl ether's O 177) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_186",
@@ -642,6 +726,42 @@
    "description": "ester -O- (phenyl ester)"
   },
   {
+   "type": "opls_473",
+   "smarts": "[OX2;$(O[CX3](=[OX1])[#6,#1]);$(O[CX3]=[CX3])]",
+   "priority": 7,
+   "description": "ester -O- (vinyl ester, with CAPS's balanced vinyl C below) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cm_ves",
+   "smarts": "[CX3H1;$(*[OX2][CX3]=[OX1])]=[CX3]",
+   "priority": 8,
+   "description": "vinyl ester C(O)= (RHC=), charged as the phenyl ester C(ipso) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cm_ves0",
+   "smarts": "[CX3H0;$(*[OX2][CX3]=[OX1])]=[CX3]",
+   "priority": 8,
+   "description": "vinyl ester C(O)= (R2C=), charged as the phenyl ester C(ipso) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_anh_c",
+   "smarts": "[CX3;$(*(=[OX1])[OX2][CX3;!$(*c)]=[OX1]);!$(*c)]",
+   "priority": 9,
+   "description": "anhydride C=O (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_anh_o",
+   "smarts": "[OX1]=[CX3;$(*(=[OX1])[OX2][CX3;!$(*c)]=[OX1]);!$(*c)]",
+   "priority": 9,
+   "description": "anhydride =O (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_anh_os",
+   "smarts": "[OX2;$(O([CX3;!$(*c)]=[OX1])[CX3;!$(*c)]=[OX1])]",
+   "priority": 9,
+   "description": "anhydride -O- (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
    "type": "opls_472",
    "smarts": "c[OX2][CX3](=[OX1])[#6,#1]",
    "priority": 7,
@@ -676,6 +796,30 @@
    "smarts": "[H][CX4][OX2][CX3](=[OX1])[#6,#1]",
    "priority": 6,
    "description": "H on ester alkoxy C"
+  },
+  {
+   "type": "caps_bze_ch2",
+   "smarts": "[CX4H2;$(*c);$(*[OX2][CX3](=[OX1])[#6,#1])]",
+   "priority": 7,
+   "description": "benzyl ester alkoxy C (CH2) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_bze_ch",
+   "smarts": "[CX4H1;$(*c);$(*[OX2][CX3](=[OX1])[#6,#1])]",
+   "priority": 7,
+   "description": "benzyl ester alkoxy C (CH) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_bze_c",
+   "smarts": "[CX4H0;$(*c);$(*[OX2][CX3](=[OX1])[#6,#1])]",
+   "priority": 7,
+   "description": "benzyl ester alkoxy C (C) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls_221",
+   "smarts": "c[CX4;$(*[OX2][CX3](=[OX1])[#6,#1])]",
+   "priority": 7,
+   "description": "ring C of a benzyl ester (as a benzyl alcohol's, 221, with its balanced alkoxy C) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_267",
@@ -762,6 +906,12 @@
    "description": "cyclic carbonate -O-"
   },
   {
+   "type": "opls2024_789",
+   "smarts": "[CX4H3;$(*[OX2;R][CX3](=[OX1])[OX2][CX4])]",
+   "priority": 7,
+   "description": "cyclic carbonate alkoxy C (CH3) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
    "type": "opls_774",
    "smarts": "[CX4H2;$(*[OX2;R][CX3](=[OX1])[OX2][CX4])]",
    "priority": 7,
@@ -778,6 +928,36 @@
    "smarts": "[H][CX4][OX2;R][CX3](=[OX1])[OX2][CX4]",
    "priority": 7,
    "description": "H on cyclic carbonate alkoxy C"
+  },
+  {
+   "type": "opls_772",
+   "smarts": "[CX3;!R;$(*(=[OX1])([OX2][CX4H3,CX4H2])[OX2][CX4H3,CX4H2])]",
+   "priority": 8,
+   "description": "open-chain carbonate C=O (methyl / primary alkyl) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls_771",
+   "smarts": "[OX1]=[CX3;!R;$(*(=[OX1])([OX2][CX4H3,CX4H2])[OX2][CX4H3,CX4H2])]",
+   "priority": 8,
+   "description": "open-chain carbonate =O (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls_773",
+   "smarts": "[OX2;$(O[CX3;!R;$(*(=[OX1])([OX2][CX4H3,CX4H2])[OX2][CX4H3,CX4H2])])]",
+   "priority": 8,
+   "description": "open-chain carbonate -O- (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_789",
+   "smarts": "[CX4H3;$(*[OX2][CX3;!R;$(*(=[OX1])([OX2][CX4H3,CX4H2])[OX2][CX4H3,CX4H2])])]",
+   "priority": 8,
+   "description": "open-chain carbonate alkoxy C (CH3) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls_774",
+   "smarts": "[CX4H2;$(*[OX2][CX3;!R;$(*(=[OX1])([OX2][CX4H3,CX4H2])[OX2][CX4H3,CX4H2])])]",
+   "priority": 8,
+   "description": "open-chain carbonate alkoxy C (CH2) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_772",
@@ -808,6 +988,12 @@
    "smarts": "[H][CX4][OX2][CX3;!R;$(*(=[OX1])([OX2][CX4H2])[OX2][CX4H2])]",
    "priority": 8,
    "description": "H on an open-chain carbonate alkoxy CH2"
+  },
+  {
+   "type": "opls_777",
+   "smarts": "[H][CX4][OX2][CX3;!R;$(*(=[OX1])([OX2][CX4H3,CX4H2])[OX2][CX4H3,CX4H2])]",
+   "priority": 8,
+   "description": "H on an open-chain carbonate alkoxy C (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_778",
@@ -888,6 +1074,18 @@
    "description": "ring C on a secondary amide N"
   },
   {
+   "type": "opls2024_987",
+   "smarts": "[NX3H0;$(*[CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])](c)[CX4]",
+   "priority": 7,
+   "description": "tertiary N-alkyl-N-aryl amide N (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_988",
+   "smarts": "c[NX3H0;$(*[CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])][CX4]",
+   "priority": 7,
+   "description": "ring C on a tertiary N-alkyl amide N (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
    "type": "opls_242",
    "smarts": "[CX4H3;$(*[NX3H1][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]",
    "priority": 6,
@@ -928,6 +1126,30 @@
    "smarts": "[CX4H1;$(*[NX3H0][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]",
    "priority": 6,
    "description": "C on tertiary amide N (CH)"
+  },
+  {
+   "type": "caps_bza_ch2",
+   "smarts": "[CX4H2;$(*c);$(*[NX3H1][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]",
+   "priority": 7,
+   "description": "benzyl C on a secondary amide N (CH2) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_bza_ch",
+   "smarts": "[CX4H1;$(*c);$(*[NX3H1][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]",
+   "priority": 7,
+   "description": "benzyl C on a secondary amide N (CH) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_bza_c",
+   "smarts": "[CX4H0;$(*c);$(*[NX3H1][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]",
+   "priority": 7,
+   "description": "benzyl C on a secondary amide N (C) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls_221",
+   "smarts": "c[CX4;$(*[NX3H1][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]",
+   "priority": 7,
+   "description": "ring C of an N-benzyl amide (as a benzyl amine's, 221) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_900",
@@ -1044,6 +1266,48 @@
    "description": "N,N-dialkylaniline C(N)"
   },
   {
+   "type": "opls2024_919",
+   "smarts": "[CX4H2;$(*c);$(*[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 6,
+   "description": "benzyl amine C (primary) (CH2) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_920",
+   "smarts": "[CX4H1;$(*c);$(*[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 6,
+   "description": "benzyl amine C (primary) (CH) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_921",
+   "smarts": "[CX4H0;$(*c);$(*[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 6,
+   "description": "benzyl amine C (primary) (C) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_924",
+   "smarts": "[CX4H2;$(*c);$(*[NX3H1;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 6,
+   "description": "benzyl amine C (CH2NHR) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_989",
+   "smarts": "[CX4H2;$(*c);$(*[NX3H0;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 6,
+   "description": "benzyl amine C (CH2NR2) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls_221",
+   "smarts": "c[CX4;$(*[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 7,
+   "description": "ring C of a benzyl amine (221) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls_221",
+   "smarts": "c[CX4H2;$(*[NX3;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 7,
+   "description": "ring C of a benzyl amine (221) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
    "type": "opls_753",
    "smarts": "[NX1]#[CX2][CX4]",
    "priority": 6,
@@ -1078,6 +1342,12 @@
    "smarts": "[CX4H0;$(*[CX2]#[NX1])]",
    "priority": 6,
    "description": "C alpha to a nitrile (C)"
+  },
+  {
+   "type": "opls2024_769",
+   "smarts": "[CX4H2;$(*c);$(*[CX2]#[NX1])]",
+   "priority": 7,
+   "description": "CH2 of a benzyl nitrile (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_221",
@@ -1122,6 +1392,18 @@
    "description": "conjugated nitrile C (acrylonitrile)"
   },
   {
+   "type": "caps_cm_cn",
+   "smarts": "[CX3;$(*[CX2]#[NX1])]=[CX3]",
+   "priority": 7,
+   "description": "alkene C carrying a nitrile (acrylonitrile) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_hc_cn",
+   "smarts": "[H][CX3;$(*[CX2]#[NX1])]=[CX3]",
+   "priority": 8,
+   "description": "H on that C (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
    "type": "opls_151",
    "smarts": "[Cl][CX4]",
    "priority": 5,
@@ -1134,16 +1416,130 @@
    "description": "alkyl chloride C (CH2)"
   },
   {
+   "type": "opls2024_973",
+   "smarts": "[CX4H1;$(*[Cl]);!$(*([Cl])[Cl]);!$(*[F,Cl,Br,I;!Cl])]",
+   "priority": 5,
+   "description": "alkyl chloride C (CH) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_974",
+   "smarts": "[CX4H0;$(*[Cl]);!$(*([Cl])[Cl]);!$(*[F,Cl,Br,I;!Cl])]",
+   "priority": 5,
+   "description": "alkyl chloride C (C) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
    "type": "opls_153",
    "smarts": "[H][CX4H2][Cl]",
    "priority": 5,
    "description": "H on RCH2Cl"
   },
   {
+   "type": "opls2024_972",
+   "smarts": "[H][CX4H1][Cl]",
+   "priority": 5,
+   "description": "H on R2CHCl (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_ccl2",
+   "smarts": "[CX4H0;$(*(Cl)Cl);!$(*(Cl)(Cl)Cl);!$(*[F,Br,I])]",
+   "priority": 7,
+   "description": "R2CCl2 C (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_chcl2",
+   "smarts": "[CX4H1;$(*(Cl)Cl);!$(*(Cl)(Cl)Cl);!$(*[F,Br,I])]",
+   "priority": 7,
+   "description": "RCHCl2 C (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_ccl3",
+   "smarts": "[CX4H0;$(*(Cl)(Cl)Cl);!$(*(Cl)(Cl)(Cl)Cl);!$(*[F,Br,I])]",
+   "priority": 7,
+   "description": "RCCl3 C (CCl4 has no type: +0.60 would leave it -0.20 e) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_chcl3",
+   "smarts": "[CX4H1;$(*(Cl)(Cl)Cl)]",
+   "priority": 7,
+   "description": "CHCl3 C (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_ch2cl2",
+   "smarts": "[CX4H2;$(*(Cl)Cl)]",
+   "priority": 7,
+   "description": "CH2Cl2 C (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_972",
+   "smarts": "[H][CX4H1;$(*(Cl)Cl);!$(*[F,Br,I])]",
+   "priority": 7,
+   "description": "H on a polychlorinated CH (as R2CHCl; a CH2 keeps 153) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
    "type": "opls_153",
    "smarts": "[H][CX4;$(*(Cl)Cl)]",
    "priority": 6,
    "description": "H on a polychlorinated C"
+  },
+  {
+   "type": "opls2024_975",
+   "smarts": "[Br][CX4;$(*Br);!$(*[F,Cl,I]);!$(*(Br)Br);!H3]",
+   "priority": 6,
+   "description": "alkyl bromide Br (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_976",
+   "smarts": "[CX4H2;$(*Br);!$(*[F,Cl,I]);!$(*(Br)Br)]",
+   "priority": 6,
+   "description": "alkyl bromide C (CH2) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_978",
+   "smarts": "[CX4H1;$(*Br);!$(*[F,Cl,I]);!$(*(Br)Br)]",
+   "priority": 6,
+   "description": "alkyl bromide C (CH) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_979",
+   "smarts": "[CX4H0;$(*Br);!$(*[F,Cl,I]);!$(*(Br)Br)]",
+   "priority": 6,
+   "description": "alkyl bromide C (C) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_977",
+   "smarts": "[H][CX4;$(*Br);!$(*[F,Cl,I]);!$(*(Br)Br);!H3]",
+   "priority": 6,
+   "description": "H on an alkyl bromide C (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1014",
+   "smarts": "[I][CX4;$(*I);!$(*[F,Cl,Br]);!$(*(I)I);!H3]",
+   "priority": 6,
+   "description": "iodoalkane I (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1011",
+   "smarts": "[CX4H2;$(*I);!$(*[F,Cl,Br]);!$(*(I)I)]",
+   "priority": 6,
+   "description": "iodoalkane C (CH2) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1012",
+   "smarts": "[CX4H1;$(*I);!$(*[F,Cl,Br]);!$(*(I)I)]",
+   "priority": 6,
+   "description": "iodoalkane C (CH) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1013",
+   "smarts": "[CX4H0;$(*I);!$(*[F,Cl,Br]);!$(*(I)I)]",
+   "priority": 6,
+   "description": "iodoalkane C (C) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1015",
+   "smarts": "[H][CX4;$(*I);!$(*[F,Cl,Br]);!$(*(I)I);!H3]",
+   "priority": 6,
+   "description": "H on an iodoalkane C (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_956",
@@ -1186,6 +1582,18 @@
    "smarts": "[CX4;$(*(F)F);!$(*(F)(F)F);!$(*[H]);!$(*Cl)]",
    "priority": 6,
    "description": "CF2"
+  },
+  {
+   "type": "opls2024_966",
+   "smarts": "[CX4H1;$(*(F)F);!$(*(F)(F)F)]",
+   "priority": 6,
+   "description": "CF2H carbon (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_967",
+   "smarts": "[H][CX4H1;$(*(F)F);!$(*(F)(F)F)]",
+   "priority": 6,
+   "description": "H on a CF2H carbon (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_726",
@@ -1290,6 +1698,30 @@
    "description": "chloroalkene C (ClHC=)"
   },
   {
+   "type": "opls2024_399",
+   "smarts": "[CX3H0;!$(*(Cl)Cl)]([Cl])([CX4])=[CX3]",
+   "priority": 7,
+   "description": "chloroalkene C with an alkyl group (R-CCl=, chloroprene): CM, +0.12 e (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_c_dienecl",
+   "smarts": "[CX3H0;!$(*(Cl)Cl)]([Cl])(-[CX3]=[CX3])=[CX3]",
+   "priority": 8,
+   "description": "chloroprene C(Cl), a diene central C (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_399",
+   "smarts": "[CX3;$(*(Cl)Cl)]=[CX3]",
+   "priority": 8,
+   "description": "chloroalkene C (Cl2-C=) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_398",
+   "smarts": "[Cl][CX3;$(*(Cl)Cl)]=[CX3]",
+   "priority": 8,
+   "description": "chloroalkene Cl (Cl2-C=) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
    "type": "opls_493",
    "smarts": "[SX4](=[OX1])(=[OX1])([#6])[#6]",
    "priority": 6,
@@ -1344,10 +1776,28 @@
    "description": "disulfide S"
   },
   {
+   "type": "caps_s_poly",
+   "smarts": "[SX2]([SX2])[SX2]",
+   "priority": 7,
+   "description": "S between two S (polysulfide) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
    "type": "opls_200",
    "smarts": "[SX2H1][CX4]",
    "priority": 5,
    "description": "thiol S"
+  },
+  {
+   "type": "caps_s_ssh",
+   "smarts": "[SX2H1][SX2]",
+   "priority": 8,
+   "description": "persulfide S-H sulfur (S bonded to S and H) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_hs_ssh",
+   "smarts": "[H][SX2H1][SX2]",
+   "priority": 8,
+   "description": "H on a persulfide S (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_203",
@@ -1410,10 +1860,22 @@
    "description": "sulfoxide O"
   },
   {
+   "type": "opls2024_495",
+   "smarts": "[SX3](=[OX1])(c)[CX4]",
+   "priority": 7,
+   "description": "alkyl aryl sulfoxide S (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
    "type": "opls_497",
    "smarts": "[OX1]=[SX3](c)[CX4]",
    "priority": 7,
    "description": "alkyl aryl sulfoxide O"
+  },
+  {
+   "type": "opls2024_489",
+   "smarts": "c[SX3](=[OX1])[CX4]",
+   "priority": 7,
+   "description": "ring C on a sulfoxide S (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_498",
@@ -1468,6 +1930,48 @@
    "smarts": "[CX4H0;$(*[SX2H1])]",
    "priority": 5,
    "description": "C on a thiol S (C)"
+  },
+  {
+   "type": "opls2024_1025",
+   "smarts": "[OX2;r3]([CX4])[CX4]",
+   "priority": 6,
+   "description": "epoxide O (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1026",
+   "smarts": "[CX4H2;$(*1[OX2][CX4]1)]",
+   "priority": 6,
+   "description": "epoxide C (CH2) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1027",
+   "smarts": "[CX4H1;$(*1[OX2][CX4]1)]",
+   "priority": 6,
+   "description": "epoxide C (CH) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1028",
+   "smarts": "[CX4H0;$(*1[OX2][CX4]1)]",
+   "priority": 6,
+   "description": "epoxide C (C) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1029",
+   "smarts": "[H][CX4;$(*1[OX2][CX4]1)]",
+   "priority": 6,
+   "description": "H on epoxide C (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_epx_ch",
+   "smarts": "[CX4H1;$(*1[OX2][CX4]1);$(*c)]",
+   "priority": 7,
+   "description": "epoxide C bearing an aryl (CH) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_epx_c",
+   "smarts": "[CX4H0;$(*1[OX2][CX4]1);$(*c)]",
+   "priority": 7,
+   "description": "epoxide C bearing an aryl (C) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_221",
@@ -1560,6 +2064,120 @@
    "description": "C(NO2) of a nitroarene"
   },
   {
+   "type": "opls2024_1060",
+   "smarts": "[SiX4H0;!$(*~[O,N,S,Cl,F])]",
+   "priority": 6,
+   "description": "Si in a tetraalkylsilane (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1061",
+   "smarts": "[SiX4H1;!$(*~[O,N,S,Cl,F])]",
+   "priority": 6,
+   "description": "Si in a silane (SiH1) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1062",
+   "smarts": "[SiX4H2;!$(*~[O,N,S,Cl,F])]",
+   "priority": 6,
+   "description": "Si in a silane (SiH2) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1063",
+   "smarts": "[SiX4H3;!$(*~[O,N,S,Cl,F])]",
+   "priority": 6,
+   "description": "Si in a silane (SiH3) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1070",
+   "smarts": "[SiX4H0;$(*[OX2H1]);!$(*(O)O)]",
+   "priority": 6,
+   "description": "Si of a silanol (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1071",
+   "smarts": "[SiX4H1;$(*[OX2H1]);!$(*(O)O)]",
+   "priority": 6,
+   "description": "Si of a silanol (SiH1) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1072",
+   "smarts": "[SiX4H2;$(*[OX2H1]);!$(*(O)O)]",
+   "priority": 6,
+   "description": "Si of a silanol (SiH2) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1075",
+   "smarts": "[SiX4H0;$(*[OX2][#6]);!$(*(O)O)]",
+   "priority": 6,
+   "description": "Si of a silyl ether (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1076",
+   "smarts": "[SiX4H1;$(*[OX2][#6]);!$(*(O)O)]",
+   "priority": 6,
+   "description": "Si of a silyl ether (SiH1) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1077",
+   "smarts": "[SiX4H2;$(*[OX2][#6]);!$(*(O)O)]",
+   "priority": 6,
+   "description": "Si of a silyl ether (SiH2) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1064",
+   "smarts": "[H][SiX4;!$(*(O)O)]",
+   "priority": 6,
+   "description": "H on Si (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1073",
+   "smarts": "[OX2H1][SiX4;!$(*(O)O)]",
+   "priority": 6,
+   "description": "silanol O (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1074",
+   "smarts": "[H][OX2H1][SiX4;!$(*(O)O)]",
+   "priority": 6,
+   "description": "silanol H (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1078",
+   "smarts": "[OX2]([SiX4;!$(*(O)O)])[CX4]",
+   "priority": 6,
+   "description": "silyl ether O (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1065",
+   "smarts": "[CX4H3;$(*[SiX4;!$(*(O)O)])]",
+   "priority": 6,
+   "description": "C on Si (CH3) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1066",
+   "smarts": "[CX4H2;$(*[SiX4;!$(*(O)O)])]",
+   "priority": 6,
+   "description": "C on Si (CH2) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1067",
+   "smarts": "[CX4H1;$(*[SiX4;!$(*(O)O)])]",
+   "priority": 6,
+   "description": "C on Si (CH) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1068",
+   "smarts": "[CX4H0;$(*[SiX4;!$(*(O)O)])]",
+   "priority": 6,
+   "description": "C on Si (C) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "opls2024_1069",
+   "smarts": "c[SiX4;!$(*(O)O)]",
+   "priority": 7,
+   "description": "ring C on Si (phenylsilane) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
    "type": "opls_181",
    "smarts": "[CX4H3;$(*[OX2][SiX4;!$(*(O)O)])]",
    "priority": 6,
@@ -1588,6 +2206,12 @@
    "smarts": "[H][CX4][OX2][SiX4;!$(*(O)O)]",
    "priority": 6,
    "description": "H on C of a silyl ether O"
+  },
+  {
+   "type": "opls2024_925",
+   "smarts": "[CX2;!$(*c)]#[CX2;!$(*c)]",
+   "priority": 6,
+   "description": "alkyne C (not on an aryl ring) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_926",
@@ -1764,10 +2388,22 @@
    "description": "urea H"
   },
   {
+   "type": "opls2024_1033",
+   "smarts": "[NX3H1;$(*c)][CX3;$(C(=[OX1])([NX3;$([NH2]),$([NH1]c)])[NX3;$([NH2]),$([NH1]c)])]",
+   "priority": 9,
+   "description": "N-aryl urea N (N-phenylurea) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
    "type": "opls_250",
    "smarts": "[H][NX3H1;$(*c)][CX3;$(C(=[OX1])([NX3;$([NH2]),$([NH1]c)])[NX3;$([NH2]),$([NH1]c)])]",
    "priority": 9,
    "description": "H on an N-aryl urea N"
+  },
+  {
+   "type": "opls2024_1034",
+   "smarts": "c[NX3H1][CX3;$(C(=[OX1])([NX3;$([NH2]),$([NH1]c)])[NX3;$([NH2]),$([NH1]c)])]",
+   "priority": 9,
+   "description": "ring C on an N-aryl urea N (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_252",
@@ -1840,6 +2476,12 @@
    "smarts": "[CX4H2;$(*c1ncccc1)]",
    "priority": 7,
    "description": "CH2 on pyridine C2 (2-ethylpyridine)"
+  },
+  {
+   "type": "caps_pyr2ch",
+   "smarts": "[CX4H1;$(*c1ncccc1)]",
+   "priority": 7,
+   "description": "CH on pyridine C2 (2-isopropylpyridine, poly(2-vinylpyridine)) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_674",
@@ -2182,6 +2824,210 @@
    "smarts": "[CX4H2][c;r5;$(c1[nH1]ccc1)]",
    "priority": 7,
    "description": "CH2 on pyrrole C2"
+  },
+  {
+   "type": "caps_cbz_n",
+   "smarts": "[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12);$(n[CX4])]",
+   "priority": 8,
+   "description": "carbazole N (N-alkyl) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cbz_cn",
+   "smarts": "[c;r5;r6;$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)])]",
+   "priority": 8,
+   "description": "carbazole C on N (C8a / C9a) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cbz_cs",
+   "smarts": "[c;r5;r6;!$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)]);$(c~[c;r5;r6;$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)])])]",
+   "priority": 8,
+   "description": "carbazole fusion C (C4a / C4b) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cbz_c1",
+   "smarts": "[cH1;$(c[c;r5;r6;$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)])])]",
+   "priority": 8,
+   "description": "carbazole C1 / C8 (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cbz_c4",
+   "smarts": "[cH1;$(c[c;r5;r6;!$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)]);$(c~[c;r5;r6;$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)])])])]",
+   "priority": 8,
+   "description": "carbazole C4 / C5 (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cbz_c2",
+   "smarts": "[cH1;$(c[cH1;$(c[c;r5;r6;$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)])])])]",
+   "priority": 8,
+   "description": "carbazole C2 / C7 (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cbz_c3",
+   "smarts": "[cH1;$(c[cH1;$(c[c;r5;r6;!$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)]);$(c~[c;r5;r6;$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)])])])])]",
+   "priority": 8,
+   "description": "carbazole C3 / C6 (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cbz_h1",
+   "smarts": "[H][cH1;$(c[c;r5;r6;$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)])])]",
+   "priority": 8,
+   "description": "H on carbazole C1 (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cbz_h4",
+   "smarts": "[H][cH1;$(c[c;r5;r6;!$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)]);$(c~[c;r5;r6;$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)])])])]",
+   "priority": 8,
+   "description": "H on carbazole C4 (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cbz_h2",
+   "smarts": "[H][cH1;$(c[cH1;$(c[c;r5;r6;$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)])])])]",
+   "priority": 8,
+   "description": "H on carbazole C2 (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cbz_h3",
+   "smarts": "[H][cH1;$(c[cH1;$(c[c;r5;r6;!$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)]);$(c~[c;r5;r6;$(c[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)])])])])]",
+   "priority": 8,
+   "description": "H on carbazole C3 (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cbz_ct",
+   "smarts": "[CX4H1;$(*[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)])]",
+   "priority": 8,
+   "description": "CH on a carbazole N (poly(N-vinylcarbazole) backbone) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_pdms_si",
+   "smarts": "[SiX4;$(*([OX2][SiX4])[OX2][SiX4])]",
+   "priority": 8,
+   "description": "siloxane Si between two Si-O-Si O (D unit) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_pdms_sioh",
+   "smarts": "[SiX4;$(*[OX2][SiX4]);$(*[OX2H1])]",
+   "priority": 8,
+   "description": "siloxane Si bearing OH (silanol chain end) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_pdms_sih",
+   "smarts": "[SiX4;$(*[OX2][SiX4]);$(*[#1])]",
+   "priority": 8,
+   "description": "siloxane Si bearing H (Si-H chain end) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_pdms_sim3",
+   "smarts": "[SiX4;$(*[OX2][SiX4]);$(*([CX4])([CX4])[CX4])]",
+   "priority": 8,
+   "description": "siloxane Si of a trimethylsilyl end (M unit) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_pdms_ob",
+   "smarts": "[OX2;$(O([SiX4])[SiX4])]",
+   "priority": 8,
+   "description": "Si-O-Si O (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_pdms_oh",
+   "smarts": "[OX2H1;$(O[SiX4;$(*[OX2][SiX4])])]",
+   "priority": 8,
+   "description": "silanol O on a siloxane Si (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_pdms_ho",
+   "smarts": "[H][OX2H1;$(O[SiX4;$(*[OX2][SiX4])])]",
+   "priority": 8,
+   "description": "H of that silanol (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_pdms_hsi",
+   "smarts": "[H][SiX4;$(*[OX2][SiX4])]",
+   "priority": 8,
+   "description": "H on a siloxane Si (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_pdms_c",
+   "smarts": "[CX4H3;$(*[SiX4;$(*[OX2][SiX4])])]",
+   "priority": 8,
+   "description": "CH3 on a siloxane Si (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_pdms_hc",
+   "smarts": "[H][CX4H3;$(*[SiX4;$(*[OX2][SiX4])])]",
+   "priority": 8,
+   "description": "H of a CH3 on a siloxane Si (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_aos_si4",
+   "smarts": "[SiX4;$(*([OX2;$(O[CX4])])([OX2;$(O[CX4])])([OX2;$(O[CX4])])[OX2;$(O[CX4])])]",
+   "priority": 8,
+   "description": "Si with four alkoxy O (tetraalkoxysilane) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_aos_si3",
+   "smarts": "[SiX4;$(*([OX2;$(O[CX4])])([OX2;$(O[CX4])])([OX2;$(O[CX4])])[CX4])]",
+   "priority": 8,
+   "description": "Si with three alkoxy O and an alkyl C (trialkoxysilane) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_aos_si2",
+   "smarts": "[SiX4;$(*([OX2;$(O[CX4])])([OX2;$(O[CX4])])([CX4])[CX4])]",
+   "priority": 8,
+   "description": "Si with two alkoxy O and two alkyl C (dialkoxysilane) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_aos_o",
+   "smarts": "[OX2;$(O([CX4])[SiX4;$(*([OX2;$(O[CX4])])[OX2;$(O[CX4])]);!$(*[OX2][SiX4]);!$(*[OX2H1])])]",
+   "priority": 8,
+   "description": "alkoxy O on a di-, tri- or tetraalkoxysilane Si (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_aos_co2",
+   "smarts": "[CX4H2;$(*[OX2][SiX4;$(*([OX2;$(O[CX4])])[OX2;$(O[CX4])]);!$(*[OX2][SiX4]);!$(*[OX2H1])])]",
+   "priority": 8,
+   "description": "CH2 of an alkoxy group on Si (ethoxy) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_aos_co3",
+   "smarts": "[CX4H3;$(*[OX2][SiX4;$(*([OX2;$(O[CX4])])[OX2;$(O[CX4])]);!$(*[OX2][SiX4]);!$(*[OX2H1])])]",
+   "priority": 8,
+   "description": "CH3 of a methoxy group on Si (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_aos_hco",
+   "smarts": "[H][CX4;$(*[OX2][SiX4;$(*([OX2;$(O[CX4])])[OX2;$(O[CX4])]);!$(*[OX2][SiX4]);!$(*[OX2H1])])]",
+   "priority": 8,
+   "description": "H on the alkoxy C next to O (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_aos_cs2",
+   "smarts": "[CX4H2;$(*[SiX4;$(*([OX2;$(O[CX4])])[OX2;$(O[CX4])]);!$(*[OX2][SiX4]);!$(*[OX2H1])])]",
+   "priority": 8,
+   "description": "CH2 on an alkoxysilane Si (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_aos_cs3",
+   "smarts": "[CX4H3;$(*[SiX4;$(*([OX2;$(O[CX4])])[OX2;$(O[CX4])]);!$(*[OX2][SiX4]);!$(*[OX2H1])])]",
+   "priority": 8,
+   "description": "CH3 on an alkoxysilane Si (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_aos_hcs",
+   "smarts": "[H][CX4;$(*[SiX4;$(*([OX2;$(O[CX4])])[OX2;$(O[CX4])]);!$(*[OX2][SiX4]);!$(*[OX2H1])])]",
+   "priority": 8,
+   "description": "H on a C bonded to an alkoxysilane Si (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cbz_ct2",
+   "smarts": "[CX4H2;$(*[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)])]",
+   "priority": 8,
+   "description": "CH2 on a carbazole N (a chain end, or N-ethyl / N-vinyl-derived) (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+  },
+  {
+   "type": "caps_cbz_hc",
+   "smarts": "[H][CX4;$(*[n;r5;$(n[CX4]);$(n1c2ccccc2c2ccccc12)])]",
+   "priority": 8,
+   "description": "H on that CH / CH2 (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
   },
   {
    "type": "opls_224B",
@@ -2728,6 +3574,92 @@
    "priority": 16,
    "smarts": "[CX4H2;!R;$(*-[NX3H2]);$(*-[CX3](=[OX1])-[NX3])]",
    "description": "N-terminal glycine C alpha (neutral NH2)"
+  }
+ ],
+ "refused": [
+  {
+   "smarts": "[CX4H3;$(*Br)]",
+   "reason": "CH3Br: the alkyl bromide C 976 with three H leaves CH3Br at +0.10 e, and OPLS-AA has no methyl bromide numbers (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[Br][CX4H3]",
+   "reason": "CH3Br: the alkyl bromide C 976 with three H leaves CH3Br at +0.10 e, and OPLS-AA has no methyl bromide numbers (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[CX4H3;$(*I)]",
+   "reason": "CH3I: the iodoalkane C 1011 with three H leaves CH3I at +0.10 e, and OPLS-AA has no methyl iodide numbers (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[I][CX4H3]",
+   "reason": "CH3I: the iodoalkane C 1011 with three H leaves CH3I at +0.10 e, and OPLS-AA has no methyl iodide numbers (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[CX4;$(*(Cl)(Cl)(Cl)Cl)]",
+   "reason": "CCl4: the RCCl3 C (+0.60 with chlorine's -0.20) would leave CCl4 at -0.20 e; OPLS-AA has no CCl4 C (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[Cl][CX4;$(*(Cl)(Cl)(Cl)Cl)]",
+   "reason": "CCl4: the RCCl3 C (+0.60 with chlorine's -0.20) would leave CCl4 at -0.20 e; OPLS-AA has no CCl4 C (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[CX4;$(*F);$(*Cl)]",
+   "reason": "a carbon with both F and Cl: the monofluoro C 957-960 are sized for F 956 and the CF2 C 962 for two F, so no numbers balance the group (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[F,Cl][CX4;$(*F);$(*Cl)]",
+   "reason": "a carbon with both F and Cl: the monofluoro C 957-960 are sized for F 956 and the CF2 C 962 for two F, so no numbers balance the group (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[PX4;$([PX4](=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])]",
+   "reason": "a trialkyl phosphate: OPLS-AA's 440-444 are the dimethyl phosphate anion's, which leave trimethyl phosphate at -0.47 e and triethyl phosphate at -0.38 e (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[OX1]=[PX4;$([PX4](=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])]",
+   "reason": "a trialkyl phosphate: OPLS-AA's 440-444 are the dimethyl phosphate anion's, which leave trimethyl phosphate at -0.47 e and triethyl phosphate at -0.38 e (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[OX2;$(O[PX4;$([PX4](=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])])]",
+   "reason": "a trialkyl phosphate: OPLS-AA's 440-444 are the dimethyl phosphate anion's, which leave trimethyl phosphate at -0.47 e and triethyl phosphate at -0.38 e (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[#6;$(*[OX2][PX4;$([PX4](=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])])]",
+   "reason": "a trialkyl phosphate: OPLS-AA's 440-444 are the dimethyl phosphate anion's, which leave trimethyl phosphate at -0.47 e and triethyl phosphate at -0.38 e (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[CX2;$(*c)]",
+   "reason": "an alkyne on an aryl ring (phenylacetylene, tolan): the ring C has no number, and benzene's 145 without its H leaves tolan at -0.23 e (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[CX2;$(*#[CX2]c)]",
+   "reason": "an alkyne on an aryl ring (phenylacetylene, tolan): the ring C has no number, and benzene's 145 without its H leaves tolan at -0.23 e (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[c;$(c[CX2]#[CX2])]",
+   "reason": "an alkyne on an aryl ring (phenylacetylene, tolan): the ring C has no number, and benzene's 145 without its H leaves tolan at -0.23 e (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[c;$(c1cccs1),$(c1ccsc1)]",
+   "reason": "the thiophene ring: OPLS-AA has no numbers of its own (furan's C / H with thiazole's S 633 give +0.16 e) (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[s;$(s1cccc1)]",
+   "reason": "the thiophene ring: OPLS-AA has no numbers of its own (furan's C / H with thiazole's S 633 give +0.16 e) (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[H][c;$(c1cccs1),$(c1ccsc1)]",
+   "reason": "the thiophene ring: OPLS-AA has no numbers of its own (furan's C / H with thiazole's S 633 give +0.16 e) (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[CX4;$(*c1cnccc1)]",
+   "reason": "a 3-alkylpyridine: 672 is a pyridazine's CH3 and does not carry the ring H's charge (-0.16 e on 3,5-lutidine) (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[c;$(c1cnccc1);$(c[CX4])]",
+   "reason": "a 3-alkylpyridine: 672 is a pyridazine's CH3 and does not carry the ring H's charge (-0.16 e on 3,5-lutidine) (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
+  },
+  {
+   "smarts": "[H][CX4;$(*c1cnccc1)]",
+   "reason": "a 3-alkylpyridine: 672 is a pyridazine's CH3 and does not carry the ring H's charge (-0.16 e on 3,5-lutidine) (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"
   }
  ]
 }

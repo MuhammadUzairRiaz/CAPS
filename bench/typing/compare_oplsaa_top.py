@@ -219,7 +219,9 @@ def compare(out, ff, show):
                 good = False; diffs.append((name, i + 1, x, y))
         full += good
     why = lambda d: EXPLAINED_MOLECULE.get(d[0]) or EXPLAINED.get((d[2], d[3])) or \
-        (GMX_UNBAL.get(d[0]) and ff == "oplsaa-gromacs" and GMX_UNBAL[d[0]] + "; left untyped (CAPS reports it)")
+        (GMX_UNBAL.get(d[0]) and ff == "oplsaa-gromacs" and GMX_UNBAL[d[0]] + (
+            "; untyped, CAPS refuses the group" if d[3] == "untyped" else
+            "; CAPS types the group with the OPLS-AA 2024 table's numbers (fallback types opls2024_NNN / caps_*)"))
     unexplained = [d for d in diffs if not why(d)]
     print(f"{ff} against the GROMACS OPLS-AA topologies: {ok}/{tot} atoms ({100 * ok / max(tot, 1):.1f} %), "
           f"{untyped} untyped, {full}/{n} molecules fully the same; {len(diffs) - len(unexplained)} differing atoms with a "

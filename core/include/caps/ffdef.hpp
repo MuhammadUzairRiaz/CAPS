@@ -241,6 +241,9 @@ struct FFDef {
   std::vector<std::pair<std::string, std::string>> typing_pairs;   // conjugated pairs (GAFF cc/cd, ...), see typing.hpp
   bool typing_ordered = false;
   bool typing_unknown_untyped = false;   // rules may name types this file lacks: their atoms end up untyped
+  // Groups CAPS leaves untyped on purpose (typing file "refused": [{"smarts", "reason"}]): no numbers of the source type
+  // the group at an integer charge; untyped_message names the reason for each untyped atom a SMARTS matches
+  std::vector<std::pair<std::string, std::string>> typing_refused;
   // United-atom force field (typing file "united_atom": true; GROMOS, TraPPE-UA, CHARMM19): hydrogens on carbon are
   // part of their carbon's site, so an all-atom structure is converted before typing (prepare_for_forcefield)
   bool united_atom = false;

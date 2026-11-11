@@ -105,6 +105,12 @@ void typing_file_keys(FFDef& ff, const Json& j, const std::string& path) {
   }
   ff.typing_ordered = ff.typing_ordered || (j.has("ordered") && j["ordered"].boolean());
   ff.typing_unknown_untyped = ff.typing_unknown_untyped || j.text("unknown_types") == "untyped";
+  if (j.has("refused"))
+    for (const auto& r : j["refused"].items()) {
+      if (r.text("smarts").empty() || r.text("reason").empty()) throw FFError(path + ": each \"refused\" entry has smarts and reason");
+      Smarts check(r.text("smarts"));
+      ff.typing_refused.push_back({r.text("smarts"), r.text("reason")});
+    }
   ff.united_atom = ff.united_atom || (j.has("united_atom") && j["united_atom"].boolean());
   if (j.has("united_atom_hosts")) {
     ff.united_atom_hosts.clear();
@@ -174,6 +180,15 @@ Json typing_file_keys_json(const FFDef& ff, const std::filesystem::path& dir) {
   Json j = Json::object();
   if (!ff.charge_typing.empty()) j["charge_rules"] = typing_json(ff.charge_typing);
   if (ff.typing_unknown_untyped) j["unknown_types"] = "untyped";
+  if (!ff.typing_refused.empty()) {
+    Json a = Json::array();
+    for (const auto& [sm, why] : ff.typing_refused) {
+      Json o = Json::object();
+      o["smarts"] = sm, o["reason"] = why;
+      a.push_back(o);
+    }
+    j["refused"] = a;
+  }
   if (ff.united_atom) j["united_atom"] = true;
   if (ff.united_atom_hosts != std::vector<int>{6}) {
     Json a = Json::array();
@@ -1552,7 +1567,26 @@ std::string untyped_message(const FFDef& ff, const System& s, int untyped, const
            "chain ends and groups without a bead type stay atoms)";
   if (ff.coarse_grained && atoms)
     return std::to_string(untyped) + " sites are atoms, not beads: " + ff.name + " types bead structures (build them from its templates or bead SMILES)";
-  if (types) return std::to_string(untyped) + " atoms match no typing rule: " + out_of_domain(ff, s, *types);
+  if (types) {
+    // the groups the typing file refuses, each named with its reason and its atoms (1-based)
+    std::string refused;
+    if (!ff.typing_refused.empty()) {
+      const Perception p = perceive(s);
+      std::vector<std::pair<std::string, std::string>> by_reason;   // reason, atoms
+      for (size_t i = 0; i < s.atoms.size() && i < types->size(); ++i) {
+        if (!(*types)[i].empty()) continue;
+        for (const auto& [sm, why] : ff.typing_refused)
+          if (Smarts(sm).matches(s, p, uint32_t(i), *types)) {
+            auto it = std::find_if(by_reason.begin(), by_reason.end(), [&](const auto& x) { return x.first == why; });
+            if (it == by_reason.end()) by_reason.push_back({why, ""}), it = by_reason.end() - 1;
+            it->second += " " + std::to_string(i + 1) + element(s.atoms[i].element).symbol;
+            break;
+          }
+      }
+      for (const auto& [why, at] : by_reason) refused += "; refused (atoms" + at + "): " + why;
+    }
+    return std::to_string(untyped) + " atoms match no typing rule: " + out_of_domain(ff, s, *types) + refused;
+  }
   return std::to_string(untyped) + " atoms match no typing rule of " + ff.name;
 }
 

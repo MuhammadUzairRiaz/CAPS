@@ -649,8 +649,9 @@ TEST(Typing, GaffBiarylBridgeInAFiveRingAsAntechamber) {
 
 // OPLS-AA 2024: allene's own types (1153-1157); a terminal alkyne's alkyl C takes 927-930 so that propyne is neutral
 // (927 + 3 x 140 + 925 + 925 + 926 = 0; the alkane 135 left it at -0.2). GROMACS's oplsaa.ff has its own alkyne set
-// (inner sp C 927-929, H on the alkyl C 930), its sulfoxide DMSO (496-498), 145B for biphenyl and no cyclobutane type
-// (its 714-716 are the cyclopentadienyl anion and radical)
+// (inner sp C 927-929, H on the alkyl C 930), its sulfoxide DMSO (496-498) and no cyclobutane type (its 714-716 are the
+// cyclopentadienyl anion and radical); its 145B for biphenyl's junction C has no H to balance it, so that C takes the
+// 2024 table's 519 (opls2024_519, the fallback)
 TEST(Typing, OplsAlkynesAllenesAndGromacsNumbers) {
   const System allene = mol({"C", "C", "C"}, {2, 0, 2}, {{0, 1}, {1, 2}});
   const TypingResult a = type_with("oplsaa2024", allene);
@@ -685,8 +686,8 @@ TEST(Typing, OplsAlkynesAllenesAndGromacsNumbers) {
   const System bp = mol({"C", "C", "C", "C", "C", "C", "C", "C", "C", "C", "C", "C"}, {0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1},
                         {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 0}, {6, 7}, {7, 8}, {8, 9}, {9, 10}, {10, 11}, {11, 6}, {0, 6}});
   EXPECT_EQ(type_with("oplsaa2024", bp).types[0], "opls_519");
-  // GROMACS's 145B carries -0.115 with no H to balance it (biphenyl -0.23 e): the junction C stays untyped there
-  EXPECT_EQ(type_with("oplsaa-gromacs", bp).types[0], "");
+  // GROMACS's 145B carries -0.115 with no H to balance it (biphenyl -0.23 e): the junction C takes the 2024 table's 519
+  EXPECT_EQ(type_with("oplsaa-gromacs", bp).types[0], "opls2024_519");
 }
 
 // PCFF: hexa-1,3,5-triene's middle double bond c=2=c=2 with c=1-c=2 single bonds (pcff.frc ref 12: c=-c=1 1.34 A,
@@ -777,9 +778,11 @@ TEST(Typing, AuditSecondRoundTypes) {
   }
 }
 
-// OPLS-AA in GROMACS's names, the same principle as the 2024 library: a group is typed only with numbers of GROMACS's
-// oplsaa.ff whose own charges balance it; the groups its reference topologies type with numbers plus charges of their own
-// (alkyl bromides, polychlorinated C, anhydrides, diaryl ethers, polysulfide S, biphenyl, styrene) stay untyped
+// OPLS-AA in GROMACS's names: a group is typed with numbers of GROMACS's oplsaa.ff where their own charges balance it;
+// the groups its reference topologies type with numbers plus charges of their own (alkyl bromides, polychlorinated C,
+// anhydrides, diaryl ethers, polysulfide S, biphenyl, styrene, Cl2C=, dimethyl carbonate, ethyne) take the OPLS-AA 2024
+// table's numbers (opls2024_NNN / caps_*), which balance them; a group neither table balances stays untyped and the
+// error names it with the reason (thiophene, CH3Br, a phosphate triester)
 TEST(Typing, OplsGromacsGroupsBalanceOrStayUntyped) {
   const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsaa-gromacs.json");
   auto net = [&](const std::string& smi, int* untyped) {
@@ -803,9 +806,48 @@ TEST(Typing, OplsGromacsGroupsBalanceOrStayUntyped) {
     EXPECT_NEAR(q, z, 1e-6) << smi;
   }
   for (const std::string smi : {"CCCCBr", "ClC(Cl)Cl", "CC(=O)OC(C)=O", "c1ccc(cc1)Oc1ccccc1", "CSSSC", "c1ccc(cc1)-c1ccccc1",
-                                "C=Cc1ccccc1", "C=C(Cl)Cl", "COC(=O)OC", "C#C", "c1ccsc1"}) {
-    int u = 0;
-    net(smi, &u);
-    EXPECT_GT(u, 0) << smi << " has no balancing GROMACS numbers and stays untyped";
+                                "C=Cc1ccccc1", "C=C(Cl)Cl", "COC(=O)OC", "C#C"}) {
+    int u = -1;
+    const double q = net(smi, &u);
+    EXPECT_EQ(u, 0) << smi << ": the 2024 table's numbers type the group GROMACS's cannot balance";
+    EXPECT_NEAR(q, 0, 1e-6) << smi;
   }
+  for (const std::string smi : {"c1ccsc1", "CBr", "COP(=O)(OC)OC"}) {
+    System s = build_molecule(smi).system;
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    EXPECT_GT(tr.untyped, 0) << smi << " has no balancing numbers in either table and stays untyped";
+    EXPECT_NE(untyped_message(def, s, tr.untyped, &tr.types).find("refused (atoms"), std::string::npos) << smi;
+  }
+}
+
+// One of the GROMACS-named groups that take the 2024 fallback, biphenyl: typed whole and neutral, every bonded term found,
+// and each term that touches the fallback junction C from the 2024 table carries that source (written beside the terms
+// in the exported files); a molecule of GROMACS's own numbers (toluene) has none
+TEST(Typing, OplsGromacsFallbackGroupComplete) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsaa-gromacs.json");
+  auto field = [&](const std::string& smi, std::vector<std::string>* types) {
+    System s = build_molecule(smi).system;
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    EXPECT_EQ(tr.untyped, 0) << smi;
+    *types = tr.types;
+    ParamReport rep;
+    ForceField f = parameterize(s, def, tr.types, "types", &rep, false);
+    EXPECT_TRUE(rep.missing.empty()) << smi << ": " << (rep.missing.empty() ? "" : rep.missing[0]);
+    double q = 0;
+    for (double x : f.charge) q += x;
+    EXPECT_NEAR(q, 0, 1e-9) << smi;
+    return f;
+  };
+  std::vector<std::string> t;
+  const ForceField bp = field("c1ccc(cc1)-c1ccccc1", &t);
+  EXPECT_EQ(std::count(t.begin(), t.end(), "opls2024_519"), 2);
+  EXPECT_EQ(std::count(t.begin(), t.end(), "opls_145"), 10);
+  bool sourced = false;
+  for (const auto& ts : bp.term_sources) sourced = sourced || ts.source.find("OPLS-AA 2024 fallback") != std::string::npos;
+  EXPECT_TRUE(sourced);
+  EXPECT_TRUE(field("Cc1ccccc1", &t).term_sources.empty());
 }

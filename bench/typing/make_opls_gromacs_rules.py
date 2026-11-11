@@ -5,6 +5,17 @@ GROMACS's opls_NNN, keeping the rules whose type the GROMACS file has, plus the 
 own amino-acid topologies (checked with bench/ff/validate_rtp_types.py against aminoacids.rtp). Run it after
 make_oplsaa_rules.py (which writes data/typing/oplsaa2024.typing.json from the same rules).
 
+Groups GROMACS's numbers cannot type at an integer charge (a diaryl ether, an anhydride, chloroform, an epoxide, a
+siloxane: the rules make_oplsaa_rules.py flags only2024, and the rules whose number the GROMACS file lacks) take the
+OPLS-AA 2024 library's assignment, whose charges balance the group by construction: its types are added to
+oplsaa-gromacs.json, a number the GROMACS file gives another atom or another charge renamed opls2024_NNN (GROMACS's
+opls_165 is an H, the 2024 table's 165 styrene's ipso C), a CAPS supplement type caps_* under its own name, each with
+"source" naming the fallback; a 2024 number GROMACS has with the same element, charge and bond class keeps GROMACS's
+type. Bonded terms of classes only those types carry (the epoxide O$, the siloxane Si) come from the 2024 file with
+"source" on each rule, which CAPS writes beside every term it gives (provenance). The GROMACS topology of such a
+molecule is then GROMACS's numbers wherever they balance and the 2024 numbers in the fallback groups; never a residual
+charge spread over atoms. A group neither table balances stays untyped and CAPS refuses the molecule.
+
 usage: make_opls_gromacs_rules.py [OUT_DIR]
 """
 import json, os, re, sys
@@ -12,7 +23,14 @@ import json, os, re, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(os.path.dirname(os.path.dirname(HERE)), "data")
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(DATA, "typing")
-have = {t["name"] for t in json.load(open(os.path.join(DATA, "forcefields", "oplsaa-gromacs.json")))["atom_types"]}
+FFPATH = os.path.join(DATA, "forcefields", "oplsaa-gromacs.json")
+FALLBACK = "OPLS-AA 2024 fallback"   # the "source" of what this script adds to the GROMACS file (removed and rebuilt each run)
+TAG = "@24"                          # a fallback type's first-choice classes: CA@24 (second choice CA)
+GFF = json.load(open(FFPATH))
+O24 = json.load(open(os.path.join(DATA, "forcefields", "oplsaa2024.json")))
+NATIVE = {t["name"]: t for t in GFF["atom_types"] if not t.get("source", "").startswith(FALLBACK)}
+T24 = {t["name"]: t for t in O24["atom_types"]}
+have = set(NATIVE)
 
 
 def opls(t):
@@ -23,14 +41,53 @@ def opls(t):
 _m = {}
 exec(open(os.path.join(HERE, "make_oplsaa_rules.py")).read().split('\nif __name__ == "__main__":')[0], _m)
 ALL = _m["R"]
-rules, dropped = [], set()
-for r in [x for x in ALL if not x.get("only2024")]:
-    t = opls(r["type"])
-    if t not in have:
-        dropped.add(t)
+WATER = {"9999", "9998"}   # TIP3P as the .par numbers it: GROMACS's own 111 / 112 (ADD below)
+
+
+def same_atom(g, o):
+    return g["element"] == o["element"] and abs(g["charge"] - o["charge"]) < 1e-9 and g["equivalence"]["bond"] == o["equivalence"]["bond"]
+
+
+def gmx_name(num, fallback):
+    """the GROMACS file's name for rule number num; fallback: the 2024 library's type, renamed where GROMACS's number is
+    another atom (None: neither file has it)"""
+    t = opls(num)
+    if num in WATER:
+        return None
+    if not fallback and t in have:
+        return t
+    if t not in T24:
+        return None
+    if t in have and same_atom(NATIVE[t], T24[t]):
+        return t
+    return t.replace("opls_", "opls2024_") if t.startswith("opls_") else t
+
+
+# 2024-only rules for chemistry GROMACS's own numbers already type at an integer charge, so GROMACS keeps its typing
+# there (each found where the fallback changed a molecule GROMACS typed whole): conjugated diene central C (its 142 /
+# 141), RC#CR (its 931), the alkyl C of R-C#CH (its alkyne set 925-930 with alkane C, propyne), cyclobutane (its alkane
+# numbers), the tertiary alcohol O (its 154, t-butanol), the vinyl ether O (its 186, ethyl vinyl ether), the acetal /
+# hemiacetal O (its 186 at -0.40 with its 180: glucose, cellobiose, polyacetals)
+GMX_OWN = {"150", "178", "160", "180", "939", "927", "928", "929", "930", "714", "715", "716", "186", "caps_os_acac"}
+rules, dropped, used24 = [], set(), {}
+for r in ALL:
+    if r.get("only2024") and r["type"] in GMX_OWN:
         continue
-    r = {k: v for k, v in r.items() if k != "gmx"}
-    rules.append({**r, "type": t, **({"overrides": [opls(x) for x in r["overrides"]]} if "overrides" in r else {})})
+    fb = bool(r.get("only2024")) or opls(r["type"]) not in have
+    t = gmx_name(r["type"], fb)
+    if t is None:
+        dropped.add(opls(r["type"]))
+        continue
+    if t not in have:
+        used24[t] = opls(r["type"])
+    r = {k: v for k, v in r.items() if k not in ("gmx", "only2024")}
+    if fb:
+        r["description"] += " (OPLS-AA 2024 fallback: GROMACS's numbers do not balance this group)"
+    ov = [gmx_name(x, fb) for x in r.get("overrides", [])]
+    for x, y in zip(r.get("overrides", []), ov):
+        if y is not None and y not in have:
+            used24[y] = opls(x)
+    rules.append({**r, "type": t, **({"overrides": [x for x in ov if x]} if "overrides" in r else {})})
 # GROMACS's OPLS-AA/L types beyond the general rules (type, priority, smarts, description), as its amino-acid topologies
 # (aminoacids.rtp) and ions.itp use them
 AA = "[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3,OX2H1])]"   # a peptide C alpha (a protonated C-terminus too)
@@ -136,6 +193,86 @@ GMX_TERMINI = [
     ("opls_912B", 11, "[CX4H1;!R;$(*-[NX3H2]);$(*-[CX3](=[OX1])-[NX3])]", "N-terminal C alpha (neutral NH2)"),
     ("opls_906B", 11, "[CX4H2;!R;$(*-[NX3H2]);$(*-[CX3](=[OX1])-[NX3])]", "N-terminal glycine C alpha (neutral NH2)"),
 ]
+
+def write_fallback(used24):
+    """the 2024 types the fallback rules give, with their Lennard-Jones and the bonded terms of classes only they carry,
+    into oplsaa-gromacs.json (what an earlier run added is removed first)"""
+    import fnmatch
+    src = (f"{FALLBACK}: Jorgensen et al., J. Phys. Chem. B 128, 250 (2024) (CAPS oplsaa2024); GROMACS's oplsaa.ff has no "
+           "numbers that type this group at an integer charge")
+    ff = GFF
+    for key in ("atom_types", "pairs", "bonds", "angles", "dihedrals", "impropers"):
+        ff[key] = [x for x in ff[key] if not x.get("source", "").startswith(FALLBACK)]
+    # A fallback type's classes are its 2024 class with TAG (first choice) and the 2024 class itself (second choice,
+    # bond2 / angle2 / dihedral2 / improper2). A term touching a fallback atom takes a TAG rule first: the 2024 term for a
+    # class tuple GROMACS's file lacks, one rule per choice of which fallback-class positions carry TAG; otherwise the
+    # plain names find GROMACS's own term. A molecule of GROMACS types only never sees a TAG name, so its terms, and its
+    # refusal where GROMACS has none, stay as they were.
+    pair24 = {p["match"][0]: p for p in O24["pairs"] if len(p["match"]) == 1}
+    fbcls = set()
+    for name, t24 in sorted(used24.items()):
+        o = T24[t24]
+        eq = {k: v + TAG for k, v in o["equivalence"].items()}
+        eq.update({k + "2": v for k, v in o["equivalence"].items()})
+        ff["atom_types"].append({**{k: v for k, v in o.items() if k != "source"}, "name": name, "equivalence": eq, "source": src})
+        ff["pairs"].append({**pair24[t24], "name": name, "match": [name], "source": src})
+        fbcls |= set(o["equivalence"].values())
+    native_cls = {v for t in NATIVE.values() for v in t["equivalence"].values()}
+    only = fbcls - native_cls   # classes no GROMACS type has: their 2024 terms as they are
+
+    def matched(rs, m):
+        return any(len(r["match"]) == len(m) and (all(fnmatch.fnmatchcase(a, b) for a, b in zip(m, r["match"])) or
+                                                  all(fnmatch.fnmatchcase(a, b) for a, b in zip(m[::-1], r["match"])))
+                   for r in rs)
+    added = {}
+    for key in ("bonds", "angles", "dihedrals"):
+        native, seen = list(ff[key]), set()
+        for r in O24[key]:
+            m = r["match"]
+            if matched(native, m):
+                continue
+            base = {k: v for k, v in r.items() if k != "source"}
+            if any(c in only for c in m):
+                if all(c == "*" or c in native_cls or c in fbcls for c in m):   # every class carried by some type here
+                    ff[key].append({**base, "source": src})
+                    added[key] = added.get(key, 0) + 1
+                continue
+            if "*" in m:
+                continue
+            pos = [i for i, c in enumerate(m) if c in fbcls]
+            for bits in range(1, 1 << len(pos)):
+                v = list(m)
+                for b, i in enumerate(pos):
+                    if bits >> b & 1:
+                        v[i] += TAG
+                k = min(tuple(v), tuple(v[::-1]))
+                # a plain position matches only GROMACS's own types (a fallback atom's first name carries TAG)
+                if k in seen or any(c != "*" and not c.endswith(TAG) and c not in native_cls for c in v):
+                    continue
+                seen.add(k)
+                ff[key].append({**base, "name": "-".join(v), "match": v, "source": src})
+                added[key] = added.get(key, 0) + 1
+    if O24.get("ring3_torsions") == "zero" and "O$" in fbcls:
+        # the 2024 library has no torsion inside a three-membered ring (ring3_torsions: zero); GROMACS's file has no such
+        # setting, so the epoxide's ring torsions (X-C-O-C, every one in the ring) are written as zero terms
+        ff["dihedrals"].append({"name": "X-CY-O$-CY (epoxide ring)", "match": ["*", "CY" + TAG, "O$" + TAG, "CY" + TAG], "style": "opls",
+                                "params": [0.0, 0.0, 0.0, 0.0],
+                                "source": src + "; zero, as the 2024 library leaves out every torsion inside a three-membered ring"})
+        added["dihedrals"] = added.get("dihedrals", 0) + 1
+    for r in O24["impropers"]:   # the 2024 file names the centre first, the GROMACS file third
+        if r["match"][0] in only:
+            m = r["match"]
+            ff["impropers"].append({**{k: v for k, v in r.items() if k != "source"}, "match": [m[1], m[2], m[0], m[3]], "source": src})
+            added["impropers"] = added.get("impropers", 0) + 1
+    note = (f"{FALLBACK} (bench/typing/make_opls_gromacs_rules.py): {len(used24)} OPLS-AA 2024 types for groups GROMACS's "
+            "numbers cannot type at an integer charge (opls2024_NNN where GROMACS's number is another atom, caps_* CAPS's "
+            "supplement), with their Lennard-Jones; their classes are the 2024 class with @24 first (2024 terms for class tuples "
+            "GROMACS's file lacks) and the plain class second (GROMACS's own terms); each carries its source")
+    ff["notes"] = [n for n in ff["notes"] if not n.startswith(FALLBACK)] + [note]
+    json.dump(ff, open(FFPATH, "w"), indent=1, ensure_ascii=False)
+    print(f"oplsaa-gromacs.json: {len(used24)} fallback types, classes only they carry {sorted(only)}, terms added {added}")
+
+
 if __name__ == "__main__":
     for t, p, sm, d in ADD + GMX_TERMINI:   # above the general rules' priorities (0-8)
         rules.append({"type": t, "priority": p + 5, "smarts": sm, "description": d})
@@ -148,9 +285,13 @@ if __name__ == "__main__":
                              {"type": h, "smarts": "[H][OX2H2]", "priority": 20, "description": f"{label} water H"}]},
                   open(os.path.join(OUT, f"oplsaa-gromacs-{name}.typing.json"), "w"), indent=1)
     doc = {"format": "caps-typing", "version": 1, "forcefield": "OPLS-AA (GROMACS oplsaa.ff)", "unknown_types": "untyped",
-           "description": "CAPS's OPLS-AA rules in GROMACS's opls_NNN names (bench/typing/make_opls_gromacs_rules.py); types the "
-                          "GROMACS file lacks (" + ", ".join(sorted(dropped)) + ") are left untyped",
-           "rules": rules}
+           "description": "CAPS's OPLS-AA rules in GROMACS's opls_NNN names (bench/typing/make_opls_gromacs_rules.py), with the "
+                          "OPLS-AA 2024 library's types (opls2024_NNN, caps_*) for groups GROMACS's numbers cannot balance"
+                          + ("; types neither file has (" + ", ".join(sorted(dropped)) + ") are left untyped" if dropped else ""),
+           "rules": rules,
+           "refused": [{"smarts": sm, "reason": why + " (neither GROMACS's oplsaa.ff nor the OPLS-AA 2024 table balances it)"}
+                       for sm, why in _m["REFUSED"]]}
     json.dump(doc, open(os.path.join(OUT, "oplsaa-gromacs.typing.json"), "w"), indent=1, ensure_ascii=False)
+    write_fallback(used24)
     print(f"oplsaa-gromacs: {len(rules)} rules, {len(dropped)} types the GROMACS file lacks")
 
