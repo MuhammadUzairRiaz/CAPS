@@ -29,6 +29,8 @@ caps relax pbs.data -o pbs_min.data --iterations 500 --quiet
 caps md pbs_min.data -o pbs_md.data --steps 3000 --dt 1 --temp 450 --dump pbs.lammpstrj --every 100 --quiet
 ```
 
+If the relax stops on `--iterations 500` before its force tolerance, it still writes `pbs_min.data` and exits 3 (not converged); a `set -e` script can accept that with `|| [ $? -eq 3 ]`.
+
 ## 1. Map
 
 The `ester-cut` preset cuts every ester C(=O)–O bond, so the fragments are the beads: B for the butanediol part, S for the succinate. Beads are named by rules; a fragment no rule names is reported, never merged silently.

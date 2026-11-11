@@ -99,8 +99,11 @@ struct Phono3pyPlan {
   Json json() const;
   std::string text() const;
 };
-// Valence electrons of the standard PAW datasets (H 1, C 4, N 5, O 6, F 7; data/dft/enmax.json "zval").
-int valence_electrons(const System& s, const std::string& data_dir);
+// Valence electrons: the POTCAR's ZVAL when pp_dir is given, else the standard PAW datasets in data/dft/enmax.json
+// "zval" (H 1, C 4, N 5, O 6, F 7, Ti 10). An element in neither counts its atomic number (an upper bound) and is
+// listed in all_electron when that is given.
+int valence_electrons(const System& s, const std::string& data_dir, const std::string& pp_dir = "",
+                      std::vector<std::string>* all_electron = nullptr);
 // The cost model: core-hours of one single point = 4.33 × (N_e / 288)² — calibrated on the guide's PE (a 144-atom fc3
 // supercell, 288 valence electrons, about 10 min on 26 cores; it then gives its 432-atom fc2 supercells about 1.5 h, as
 // the guide reports 1–2 h). An order of magnitude, not a promise: the dry run measures it.

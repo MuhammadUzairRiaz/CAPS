@@ -4,6 +4,7 @@
 
 #include <cctype>
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <map>
@@ -63,11 +64,86 @@ System ion(int z, int charge, const std::string& resname) {
   return s;
 }
 
-// The solute's extent (unwrapped positions).
-void extent(const System& s, Vec3& lo, Vec3& hi) {
-  lo = {1e300, 1e300, 1e300}, hi = {-1e300, -1e300, -1e300};
-  for (const auto& a : s.atoms)
-    for (int k = 0; k < 3; ++k) lo[k] = std::min(lo[k], a.pos[k]), hi[k] = std::max(hi[k], a.pos[k]);
+// Where the solute's atoms go. A solute with a cell can be a network bonded through that cell (a sheet from caps
+// surface, a crystal's chain): no unwrapping makes it whole, its image flags are arbitrary, and its bonds close only
+// under the cell's period. Along such an axis the box keeps the solute's period and the atoms are folded into it; along
+// the others the solute is made whole (a molecule written wrapped is joined again) and the solvent fills the space.
+struct SoluteLayout {
+  std::vector<Vec3> pos;                              // whole, folded into the period along a periodic axis
+  std::array<bool, 3> periodic{false, false, false};  // x, y, z: the bonded network repeats along it
+  Vec3 period{0, 0, 0};                               // Å, the repeat along a periodic axis
+  Vec3 lo{0, 0, 0}, hi{0, 0, 0};                      // extent; along a periodic axis the period itself
+};
+
+SoluteLayout solute_layout(const System& s) {
+  SoluteLayout L;
+  const size_t n = s.atoms.size();
+  L.pos.resize(n);
+  for (size_t i = 0; i < n; ++i) L.pos[i] = s.atoms[i].pos;
+  const Cell& c = s.cell;
+  bool whole = true;   // every bond already at its nearest image: the positions are used as they are
+  if (c.valid())
+    for (const auto& b : s.bonds) {
+      const Vec3 d = s.atoms[b.j].pos - s.atoms[b.i].pos;
+      if (norm(d - c.minimum_image(d)) > 1e-6) { whole = false; break; }
+    }
+  if (!whole) {
+    // walk the bonds at the nearest image (a finite molecule comes out whole)
+    const auto nb = s.neighbours();
+    std::vector<char> done(n, 0);
+    std::vector<uint32_t> stack;
+    for (uint32_t root = 0; root < n; ++root) {
+      if (done[root]) continue;
+      done[root] = 1;
+      stack.push_back(root);
+      while (!stack.empty()) {
+        const uint32_t i = stack.back();
+        stack.pop_back();
+        for (uint32_t j : nb[i]) {
+          if (done[j]) continue;
+          L.pos[j] = L.pos[i] + c.minimum_image(L.pos[j] - L.pos[i]);
+          done[j] = 1;
+          stack.push_back(j);
+        }
+      }
+    }
+    // a bond the walk reached at another image than its nearest closes a ring around the cell: the network repeats
+    // along the cell vectors of that lattice translation
+    std::array<bool, 3> along{false, false, false};
+    for (const auto& b : s.bonds) {
+      const Vec3 walked = L.pos[b.j] - L.pos[b.i];
+      const Vec3 f = c.to_fractional(c.origin + (walked - c.minimum_image(walked)));
+      for (int k = 0; k < 3; ++k)
+        if (std::fabs(f[k]) > 0.5) along[k] = true;
+    }
+    const Vec3 vec[3] = {c.a, c.b, c.c};
+    std::string names;
+    int count = 0;
+    for (int k = 0; k < 3; ++k)
+      if (along[k]) names += std::string(count++ ? " and " : "") + "abc"[k];
+    if (count == 3)
+      throw std::invalid_argument("the solute is bonded through its cell along a, b and c (a crystal or a network that fills its cell): "
+                                  "there is no outside to solvate; pack the solvent into its pores with caps pack (the solute as a fixed structure)");
+    for (int k = 0; k < 3; ++k) {
+      if (!along[k]) continue;
+      // the box is orthogonal, so the period must lie along its own axis (a along x, b along y, c along z)
+      const double len = norm(vec[k]);
+      for (int m = 0; m < 3; ++m)
+        if (m != k && std::fabs(vec[k][m]) > 1e-4 * std::max(1.0, len))
+          throw std::invalid_argument("the solute is bonded through its cell along " + names + " (a sheet or chain that repeats), and solvate keeps "
+                                      "that period only for a cell vector along its own axis (a along x, b along y, c along z); this cell's " +
+                                      std::string(1, "abc"[k]) + " is not along " + "xyz"[k] + ": solvate a finite piece or an orthogonal cell");
+      L.periodic[k] = true;
+      L.period[k] = len;
+      for (auto& p : L.pos) p[k] -= len * std::floor((p[k] - c.origin[k]) / len);
+    }
+  }
+  L.lo = {1e300, 1e300, 1e300}, L.hi = {-1e300, -1e300, -1e300};
+  for (const auto& p : L.pos)
+    for (int k = 0; k < 3; ++k) L.lo[k] = std::min(L.lo[k], p[k]), L.hi[k] = std::max(L.hi[k], p[k]);
+  for (int k = 0; k < 3; ++k)
+    if (L.periodic[k]) L.lo[k] = c.origin[k], L.hi[k] = c.origin[k] + L.period[k];
+  return L;
 }
 
 }  // namespace
@@ -155,8 +231,9 @@ SolvatePlan solvate_plan(const System* solute, const SolvateOptions& o) {
   const SolventInfo* sv = find_solvent(o.solvent);
   if (!sv) throw std::invalid_argument("unknown solvent '" + o.solvent + "'");
   const bool has_solute = solute && !solute->atoms.empty();
-  Vec3 lo{0, 0, 0}, hi{0, 0, 0};
-  if (has_solute) extent(*solute, lo, hi);
+  SoluteLayout lay;
+  if (has_solute) lay = solute_layout(*solute);
+  const Vec3 lo = lay.lo, hi = lay.hi;
   const Vec3 span = has_solute ? hi - lo : Vec3{0, 0, 0};
   switch (o.shape) {
     case 0: P.box = {o.edge, o.edge, o.edge}; break;
@@ -165,11 +242,36 @@ SolvatePlan solvate_plan(const System* solute, const SolvateOptions& o) {
       if (!has_solute) throw std::invalid_argument("a box around the solute needs a solute");
       for (int k = 0; k < 3; ++k) P.box[k] = span[k] + 2 * o.padding;
   }
+  // a solute bonded through its cell keeps its period: the edge and the padding apply to the other axes only, and a
+  // box given in full must repeat it
+  std::string per_axes;
+  for (int k = 0; k < 3; ++k) {
+    if (!lay.periodic[k]) continue;
+    if (o.shape == 1 && std::fabs(o.edges[k] - lay.period[k]) > 0.01) {
+      char b[200];
+      std::snprintf(b, sizeof b, "the solute repeats every %.4f Å along %c (bonded through its cell): the box must keep that length along %c", lay.period[k],
+                    "xyz"[k], "xyz"[k]);
+      throw std::invalid_argument(b);
+    }
+    P.box[k] = lay.period[k];
+    per_axes += std::string(per_axes.empty() ? "" : " and ") + "xyz"[k];
+  }
+  if (!per_axes.empty()) {
+    std::string lens;
+    for (int k = 0; k < 3; ++k)
+      if (lay.periodic[k]) {
+        char b[32];
+        std::snprintf(b, sizeof b, "%s%.3f", lens.empty() ? "" : " × ", lay.period[k]);
+        lens += b;
+      }
+    P.notes.push_back("the solute is bonded through its cell along " + per_axes + ": the box keeps its period there (" + lens +
+                      " Å) and the solvent fills the other axes");
+  }
   for (int k = 0; k < 3; ++k)
     if (!(P.box[k] > 2 * o.tolerance)) throw std::invalid_argument("the box is too small for the tolerance");
   if (has_solute)
     for (int k = 0; k < 3; ++k)
-      if (span[k] + o.tolerance > P.box[k])
+      if (!lay.periodic[k] && span[k] + o.tolerance > P.box[k])
         throw std::invalid_argument(std::string("the solute is ") + std::to_string(int(std::ceil(span[k]))) + " Å along " + "xyz"[k] +
                                     ": the box must be larger (or use the solute plus padding)");
   P.box_volume = P.box[0] * P.box[1] * P.box[2];
@@ -177,20 +279,22 @@ SolvatePlan solvate_plan(const System* solute, const SolvateOptions& o) {
   // the solute's van der Waals volume on a 0.5 Å grid (periodic, the solute centred)
   if (has_solute) {
     P.solute_atoms = int(solute->atoms.size());
-    const double h = 0.5;
-    const int nx = std::max(1, int(std::ceil(P.box[0] / h))), ny = std::max(1, int(std::ceil(P.box[1] / h))), nz = std::max(1, int(std::ceil(P.box[2] / h)));
+    // about 0.5 Å, each axis divided evenly so the grid repeats with the box
+    const int nx = std::max(1, int(std::ceil(P.box[0] / 0.5))), ny = std::max(1, int(std::ceil(P.box[1] / 0.5))), nz = std::max(1, int(std::ceil(P.box[2] / 0.5)));
+    const double hx = P.box[0] / nx, hy = P.box[1] / ny, hz = P.box[2] / nz, h = std::min({hx, hy, hz});
     std::vector<char> in(size_t(nx) * ny * nz, 0);
     const Vec3 shift = P.box * 0.5 - (lo + hi) * 0.5;
-    for (const auto& a : solute->atoms) {
+    for (size_t ai = 0; ai < solute->atoms.size(); ++ai) {
+      const auto& a = solute->atoms[ai];
       P.solute_charge += a.charge;
       const double r = element(a.element).vdw;
-      const Vec3 c = a.pos + shift;
+      const Vec3 c = lay.pos[ai] + shift;
       const int rx = int(std::ceil(r / h)) + 1;
-      const int cx = int(std::floor(c[0] / h)), cy = int(std::floor(c[1] / h)), cz = int(std::floor(c[2] / h));
+      const int cx = int(std::floor(c[0] / hx)), cy = int(std::floor(c[1] / hy)), cz = int(std::floor(c[2] / hz));
       for (int i = cx - rx; i <= cx + rx; ++i)
         for (int j = cy - rx; j <= cy + rx; ++j)
           for (int k = cz - rx; k <= cz + rx; ++k) {
-            const Vec3 g{(i + 0.5) * h, (j + 0.5) * h, (k + 0.5) * h};
+            const Vec3 g{(i + 0.5) * hx, (j + 0.5) * hy, (k + 0.5) * hz};
             if (norm(g - c) > r) continue;
             const int ii = ((i % nx) + nx) % nx, jj = ((j % ny) + ny) % ny, kk = ((k % nz) + nz) % nz;
             in[(size_t(ii) * ny + jj) * nz + kk] = 1;
@@ -243,14 +347,19 @@ System solvate(const System* solute, const SolvateOptions& o, SolvateReport* rep
   std::vector<PackItem> items;
   const Region inside{Region::InsideBox, {0, 0, 0}, P.box, 0, 0, {}};
   if (has_solute) {
+    // placed as the plan measured it: whole (folded into the period along a periodic axis), its extent centred in the
+    // box; bonds through the old cell stay at their nearest image in the box, which keeps that period
+    const SoluteLayout lay = solute_layout(*solute);
+    const Vec3 shift = P.box * 0.5 - (lay.lo + lay.hi) * 0.5;
     PackItem s;
     s.name = "solute";
     s.molecule = *solute;
     s.molecule.cell = Cell{};
-    for (auto& a : s.molecule.atoms) a.mol = 1;
+    for (size_t i = 0; i < s.molecule.atoms.size(); ++i) {
+      s.molecule.atoms[i].pos = lay.pos[i] + shift;
+      s.molecule.atoms[i].mol = 1;
+    }
     s.fixed = true;
-    s.center = true;
-    s.position = P.box * 0.5;
     items.push_back(std::move(s));
   }
   if (P.solvent > 0) {

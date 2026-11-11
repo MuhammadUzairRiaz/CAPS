@@ -59,11 +59,13 @@ TEST(ExchangeProtocols, Builders) {
 }
 
 // A cut healed by bind moves (a bead holds two bonds, so the cut ends have one free; a binding energy of many k_B T):
-// bonds bridging the two sides come back.
+// bonds bridging the two sides across the cut come back (not only chain ends meeting through the periodic face).
 TEST(ExchangeProtocols, HealRunRebondsACut) {
   System s = chains(4, 12);
-  const auto side = sides_from_positions(s, 0, 0.5);
-  ASSERT_EQ(cut_bonds_across(s, 0, 0.5), 16u);
+  // the plane between two beads (bead 6 of chains() sits at exactly 0.5, where its side and the cut could disagree)
+  const double kPlane = 0.535;
+  const auto side = sides_from_positions(s, 0, kPlane);
+  ASSERT_EQ(cut_bonds_across(s, 0, kPlane), 16u);
   KgOptions ko;
   ProtocolOptions o;
   o.field = std::make_shared<ForceField>(kremer_grest_forcefield(s, ko));
@@ -74,8 +76,8 @@ TEST(ExchangeProtocols, HealRunRebondsACut) {
   o.moves.binding = 30;
   o.moves.capture = 1.3;
   o.moves.attempts = 20;
-  EXPECT_EQ(interface_bonds(s, side, 0, 0.5, 1.0).bridges, 0u);
-  const auto r = heal_run(s, o, side, 0, 0.5, 0.5, 2);
+  EXPECT_EQ(interface_bonds(s, side, 0, kPlane, 1.0).bridges, 0u);
+  const auto r = heal_run(s, o, side, 0, kPlane, 0.5, 2);
   ASSERT_EQ(r.bridges.size(), 2u);
   EXPECT_NEAR(r.t_ps.back(), 0.5, 1e-12);
   EXPECT_GT(r.bridges.back(), 0);

@@ -3,6 +3,7 @@
 #include "caps/dpd.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <cmath>
 #include <numeric>
@@ -23,6 +24,37 @@ std::string pair_key(char i, char j) { return i <= j ? std::string{i, j} : std::
 
 int element_of_type(char t) {
   switch (t) { case 'A': return 6; case 'B': return 8; case 'C': return 7; case 'D': return 16; default: return 15; }
+}
+
+// "A5B5" or "AAAAABBBBB" → one letter per bead; branches "(…)" kept; spaces dropped, letters upper-cased
+std::string expand_dpd_sequence(const std::string& s) {
+  constexpr long kMaxRun = 100000;   // beads one letter's count may add (a molecule this long is far past any run)
+  std::string out;
+  for (size_t i = 0; i < s.size();) {
+    const char c0 = s[i];
+    if (std::isspace(static_cast<unsigned char>(c0))) { ++i; continue; }
+    if (c0 == '(' || c0 == ')') { out += c0; ++i; continue; }
+    const char c = char(std::toupper(static_cast<unsigned char>(c0)));
+    if (c < 'A' || c > 'Z') {
+      if (std::isdigit(static_cast<unsigned char>(c0)))
+        throw std::invalid_argument("DPD: a count needs a bead letter before it in '" + s + "' (e.g. A5B5)");
+      throw std::invalid_argument("DPD: '" + std::string(1, c0) + "' is not a bead type in '" + s +
+                                  "' (bead types are letters A-Z with optional counts, e.g. A5B5 or AAAAABBBBB; branches in parentheses)");
+    }
+    size_t j = i + 1;
+    long n = 1;
+    if (j < s.size() && std::isdigit(static_cast<unsigned char>(s[j]))) {
+      n = 0;
+      while (j < s.size() && std::isdigit(static_cast<unsigned char>(s[j]))) {
+        n = n * 10 + (s[j] - '0'), ++j;
+        if (n > kMaxRun) throw std::invalid_argument("DPD: a bead count in '" + s + "' is over " + std::to_string(kMaxRun));
+      }
+      if (n == 0) throw std::invalid_argument("DPD: a bead count of 0 in '" + s + "' (counts start at 1)");
+    }
+    out.append(size_t(n), c);
+    i = j;
+  }
+  return out;
 }
 
 }  // namespace
@@ -62,16 +94,17 @@ DpdReport run_dpd(const DpdOptions& o) {
   for (size_t si = 0; si < o.species.size(); ++si) {
     const auto& sp = o.species[si];
     if (sp.sequence.empty() || sp.count <= 0) continue;
+    const std::string seq = expand_dpd_sequence(sp.sequence);   // "A5B5" → "AAAAABBBBB"
+    if (seq.find_first_not_of("()") == std::string::npos) throw std::invalid_argument("DPD: no bead letters in '" + sp.sequence + "'");
     // the sequence's beads with their parents: a branch "(…)" hangs off the bead before it
     std::vector<char> beads;
     std::vector<int> par;
     {
       std::vector<int> stack;
       int prev = -1;
-      for (char c : sp.sequence) {
+      for (char c : seq) {
         if (c == '(') { if (prev < 0) throw std::invalid_argument("DPD: a branch needs a bead before it ('" + sp.sequence + "')"); stack.push_back(prev); continue; }
         if (c == ')') { if (stack.empty()) throw std::invalid_argument("DPD: unbalanced ')' in '" + sp.sequence + "'"); prev = stack.back(); stack.pop_back(); continue; }
-        if (c < 'A' || c > 'Z') throw std::invalid_argument("DPD: bead types are the letters A–Z, branches in parentheses ('" + sp.sequence + "')");
         beads.push_back(c);
         par.push_back(prev);
         prev = int(beads.size()) - 1;
@@ -99,17 +132,32 @@ DpdReport run_dpd(const DpdOptions& o) {
     }
   }
   const int n = int(type.size());
-  if (n < 2) throw std::invalid_argument("DPD: no beads (give species with sequences and counts)");
+  if (n == 0) throw std::invalid_argument("DPD: no beads (give species with sequences and counts)");
+  if (n < 2) throw std::invalid_argument("DPD: only 1 bead; a DPD run needs at least 2 (raise a molecule count or use a longer sequence)");
   rep.beads = n;
   rep.types.assign(used.begin(), used.end());
-  if (!o.chi.empty() && std::fabs(o.density - 3.0) > 1e-9) rep.notes.push_back("χ → a_ij uses Groot & Warren's mapping for ρ = 3; at another density give a_ij");
   const double L = o.box > 0 ? o.box : std::cbrt(n / o.density);
+  const double bead_density = n / (L * L * L);   // the bead density of the run (a given box sets it, not --density)
+  if (!o.chi.empty() && std::fabs(bead_density - 3.0) > 0.05) {
+    char q[160];
+    std::snprintf(q, sizeof q, "χ → a_ij uses Groot & Warren's mapping for ρ = 3 (this box: ρ = %.3f); at another density give a_ij", bead_density);
+    rep.notes.push_back(q);
+  }
   if (o.box > 0) rep.notes.push_back("box " + std::to_string(o.box).substr(0, 6) + " r_c given: bead density " + std::to_string(n / (o.box * o.box * o.box)).substr(0, 5));
   rep.box = L;
   if (L < 3) throw std::invalid_argument("DPD: the box is under 3 r_c: add beads");
   // repulsion table
   std::map<std::pair<char, char>, double> A;
-  for (char x : used) for (char y : used) A[{x, y}] = dpd_repulsion(o, x, y);
+  // the default a_ii = 75 kT / ρ follows the run's real density (a given box sets it, not --density); Groot & Warren's
+  // a ρ = 75 kT holds for ρ ≥ 2 (their p − ρ kT = 0.101 a ρ² fit), so a thinner box keeps a_ii at --density's value
+  DpdOptions eff;
+  eff.a = o.a, eff.chi = o.chi, eff.density = bead_density >= 2.0 ? bead_density : o.density;
+  if (bead_density < 2.0 && std::any_of(used.begin(), used.end(), [&](char x) { return !o.a.count(std::string{x, x}); })) {
+    char q[200];
+    std::snprintf(q, sizeof q, "bead density %.3f is under 2, where a_ii = 75 kT/ρ no longer holds: default a_ii kept at 75/%.3f; give a_ii to set it", bead_density, o.density);
+    rep.notes.push_back(q);
+  }
+  for (char x : used) for (char y : used) A[{x, y}] = dpd_repulsion(eff, x, y);
   std::vector<double> aij(26 * 26, 0.0);
   for (const auto& [k, v] : A) aij[size_t(k.first - 'A') * 26 + size_t(k.second - 'A')] = v;
   // start: chains as random walks of 0.7 r_c steps from random places; Maxwell velocities at kT = 1, no net momentum
@@ -481,7 +529,7 @@ DpdReport run_dpd(const DpdOptions& o) {
   }
   char b[240];
   std::snprintf(b, sizeof b, "%d beads in %d molecules, box %.2f r_c (ρ = %.2f) · kT %.3f ± %.3f · p %.2f ± %.2f · ψ %.2f · S(q) peak at q* = %.2f (spacing %.2f r_c)", n,
-                rep.molecules, L, o.density, rep.kT, rep.kT_error, rep.pressure, rep.pressure_error, rep.order, rep.q_peak, rep.spacing);
+                rep.molecules, L, bead_density, rep.kT, rep.kT_error, rep.pressure, rep.pressure_error, rep.order, rep.q_peak, rep.spacing);
   rep.notes.insert(rep.notes.begin(), b);
   std::string at;
   for (char x : used) for (char y : used) if (x <= y) { char q[48]; std::snprintf(q, sizeof q, "%sa_%c%c = %.2f", at.empty() ? "" : ", ", x, y, A[{x, y}]); at += q; }

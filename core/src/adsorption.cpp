@@ -43,6 +43,20 @@ struct Model {
   int nb[3] = {1, 1, 1};
   std::vector<std::vector<uint32_t>> bins;
   std::vector<std::vector<int>> stencil;
+  // A cut-off wider than half the cell's narrowest width reaches more than one image of an atom, so the minimum image
+  // above is not enough: every periodic image within the cut-off counts instead. The substrate's images are ghost
+  // copies binned in space (a mobile atom folded into the cell meets them at plain distances); adsorbate pairs, a
+  // molecule with its own images included, are lattice sums.
+  bool images = false;
+  double w[3] = {0, 0, 0};           // the cell's widths (Å) across each pair of faces
+  double wmin = 0;                   // the narrowest periodic one
+  Vec3 rec[3];                       // fractional coordinate of a separation d along axis k: dot(rec[k], d)
+  std::vector<Vec3> gpos;            // the substrate's images within the cut-off of the cell
+  std::vector<uint32_t> gatom;       // ... and the atom each one copies
+  Vec3 glo{0, 0, 0};
+  double gw[3] = {1, 1, 1};
+  int gn[3] = {1, 1, 1};
+  std::vector<std::vector<uint32_t>> gbins;
 
   Model(const System& sys, const ForceField& f, const std::vector<int>& mobile, double rc, bool coul, double alpha)
       : s(sys), ff(f), pm(f, rc, coul, alpha), cell(sys.cell) {
@@ -61,11 +75,15 @@ struct Model {
       else mol[it->second].push_back(i);
     }
     if (per) {
-      const double V = cell.volume();
-      const double w[3] = {V / norm(cross(cell.b, cell.c)), V / norm(cross(cell.c, cell.a)), V / norm(cross(cell.a, cell.b))};
+      const double V = cell.volume(), det = dot(cell.a, cross(cell.b, cell.c));
+      w[0] = V / norm(cross(cell.b, cell.c)), w[1] = V / norm(cross(cell.c, cell.a)), w[2] = V / norm(cross(cell.a, cell.b));
+      rec[0] = cross(cell.b, cell.c) * (1.0 / det), rec[1] = cross(cell.c, cell.a) * (1.0 / det), rec[2] = cross(cell.a, cell.b) * (1.0 / det);
+      wmin = 1e30;
       for (int d = 0; d < 3; ++d)
-        if (pdim[d]) nb[d] = std::max(1, int(std::floor(2 * w[d] / rc)));
+        if (pdim[d]) nb[d] = std::max(1, int(std::floor(2 * w[d] / rc))), wmin = std::min(wmin, w[d]);
+      images = rc > 0.5 * wmin;
     }
+    if (images) build_images(rc);
     bins.resize(size_t(nb[0] * nb[1] * nb[2]));
     for (uint32_t i : fixed) bins[size_t(bin_of(sys.atoms[i].pos))].push_back(i);
     stencil.resize(bins.size());
@@ -82,6 +100,73 @@ struct Model {
             for (int j : offs(1, b))
               for (int k : offs(2, c)) stencil[size_t((a * nb[1] + b) * nb[2] + c)].push_back((i * nb[1] + j) * nb[2] + k);
         }
+  }
+  void build_images(double rc) {
+    // a bounded budget: a cut-off many times the cell's width would need millions of images
+    double per_pair = 1;
+    for (int d = 0; d < 3; ++d) if (pdim[d]) per_pair *= 1 + 2 * rc / w[d];
+    const double est = per_pair * double(fixed.size());
+    if (est > 4e6 || per_pair > 2e5) {
+      char b[320];
+      std::snprintf(b, sizeof b, "adsorption: a %.1f Å cut-off in a cell %.2f Å across needs about %.0f periodic images; use a shorter cut-off or a larger cell",
+                    rc, wmin, std::max(est, per_pair));
+      throw std::invalid_argument(b);
+    }
+    int n[3];
+    double reach[3];
+    for (int d = 0; d < 3; ++d) n[d] = pdim[d] ? int(std::ceil(rc / w[d])) : 0, reach[d] = pdim[d] ? rc / w[d] : 0;
+    for (uint32_t b : fixed) {
+      Vec3 f = cell.to_fractional(s.atoms[b].pos);
+      for (int d = 0; d < 3; ++d) if (pdim[d]) f[size_t(d)] -= std::floor(f[size_t(d)]);
+      for (int i = -n[0]; i <= n[0]; ++i)
+        for (int j = -n[1]; j <= n[1]; ++j)
+          for (int k = -n[2]; k <= n[2]; ++k) {
+            const Vec3 g{f[0] + i, f[1] + j, f[2] + k};
+            bool keep = true;   // within the cut-off of the cell (a point in it is at most rc / w away along each axis)
+            for (int d = 0; d < 3 && keep; ++d)
+              if (pdim[d]) keep = g[size_t(d)] > -reach[d] && g[size_t(d)] < 1 + reach[d];
+            if (keep) gpos.push_back(cell.to_cartesian(g)), gatom.push_back(b);
+          }
+    }
+    // bins at least rc wide over the images' box; a point outside the box searches the bins at its edge
+    Vec3 hi{-1e30, -1e30, -1e30};
+    glo = {1e30, 1e30, 1e30};
+    for (const auto& p : gpos)
+      for (size_t d = 0; d < 3; ++d) glo[d] = std::min(glo[d], p[d]), hi[d] = std::max(hi[d], p[d]);
+    if (gpos.empty()) glo = {0, 0, 0};   // no substrate (a cluster search): one empty bin, and no 1e30 origin to overflow gbin
+    for (int d = 0; d < 3; ++d) {
+      const double ext = gpos.empty() ? 0 : hi[size_t(d)] - glo[size_t(d)];
+      gn[d] = std::clamp(int(std::floor(ext / rc)), 1, 64);
+      gw[d] = std::max(rc, ext / gn[d]);
+    }
+    gbins.assign(size_t(gn[0] * gn[1] * gn[2]), {});
+    for (uint32_t g = 0; g < gpos.size(); ++g) {
+      int id[3];
+      gbin(gpos[g], id);
+      gbins[size_t((id[0] * gn[1] + id[1]) * gn[2] + id[2])].push_back(g);
+    }
+  }
+  void gbin(const Vec3& p, int id[3]) const {
+    for (int d = 0; d < 3; ++d) id[d] = std::clamp(int(std::floor((p[size_t(d)] - glo[size_t(d)]) / gw[d])), 0, gn[d] - 1);
+  }
+  // pm.energy of atoms ia and ib over the lattice translations T with |d + T| inside the cut-off; skip0: T = 0 left out
+  double lattice_sum(uint32_t ia, uint32_t ib, const Vec3& d, bool skip0) const {
+    const double rc = pm.cutoff();
+    int lo[3] = {0, 0, 0}, hi[3] = {0, 0, 0};
+    for (int t = 0; t < 3; ++t)
+      if (pdim[t]) {
+        const double f = dot(rec[t], d);   // the separation's height across faces t, in widths: (f + i) w within ±rc
+        lo[t] = int(std::ceil(-rc / w[t] - f)), hi[t] = int(std::floor(rc / w[t] - f));
+      }
+    double e = 0;
+    for (int i = lo[0]; i <= hi[0]; ++i)
+      for (int j = lo[1]; j <= hi[1]; ++j)
+        for (int k = lo[2]; k <= hi[2]; ++k) {
+          if (skip0 && i == 0 && j == 0 && k == 0) continue;
+          const Vec3 r = d + cell.a * double(i) + cell.b * double(j) + cell.c * double(k);
+          e += pm.energy(ia, ib, dot(r, r));
+        }
+    return e;
   }
   Vec3 mi(Vec3 d) const {
     if (!per) return d;
@@ -100,6 +185,22 @@ struct Model {
   // molecule m at positions P (one per atom of m) with the substrate
   double with_fixed(size_t m, const std::vector<Vec3>& P) const {
     double e = 0;
+    if (images) {
+      for (size_t k = 0; k < mol[m].size(); ++k) {
+        const Vec3 q = cell.wrap(P[k]);
+        int id[3];
+        gbin(q, id);
+        for (int a = std::max(0, id[0] - 1); a <= std::min(gn[0] - 1, id[0] + 1); ++a)
+          for (int b = std::max(0, id[1] - 1); b <= std::min(gn[1] - 1, id[1] + 1); ++b)
+            for (int c = std::max(0, id[2] - 1); c <= std::min(gn[2] - 1, id[2] + 1); ++c)
+              for (uint32_t g : gbins[size_t((a * gn[1] + b) * gn[2] + c)]) {
+                const Vec3 d = gpos[g] - q;
+                e += pm.energy(mol[m][k], gatom[g], dot(d, d));
+              }
+        if (!std::isfinite(e)) return e;
+      }
+      return e;
+    }
     for (size_t k = 0; k < mol[m].size(); ++k) {
       const uint32_t a = mol[m][k];
       for (int bn : stencil[size_t(bin_of(P[k]))])
@@ -115,10 +216,22 @@ struct Model {
     double e = 0;
     for (size_t k = 0; k < mol[m].size(); ++k)
       for (size_t q = 0; q < mol[n].size(); ++q) {
+        if (images) {
+          e += lattice_sum(mol[m][k], mol[n][q], Q[q] - P[k], false);
+          continue;
+        }
         const Vec3 d = mi(Q[q] - P[k]);
         e += pm.energy(mol[m][k], mol[n][q], dot(d, d));
       }
     return e;
+  }
+  // molecule m at P with its own periodic images (each pair of images once); 0 while one image is all the cut-off reaches
+  double self(size_t m, const std::vector<Vec3>& P) const {
+    if (!images) return 0;
+    double e = 0;
+    for (size_t k = 0; k < mol[m].size(); ++k)
+      for (size_t q = 0; q < mol[m].size(); ++q) e += lattice_sum(mol[m][k], mol[m][q], P[q] - P[k], true);
+    return 0.5 * e;
   }
 };
 
@@ -168,7 +281,7 @@ double adsorption_interaction(const System& s, const ForceField& ff, const std::
   for (size_t m = 0; m < M.mol.size(); ++m) for (uint32_t a : M.mol[m]) P[m].push_back(s.atoms[a].pos);
   double e = 0;
   for (size_t m = 0; m < M.mol.size(); ++m) {
-    e += M.with_fixed(m, P[m]);
+    e += M.with_fixed(m, P[m]) + M.self(m, P[m]);
     for (size_t n = m + 1; n < M.mol.size(); ++n) e += M.between(m, P[m], n, P[n]);
   }
   return e;
@@ -188,23 +301,36 @@ void locate_adsorption(System& s, const ForceField& ff, const AdsorptionOptions&
   if (o.steps < 10 || o.cycles < 1 || o.t_high <= 0 || o.t_low <= 0 || o.t_low > o.t_high) throw std::invalid_argument("adsorption: at least 10 steps and one cycle, 0 < t_low ≤ t_high");
   const auto mobile = o.mobile.empty() ? adsorbate_molecules(s, o.first_mobile_atom) : o.mobile;
   if (mobile.empty()) throw std::invalid_argument("adsorption: no adsorbate molecule (the structure is one molecule)");
-  double rc = o.cutoff;
-  if (s.cell.valid()) {
-    const double V = s.cell.volume();
-    double wmin = 1e30;
-    const double w[3] = {V / norm(cross(s.cell.b, s.cell.c)), V / norm(cross(s.cell.c, s.cell.a)), V / norm(cross(s.cell.a, s.cell.b))};
-    for (int d = 0; d < 3; ++d) if (s.cell.periodic[size_t(d)]) wmin = std::min(wmin, w[d]);
-    if (rc > 0.5 * wmin - 1e-6) {
-      rc = 0.5 * wmin - 1e-6;
-      char b[160];
-      std::snprintf(b, sizeof b, "cut-off reduced to %.2f Å (half the cell's narrowest width)", rc);
-      rep.notes.push_back(b);
-    }
-  }
-  Model M(s, ff, mobile, rc, o.coulomb, o.dsf_alpha);
+  if (!(o.cutoff > 0) || !std::isfinite(o.cutoff)) throw std::invalid_argument("adsorption: the cut-off must be a positive length (Å)");
+  // the cut-off holds as asked: past half the cell's narrowest width, every periodic image within it counts
+  Model M(s, ff, mobile, o.cutoff, o.coulomb, o.dsf_alpha);
   const size_t nm = M.mol.size();
   for (size_t m = 0; m < nm; ++m)
     if (M.mol[m].empty()) throw std::invalid_argument("adsorption: molecule " + std::to_string(mobile[m]) + " does not exist");
+  if (M.images) {
+    char b[240];
+    std::snprintf(b, sizeof b, "the %.1f Å cut-off is wider than half the cell (%.2f Å across): every periodic image within it counts (%zu substrate images)",
+                  o.cutoff, M.wmin, M.gpos.size());
+    rep.notes.push_back(b);
+    // a molecule within reach of its own images: the cell holds a dense layer, one molecule per cell
+    double lmin = 1e30, span = 0;
+    for (int i = -2; i <= 2; ++i)
+      for (int j = -2; j <= 2; ++j)
+        for (int k = -2; k <= 2; ++k) {
+          if ((i == 0 && j == 0 && k == 0) || (i && !M.pdim[0]) || (j && !M.pdim[1]) || (k && !M.pdim[2])) continue;
+          lmin = std::min(lmin, norm(s.cell.a * double(i) + s.cell.b * double(j) + s.cell.c * double(k)));
+        }
+    for (const auto& ms : M.mol)
+      for (uint32_t x : ms)
+        for (uint32_t y : ms) span = std::max(span, norm(s.atoms[y].pos - s.atoms[x].pos));
+    if (lmin < o.cutoff + span) {
+      int sc[3];
+      for (int d = 0; d < 3; ++d) sc[d] = M.pdim[d] ? std::max(1, int(std::ceil(2 * o.cutoff / M.w[d]))) : 1;
+      std::snprintf(b, sizeof b, "each adsorbate meets its own periodic images %.2f Å away (one molecule per cell, a dense layer); for one molecule alone make a %dx%dx%d supercell first",
+                    lmin, sc[0], sc[1], sc[2]);
+      rep.notes.push_back(b);
+    }
+  }
   if (M.fixed.empty()) rep.notes.push_back("no substrate: every molecule moves (a cluster search)");
 
   std::mt19937_64 rng(o.seed);
@@ -254,13 +380,14 @@ void locate_adsorption(System& s, const ForceField& ff, const AdsorptionOptions&
   auto mol_energy = [&](size_t m, const std::vector<Vec3>& Q) {
     double e = M.with_fixed(m, Q);
     if (!std::isfinite(e)) return e;
+    e += M.self(m, Q);
     for (size_t k = 0; k < nm; ++k) if (k != m) e += M.between(m, Q, k, P[k]);
     return e;
   };
   auto total = [&] {
     double e = 0;
     for (size_t m = 0; m < nm; ++m) {
-      e += M.with_fixed(m, P[m]);
+      e += M.with_fixed(m, P[m]) + M.self(m, P[m]);
       for (size_t k = m + 1; k < nm; ++k) e += M.between(m, P[m], k, P[k]);
     }
     return e;
@@ -367,8 +494,9 @@ void locate_adsorption(System& s, const ForceField& ff, const AdsorptionOptions&
   double as = 0, aa = 0;
   std::vector<double> per(nm, 0.0);
   for (size_t m = 0; m < nm; ++m) {
-    const double f = M.with_fixed(m, P[m]);
+    const double f = M.with_fixed(m, P[m]), own = M.self(m, P[m]);
     as += f, per[m] += f;
+    aa += own, per[m] += own;   // with its own images, as the other adsorbates
     for (size_t k = m + 1; k < nm; ++k) {
       const double e = M.between(m, P[m], k, P[k]);
       aa += e, per[m] += e, per[k] += e;
@@ -399,6 +527,10 @@ void locate_adsorption(System& s, const ForceField& ff, const AdsorptionOptions&
     std::snprintf(b, sizeof b, "%zu adsorbate molecule%s on %zu fixed atoms · %d cycle%s of %d steps, %.0f → %.0f K · lowest %.3f kcal/mol",
                   nm, nm == 1 ? "" : "s", M.fixed.size(), o.cycles, o.cycles == 1 ? "" : "s", o.steps, o.t_high, o.t_low, best_e);
     rep.notes.insert(rep.notes.begin(), b);
+    if (best_e > 0) {
+      std::snprintf(b, sizeof b, "the lowest energy found is positive (%.1f kcal/mol): the adsorbates do not fit (a bulk cell has no room; a surface needs vacuum above it)", best_e);
+      rep.notes.push_back(b);
+    }
     rep.notes.push_back(std::string("energies: the force field's van der Waals") + (M.pm.coulomb() ? " and damped shifted force electrostatics" : "") +
                         " between molecules; rigid adsorbates (no deformation energy)");
   }

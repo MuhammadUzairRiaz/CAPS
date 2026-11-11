@@ -5,6 +5,7 @@
 #include <cmath>
 #include <complex>
 #include <cstdio>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 
@@ -79,17 +80,30 @@ DielectricResult crystal_dielectric(const System& s0, const DielectricOptions& o
     FitOptions fo;
     fo.energy = o.energy;
     fo.relaxed = o.relax && o.relax_cell;
+    // the fitter's own default (1e-6) sits below the Ewald force noise of a low-symmetry cell, so its relaxations
+    // would run to their step budget: C_IJ change by under 0.1 % between 1e-3 and 1e-4 (alpha-quartz)
+    if (!(o.relax_ftol > 0) || o.relax_iterations < 1) throw std::invalid_argument("dielectric: the relaxation tolerance and step budget must be positive");
+    fo.relax_ftol = o.relax_ftol;
+    fo.relax_iterations = o.relax_iterations;
+    if (o.progress) fo.progress = [&](const std::string&, double f) { return o.progress("relaxing", f); };
     FitStructure fs;
     fs.cell = s0, fs.field_for = o.field_for, fs.shell = shell;
     fo.structures.push_back(fs);
     for (int I = 1; I <= 6; ++I)
       for (int J = I; J <= 6; ++J) fo.targets.push_back({0, "C" + std::to_string(I) + std::to_string(J), 0, 0});
-    const FitResult fr = fit_to_crystals(fo);
-    r.C = fr.structures[0].C;
-    if (fo.relaxed) {
-      s.cell = fr.structures[0].cell;
-      for (size_t i = 0; i < N; ++i) s.atoms[i].pos = fr.structures[0].positions[i];
+    FitResult fr;
+    try {
+      fr = fit_to_crystals(fo);
+    } catch (const std::runtime_error& e) {
+      if (std::string(e.what()) == "fit stopped") throw std::runtime_error("dielectric stopped");
+      throw;
     }
+    r.C = fr.structures[0].C;
+    if (fo.relaxed) s.cell = fr.structures[0].cell;
+    // the fitter's positions: every particle relaxed (relaxed cell), else the cores as given with their shells relaxed,
+    // which a shell model needs for any response (shells left on their cores are far from a minimum)
+    if (fr.structures[0].positions.size() == N)
+      for (size_t i = 0; i < N; ++i) s.atoms[i].pos = fr.structures[0].positions[i];
     for (const auto& nt : fr.notes)
       if (nt.rfind("Ewald grid", 0) != 0) r.notes.push_back(nt);   // the fitter's own grid note does not concern this
   }
@@ -137,13 +151,24 @@ DielectricResult crystal_dielectric(const System& s0, const DielectricOptions& o
   };
   std::vector<double> K = hessian(X);
   // ---- Newton steps on the particles at this cell (the start's force constants), then the force constants again
+  // (fresh force constants, at most three times, when a step does not halve the largest force: far from the minimum
+  // the start's constants do not carry the particles there)
   if (o.relax) {
-    const std::vector<double> K0p = pinv(K, n);
-    for (int it = 0; it < 8; ++it) {
+    std::vector<double> K0p = pinv(K, n);
+    double fprev = std::numeric_limits<double>::infinity();
+    int fresh = 0;
+    for (int it = 0; it < 12; ++it) {
       const auto F = cp.forces(X, s.cell);
       double fmax = 0;
       for (double v : F) fmax = std::max(fmax, std::fabs(v));
       if (fmax < 1e-7) break;
+      if (fmax > 0.5 * fprev) {
+        if (fresh == 3) break;
+        ++fresh;
+        K = hessian(X);
+        K0p = pinv(K, n);
+      }
+      fprev = fmax;
       for (size_t i = 0; i < n; ++i) {
         double dx = 0;
         for (size_t j = 0; j < n; ++j) dx += K0p[i * n + j] * F[j];

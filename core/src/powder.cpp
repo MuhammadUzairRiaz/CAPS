@@ -141,7 +141,7 @@ PowderReport powder_pattern(const Trajectory& t, const std::vector<size_t>& fram
   }
   const double nfr = double(frames.size());
   // reflections of equal |G| merged: multiplicity (both signs), ⟨|F|²⟩ and the orientation factor per vector
-  struct Ref { double q, f2sum, posum; int count; int h, k, l; std::vector<Vec3> dirs; };
+  struct Ref { double q, f2sum, posum; int count; int h, k, l; std::vector<Vec3> dirs; std::vector<size_t> live; };
   std::vector<size_t> order(nvec);
   for (size_t i = 0; i < nvec; ++i) order[i] = i, gsum[i] /= nfr, f2[i] /= nfr;
   std::sort(order.begin(), order.end(), [&](size_t x, size_t y) { return gsum[x] < gsum[y]; });
@@ -164,24 +164,45 @@ PowderReport powder_pattern(const Trajectory& t, const std::vector<size_t>& fram
   std::vector<Ref> refs;
   double f2max = 0;
   for (double v : f2) f2max = std::max(f2max, v);
+  // A vector counts toward the multiplicity, the orientation average and the label only when its own |F|² is above the absence
+  // threshold: in a supercell a parent reflection shares its d with supercell-extinct families (NaCl 220 = 6 6 0 and 8 2 2 in 3×3×3),
+  // and those must not set the label, inflate m or dilute |F|. The cut, |F|² ≤ 1e-8 of the strongest (|F| ≤ 1e-4), sits above the
+  // residue of coordinates rounded in a written file (|F| near 1e-5 of the strongest in a 12×12×12 NaCl cell) and far below any
+  // visible line (I ≤ 1e-6 % of the strongest).
+  const double absent = 1e-8 * std::max(1e-300, f2max);
   for (size_t ii = 0; ii < nvec; ++ii) {
     const size_t i = order[ii];
     if (gsum[i] > qmax) continue;
     const double tol = 1e-6 * gsum[i] + 1e-9;
-    if (refs.empty() || gsum[i] - refs.back().q > tol) refs.push_back({gsum[i], 0, 0, 0, hh[i], kk[i], ll[i], {}});
+    if (refs.empty() || gsum[i] - refs.back().q > tol) refs.push_back({gsum[i], 0, 0, 0, 0, 0, 0, {}, {}});
     Ref& R = refs.back();
     const Vec3 G = gvec[i] * (1.0 / nfr);
     R.f2sum += 2 * f2[i];
     R.posum += 2 * f2[i] * march(G);
+    if (f2[i] <= absent) continue;
     R.count += 2;
     R.dirs.push_back(G);
-    // the label: the largest of ±(h k l)
-    auto key = [](int a, int b, int c) { return std::make_tuple(a, b, c); };
-    if (key(hh[i], kk[i], ll[i]) > key(R.h, R.k, R.l)) R.h = hh[i], R.k = kk[i], R.l = ll[i];
-    if (key(-hh[i], -kk[i], -ll[i]) > key(R.h, R.k, R.l)) R.h = -hh[i], R.k = -kk[i], R.l = -ll[i];
+    R.live.push_back(i);
   }
-  // absences: reflections whose structure factor vanishes
-  refs.erase(std::remove_if(refs.begin(), refs.end(), [&](const Ref& R) { return R.f2sum / R.count <= 1e-10 * std::max(1e-300, f2max); }), refs.end());
+  // absences: groups in which every structure factor vanishes
+  refs.erase(std::remove_if(refs.begin(), refs.end(), [](const Ref& R) { return R.count == 0; }), refs.end());
+  // the label: among the members carrying the intensity (|F|² within a factor 10 of the strongest, so disorder noise between
+  // equivalent members does not decide it), the largest of ±(h k l)
+  for (auto& R : refs) {
+    double fbest = 0;
+    for (size_t i : R.live) fbest = std::max(fbest, f2[i]);
+    bool first = true;
+    auto key = [](int a, int b, int c) { return std::make_tuple(a, b, c); };
+    for (size_t i : R.live) {
+      if (f2[i] < 0.1 * fbest) continue;
+      for (int sg : {1, -1}) {
+        const int h = sg * hh[i], k = sg * kk[i], l = sg * ll[i];
+        if (first || key(h, k, l) > key(R.h, R.k, R.l)) R.h = h, R.k = k, R.l = l, first = false;
+      }
+    }
+    R.live.clear();
+    R.live.shrink_to_fit();
+  }
   rep.vectors = int(2 * nvec), rep.frames = int(frames.size()), rep.reflections = int(refs.size());
 
   // widths at θ for line λ: (H, η) of the peak shape in degrees 2θ, and the crystallite size along G

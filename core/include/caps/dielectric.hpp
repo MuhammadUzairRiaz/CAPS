@@ -33,8 +33,11 @@ struct DielectricOptions {
   std::function<ForceField(const System&)> field_for;   // required
   EnergyOptions energy;
   std::vector<char> shell;           // per atom of the cell: a shell
-  bool relax = true;                 // relax the atoms first (Newton steps on the force constants)
+  bool relax = true;                 // relax the atoms first (Newton steps on the force constants); false: the cores as
+                                     // given, their shells relaxed
   bool relax_cell = true;            // and the cell (at zero stress) before them
+  double relax_ftol = 1e-4;          // kcal/mol/Å, the largest gradient of the cell and elastic-constant relaxations
+  int relax_iterations = 1000;       // and their step budget each
   double step = 0.002;               // Å, the force constants' displacement
   double strain = 1e-4;              // the internal-strain tensor's strain
   bool piezo = true;

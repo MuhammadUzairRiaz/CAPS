@@ -300,7 +300,7 @@ class _Field:
 
     def assign(self, forcefield: str = "uff", charges: str = "auto", complete: Optional[str] = None) -> dict:
         """Types every atom and looks up every parameter: a force-field id from the library (gaff2, oplsaa2024 …), a path
-        to a caps-forcefield JSON, "uff", or "file" (the force field an AMBER prmtop carried; a prmtop opens with it). charges: auto (the force field's, else Gasteiger) | forcefield | gasteiger | keep | qeq | increments (bond-increment charges from the library the force field names in charge_increments_from).
+        to a caps-forcefield JSON, "uff", or "file" (the force field an AMBER prmtop carried; a prmtop opens with it). charges: auto (the force field's, else Gasteiger) | forcefield | gasteiger | keep | qeq | increments (bond-increment charges: those of the library the force field names in charge_increments_from, else its own, as PCFF, COMPASS and CVFF carry; an error for a force field with neither).
         complete="ml": the bonded terms the force field lacks for this structure are fitted by CAPS ML (caps ff complete)
         and the assignment goes on; every such term is marked "CAPS ML" in the exported LAMMPS and GROMACS files and listed
         in the report's "ml" entry. A term the model cannot fit stays missing with its reason; charges and untyped atoms
@@ -546,16 +546,29 @@ class Document:
     def __init__(self, handle: int, label: str = ""):
         if not handle:
             raise _error()
-        self._h = C.c_void_p(handle)
+        self._handle = C.c_void_p(handle)
         self.label = label
         self.field = _Field(self)
         self.report = ""
 
+    @property
+    def _h(self):
+        """The libcaps handle; a closed document raises CapsError instead of passing NULL to the library."""
+        h = getattr(self, "_handle", None)
+        if not h:
+            raise CapsError("the document is closed")
+        return h
+
+    @property
+    def closed(self) -> bool:
+        return not getattr(self, "_handle", None)
+
     # life
     def close(self) -> None:
-        if self._h:
-            library().caps_close(self._h)
-            self._h = C.c_void_p()
+        h = getattr(self, "_handle", None)
+        if h:
+            library().caps_close(h)
+            self._handle = C.c_void_p()
 
     def __del__(self):
         try:
@@ -570,6 +583,8 @@ class Document:
         self.close()
 
     def __repr__(self) -> str:
+        if self.closed:
+            return f"<caps.Document {self.label or ''} (closed)>"
         s = self.summary()
         return f"<caps.Document {self.label or ''} · {s['atoms']} atoms · {s['frames']} frame(s)>"
 
@@ -819,7 +834,7 @@ class Document:
 
     def react_summary(self) -> dict:
         """The network of the last react(): chains, crosslinks (links between chains), target, density (mol/m³),
-        per_chain, mc (g/mol), byproducts, removed_unreacted, the force field during and after the run. With sulfur in the
+        per_chain, mc (g/mol; None with no links between chains), byproducts, removed_unreacted, the force field during and after the run. With sulfur in the
         structure also "sulfur": sulfur_bridges()."""
         return _json_call(library().caps_react_summary, self._h)
 
@@ -1877,8 +1892,8 @@ def _qha(self, mode: str = "volume", lock=(), range: float = 0.02, points: int =
          pressure: float = 0.0, relax_cell: bool = True, cutoff: float = 10.0, supercell=None, mesh=None) -> dict:
     """Quasi-harmonic free energy and thermal expansion of the crystal (current frame): phonons at strained cells, the
     cell at each temperature from the minimum of G = E + F_vib + P V. mode "volume" scales the whole cell, "axes" a, b, c
-    each (lock names those kept, for anisotropic crystals). Returns {rows [{T, length, volume, alpha_V, alpha, B (GPa), Cv,
-    Cp, S (cal/mol/K per cell), extrapolated}], samples, volume0, lengths0, fit_rms, forcefield, notes}."""
+    each (lock names those kept, for anisotropic crystals); points spaces the volume grid only (at least 4). Returns {rows [{T, length, volume, alpha_V, alpha, B (GPa), Cv,
+    Cp, S (cal/mol/K per cell), extrapolated, unstable}], samples, volume0, lengths0, fit_rms, forcefield, notes}."""
     o = {"mode": mode, "lock": [str(x) for x in lock], "range": float(range), "points": int(points), "temperatures": [float(x) for x in temperatures],
          "pressure": float(pressure), "relax_cell": bool(relax_cell), "cutoff": float(cutoff)}
     if supercell is not None:
@@ -2941,7 +2956,8 @@ class build:
     @staticmethod
     def martini_melt(repeat: str, repeats: int = 20, chains: int = 20, density: float = 1.0, forcefield: str = "martini",
                      seed: int = 1, tolerance: float = 3.0) -> Document:
-        """A MARTINI polymer melt: chains of `repeats` × the repeat unit's bead SMILES ("[C1]", "[PEO]" …) packed, the
+        """A MARTINI polymer melt: chains of `repeats` × the repeat unit's bead SMILES ("[C1]", "[P4]" … with the default
+        MARTINI 2.0; "[PEO]" needs forcefield="martini2-polymers", the Lee 2009 PEO bead on MARTINI 2.0) packed, the
         MARTINI force field (a library id or a path; "martini" is the library whose catalogue entry lists that alias)
         assigned and the cell compressed to the density (g/cm³) with it."""
         o = {"forcefield": _forcefield_path(forcefield), "repeat": repeat, "repeats": repeats, "chains": chains, "density": density,
@@ -2996,8 +3012,11 @@ class build:
 
     @staticmethod
     def solvate(solute: Optional[Document] = None, **options) -> Document:
-        """Solvent and ions around a solute (or a box of solvent): shape, edge, padding, solvent, water_model, ion_mode,
-        salt, concentration …"""
+        """Solvent and ions around a solute (or a box of solvent). Options: shape 0 a cube of edge (Å, default 30),
+        1 a rectangular box edges=[a, b, c], 2 the solute's extent plus padding (Å) on each side (or by name: "cube",
+        "rectangular", "padding"); without shape, padding implies 2 and edges implies 1. tolerance (Å), solvent (a
+        solvent_library id), water_model, density (g/cm³, 0: the solvent's), molecules (0: from the free volume), ion_mode 0 none | 1 neutralise | 2 concentration | 3 custom
+        counts, salt, concentration (mol/L), cations, anions, seed. An unknown option name raises CapsError."""
         rep = _report()
         h = solute._h if solute is not None else None
         d = Document(library().caps_solvate(h, _enc(json.dumps(options)), None, None, rep, len(rep)), "solvated")
@@ -3047,7 +3066,7 @@ def blend_phase(na: float, nb: float, a: float, b: float, t: float = 300.0) -> d
 def tg_fit(paths, prop: str = "volume", fit: str = "hinge", glassy_max: float = 0.0, rubbery_min: float = 0.0, volume: bool = False) -> dict:
     """Tg of cooling scans that ran elsewhere (caps tg on a cluster), as caps tg --fit: paths is one run or several replicas,
     each a run folder, its OUT.tg-points.json, its csv folder, a properties file or a table of T and density (volume=True:
-    specific volume). prop "volume" | "energy" (potential energy per atom), fit "hinge" | "ranges" (glassy_max,
+    a table without a header holds specific volume). prop "volume" | "energy" (potential energy per atom), fit "hinge" | "ranges" (glassy_max,
     rubbery_min in K). Returns {scans: [{source, log, schedule, t_step, hold_ps, atoms, logged_tg, points}], properties:
     [tg] for one scan, [tg_r1, …, tg] for replicas (tg: mean ± SD)}."""
     if isinstance(paths, (str, os.PathLike)):

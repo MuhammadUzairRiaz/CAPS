@@ -6,7 +6,9 @@
 // structure factor F(G) = Σ_j w_j(|G|) e^(−B s²) e^(iG·r_j) (w: Cromer–Mann X-ray form factors or neutron coherent
 // lengths, s = |G|/4π, B a global isotropic temperature factor in Å²), |F|² averaged over the frames (the thermal disorder
 // of an MD run gives its own Debye–Waller damping and diffuse scattering). Vectors of equal |G| make one reflection: its
-// multiplicity is their number (systematic absences come out of F itself). Bragg's law sin θ = λ|G|/4π, per line.
+// multiplicity is the number of them whose |F|² is above 1e-8 of the strongest (systematic absences come out of F itself, also
+// within a group, as when a supercell's extinct indices share d with a parent reflection), its label the largest ±(h k l) among
+// those within a factor 10 of the group's strongest |F|². Bragg's law sin θ = λ|G|/4π, per line.
 // Integrated intensity per line: I = m |F|² P_MD LP, with
 //   Lorentz–polarisation LP = (1 + cos² 2θ_m cos² 2θ) / ((1 + cos² 2θ_m) sin² θ cos θ) (X-ray; θ_m the monochromator's
 //   Bragg angle, 0 none; a polarised synchrotron beam: numerator 1), neutrons 1 / (sin² θ cos θ);

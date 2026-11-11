@@ -100,3 +100,48 @@ TEST(Adsorption, RigidMoleculesAndDeDn) {
   EXPECT_GE(r.configs.size(), 1u);
   EXPECT_NEAR(r.configs[0].energy, r.adsorption_energy, 1e-9);
 }
+
+// A cut-off wider than half the cell: every periodic image within it counts, so one primitive cell of the lattice with
+// one adsorbate gives the same energy per cell as an 8 × 8 supercell with one adsorbate per primitive cell (where a
+// single minimum image is enough), the adsorbate's own images included; the locator keeps the cut-off it was given.
+TEST(Adsorption, CutOffWiderThanTheCellCountsEveryImage) {
+  auto lattice = [](int n) {
+    Slab r;
+    r.s.cell.a = {2.5 * n, 0, 0}, r.s.cell.b = {0, 2.5 * n, 0}, r.s.cell.c = {0, 0, 30};
+    for (int pass = 0; pass < 2; ++pass)
+      for (int i = 0; i < n; ++i)
+        for (int j = 0; j < n; ++j) {
+          Atom a;
+          a.element = pass ? 18 : 6;
+          a.pos = pass ? Vec3{2.5 * i + 0.7, 2.5 * j + 0.9, 13.4} : Vec3{2.5 * i, 2.5 * j, 10.0};
+          r.s.atoms.push_back(a);
+          r.ff.type_index.push_back(pass);
+        }
+    r.ff.lj = {{0.07, 3.4}, {0.238, 3.4}};
+    r.ff.type_names = {"C", "Ar"};
+    r.ff.charge.assign(r.s.atoms.size(), 0.0);
+    r.ff.mass.assign(r.s.atoms.size(), 12.0);
+    r.ff.name = "test LJ";
+    return r;
+  };
+  Slab one = lattice(1), big = lattice(8);
+  const double e1 = adsorption_interaction(one.s, one.ff, adsorbate_molecules(one.s, 1), 9.0, false);
+  const double e64 = adsorption_interaction(big.s, big.ff, adsorbate_molecules(big.s, 64), 9.0, false);
+  EXPECT_NE(e1, 0.0);
+  EXPECT_NEAR(e1, e64 / 64, 1e-9 * std::fabs(e1));
+  AdsorptionOptions o;
+  o.coulomb = false;
+  o.cutoff = 9.0;
+  o.steps = 200;
+  o.cycles = 1;
+  o.first_mobile_atom = 1;
+  AdsorptionReport r;
+  locate_adsorption(one.s, one.ff, o, &r);
+  EXPECT_NEAR(r.adsorption_energy, adsorption_interaction(one.s, one.ff, adsorbate_molecules(one.s, 1), 9.0, false), 1e-9);
+  bool images = false;
+  for (const auto& n : r.notes) {
+    EXPECT_EQ(n.find("cut-off reduced"), std::string::npos) << n;
+    images |= n.find("every periodic image") != std::string::npos;
+  }
+  EXPECT_TRUE(images);
+}

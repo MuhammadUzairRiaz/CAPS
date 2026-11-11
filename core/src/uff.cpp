@@ -233,21 +233,57 @@ double angle_k(double theta0, double bo12, double bo23, const UffParam& a, const
 
 double equation17(double bo, const UffParam& a, const UffParam& b) { return 5 * std::sqrt(a.U1 * b.U1) * (1 + 4.18 * std::log(bo)); }
 
+// Whether the force field the file carried still describes the structure: the same atoms and the same bonds. An edit
+// that makes or breaks bonds but keeps the atom count (a reaction that keeps its byproducts in the cell) leaves the
+// field with terms on pairs no longer bonded and none on the new bonds, so it no longer fits.
+bool carried_field_fits(const System& s) {
+  const ForceField& F = *s.forcefield;
+  const size_t n = s.atoms.size();
+  if (F.charge.size() != n) return false;
+  std::set<std::pair<uint32_t, uint32_t>> bonded;
+  for (const auto& b : s.bonds) bonded.insert({std::min(b.i, b.j), std::max(b.i, b.j)});
+  const auto on = [&](uint32_t i, uint32_t j) { return bonded.count({std::min(i, j), std::max(i, j)}) > 0; };
+  for (const auto& t : F.bonds) if (!on(t.i, t.j)) return false;
+  for (const auto& t : F.bonds2) if (!on(t.i, t.j)) return false;
+  for (const auto& t : F.bonds_x) if (!on(t.i, t.j)) return false;
+  // every bond of the structure is a 1-2 exclusion of the field (a bond with no term too). Only for bonds the file or an
+  // edit gave: bonds perceived from distances in a file that lists none (an ionic crystal, a Lennard-Jones fluid) are
+  // not the field's, which describes those atoms without bonds.
+  if (s.bonds_from_file && F.excluded.size() == n)
+    for (const auto& b : s.bonds) {
+      if (b.i == b.j) continue;   // the field builders skip a bond of an atom to itself too
+      if (b.i >= n || b.j >= n) return false;
+      const auto& e = F.excluded[b.i];
+      if (std::find(e.begin(), e.end(), b.j) == e.end()) return false;
+    }
+  return true;
+}
+
 }  // namespace
 
 ForceField default_forcefield(const System& s) {
-  // the force field the file carries (an AMBER topology, a CAPS data file), while its atoms are the structure's
-  if (s.forcefield && s.forcefield->charge.size() == s.atoms.size()) return *s.forcefield;
+  // the force field the file carries (an AMBER topology, a CAPS data file), while its atoms and bonds are the structure's
+  if (s.forcefield && carried_field_fits(s)) return *s.forcefield;
+  // the file's force field, but bonds made or broken since (a reaction that keeps its byproducts, an edit): the default
+  // below for the bonds as they are now, not the file's terms on the old ones
+  const bool stale = s.forcefield && s.forcefield->charge.size() == s.atoms.size();
   // a file with coefficients CAPS cannot rebuild: not GAFF or UFF in their place
-  if (!s.forcefield_error.empty() && s.forcefield_atoms == s.atoms.size()) throw FieldError(s.forcefield_error);
+  if (!stale && !s.forcefield_error.empty() && s.forcefield_atoms == s.atoms.size()) throw FieldError(s.forcefield_error);
+  ForceField F;
+  bool typed = false;
   const bool ch = std::all_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element == 1 || a.element == 6; });
   if (ch) {
     try {
-      return assign_gaff(s);
+      F = assign_gaff(s);
+      typed = true;
     } catch (const FieldError&) {   // the built-in GAFF knows sp3 and aromatic carbon only (not C=C of rubbers)
     }
   }
-  return assign_uff(s);
+  if (!typed) F = assign_uff(s);
+  if (stale)
+    F.notes.push_back("the force field the file carried (" + s.forcefield->name + ") has terms for bonds made or broken since; " + F.name +
+                      " is used for the bonds as they are now (give --ff to choose another)");
+  return F;
 }
 
 bool is_uff(const std::string& name) {

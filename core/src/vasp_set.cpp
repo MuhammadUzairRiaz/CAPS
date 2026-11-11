@@ -126,7 +126,7 @@ std::string incar_why(const std::string& k) {
       {"LASPH", "non-spherical contributions inside the PAW spheres (d elements, GGA)"},
       {"LMAXMIX", "4 for d elements (charge-density mixing up to l = 4), else 2"},
       {"ISPIN", "1: non-magnetic (test ISPIN = 2 once for a new material)"},
-      {"LREAL", ".FALSE. up to 40 atoms, else Auto — one value for every run of an adsorption set"},
+      {"LREAL", ".FALSE. up to 40 atoms, else Auto; one value for every run of an adsorption set"},
       {"NCORE", "cores per orbital: from the cluster profile"},
       {"KPAR", "k-point groups: from the cluster profile"},
       {"IBRION", "2 conjugate gradient (relaxations), −1 no ionic step (single point), 0 MD, 5 finite differences"},
@@ -140,7 +140,7 @@ std::string incar_why(const std::string& k) {
       {"LORBIT", "11: projected DOS per atom and orbital (DOSCAR, PROCAR)"},
       {"NEDOS", "3001 energies for a smooth DOS"},
       {"LVHAR", "LOCPOT with the electrostatic (Hartree + ionic) potential: the work function"},
-      {"IDIPOL", "3: dipole correction along z, ENERGY only — no LDIPOL: on low-work-function surfaces (OH) LDIPOL lets "
+      {"IDIPOL", "3: dipole correction along z, ENERGY only, no LDIPOL: on low-work-function surfaces (OH) LDIPOL lets "
                  "electrons leak into the vacuum and the energy runs away"},
       {"DIPOL", "the centre of the atoms (fractional): where the dipole layer sits"},
       {"MDALGO", "5: CSVR (Bussi) thermostat"},
@@ -152,10 +152,84 @@ std::string incar_why(const std::string& k) {
   return it == w.end() ? "" : it->second;
 }
 
+namespace {
+// what an IVDW value selects ("" when CAPS does not name it)
+std::string ivdw_meaning(int v) {
+  switch (v) {
+    case 0: return "no dispersion correction";
+    case 1: case 10: return "DFT-D2 (Grimme)";
+    case 11: return "DFT-D3 with zero damping";
+    case 12: return "DFT-D3 with Becke–Johnson damping";
+    case 13: return "DFT-D4";
+    case 2: case 20: return "Tkatchenko–Scheffler";
+    case 202: return "many-body dispersion (MBD)";
+    default: return "";
+  }
+}
+// The comment for the value actually written: CAPS's reason when the value is CAPS's default, otherwise what the value
+// means and the default it replaces. incar_why(key) alone describes the defaults (tooltips, --help).
+std::string why_for_value(const std::string& k, const std::string& v, const VaspSettings& s, int atoms, bool d_elements) {
+  const VaspSettings def;
+  auto changed = [](const std::string& meaning, const std::string& dflt) {
+    return (meaning.empty() ? std::string("set by the user") : meaning + ", set by the user") + " (CAPS default " + dflt + ")";
+  };
+  if (k == "ENCUT") {
+    if (!s.encut_note.empty()) return s.encut_note;
+    if (s.encut > 0) return changed("", "1.3 × the largest ENMAX of the POTCARs, for a cell relaxation's Pulay stress");
+    return "plane-wave cutoff (eV)";
+  }
+  if (k == "PREC") return v == def.prec ? incar_why(k) : changed("", def.prec + ": FFT grids fine enough for forces and stress");
+  if (k == "ALGO") {
+    if (v == def.algo) return incar_why(k);
+    const std::string m = v == "Fast" ? "blocked Davidson, then RMM-DIIS" : v == "VeryFast" ? "RMM-DIIS" : v == "All" ? "all bands at once (conjugate gradient)" : "";
+    return changed(m, def.algo + ", blocked Davidson");
+  }
+  if (k == "NELM") return v + " electronic steps before VASP gives up on a step";
+  if (k == "ISMEAR") {
+    if (v == std::to_string(def.ismear)) return incar_why(k);
+    const int m = std::atoi(v.c_str());
+    const std::string what = m == -5 ? "tetrahedron method with Blöchl corrections" : m == -4 ? "tetrahedron method" : m == -1 ? "Fermi–Dirac smearing"
+                           : m > 0 ? "Methfessel–Paxton smearing of order " + v : "";
+    return changed(what, "0, Gaussian: valid for a metallic slab and a molecule");
+  }
+  if (k == "SIGMA") return v + " eV smearing width";
+  if (k == "GGA") {
+    if (v == def.gga) return incar_why(k);
+    const std::string m = v == "PS" ? "PBEsol" : v == "RP" ? "RPBE" : v == "RE" ? "revPBE" : v == "91" ? "PW91" : "";
+    return changed(m, def.gga + ", PBE");
+  }
+  if (k == "IVDW") {
+    const int m = std::atoi(v.c_str());
+    if (m == def.ivdw) return incar_why(k);
+    return changed(ivdw_meaning(m), std::to_string(def.ivdw) + ", " + ivdw_meaning(def.ivdw));
+  }
+  if (k == "LASPH") return v == ".TRUE." ? incar_why(k) : changed("spherical contributions only inside the PAW spheres", ".TRUE.");
+  if (k == "LMAXMIX") {
+    const std::string auto_v = d_elements ? "4" : "2";
+    if (s.lmaxmix <= 0) return d_elements ? "4: d elements present (charge-density mixing up to l = 4)" : "2: no d elements (charge-density mixing up to l = 2)";
+    return changed("charge-density mixing up to l = " + v, auto_v + (d_elements ? " with these d elements" : " without d elements"));
+  }
+  if (k == "ISPIN") {
+    if (v == "1") return v == std::to_string(def.ispin) ? incar_why(k) : "1: non-magnetic";
+    if (v == "2") return "2: spin-polarised; VASP starts every atom at 1 µB unless MAGMOM is set (CAPS default 1, non-magnetic)";
+    return changed("", "1, non-magnetic");
+  }
+  if (k == "LREAL") {
+    if (s.lreal.empty()) return (atoms <= 40 ? ".FALSE.: exact projection, up to 40 atoms" : "Auto: real-space projection, above 40 atoms") + std::string(" (one value for every run of an adsorption set)");
+    const std::string m = v == ".FALSE." ? "exact projection in reciprocal space" : v == "Auto" ? "real-space projection" : "";
+    return (m.empty() ? std::string("chosen") : m + ",") + " one value for every run of the set (CAPS default .FALSE. up to 40 atoms, else Auto)";
+  }
+  return incar_why(k);
+}
+}  // namespace
+
 std::vector<IncarLine> incar_lines(const std::string& kind, int n, bool gamma, double encut, double dipz, const VaspSettings& s, const ClusterRule& par,
                                    const std::vector<int>& elements) {
+  if (s.ispin != 1 && s.ispin != 2) throw std::invalid_argument("ISPIN is 1 (non-magnetic) or 2 (spin-polarised), not " + std::to_string(s.ispin));
   std::vector<IncarLine> L;
-  auto add = [&](const std::string& k, const std::string& v) { L.push_back({k, v, incar_why(k)}); };
+  bool d = false;
+  for (int z : elements) d |= is_d_element(z);
+  auto add = [&](const std::string& k, const std::string& v) { L.push_back({k, v, why_for_value(k, v, s, n, d)}); };
   add("ENCUT", fmt("%g", encut));
   add("PREC", s.prec);
   add("ALGO", s.algo);
@@ -166,8 +240,6 @@ std::vector<IncarLine> incar_lines(const std::string& kind, int n, bool gamma, d
   add("GGA", s.gga);
   if (s.ivdw) add("IVDW", std::to_string(s.ivdw));
   add("LASPH", s.lasph ? ".TRUE." : ".FALSE.");
-  bool d = false;
-  for (int z : elements) d |= is_d_element(z);
   add("LMAXMIX", std::to_string(s.lmaxmix > 0 ? s.lmaxmix : (d ? 4 : 2)));
   add("ISPIN", std::to_string(s.ispin));
   add("LREAL", !s.lreal.empty() ? s.lreal : (n <= 40 ? ".FALSE." : "Auto"));
@@ -431,13 +503,39 @@ VaspSetResult write_vasp_set(const System& s0, const std::string& dir, const Vas
   write_vasp_poscar(s, join(dir, "POSCAR"), comment);
   r.files.push_back("POSCAR");
   const auto map = potcar_map(o.data_dir);
-  double encut = o.settings.encut;
+  VaspSettings st = o.settings;   // st.encut_note: the INCAR comment on ENCUT, from where its value came
+  double encut = st.encut;
+  const std::string pulay = ": high enough for a cell relaxation (Pulay stress)";
   if (!o.pp_dir.empty()) {
     const auto p = assemble_potcar(species, o.pp_dir, map, join(dir, "POTCAR"));
     r.files.push_back("POTCAR");
-    if (encut <= 0) encut = p.encut, r.notes.push_back("ENCUT " + fmt("%g", encut) + " eV = 1.3 × ENMAX " + fmt("%g", p.encut / 1.3) + " eV of the POTCARs");
+    if (encut <= 0 && !p.enmax.empty()) {
+      // the POTCARs' own largest ENMAX, not one back-computed from the rounded cutoff
+      const size_t top = size_t(std::max_element(p.enmax.begin(), p.enmax.end()) - p.enmax.begin());
+      const std::string mx = fmt("%g", p.enmax[top]), of = top < p.species.size() ? " of " + p.species[top] : "";
+      encut = p.encut;
+      r.notes.push_back("ENCUT " + fmt("%g", encut) + " eV = 1.3 × ENMAX " + mx + " eV" + of + " (the POTCARs)");
+      st.encut_note = "1.3 × the largest ENMAX of the POTCARs (" + mx + " eV" + of + ")" + pulay;
+    }
   }
-  if (encut <= 0) encut = 520, r.notes.push_back("ENCUT 520 eV (no POTCAR directory: 1.3 × 400 eV of C, N, O, F)");
+  if (encut <= 0) {
+    // no POTCAR directory: 1.3 × the largest ENMAX of data/dft/enmax.json, when every element is there
+    const auto tab = enmax_table(o.data_dir);
+    std::string missing, top;
+    double mx = 0;
+    for (const auto& e : species) {
+      const auto it = tab.find(e);
+      if (it == tab.end()) missing += (missing.empty() ? "" : ", ") + e;
+      else if (it->second > mx) mx = it->second, top = e;
+    }
+    if (missing.empty() && mx > 0) {
+      encut = std::round(1.3 * mx), r.notes.push_back("ENCUT " + fmt("%g", encut) + " eV = 1.3 × ENMAX " + fmt("%g", mx) + " eV of " + top + " (data/dft/enmax.json; no POTCAR directory)");
+      st.encut_note = "1.3 × the largest ENMAX (" + fmt("%g", mx) + " eV of " + top + ", data/dft/enmax.json; no POTCAR directory)" + pulay;
+    } else {
+      encut = 520, r.notes.push_back("ENCUT 520 eV: no POTCAR directory and no ENMAX for " + missing + " in data/dft/enmax.json; give --pp-dir or --encut");
+      st.encut_note = "520 eV fallback: no POTCAR directory and no ENMAX for " + missing + "; give --pp-dir or --encut";
+    }
+  }
   r.encut = encut;
   const bool dip = o.settings.dipole == 1 || (o.settings.dipole < 0 && o.asymmetric);
   double dz = -1;
@@ -451,7 +549,7 @@ VaspSetResult write_vasp_set(const System& s0, const std::string& dir, const Vas
   std::vector<int> els;
   for (const auto& a : s.atoms) els.push_back(a.element);
   auto write_incar = [&](const std::string& kind, const std::string& file) {
-    spit(join(dir, file), incar_text(o.label, incar_lines(kind, n, o.gamma_only, encut, dz, o.settings, r.parallel, els)));
+    spit(join(dir, file), incar_text(o.label, incar_lines(kind, n, o.gamma_only, encut, dz, st, r.parallel, els)));
     r.files.push_back(file);
   };
   if (std::find(stages.begin(), stages.end(), "01_cell") != stages.end()) write_incar("cell", "INCAR.cell");
@@ -474,6 +572,26 @@ std::vector<VaspSetResult> write_adsorption_set(const AdsorbSet& set, const std:
   o.settings.lreal = "Auto";          // one value for every run of the set
   o.settings.ediff_relax = "1E-5";
   o.settings.dipole = 1;              // identical dipole settings everywhere: comparable energies
+  if (o.settings.encut <= 0) {
+    // one ENCUT for slab, molecule and complexes (comparable energies): from the elements of all of them
+    std::vector<std::string> sp = species_of(set.slab);
+    for (const auto& e : species_of(set.molecule)) if (std::find(sp.begin(), sp.end(), e) == sp.end()) sp.push_back(e);
+    const std::string same = "; one cutoff for the slab, the molecule and every complex";
+    double mx = 0;
+    if (!o.pp_dir.empty()) {
+      const auto p = assemble_potcar(sp, o.pp_dir, potcar_map(o.data_dir));
+      for (double e : p.enmax) mx = std::max(mx, e);
+      if (mx > 0) o.settings.encut = p.encut, o.settings.encut_note = "1.3 × the largest ENMAX of the POTCARs (" + fmt("%g", mx) + " eV)" + same;
+    }
+    if (o.settings.encut <= 0) {
+      const auto tab = enmax_table(o.data_dir);
+      mx = 0;
+      std::string missing;
+      for (const auto& e : sp) { const auto it = tab.find(e); if (it == tab.end()) missing += (missing.empty() ? "" : ", ") + e; else mx = std::max(mx, it->second); }
+      if (missing.empty() && mx > 0) o.settings.encut = std::round(1.3 * mx), o.settings.encut_note = "1.3 × the largest ENMAX (" + fmt("%g", mx) + " eV, data/dft/enmax.json; no POTCAR directory)" + same;
+      else o.settings.encut = 520, o.settings.encut_note = "520 eV fallback: no POTCAR directory and no ENMAX for " + missing + " in data/dft/enmax.json; give --pp-dir or --encut" + same;
+    }
+  }
   auto one = [&](const System& s, const std::string& name, bool gamma, const std::string& out_level) {
     VaspSetOptions q = o;
     q.label = name;
@@ -857,7 +975,11 @@ std::vector<IncarLine> relax_incar_lines(const RelaxStep& st, int n, const Relax
   add("PREC", "Accurate", incar_why("PREC"));
   add("ALGO", "Normal", incar_why("ALGO"));
   add("GGA", "PE", incar_why("GGA"));
-  if (o.ivdw) add("IVDW", std::to_string(o.ivdw), "12: DFT-D3 with Becke–Johnson damping; polymer crystals are held together by dispersion");
+  if (o.ivdw) {
+    const std::string m = ivdw_meaning(o.ivdw);
+    add("IVDW", std::to_string(o.ivdw), o.ivdw == 12 ? "12: DFT-D3 with Becke–Johnson damping; polymer crystals are held together by dispersion"
+                                                     : (m.empty() ? "set by the user" : m + ", set by the user") + std::string(" (CAPS default 12, DFT-D3 with Becke–Johnson damping)"));
+  }
   add("LASPH", ".TRUE.", incar_why("LASPH"));
   add("EDIFF", o.ediff, "electronic convergence of each ionic step");
   add("NELM", "120", incar_why("NELM"));

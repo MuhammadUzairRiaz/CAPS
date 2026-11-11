@@ -18,6 +18,25 @@ namespace caps {
 
 namespace {
 
+// Every edit edit_script() handles, in dispatch order. An edit is accepted only when it
+// is listed here, so the dispatch chain and the "unknown edit" message stay in step.
+constexpr const char* kEdits[] = {
+    "element", "delete", "bond", "unbond", "addh", "attach", "ring", "spiro", "insert", "join",
+    "length", "angle", "torsion", "invert", "config", "rotate", "mirror", "move", "clean",
+    "tacticity", "supercell", "primitive", "niggli", "conventional", "redefine", "vacuum", "nanowire"};
+
+bool known_edit(const std::string& v) {
+  for (const char* e : kEdits)
+    if (v == e) return true;
+  return false;
+}
+
+std::string edit_names() {
+  std::string s;
+  for (const char* e : kEdits) s += (s.empty() ? "" : ", ") + std::string(e);
+  return s;
+}
+
 std::vector<std::string> words(const std::string& t) {
   std::istringstream in(t);
   std::vector<std::string> w;
@@ -113,6 +132,7 @@ std::vector<std::string> edit_script(System& s, const std::string& script) {
     };
     try {
       std::string done;
+      if (!known_edit(v)) throw std::invalid_argument("unknown edit '" + v + "' (" + edit_names() + ")");
       if (v == "element") {
         need(3, 3, "element SEL Sym");
         const int z = element_from_symbol(w[2]);
@@ -278,7 +298,7 @@ std::vector<std::string> edit_script(System& s, const std::string& script) {
         s = nanowire(s, o);
         done = std::to_string(s.atoms.size()) + " atoms";
       } else {
-        throw std::invalid_argument("unknown edit '" + v + "' (element, delete, bond, unbond, addh, attach, length, angle, torsion, invert, config, rotate, mirror, move, clean, tacticity, supercell, primitive, niggli, conventional, redefine, vacuum, nanowire)");
+        throw std::logic_error("edit '" + v + "' is listed but has no handler");
       }
       report.push_back(std::to_string(k) + ". " + op + " → " + done);
     } catch (const std::exception& e) {

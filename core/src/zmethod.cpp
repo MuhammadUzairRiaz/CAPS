@@ -173,16 +173,24 @@ ZResult z_method(const System& crystal, const ZMethodOptions& o) {
   if (!first_melt) {
     r.notes.push_back("no run melted: start hotter or run longer");
   } else {
-    r.t_melt = first_melt->temperature, r.e_melt = first_melt->energy;
     for (const auto& p : r.points)
       if (!p.melted && p.energy < first_melt->energy && p.temperature > r.t_superheat) r.t_superheat = p.temperature, r.e_superheat = p.energy;
-    if (r.t_superheat == 0) r.notes.push_back("every run melted: start colder for the crystal branch");
-    else if (r.t_melt >= r.t_superheat) r.notes.push_back("the melted run is not colder than the last crystal: no Z yet (a smaller energy step, or longer runs)");
+    // a Z needs a crystal branch below the first melted energy and a melted run colder than its hottest crystal;
+    // without that dip the first melted run's temperature is not a melting point
+    const bool z = r.t_superheat > 0 && first_melt->temperature < r.t_superheat;
+    if (r.t_superheat == 0) r.notes.push_back("every run melted: start colder for the crystal branch; no T_m");
+    else if (!z) r.notes.push_back("the melted run is not colder than the last crystal: no Z yet (a smaller energy step, or longer runs)");
     bool late = false;
     for (const auto& p : r.points)
       if (!p.melted && p.energy > first_melt->energy) late = true;
     if (late) r.notes.push_back("a crystal run above the first melted energy: the runs are too short for melting to start reliably");
-    r.notes.push_back("superheating limit T_LS " + std::to_string(int(std::lround(r.t_superheat))) + " K, melting T_m " + std::to_string(int(std::lround(r.t_melt))) + " K at the crystal's volume");
+    if (z) {
+      r.t_melt = first_melt->temperature, r.e_melt = first_melt->energy;
+      r.notes.push_back("superheating limit T_LS " + std::to_string(int(std::lround(r.t_superheat))) + " K, melting T_m " + std::to_string(int(std::lround(r.t_melt))) + " K at the crystal's volume");
+    } else if (r.t_superheat > 0) {
+      r.notes.push_back("hottest crystal " + std::to_string(int(std::lround(r.t_superheat))) + " K (a lower bound on T_LS), first melted run " +
+                        std::to_string(int(std::lround(first_melt->temperature))) + " K; no T_m");
+    }
   }
   return r;
 }
@@ -199,7 +207,7 @@ Json z_method_json(const ZResult& r) {
   }
   for (const auto& v : r.g) g.push_back(arr({v[0], v[1], v[2]}));
   for (const auto& x : r.notes) nt.push_back(x);
-  j["points"] = pts, j["t_melt"] = r.t_melt, j["t_superheat"] = r.t_superheat, j["e_superheat"] = r.e_superheat, j["e_melt"] = r.e_melt;
+  j["points"] = pts, j["z_found"] = r.t_melt > 0, j["t_melt"] = r.t_melt, j["t_superheat"] = r.t_superheat, j["e_superheat"] = r.e_superheat, j["e_melt"] = r.e_melt;
   j["g"] = g, j["order0"] = r.order0, j["notes"] = nt;
   return j;
 }

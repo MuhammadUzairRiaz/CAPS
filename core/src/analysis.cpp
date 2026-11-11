@@ -106,6 +106,10 @@ std::vector<MoleculeShape> molecule_shapes(const System& s) {
 }
 
 std::vector<std::pair<double, double>> rdf(const System& s, int ea, int eb, double rmax, double dr, bool inter_only) {
+  // !(x > 0) also rejects NaN; a bin count past a million is a mistyped --dr, not a histogram
+  if (!(dr > 0) || !std::isfinite(dr)) throw std::invalid_argument("rdf: the bin width dr must be a number greater than 0 (got " + std::to_string(dr) + ")");
+  if (!(rmax > 0) || !std::isfinite(rmax)) throw std::invalid_argument("rdf: r_max must be a number greater than 0 (got " + std::to_string(rmax) + ")");
+  if (rmax / dr > 1e6) throw std::invalid_argument("rdf: r_max / dr gives more than a million bins; use a larger dr");
   const int nb = static_cast<int>(rmax / dr);
   std::vector<double> h(nb, 0);
   std::vector<uint32_t> A, B;
@@ -141,12 +145,52 @@ std::vector<std::pair<double, double>> rdf(const System& s, int ea, int eb, doub
         }
       });
     }
+  } else if (v > 0) {
+    // rmax reaches past half the cell: every periodic image within rmax counts, not only the nearest one (a small
+    // crystal cell has most of its shells in the neighbouring cells, and an atom's own images are neighbours too)
+    const Cell& c = s.cell;
+    const Vec3 ra = cross(c.b, c.c) * (1 / v), rb = cross(c.c, c.a) * (1 / v), rc = cross(c.a, c.b) * (1 / v);
+    const Vec3 rec[3] = {ra, rb, rc}, lat[3] = {c.a, c.b, c.c};
+    double reach[3], images = 1;
+    for (int k = 0; k < 3; ++k) {
+      reach[k] = c.periodic[size_t(k)] ? rmax * norm(rec[k]) : 0;   // rmax over the spacing of the lattice planes
+      images *= 2 * std::ceil(reach[k]) + 1;
+    }
+    if (double(A.size()) * double(B.size()) * images > 4e9)   // a few seconds per frame
+      throw std::invalid_argument("rdf: r_max = " + std::to_string(rmax) + " Å reaches about " + std::to_string(long(images)) +
+                                  " periodic images of this cell for every pair, too many to count; use a smaller r_max");
+    for (uint32_t i : A)
+      for (uint32_t j : B) {
+        if (inter_only && mol[i] == mol[j]) continue;
+        Vec3 d = s.atoms[j].pos - s.atoms[i].pos;
+        int lo[3], hi[3];
+        for (int k = 0; k < 3; ++k) {
+          double f = dot(d, rec[k]);
+          if (c.periodic[size_t(k)]) {
+            const double sh = std::round(f);
+            f -= sh;
+            d = d - lat[k] * sh;
+          }
+          // images t with |f + t| ≤ reach along this axis (a point within rmax is within rmax of every plane through i)
+          lo[k] = int(std::ceil(-reach[k] - f));
+          hi[k] = int(std::floor(reach[k] - f));
+          if (!c.periodic[size_t(k)]) lo[k] = hi[k] = 0;
+        }
+        for (int t0 = lo[0]; t0 <= hi[0]; ++t0)
+          for (int t1 = lo[1]; t1 <= hi[1]; ++t1)
+            for (int t2 = lo[2]; t2 <= hi[2]; ++t2) {
+              if (i == j && t0 == 0 && t1 == 0 && t2 == 0) continue;
+              const double r = norm(d + lat[0] * double(t0) + lat[1] * double(t1) + lat[2] * double(t2));
+              if (r < rmax) { const int k = static_cast<int>(r / dr); if (k < nb) h[k] += 1; }   // rmax / dr rounds down
+            }
+      }
   } else {
+    // no cell: plain distances (the density below is zero, so g(r) needs a periodic cell to mean anything)
     for (uint32_t i : A)
       for (uint32_t j : B) {
         if (i == j) continue;
         if (inter_only && mol[i] == mol[j]) continue;
-        const double r = norm(s.cell.minimum_image(s.atoms[j].pos - s.atoms[i].pos));
+        const double r = norm(s.atoms[j].pos - s.atoms[i].pos);
         if (r < rmax) { const int k = static_cast<int>(r / dr); if (k < nb) h[k] += 1; }   // rmax / dr rounds down
       }
   }
@@ -220,6 +264,20 @@ std::vector<uint32_t> diameter_path(const std::vector<std::vector<uint32_t>>& nb
   return path;
 }
 
+// Sum of the minimum-image bond vectors around a closed loop of bonded atoms (last atom bonded to the first). Zero for
+// an ordinary ring; a lattice vector when the loop is a chain that closes on itself through the periodic cell.
+Vec3 loop_closure(const System& s, const std::vector<uint32_t>& loop) {
+  Vec3 sum{0, 0, 0};
+  for (size_t k = 0; k < loop.size(); ++k) {
+    const uint32_t a = loop[k], b = loop[(k + 1) % loop.size()];
+    sum = sum + s.cell.minimum_image(s.atoms[b].pos - s.atoms[a].pos);
+  }
+  return sum;
+}
+
+// A loop whose closure is at least this long (Å) runs through the cell; a real ring closes to within rounding.
+constexpr double kPeriodicClosure = 1.0;
+
 }  // namespace
 
 std::vector<std::vector<uint32_t>> backbones(const System& s, int min_atoms) {
@@ -230,17 +288,17 @@ std::vector<std::vector<uint32_t>> backbones(const System& s, int min_atoms) {
   const auto ring = ring_atoms(nb, heavy);
   std::vector<char> chain(n);
   for (size_t i = 0; i < n; ++i) chain[i] = heavy[i] && !ring[i];
-  int nm = 0;
-  const auto mol = s.molecules(&nm);
-  std::vector<std::vector<uint32_t>> members(nm);
-  for (size_t i = 0; i < n; ++i)
-    if (heavy[i]) members[mol[i]].push_back(uint32_t(i));
+  const auto mol = s.molecules();
   std::vector<std::vector<uint32_t>> out;
-  // chains bonded through the cell (a crystal's infinite chains): a component of heavy atoms that is one long cycle
-  // (every atom with two heavy neighbours, at least 12 of them) is walked in order and cut once
+  // Chains bonded through the cell (a crystal's infinite chains): in a component of heavy atoms whose cycle atoms form
+  // one simple cycle (every cycle atom with two cycle neighbours; side groups such as iPP's methyls hang off it) and
+  // whose bond vectors add up to a lattice vector, the cycle is walked in order and cut once, and the whole component
+  // is used up. A ring or a cyclic molecule closes on itself and is left to the ordinary search below.
   std::vector<char> in_cycle(n, 0);
-  {
+  if (s.cell.valid()) {
     std::vector<char> seen(n, 0);
+    auto on_cycle = [&](uint32_t w) { return heavy[w] && ring[w]; };
+    auto cycle_deg = [&](uint32_t a) { int k = 0; for (uint32_t w : nb[a]) k += on_cycle(w) ? 1 : 0; return k; };
     for (uint32_t i = 0; i < n; ++i) {
       if (!heavy[i] || seen[i]) continue;
       std::vector<uint32_t> comp{i};
@@ -248,43 +306,54 @@ std::vector<std::vector<uint32_t>> backbones(const System& s, int min_atoms) {
       for (size_t h = 0; h < comp.size(); ++h)
         for (uint32_t w : nb[comp[h]])
           if (heavy[w] && !seen[w]) { seen[w] = 1; comp.push_back(w); }
-      auto heavy_deg = [&](uint32_t a) { int k = 0; for (uint32_t w : nb[a]) k += heavy[w] ? 1 : 0; return k; };
-      if (comp.size() < 12 || !std::all_of(comp.begin(), comp.end(), [&](uint32_t a) { return heavy_deg(a) == 2; })) continue;
-      std::vector<uint32_t> path{comp[0]};
-      uint32_t prev = comp[0], cur = comp[0];
-      for (uint32_t w : nb[cur]) if (heavy[w]) { cur = w; break; }
-      while (cur != comp[0] && path.size() <= comp.size()) {
+      std::vector<uint32_t> cyc;
+      for (uint32_t a : comp) if (ring[a]) cyc.push_back(a);
+      if (cyc.size() < 3 || !std::all_of(cyc.begin(), cyc.end(), [&](uint32_t a) { return cycle_deg(a) == 2; })) continue;
+      std::vector<uint32_t> path{cyc[0]};
+      uint32_t prev = cyc[0], cur = cyc[0];
+      for (uint32_t w : nb[cur]) if (on_cycle(w)) { cur = w; break; }
+      while (cur != cyc[0] && path.size() <= cyc.size()) {
         path.push_back(cur);
         uint32_t next = cur;
-        for (uint32_t w : nb[cur]) if (heavy[w] && w != prev) { next = w; break; }
+        for (uint32_t w : nb[cur]) if (on_cycle(w) && w != prev) { next = w; break; }
         prev = cur;
         cur = next;
       }
-      if (path.size() != comp.size()) continue;
-      for (uint32_t a : path) in_cycle[a] = 1;
+      if (path.size() != cyc.size()) continue;
+      const Vec3 closure = loop_closure(s, path);
+      if (dot(closure, closure) < kPeriodicClosure * kPeriodicClosure) continue;
+      for (uint32_t a : comp) in_cycle[a] = 1;
       if (int(path.size()) >= min_atoms) out.push_back(std::move(path));
     }
   }
-  for (const auto& m0 : members) {
-    std::vector<uint32_t> m;
-    for (uint32_t a : m0) if (!in_cycle[a]) m.push_back(a);
+  // The other heavy atoms, grouped by molecule and, within a molecule, by bonded piece: a crystal or data file that puts
+  // every chain in one molecule ID still gives one backbone per chain. Paths stay inside their group.
+  std::vector<char> grouped(n, 0), in_group(n, 0), group_chain(n, 0), seen(n, 0);
+  for (uint32_t i = 0; i < n; ++i) {
+    if (!heavy[i] || in_cycle[i] || grouped[i]) continue;
+    std::vector<uint32_t> m{i};
+    grouped[i] = 1;
+    for (size_t h = 0; h < m.size(); ++h)
+      for (uint32_t w : nb[m[h]])
+        if (heavy[w] && !in_cycle[w] && !grouped[w] && mol[w] == mol[i]) { grouped[w] = 1; m.push_back(w); }
     if (int(m.size()) < min_atoms) continue;
-    // longest non-ring path over the molecule's non-ring components
+    for (uint32_t a : m) { in_group[a] = 1; group_chain[a] = chain[a]; }
+    // longest non-ring path over the group's non-ring components
     std::vector<uint32_t> best;
-    std::vector<char> seen(n, 0);
-    for (uint32_t i : m) {
-      if (!chain[i] || seen[i]) continue;
-      auto p = diameter_path(nb, chain, i);
+    for (uint32_t a : m) {
+      if (!group_chain[a] || seen[a]) continue;
+      auto p = diameter_path(nb, group_chain, a);
       // mark the component
-      std::vector<uint32_t> q{i};
-      seen[i] = 1;
+      std::vector<uint32_t> q{a};
+      seen[a] = 1;
       for (size_t h = 0; h < q.size(); ++h)
         for (uint32_t w : nb[q[h]])
-          if (chain[w] && !seen[w]) { seen[w] = 1; q.push_back(w); }
+          if (group_chain[w] && !seen[w]) { seen[w] = 1; q.push_back(w); }
       if (p.size() > best.size()) best = std::move(p);
     }
-    const auto full = diameter_path(nb, heavy, m[0]);
+    const auto full = diameter_path(nb, in_group, m[0]);
     if (best.size() * 2 < full.size()) best = full;   // rings in the main chain
+    for (uint32_t a : m) { in_group[a] = 0; group_chain[a] = 0; }
     if (int(best.size()) >= min_atoms) out.push_back(std::move(best));
   }
   return out;
@@ -302,6 +371,7 @@ InternalDistances internal_distances(const System& s) {
   double b2 = 0;
   long nb = 0;
   std::vector<Vec3> x;
+  std::vector<std::vector<uint32_t>> nbr;
   for (const auto& p : bb) {
     // Consecutive backbone atoms are bonded: chain minimum-image bond vectors so a chain that crosses the cell
     // (or runs through it as an infinite crystal chain) is measured unwrapped, with no bond spanning the box.
@@ -314,6 +384,15 @@ InternalDistances internal_distances(const System& s) {
         ++cnt[j - i];
       }
     r.r2_end += dot(x.back() - x.front(), x.back() - x.front());
+    // a chain that closes on itself through the cell (last atom bonded to the first) is infinite: its end-to-end
+    // distance is one period of the crystal, not a coil size
+    if (p.size() >= 3) {
+      if (nbr.empty()) nbr = s.neighbours();
+      if (std::find(nbr[p.front()].begin(), nbr[p.front()].end(), p.back()) != nbr[p.front()].end()) {
+        const Vec3 c = loop_closure(s, p);
+        if (dot(c, c) >= kPeriodicClosure * kPeriodicClosure) ++r.periodic;
+      }
+    }
   }
   b2 = cnt[1] ? sum[1] / cnt[1] : 0;
   nb = cnt[1];

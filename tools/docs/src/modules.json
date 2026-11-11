@@ -782,7 +782,7 @@
      ]
     }
    ],
-   "cli": "caps surface quartz.cif -o slab.data --hkl 0,0,1 --layers 3 --vacuum 15 --list\ncaps interface quartz.cif -o film.data --units '*CC(C)=CC*' --film 30 \\\n    --film-density 0.9 --chains 8 --dp 10\ncaps md film.data -o film_md.data --slab 3 --steps 5000",
+   "cli": "caps surface quartz.cif -o slab.data --hkl 0,0,1 --layers 3 --vacuum 15 --list\ncaps interface quartz.cif -o film.data --units '*CC(C)=CC*' --film 30 \\\n    --film-density 0.9 --supercell 6,4 --dp 10\ncaps md film.data -o film_md.data --slab 3 --steps 5000",
    "next": [
     "force-field",
     "minimise"
@@ -896,11 +896,11 @@
     {
      "t": "Equilibrate on a cluster",
      "d": [
-      "`caps semicrystalline --lammps-input` writes NVT with the crystal tethered, then NPT with each axis on its own."
+      "`caps semicrystalline --lammps-input` writes a minimisation, NVT with the crystal tethered, then NPT with each axis on its own. Because the deck minimises the cell itself, `--no-relax` skips the relaxation in CAPS, which for a library-size cell (about 14,000 atoms for nylon 6) takes tens of minutes on one thread."
      ]
     }
    ],
-   "cli": "caps semicrystalline --polymer list\ncaps semicrystalline --polymer nylon6-alpha -o nylon6.data \\\n    --lammps-input nylon6.in",
+   "cli": "caps semicrystalline --polymer list\ncaps semicrystalline --polymer nylon6-alpha -o nylon6.data \\\n    --lammps-input nylon6.in --no-relax",
    "next": [
     "force-field",
     "minimise"
@@ -928,7 +928,7 @@
     {
      "t": "Pick the force field and the charges",
      "d": [
-      "Choose it in [[Force field]]. [[Charges]] defaults to [[Automatic (force field, else Gasteiger)]]; you can also take them from the force field, Gasteiger–Marsili, QEq, OPLS bond increments, or keep the file's own charges."
+      "Choose it in [[Force field]]. [[Charges]] defaults to [[Automatic (force field, else Gasteiger)]]; you can also take them from the force field, Gasteiger–Marsili or QEq, or keep the file's own charges."
      ]
     },
     {
@@ -1450,7 +1450,7 @@
     {
      "t": "Density fields for larger morphologies",
      "d": [
-      "**As density fields** runs the same molecules and χ as Gaussian chains on a grid (dynamic mean-field density functional theory): choose a 2D or 3D grid, the steps and the noise Ω, then [[Fields]]. Keep χ per bead pair near 1 or below and chains of 20 beads or fewer on these grids. There is no shear, mask or electrostatics in this version."
+      "**As density fields** runs the same molecules and χ as Gaussian chains on a grid (dynamic mean-field density functional theory): choose a 2D or 3D grid, the steps and the noise Ω, then [[Fields]]. Keep χ per bead pair near 1 or below and chains of 20 beads or fewer on these grids. A narrower interface than that, a/√(6χ) under about a third of a grid spacing, makes the run warn and can empty cells. A 3D grid takes far longer than a 2D one: start with nz 1, since the default 32 × 32 × 32 grid for 2000 steps takes tens of minutes on one core. There is no shear, mask or electrostatics in this version."
      ]
     },
     {
@@ -1463,7 +1463,7 @@
    "next": [
     "analyze"
    ],
-   "cli": "caps dpd --molecules 'AAAABBBB:300@shell:in; C:9000' \\\n    --regions 'core droplet r=3 prio=2; shell shell r=5 in=3 prio=1' --box 16 --chi AB=5 -o dpd.xyz\ncaps fields --molecules 'A8B8:1' --chi AB=1.9 --grid 64,64,1 --steps 2000 --vtk fields.vtk"
+   "cli": "caps dpd --molecules 'AAAABBBB:300@shell:in; C:9000' \\\n    --regions 'core droplet r=3 prio=2; shell shell r=5 in=3 prio=1' --box 16 --chi AB=5 -o dpd.xyz\ncaps fields --molecules 'A8B8:1' --chi AB=0.8 --grid 32,32,1 --steps 2000 --vtk fields.vtk"
   },
   {
    "slug": "adsorption",
@@ -1573,7 +1573,7 @@
     {
      "t": "Choose the method",
      "d": [
-      "[[Green–Kubo (heat-flux autocorrelation, NVE)]] or [[Reverse NEMD (Müller-Plathe exchanges)]]. Set T, the NVT run before sampling, the sampled time, the time step, how often to sample and the correlation time. NEMD also takes the flux axis, the number of slabs and how often kinetic energy is exchanged."
+      "[[Green–Kubo (heat-flux autocorrelation, NVE)]] or [[Reverse NEMD (Müller-Plathe exchanges)]]. Set T, the NVT run before sampling, the sampled time, the time step, how often to sample and the correlation time. NEMD also takes the flux axis, the number of slabs (an even number, at least 10) and how often kinetic energy is exchanged. NEMD works with any force field. Green–Kubo run here uses CAPS's own heat flux, which takes harmonic bonds and angles, Fourier torsions and impropers and 12-6 Lennard-Jones with damped shifted force Coulomb; for other terms (class II, UFF angles, Buckingham, many-body potentials) choose NEMD or write the LAMMPS inputs."
      ]
     },
     {
@@ -1610,7 +1610,7 @@
      ]
     }
    ],
-   "cli": "caps thermal cell.data --dimensionality 3d --method gk --temp 300 \\\n    --lammps-input kappa.in          # only the inputs; add --ps to run here too\ncaps phonons pe-orthorhombic.cif --ff oplsaa2024 --csv pe_phonons\ncaps qha pe-orthorhombic.cif --ff oplsaa2024 --mode axes --temps 0,100,200,300\ncaps dielectric periclase.cif --ff catlow1976-mgo\ncaps zmelt crystal.cif --ff FF.json --temps 600,1200,1800,2400 --bisect 3",
+   "cli": "caps thermal cell.data --dimensionality 3d --method gk --temp 300 \\\n    --lammps-input kappa.in --lammps-eq-ps 100 --lammps-ps 2000   # only the inputs; add --ps to run here too\ncaps phonons pe-orthorhombic.cif --ff oplsaa2024 --csv pe_phonons\ncaps qha pe-orthorhombic.cif --ff oplsaa2024 --mode axes --temps 0,100,200,300\ncaps dielectric periclase.cif --ff catlow1976-mgo\ncaps zmelt crystal.cif --ff FF.json --temps 600,1200,1800,2400 --bisect 3",
    "python": "import caps\n\npe = caps.open(\"pe-orthorhombic.cif\")\npe.field.assign(\"oplsaa2024\")\nprint(pe.phonons()[\"sound\"])            # m/s along a*, b*, c*\n\nmgo = caps.open(\"periclase.cif\")\nmgo.field.assign(\"catlow1976-mgo\")\nprint(mgo.dielectric()[\"eps0_principal\"])\nfor row in mgo.qha(temperatures=(0, 300, 600))[\"rows\"]:\n    print(row[\"T\"], row[\"volume\"], row[\"alpha_V\"])",
    "next": [
     "scattering",
@@ -1680,7 +1680,7 @@
    "tips": [
     "Each DFT page has a [[Copy]] button with the `caps` command line for the same step."
    ],
-   "cli": "caps sheet --preset Ti3C2 -o ti3c2.vasp\ncaps terminate ti3c2.vasp --top O:0.5,OH:0.25,F:0.25 --supercell 3x3 -o term.vasp\ncaps validate term.vasp --expect Ti3C2O2\ncaps adsorb-dft term.vasp --supercell 5x5 --smiles 'O=C=O' --out ads/\ncaps vasp-set term.vasp --out sets/term --profile slurm-workspace\ncaps vasp-analyze summary",
+   "cli": "caps sheet --preset Ti3C2 -o ti3c2.vasp\ncaps terminate ti3c2.vasp --top O:0.5,OH:0.25,F:0.25 --supercell 3x3 -o term.vasp\ncaps validate term.vasp\ncaps adsorb-dft term.vasp --smiles 'O=C=O' --out ads/\ncaps vasp-set term.vasp --out sets/term --profile slurm-workspace\ncaps vasp-analyze summary",
    "next": [
     "jobs"
    ],
@@ -1763,7 +1763,7 @@
      "d": [
       "**Glass transition**: cooling from 500 K to 200 K in 20 K steps, 100 ps NPT each, Tg from a two-line fit ([[Run cooling]]). [[Open finished runs…]] reads scans that ran elsewhere (`caps tg` folders, `OUT.tg-points.json` or its csv folder); several are replicas, pooled as mean ± SD with error bars, the same as `caps tg --fit RUN RUN …`.",
       "**Diffusion**: the MSD with its fit window and the Yeh–Hummer box-size correction.",
-      "**Mechanics**: uniaxial tension and the stiffness matrix. All under **Modules › Analysis**.",
+      "**Mechanics**: uniaxial tension and the stiffness matrix. All under **Modules › Analysis**. A pull runs 20 ps of NPT first (20,000 steps at 1 fs, each axis at the target pressure) so the box starts stress-free; `caps tensile --equilibrate PS` sets that time, and `--equilibrate 0` skips it for a cell that is already equilibrated.",
       "**Scattering** › [[Powder pattern 2θ]]: the cell's reflections (h k l, d, 2θ, multiplicity, intensity) and I(2θ) for a Cu, Mo, Co, Fe, Cr or Ag tube with the Kα2 line, crystallite size, strain, a temperature factor and preferred orientation, over a measured pattern."
      ]
     }

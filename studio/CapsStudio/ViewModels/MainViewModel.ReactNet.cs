@@ -152,7 +152,8 @@ public sealed partial class MainViewModel
             {
                 target > 0 ? string.Format(inv, "Links between chains: {0} of the {1} asked ({2:F0} %)", links, target, 100.0 * links / target)
                            : string.Format(inv, "Links between chains: {0}", links),
-                string.Format(inv, "Chains {0} · per chain {1:F2} · ν {2:G4} mol/m³ · Mc ≈ {3:G4} g/mol", chains, (double?)j["per_chain"] ?? 0, (double?)j["density"] ?? 0, (double?)j["mc"] ?? 0),
+                links > 0 ? string.Format(inv, "Chains {0} · per chain {1:F2} · ν {2:G4} mol/m³ · Mc ≈ {3:G4} g/mol", chains, (double?)j["per_chain"] ?? 0, (double?)j["density"] ?? 0, (double?)j["mc"] ?? 0)
+                          : string.Format(inv, "Chains {0} · per chain 0.00 · ν 0 mol/m³ · Mc undefined (no links between chains)", chains),
             };
             if (mono > 0) lines.Add(string.Format(inv, "Degree of crosslinking DC {0:F2} % ({1} repeat units)", (double?)j["degree"] ?? 0, mono));
             if (loops > 0) lines.Add($"{loops} links closed within one chain (loops, not counted)");

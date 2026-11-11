@@ -721,6 +721,25 @@ TEST(LammpsData, ForceFieldStylesReadBack) {
   }
 }
 
+// UFF's Fourier bends (sp3 O) and pyramidal inversions (P, ω0 ≠ 0) written at the default six decimals read back: the
+// reader holds UFF's relations between the C's to the rounding the file carries, not to 1e-7 (grow, relax, then md on
+// the file relax wrote, as the coarse-graining tutorial does)
+TEST(LammpsData, UffSixDecimalFileReadsBack) {
+  for (const char* smiles : {"OCCOC(=O)CC", "CP(C)CO"}) {
+    const System s = molecule_box(smiles, 2, 16);
+    const ForceField ff = assign_uff(s);
+    EnergyOptions e;
+    e.cutoff = 7.5;
+    const std::string path = data_path(std::string("uff_six_") + (smiles[0] == 'O' ? "ester" : "phosphine"));
+    write_lammps_data_ff(s, ff, e, path);
+    const System r = read_lammps_data(path);
+    ASSERT_TRUE(r.forcefield) << smiles << ": " << r.forcefield_error;
+    EXPECT_EQ(r.forcefield->angles_x.size(), ff.angles_x.size()) << smiles;
+    EXPECT_EQ(r.forcefield->inversions.size(), ff.inversions.size()) << smiles;
+    expect_same_terms(terms_of(s, ff, e), terms_of(r, *r.forcefield, e), smiles, 1e-4);
+  }
+}
+
 // What CAPS cannot rebuild is refused, not replaced by GAFF or UFF: a force field with DREIDING hydrogen bonds (in the
 // LAMMPS input, not the data file), a file without CAPS's record of its 1-4 weights. A file with no coefficients is a
 // structure and still gets the built-in force field.

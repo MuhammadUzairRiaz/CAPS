@@ -332,9 +332,19 @@ CgMapping cg_mapping(const System& aa, const CgRules& r) {
     for (const auto& b : r.beads) rules.push_back({{b.name}, b.smarts, ""});
     BeadMapReport rep;
     const System cg = map_to_beads(aa, rules, {}, {}, &rep);
+    if (!rep.unmatched.empty()) {
+      uint32_t first = rep.unmatched.front();   // name a heavy atom where there is one
+      for (uint32_t a : rep.unmatched)
+        if (aa.atoms[a].element != 1) { first = a; break; }
+      throw std::invalid_argument(std::to_string(rep.unmatched.size()) + " atoms match no bead fragment (first: atom " + std::to_string(first + 1) + ", " +
+                                  element(aa.atoms[first].element).symbol + "): add a fragment for them");
+    }
     if (!rep.uncovered.empty())
-      throw std::invalid_argument(std::to_string(rep.uncovered.size()) + " atoms are covered by no bead fragment (first: atom " + std::to_string(rep.uncovered.front() + 1) +
-                                  ", " + element(aa.atoms[rep.uncovered.front()].element).symbol + "): add a fragment for them");
+      throw std::invalid_argument("every atom has a bead fragment, but " + std::to_string(rep.molecules_unmapped) + (rep.molecules_unmapped == 1 ? " molecule (" : " molecules (") + std::to_string(rep.uncovered.size()) +
+                                  " atoms, first: atom " + std::to_string(rep.uncovered.front() + 1) + ", " + element(aa.atoms[rep.uncovered.front()].element).symbol + ") " +
+                                  (rep.searches_exhausted ? "could not be tiled within the search budget (2,000,000 steps per molecule)"
+                                                          : "cannot be tiled by them without overlap") +
+                                  ": change the fragments so each molecule splits into whole, non-overlapping beads");
     m.bead_atoms.assign(cg.atoms.size(), {});
     for (uint32_t a = 0; a < n; ++a) of[a] = rep.site_of[a], m.bead_atoms[size_t(of[a])].push_back(a);
     for (const auto& b : cg.atoms) cover_kind.push_back(b.name);

@@ -1050,6 +1050,10 @@ int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, con
   }
   s.has_charges = keep && applied > 0;   // else charges are recomputed for the new chemistry
   s.bonds_from_file = true;
+  if (applied > 0) {   // the terms the input file carried are for the old bonds
+    s.forcefield.reset(), s.topology.reset();
+    s.forcefield_error.clear(), s.forcefield_atoms = 0;
+  }
   // molecules follow the new bonds
   s.has_mol = false;
   const auto mol = s.molecules();
@@ -1531,6 +1535,9 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       }
     } else {
       ++stall;
+      // nothing reacted, so the structure is the previous cycle's: so is its energy (dynamics below replaces it when it runs).
+      // Before any energy was evaluated it stays 0, "not evaluated", as when relaxation is off.
+      if (!rep.cycles.empty()) row.energy = rep.cycles.back().energy;
     }
     if (o.md_ps > 0 && (o.during_md || applied > 0 || stall <= o.stall_cycles)) {
       if (!ff) ff = field_now(cycle);
@@ -1618,8 +1625,11 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
                 rep.reactions, rep.cycles.size(), rep.initial_sites, last.conversion, 100 * last.clusters.largest_fraction, rep.seconds);
   rep.notes.insert(rep.notes.begin(), b);
   if (rep.chains > 0) {
-    std::snprintf(b, sizeof b, "%d links between chains (%d chains; %.2f per chain) · ν = %.4g mol/m³ · Mc ≈ %.4g g/mol", rep.crosslinks, rep.chains,
-                  rep.per_chain, rep.density, rep.mc);
+    if (rep.crosslinks > 0)
+      std::snprintf(b, sizeof b, "%d links between chains (%d chains; %.2f per chain) · ν = %.4g mol/m³ · Mc ≈ %.4g g/mol", rep.crosslinks, rep.chains,
+                    rep.per_chain, rep.density, rep.mc);
+    else   // no strands between junctions: Mc has no value (not 0 g/mol)
+      std::snprintf(b, sizeof b, "0 links between chains (%d chains; 0.00 per chain) · ν = 0 mol/m³ · Mc undefined (no links between chains)", rep.chains);
     rep.notes.insert(rep.notes.begin() + 1, b);
     if (rep.monomers > 0) {
       std::snprintf(b, sizeof b, "degree of crosslinking DC = 2 × links / monomers = %.2f %% (%d repeat units)", rep.degree, rep.monomers);
@@ -1888,7 +1898,7 @@ std::string react_summary_json(const ReactReport& rep, const System& s) {
   j["chain_mass"] = rep.chain_mass;
   j["density"] = rep.density;
   j["per_chain"] = rep.per_chain;
-  j["mc"] = rep.mc;
+  j["mc"] = rep.crosslinks > 0 ? Json(rep.mc) : Json(nullptr);   // null: no links between chains, Mc undefined
   j["monomers"] = double(rep.monomers);
   j["degree"] = rep.degree;
   j["reactions"] = double(rep.reactions);

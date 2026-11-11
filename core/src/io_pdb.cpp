@@ -1,4 +1,7 @@
 // PDB reader (ATOM/HETATM, CRYST1, CONECT, MODEL/ENDMDL) and writer. Fixed columns per the wwPDB v3.3 format.
+// The format has no partial-charge column: columns 79-80 hold an integer formal charge ("1-"), and occupancy and
+// B-factor (55-66) are what other tools read them as. So a PDB neither carries nor brings back partial charges; a
+// command that computes charges writes them to .mol2, .car or .data (caps qeq refuses -o .pdb for that reason).
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -36,6 +39,7 @@ Trajectory read_pdb(const std::string& path) {
   Trajectory tr;
   System cur;
   cur.source_format = "pdb";
+  cur.has_charges = false;   // no partial-charge column (see above): --charges keep on a PDB warns that every atom gets 0
   Cell cell;
   std::vector<Vec3> pos;
   std::unordered_map<long, uint32_t> serial;
@@ -122,6 +126,8 @@ void write_pdb(const System& s, const std::string& path) {
   std::fclose(f);
 }
 
+// Occupancy 1.00 and B-factor 0.00 are placeholders and the formal-charge columns stay blank: atom charges are not
+// written (the format has no place for partial charges).
 void write_pdb_frame(std::FILE* f, const System& s, int model, bool conect) {
   if (model > 0) std::fprintf(f, "MODEL     %4d\n", model);
   if (s.cell.valid()) {

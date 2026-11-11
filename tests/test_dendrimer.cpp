@@ -15,6 +15,9 @@ TEST(Dendrimer, PamamFormulas) {
   build_dendrimer(sp, &r);
   EXPECT_EQ(r.formula, "C22H48N10O4");
   EXPECT_EQ(r.units, 4);
+  EXPECT_EQ(r.counts.dendritic + r.counts.linear, 0);   // one shell, all terminal: Frey's DB is 1, not NaN
+  EXPECT_DOUBLE_EQ(r.counts.db_frey, 1.0);
+  EXPECT_DOUBLE_EQ(r.counts.db_frechet, 1.0);
   sp.generation = 1;
   build_dendrimer(sp, &r);
   EXPECT_EQ(r.formula, "C62H128N26O12");   // + 8 units C5H10N2O

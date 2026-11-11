@@ -215,6 +215,7 @@ Json adsorption_geometry_of(const System& at, const System& slab_poscar) {
     M += element(z).mass;
   }
   com = com * (1.0 / M);
+  if (heavy.empty()) for (size_t k = 0; k < mol.size(); ++k) hmin = std::min(hmin, m[k][2] - plane);   // all-hydrogen molecule (H2)
   r["h_min"] = hmin - 0.0;
   r["h_com"] = com[2] - plane;
   // the anchor: the nitrile N (an N bonded to C under 1.25 Å), else the lowest heavy atom
@@ -224,10 +225,11 @@ Json adsorption_geometry_of(const System& at, const System& slab_poscar) {
     if (at.atoms[mol[k]].element == 7)
       for (size_t q = 0; q < mol.size(); ++q) if (at.atoms[mol[q]].element == 6 && norm(m[q] - m[k]) < 1.25) { kA = k; nitrile = true; break; }
   if (!nitrile) for (size_t k : heavy) if (m[k][2] < m[kA][2]) kA = k;
+  if (heavy.empty()) for (size_t k = 0; k < mol.size(); ++k) if (m[k][2] < m[kA][2]) kA = k;
   double dA = 1e300;
   size_t partner = 0;
   for (size_t j : slab) { const double d = norm(mic_ab(at.cell, at.atoms[j].pos - m[kA])); if (d < dA) dA = d, partner = j; }
-  r["anchor"] = std::string(element(at.atoms[mol[kA]].element).symbol) + (nitrile ? " (nitrile)" : " (lowest heavy atom)");
+  r["anchor"] = std::string(element(at.atoms[mol[kA]].element).symbol) + (nitrile ? " (nitrile)" : heavy.empty() ? " (lowest atom)" : " (lowest heavy atom)");
   r["d_anchor"] = dA;
   r["d_anchor_partner"] = std::string(element(at.atoms[partner].element).symbol);
   // O–H···X hydrogen bonds from surface OH to the anchor
@@ -459,11 +461,18 @@ Json charge_density_difference(const std::string& cx, const std::string& slab_po
   }
   const System at = c.system;
   const auto [mol, slab] = split_molecule(at, read_vasp_poscar(slab_poscar));
+  if (mol.empty()) throw std::runtime_error("cdd: no adsorbate atoms found (the complex has the same composition as the slab POSCAR " + slab_poscar + ")");
+  if (slab.empty()) throw std::runtime_error("cdd: no slab atoms found (the slab POSCAR " + slab_poscar + " shares no atoms with the complex)");
   const double plane = top_plane(at, slab);
+  if (!std::isfinite(plane) || plane < -1e299) throw std::runtime_error("cdd: the slab has no heavy atom to define its top surface");
   double zmol = 1e300;
   for (size_t i : mol) if (at.atoms[i].element != 1) zmol = std::min(zmol, at.atoms[i].pos[2]);
+  if (zmol > 1e299) for (size_t i : mol) zmol = std::min(zmol, at.atoms[i].pos[2]);   // all-hydrogen adsorbate (H2, H atoms)
   const double zmid = 0.5 * (plane + zmol);
-  const int k = int(std::lround(zmid / dz)) % nz;
+  // grid plane of the mid-point, z wrapped into the cell so the index is always defined
+  double zw = std::fmod(zmid, cell.c[2]);
+  if (zw < 0) zw += cell.c[2];
+  const int k = int(std::lround(zw / dz)) % nz;
   Json r = Json::object();
   r["complex"] = cx, r["z_surface"] = plane, r["z_molecule_min"] = zmol, r["z_mid"] = zmid, r["dQ_at_mid"] = cum[size_t((k + nz) % nz)], r["max_abs_drho"] = mx;
   spit(join(cx, "cdd.json"), r.dump(1));

@@ -39,7 +39,7 @@ struct PhononOptions {
   double relax_ftol = 1e-3;
   int relax_iterations = 20000;
   std::array<int, 3> supercell{0, 0, 0};       // repeats (0: each width ≥ 2 × cut-off)
-  size_t max_atoms = 15000;                    // the automatic supercell stays below this
+  size_t max_atoms = 15000;                    // every supercell, given or automatic, stays at or below this
   // the path: points in fractional reciprocal coordinates with labels (empty: Γ X S Y Γ Z R of the cell's axes)
   std::vector<std::array<double, 3>> path;
   std::vector<std::string> labels;

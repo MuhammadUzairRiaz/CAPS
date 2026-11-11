@@ -342,3 +342,64 @@ TEST(Properties, HermanFAlongChosenAxis) {
   EXPECT_NEAR(props[0].extra.at("Herman f along x"), -0.5, 1e-9);
   EXPECT_EQ(props[0].extra.count("Herman f along z"), 0u);
 }
+
+namespace {
+// fcc copper, conventional cell of a = 3.6149 Å repeated n times along each axis
+Trajectory fcc_copper(int n) {
+  const double a = 3.6149;
+  Trajectory t;
+  std::vector<Vec3> pos;
+  for (int i = 0; i < n; ++i)
+    for (int j = 0; j < n; ++j)
+      for (int k = 0; k < n; ++k)
+        for (const Vec3& f : {Vec3{0, 0, 0}, Vec3{0.5, 0.5, 0}, Vec3{0.5, 0, 0.5}, Vec3{0, 0.5, 0.5}}) {
+          Atom at;
+          at.element = 29;
+          at.pos = {(i + f[0]) * a, (j + f[1]) * a, (k + f[2]) * a};
+          t.topology.atoms.push_back(at);
+          pos.push_back(at.pos);
+        }
+  t.topology.cell = cube(n * a);
+  t.positions.push_back(pos);
+  t.cells.push_back(t.topology.cell);
+  t.timesteps.push_back(0);
+  return t;
+}
+}  // namespace
+
+// A 3.6 Å crystal cell: g(r) counts the periodic images, so the first shell sits at a/√2 with 12 neighbours.
+TEST(Properties, RdfOfSmallCrystalCellCountsImages) {
+  const Trajectory t = fcc_copper(1);
+  const auto ps = analyze(t, {"rdf"}, AnalyzeOptions{});
+  const auto& g = get(ps, "rdf");
+  EXPECT_NEAR(g.value, 3.6149 / std::sqrt(2.0), 0.02);
+  EXPECT_NEAR(g.extra.at("coordination number at the first minimum"), 12.0, 1e-3);
+}
+
+// The first X-ray peak of fcc Cu is (111) at 2π√3/a, both in the 4-atom cell and in a supercell (where the
+// reflection must not be averaged with its extinct neighbours).
+TEST(Properties, FirstScatteringPeakOfCopper) {
+  const double q111 = 2 * kPi * std::sqrt(3.0) / 3.6149;
+  for (int n : {1, 4}) {
+    const auto ps = analyze(fcc_copper(n), {"xray", "sq"}, AnalyzeOptions{});
+    EXPECT_NEAR(get(ps, "xray").value, q111, 0.02) << n;
+    EXPECT_NEAR(get(ps, "sq").value, q111, 0.02) << n;
+    EXPECT_NEAR(get(ps, "sq").extra.at("first peak height"), 4.0 * n * n * n, 1e-6) << n;
+  }
+}
+
+// Frames that are rigid translations of each other: U is zero within round-off and no anisotropy is reported.
+TEST(Properties, AdpOfRigidFramesHasNoAnisotropy) {
+  Trajectory t = simple_cubic(3.0, 3);
+  for (int f = 1; f < 6; ++f) {
+    auto p = t.positions[0];
+    for (auto& r : p) r = r + Vec3{0.1 * f, -0.05 * f, 0.02 * f};
+    t.positions.push_back(p);
+    t.cells.push_back(t.topology.cell);
+    t.timesteps.push_back(f);
+  }
+  const auto ps = analyze(t, {"adp"}, AnalyzeOptions{});
+  const auto& adp = get(ps, "adp");
+  EXPECT_LT(adp.value, 1e-12);
+  EXPECT_EQ(adp.extra.count("mean anisotropy λmax/λmin"), 0u);
+}

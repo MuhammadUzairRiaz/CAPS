@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <stdexcept>
 
 #include "caps/elements.hpp"
@@ -106,7 +107,42 @@ std::vector<int> matches(const Mol& m, const M3& R, double tol, double* dev) {
   if (dev) *dev = worst;
   return perm;
 }
-bool holds(const Mol& m, const M3& R, double tol) { return !matches(m, R, tol, nullptr).empty(); }
+
+// The cycle lengths of a permutation: its order is their least common multiple (capped, as a guard)
+long perm_order(const std::vector<int>& p) {
+  std::vector<char> seen(p.size(), 0);
+  long L = 1;
+  for (size_t i = 0; i < p.size(); ++i) {
+    if (seen[i]) continue;
+    long len = 0;
+    for (size_t j = i; !seen[j]; j = size_t(p[j])) seen[j] = 1, ++len;
+    long a = L, b = len;
+    while (b) { const long t = a % b; a = b, b = t; }
+    L = L / a * len;
+    if (L > 100000) return 100000;
+  }
+  return L;
+}
+// a rotation C_k really of order k: every atom is on the axis (a 1-cycle) or in a cycle of exactly k atoms, and some are.
+// A ring of six then never passes as C7 or C8 at a loose tolerance, nor a near-linear molecule as any C_k.
+bool cycles_of(const std::vector<int>& p, int k) {
+  if (p.empty()) return false;
+  std::vector<char> seen(p.size(), 0);
+  bool some = false;
+  for (size_t i = 0; i < p.size(); ++i) {
+    if (seen[i]) continue;
+    int len = 0;
+    for (size_t j = i; !seen[j]; j = size_t(p[j])) seen[j] = 1, ++len;
+    if (len != 1 && len != k) return false;
+    some = some || len == k;
+  }
+  return some;
+}
+// the order of an operation given as its permutation and determinant: a planar molecule's own mirror permutes nothing
+int element_order(const std::vector<int>& p, int sign) {
+  const long L = perm_order(p);
+  return int(sign < 0 && L % 2 == 1 ? 2 * L : L);
+}
 
 Vec3 canonical(Vec3 v) {
   const double L = norm(v);
@@ -146,7 +182,10 @@ Found find_elements(const Mol& m, double tol) {
   std::array<double, 3> w;
   M3 V;
   jacobi(I, w, V);
-  f.inv = holds(m, inversion(), tol);
+  {
+    const auto p = matches(m, inversion(), tol, nullptr);
+    f.inv = !p.empty() && perm_order(p) <= 2;
+  }
   // linear: every atom within tol of the axis of least inertia
   {
     int k = 0;
@@ -186,95 +225,22 @@ Found find_elements(const Mol& m, double tol) {
   for (const auto& d : dirs) {
     if (!known(rot_axes, d))
       for (int k = 8; k >= 2; --k)
-        if (holds(m, rotation(d, 2 * kPi / k), tol)) { f.rot.push_back({d, k}), rot_axes.push_back(d); break; }
-    if (!known(f.mirrors, d) && holds(m, reflection(d), tol)) f.mirrors.push_back(d);
+        if (cycles_of(matches(m, rotation(d, 2 * kPi / k), tol, nullptr), k)) { f.rot.push_back({d, k}), rot_axes.push_back(d); break; }
+    if (!known(f.mirrors, d)) {
+      const auto p = matches(m, reflection(d), tol, nullptr);
+      if (!p.empty() && perm_order(p) <= 2) f.mirrors.push_back(d);
+    }
   }
+  // S_n holds when its permutation has the order S_n has: n for even n, 2n for odd n
+  auto s_holds = [&](const Vec3& d, int n) {
+    const auto p = matches(m, improper(d, n), tol, nullptr);
+    return !p.empty() && element_order(p, -1) == (n % 2 == 0 ? n : 2 * n);
+  };
   for (const auto& [d, k] : f.rot) {   // S_2n, else S_n (n ≥ 3), on each rotation axis: the highest that holds
-    if (holds(m, improper(d, 2 * k), tol)) f.imp.push_back({d, 2 * k});
-    else if (k >= 3 && holds(m, improper(d, k), tol)) f.imp.push_back({d, k});
+    if (s_holds(d, 2 * k)) f.imp.push_back({d, 2 * k});
+    else if (k >= 3 && s_holds(d, k)) f.imp.push_back({d, k});
   }
   return f;
-}
-
-std::string classify(const Found& f, Vec3* principal) {
-  if (f.linear) { if (principal) *principal = f.linear_axis; return f.inv ? "D*h" : "C*v"; }
-  int c3 = 0, nmax = 1;
-  bool c4 = false, c5 = false;
-  for (const auto& [d, k] : f.rot) {
-    if (k % 3 == 0) ++c3;
-    if (k == 4 || k == 8) c4 = true;
-    if (k == 5) c5 = true;
-    nmax = std::max(nmax, k);
-  }
-  if (c3 >= 2) {
-    if (c5) return f.inv ? "Ih" : "I";
-    if (c4) return f.inv ? "Oh" : "O";
-    if (f.inv) return "Th";
-    return f.mirrors.empty() ? "T" : "Td";
-  }
-  if (f.rot.empty()) {
-    if (!f.mirrors.empty()) return "Cs";
-    if (f.inv) return "Ci";
-    return "C1";
-  }
-  Vec3 p{0, 0, 1};
-  for (const auto& [d, k] : f.rot) if (k == nmax) { p = d; break; }
-  if (principal) *principal = p;
-  int perp_c2 = 0;
-  for (const auto& [d, k] : f.rot) if (k % 2 == 0 && std::fabs(dot(d, p)) < 0.02) ++perp_c2;
-  bool sh = false, sv = false;
-  for (const auto& d : f.mirrors) {
-    if (std::fabs(dot(d, p)) > 0.98) sh = true;
-    if (std::fabs(dot(d, p)) < 0.02) sv = true;
-  }
-  const std::string N = std::to_string(nmax);
-  if (perp_c2 >= nmax) {
-    if (sh) return "D" + N + "h";
-    if (sv) return "D" + N + "d";
-    return "D" + N;
-  }
-  if (sh) return "C" + N + "h";
-  if (sv) return "C" + N + "v";
-  for (const auto& [d, k] : f.imp) if (k == 2 * nmax && std::fabs(dot(d, p)) > 0.98) return "S" + std::to_string(2 * nmax);
-  return "C" + N;
-}
-
-// the group as permutations of the atoms: the found elements' powers, closed under composition (exact, whatever the
-// noise in the axes), each with the matrix of its first finding (or of a product)
-struct PermGroup {
-  std::vector<std::vector<int>> perm;
-  std::vector<int> sign;   // det: a planar molecule's own mirror is the identity permutation, told apart by it
-  std::vector<M3> approx;
-};
-PermGroup group_of(const Mol& m, const Found& f, double tol) {
-  PermGroup G;
-  const size_t n = m.x.size();
-  std::vector<int> id(n);
-  for (size_t i = 0; i < n; ++i) id[i] = int(i);
-  G.perm.push_back(id), G.sign.push_back(1), G.approx.push_back(identity());
-  auto add = [&](const std::vector<int>& p, const M3& R) {
-    if (p.empty()) return false;
-    const int sg = det(R) > 0 ? 1 : -1;
-    for (size_t q = 0; q < G.perm.size(); ++q) if (G.sign[q] == sg && G.perm[q] == p) return false;
-    G.perm.push_back(p), G.sign.push_back(sg), G.approx.push_back(R);
-    return true;
-  };
-  auto add_op = [&](const M3& R) { add(matches(m, R, tol, nullptr), R); };
-  for (const auto& [d, k] : f.rot) for (int j = 1; j < k; ++j) add_op(rotation(d, 2 * kPi * j / k));
-  for (const auto& d : f.mirrors) add_op(reflection(d));
-  for (const auto& [d, k] : f.imp) add_op(improper(d, k));
-  if (f.inv) add_op(inversion());
-  for (bool grew = true; grew && G.perm.size() < 240;) {
-    grew = false;
-    const size_t c = G.perm.size();
-    for (size_t a = 0; a < c && G.perm.size() < 240; ++a)
-      for (size_t b = 0; b < c && G.perm.size() < 240; ++b) {
-        std::vector<int> p(n);
-        for (size_t i = 0; i < n; ++i) p[i] = G.perm[a][size_t(G.perm[b][i])];   // b, then a
-        grew = add(p, mul(G.approx[a], G.approx[b])) || grew;
-      }
-  }
-  return G;
 }
 
 // the orthogonal matrix that best carries each x_i onto x_perm(i) (polar factor of Σ x_π xᵀ, steadied by the
@@ -310,11 +276,247 @@ M3 fitted(const Mol& m, const std::vector<int>& perm, const M3& approx) {
   return R;
 }
 
+// The group as permutations of the atoms with their determinants (a planar molecule's own mirror is the identity
+// permutation, told apart by its sign), closed under composition. Permutations compose exactly whatever the noise, so
+// the closure can reach operations that no single test saw: each operation is therefore checked here against the
+// tolerance. It keeps the product of its generators' ideal matrices, the orthogonal matrix fitted to its permutation,
+// and its miss: the largest distance of an atom's image from its partner under the better of the two.
+struct PermGroup {
+  std::vector<std::vector<int>> perm;
+  std::vector<int> sign;
+  std::vector<M3> approx;
+  std::vector<M3> fit;
+  std::vector<double> miss;
+  double worst = 0;
+  bool contains(const std::vector<int>& p, int sg) const {
+    for (size_t q = 0; q < perm.size(); ++q) if (sign[q] == sg && perm[q] == p) return true;
+    return false;
+  }
+};
+struct Op {
+  std::vector<int> perm;
+  int sign = 1;
+  M3 R{};
+};
+
+double image_miss(const Mol& m, const std::vector<int>& p, const M3& R) {
+  double w = 0;
+  for (size_t i = 0; i < m.x.size(); ++i) w = std::max(w, norm(apply(R, m.x[i]) - m.x[size_t(p[i])]));
+  return w;
+}
+double trace(const M3& R) { return R[0][0] + R[1][1] + R[2][2]; }
+
+constexpr size_t kMaxOrder = 120;   // Ih, the largest finite point group a molecule can have
+
+// Closes the generators into G. False when an operation misses by more than tol (with check) or the set outgrows Ih.
+bool close_group(const Mol& m, const std::vector<Op>& gens, double tol, bool check, PermGroup& G) {
+  G = PermGroup{};
+  const size_t n = m.x.size();
+  std::vector<int> id(n);
+  for (size_t i = 0; i < n; ++i) id[i] = int(i);
+  G.perm.push_back(id), G.sign.push_back(1), G.approx.push_back(identity()), G.fit.push_back(identity()), G.miss.push_back(0);
+  for (size_t a = 0; a < G.perm.size(); ++a)
+    for (const auto& s : gens) {
+      std::vector<int> p(n);
+      for (size_t i = 0; i < n; ++i) p[i] = G.perm[a][size_t(s.perm[i])];   // s, then a
+      const int sg = G.sign[a] * s.sign;
+      if (G.contains(p, sg)) continue;
+      if (G.perm.size() >= kMaxOrder) return false;
+      const M3 A = mul(G.approx[a], s.R);
+      M3 F = fitted(m, p, A);
+      double d = image_miss(m, p, A);
+      if (det(F) * sg > 0) d = std::min(d, image_miss(m, p, F));
+      else F = A;
+      if (check && d > tol) return false;
+      G.perm.push_back(std::move(p)), G.sign.push_back(sg), G.approx.push_back(A), G.fit.push_back(F), G.miss.push_back(d);
+      G.worst = std::max(G.worst, d);
+    }
+  return true;
+}
+
+// The Schoenflies symbol of a closed group, read from the group itself: its order, the orders of its rotations, and the
+// reflections and inversion among its improper operations (told apart by the trace, 1 against -3). Empty when the
+// counts fit no point group, so a name never disagrees with the order.
+std::string name_of(const PermGroup& G) {
+  const size_t N = G.perm.size();
+  int P = 0, maxord = 1, c2 = 0, refl = 0;
+  bool inv = false, cyclic = false;
+  std::vector<int> ord(N);
+  for (size_t g = 0; g < N; ++g) ord[g] = element_order(G.perm[g], G.sign[g]);
+  for (size_t g = 0; g < N; ++g) {
+    if (G.sign[g] > 0) {
+      ++P, maxord = std::max(maxord, ord[g]);
+      if (ord[g] == 2) ++c2;
+    } else if (ord[g] == 2) {
+      if (trace(G.fit[g]) < -1) inv = true;
+      else ++refl;
+    }
+  }
+  for (size_t g = 0; g < N; ++g) if (G.sign[g] > 0 && ord[g] == P) cyclic = true;
+  char kind = 0;
+  int n = 1;
+  if (P == 1) kind = 'C';
+  else if (cyclic && c2 == (P % 2 == 0 ? 1 : 0)) kind = 'C', n = P;
+  else if (P == 12 && maxord == 3 && c2 == 3) kind = 'T';
+  else if (P == 24 && maxord == 4 && c2 == 9) kind = 'O';
+  else if (P == 60 && maxord == 5 && c2 == 15) kind = 'I';
+  else if (2 * maxord == P && c2 == maxord + (maxord % 2 == 0 ? 1 : 0)) kind = 'D', n = maxord;
+  else return "";
+  const std::string N_ = std::to_string(n);
+  if (size_t(P) == N) {
+    if (kind == 'C' || kind == 'D') return std::string(1, kind) + N_;
+    return std::string(1, kind);
+  }
+  if (N != size_t(2 * P)) return "";
+  switch (kind) {
+    case 'C':
+      if (n == 1) return refl == 1 && !inv ? "Cs" : refl == 0 && inv ? "Ci" : "";
+      if (refl == 0 && inv == (n % 2 == 1)) return "S" + std::to_string(2 * n);
+      if (refl == 1 && inv == (n % 2 == 0)) return "C" + N_ + "h";
+      if (refl == n && !inv) return "C" + N_ + "v";
+      return "";
+    case 'D':
+      if (refl == n + 1 && inv == (n % 2 == 0)) return "D" + N_ + "h";
+      if (refl == n && inv == (n % 2 == 1)) return "D" + N_ + "d";
+      return "";
+    case 'T':
+      if (inv && refl == 3) return "Th";
+      if (!inv && refl == 6) return "Td";
+      return "";
+    case 'O': return inv && refl == 9 ? "Oh" : "";
+    case 'I': return inv && refl == 15 ? "Ih" : "";
+  }
+  return "";
+}
+
+// the axis of a proper rotation: the eigenvector of its symmetric part with the largest eigenvalue (1, against cos θ)
+Vec3 rotation_axis(const M3& R) {
+  M3 S{};
+  for (int r = 0; r < 3; ++r) for (int c = 0; c < 3; ++c) S[r][c] = 0.5 * (R[r][c] + R[c][r]);
+  std::array<double, 3> w;
+  M3 V;
+  jacobi(S, w, V);
+  int k = 0;
+  for (int q = 1; q < 3; ++q) if (w[size_t(q)] > w[size_t(k)]) k = q;
+  return canonical({V[0][k], V[1][k], V[2][k]});
+}
+
+// The symmetry elements of the group, one per distinct axis or plane (the highest order on each axis)
+void elements_of(const PermGroup& G, PointGroupReport& r) {
+  std::vector<SymmetryElement> rot, imp, mir;
+  bool inv = false;
+  auto merge = [](std::vector<SymmetryElement>& v, SymmetryElement e) {
+    for (auto& x : v) if (std::fabs(dot(x.axis, e.axis)) > 0.98) { x.n = std::max(x.n, e.n); return; }
+    v.push_back(std::move(e));
+  };
+  const size_t n = G.perm.empty() ? 0 : G.perm[0].size();
+  for (size_t g = 0; g < G.perm.size(); ++g) {
+    const int k = element_order(G.perm[g], G.sign[g]);
+    if (k < 2) continue;
+    if (G.sign[g] > 0) { merge(rot, {"C", k, rotation_axis(G.fit[g])}); continue; }
+    M3 neg = G.fit[g];   // −(σ C_θ) is the rotation by θ + π about the same axis
+    for (auto& row : neg) for (auto& v : row) v = -v;
+    if (k == 2) {
+      if (trace(G.fit[g]) < -1) inv = true;
+      else merge(mir, {"sigma", 1, rotation_axis(neg)});
+      continue;
+    }
+    int s = k;   // order 4m: S_4m; order 2 (mod 4): S_k when its k/2-th power is the inversion, else S_(k/2) with k/2 odd
+    if (k % 4 != 0) {
+      std::vector<int> q(n);
+      for (size_t i = 0; i < n; ++i) q[i] = int(i);
+      for (int t = 0; t < k / 2; ++t) {
+        std::vector<int> nq(n);
+        for (size_t i = 0; i < n; ++i) nq[i] = G.perm[g][size_t(q[i])];
+        q.swap(nq);
+      }
+      for (size_t h = 0; h < G.perm.size(); ++h)
+        if (G.sign[h] < 0 && G.perm[h] == q) { if (trace(G.fit[h]) >= -1) s = k / 2; break; }
+    }
+    merge(imp, {"S", s, rotation_axis(neg)});
+  }
+  std::stable_sort(rot.begin(), rot.end(), [](const SymmetryElement& a, const SymmetryElement& b) { return a.n > b.n; });
+  std::stable_sort(imp.begin(), imp.end(), [](const SymmetryElement& a, const SymmetryElement& b) { return a.n > b.n; });
+  for (auto& e : rot) r.elements.push_back(e);
+  for (auto& e : imp) r.elements.push_back(e);
+  for (auto& e : mir) r.elements.push_back(e);
+  if (inv) r.elements.push_back({"i", 2, {0, 0, 0}});
+}
+
+// The operations to build the group from: each element found and the lower rotations on its axis (so that a C6 whose
+// products fail can still give its C3 or C2), each with the order it must have, in the order the search prefers them
+std::vector<Op> candidates(const Mol& m, const Found& f, double tol) {
+  std::vector<Op> c;
+  auto add = [&](std::vector<int> p, int sign, const M3& R) {
+    for (const auto& o : c) if (o.sign == sign && o.perm == p) return;
+    c.push_back({std::move(p), sign, R});
+  };
+  std::vector<std::pair<Vec3, int>> rots;
+  for (const auto& [d, k] : f.rot) for (int q = k; q >= 2; --q) if (k % q == 0) rots.push_back({d, q});
+  std::stable_sort(rots.begin(), rots.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
+  for (const auto& [d, q] : rots) {
+    const M3 R = rotation(d, 2 * kPi / q);
+    auto p = matches(m, R, tol, nullptr);
+    if (cycles_of(p, q)) add(std::move(p), 1, R);
+  }
+  auto improper_op = [&](const M3& R, int order) {
+    auto p = matches(m, R, tol, nullptr);
+    if (!p.empty() && element_order(p, -1) == order) add(std::move(p), -1, R);
+  };
+  if (f.inv) improper_op(inversion(), 2);
+  for (const auto& d : f.mirrors) improper_op(reflection(d), 2);
+  for (const auto& [d, k] : f.imp) improper_op(improper(d, k), k % 2 == 0 ? k : 2 * k);
+  return c;
+}
+
+// The group: every candidate if they close within the tolerance into a point group; otherwise the largest group found by
+// adding candidates one at a time (from several starting ones), each kept only when the closure still holds and is a
+// point group. Every operation of the result is within tol, and its name comes from the result itself.
+struct Accepted {
+  PermGroup G;
+  std::string name = "C1";
+  size_t used = 0;   // candidates inside G
+};
+Accepted accept(const Mol& m, const std::vector<Op>& cands, double tol) {
+  Accepted best;
+  {
+    PermGroup G;
+    if (close_group(m, cands, tol, true, G)) {
+      const std::string nm = name_of(G);
+      if (!nm.empty()) { best.G = std::move(G), best.name = nm, best.used = cands.size(); return best; }
+    }
+  }
+  close_group(m, {}, tol, true, best.G);
+  int seeds = 0;
+  for (size_t s = 0; s < cands.size() && seeds < 24; ++s) {
+    if (best.G.contains(cands[s].perm, cands[s].sign)) continue;   // a run from it would most likely find this group again
+    ++seeds;
+    std::vector<Op> gens;
+    PermGroup cur;
+    close_group(m, {}, tol, true, cur);
+    std::string name = "C1";
+    auto try_add = [&](const Op& o) {
+      if (cur.contains(o.perm, o.sign)) return;
+      gens.push_back(o);
+      PermGroup G;
+      std::string nm;
+      if (close_group(m, gens, tol, true, G) && !(nm = name_of(G)).empty()) cur = std::move(G), name = nm;
+      else gens.pop_back();
+    };
+    try_add(cands[s]);
+    for (const auto& o : cands) try_add(o);
+    if (cur.perm.size() > best.G.perm.size() || (cur.perm.size() == best.G.perm.size() && cur.worst < best.G.worst))
+      best.G = std::move(cur), best.name = name;
+  }
+  for (const auto& o : cands) if (best.G.contains(o.perm, o.sign)) ++best.used;
+  return best;
+}
+
 PointGroupReport report_of(const Mol& m, const Found& f, double tol) {
   PointGroupReport r;
   r.centre = m.centre;
-  r.group = classify(f, nullptr);
   if (f.linear) {
+    r.group = f.inv ? "D*h" : "C*v";
     r.order = 0;
     r.elements.push_back({"C", 0, f.linear_axis});
     if (f.inv) r.elements.push_back({"i", 2, {0, 0, 0}});
@@ -323,18 +525,26 @@ PointGroupReport report_of(const Mol& m, const Found& f, double tol) {
     r.max_deviation = dev;
     return r;
   }
-  for (const auto& [d, k] : f.rot) r.elements.push_back({"C", k, d});
-  for (const auto& [d, k] : f.imp) r.elements.push_back({"S", k, d});
-  for (const auto& d : f.mirrors) r.elements.push_back({"sigma", 1, d});
-  if (f.inv) r.elements.push_back({"i", 2, {0, 0, 0}});
-  const PermGroup G = group_of(m, f, tol);
-  r.order = int(G.perm.size());
-  double worst = 0;
-  for (size_t g = 0; g < G.perm.size(); ++g) {
-    const M3 R = fitted(m, G.perm[g], G.approx[g]);
-    for (size_t i = 0; i < m.x.size(); ++i) worst = std::max(worst, norm(apply(R, m.x[i]) - m.x[size_t(G.perm[g][i])]));
+  const std::vector<Op> cands = candidates(m, f, tol);
+  const Accepted A = accept(m, cands, tol);
+  r.group = A.name;
+  r.order = int(A.G.perm.size());
+  r.max_deviation = A.G.worst;
+  elements_of(A.G, r);
+  if (A.used < cands.size()) {   // say what was left out and why
+    PermGroup all;
+    char buf[400];
+    if (!close_group(m, cands, tol, false, all))
+      std::snprintf(buf, sizeof buf, "%zu of the %zu operations that hold one at a time are left out: together they generate more than %zu operations, which no point group has", cands.size() - A.used, cands.size(), kMaxOrder);
+    else {
+      const std::string nm = name_of(all);
+      if (all.worst > tol)
+        std::snprintf(buf, sizeof buf, "%zu of the %zu operations that hold one at a time are left out: together they close into %s of order %zu with a largest image miss of %.6f Å, above the tolerance %.3f Å", cands.size() - A.used, cands.size(), nm.empty() ? "a group" : nm.c_str(), all.perm.size(), all.worst, tol);
+      else
+        std::snprintf(buf, sizeof buf, "%zu of the %zu operations that hold one at a time are left out: together they close into a set of order %zu that is not a point group", cands.size() - A.used, cands.size(), all.perm.size());
+    }
+    r.notes.push_back(buf);
   }
-  r.max_deviation = worst;
   return r;
 }
 
@@ -365,10 +575,10 @@ PointGroupReport symmetrize_molecule(System& s, double tol) {
       m.x = y;
       continue;
     }
-    const PermGroup G = group_of(m, f, tol);
+    const PermGroup G = accept(m, candidates(m, f, tol), tol).G;   // every operation within tol
     std::vector<Vec3> y(m.x.size(), Vec3{0, 0, 0});
     for (size_t g = 0; g < G.perm.size(); ++g) {
-      const M3 R = fitted(m, G.perm[g], G.approx[g]);
+      const M3& R = G.fit[g];
       for (size_t i = 0; i < m.x.size(); ++i) y[i] = y[i] + apply_t(R, m.x[size_t(G.perm[g][i])]);
     }
     double moved = 0;

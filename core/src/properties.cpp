@@ -135,11 +135,19 @@ std::vector<std::pair<double, double>> avg_rdf(const Trajectory& t, const std::v
   return acc;
 }
 
+std::string fmt(double v, int digits);
+
+double rdf_width(const Trajectory& t) {
+  return shortest_width(t.topology.cell.valid() ? t.topology.cell : (t.cells.empty() ? Cell{} : t.cells[0]));
+}
+
+// r_max of g(r): --rmax as given; by default half the shortest cell width (at most 15 Å), and at least 8 Å so that a small
+// crystal cell still reaches its first shells (rdf() counts every periodic image past half the cell)
 double rdf_rmax(const Trajectory& t, const AnalyzeOptions& o) {
-  const double w = shortest_width(t.topology.cell.valid() ? t.topology.cell : (t.cells.empty() ? Cell{} : t.cells[0]));
-  double r = o.rdf_rmax > 0 ? o.rdf_rmax : std::min(15.0, 0.5 * w);
-  if (w > 0) r = std::min(r, 0.5 * w - 1e-6);
-  return r;
+  if (o.rdf_rmax > 0) return o.rdf_rmax;
+  const double w = rdf_width(t);
+  if (!(w > 0)) return 15.0;
+  return 0.5 * w >= 8.0 ? std::min(15.0, 0.5 * w - 1e-6) : 8.0;
 }
 
 Property rdf_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o) {
@@ -163,9 +171,18 @@ Property rdf_prop(const Trajectory& t, const std::vector<size_t>& fr, const Anal
     n.x.push_back(r + o.rdf_dr / 2);
     n.y.push_back(cn);
   }
+  const double w = rdf_width(t);
+  if (w > 0 && rmax >= 0.5 * w)
+    p.notes.push_back("r_max = " + fmt(rmax, 4) + " Å reaches past half the shortest cell width (" + fmt(0.5 * w, 4) +
+                      " Å): every periodic image is counted, so in a disordered cell g(r) beyond that repeats the cell's own structure");
   // first peak: the highest bin after g first exceeds 1 (after the exclusion zone)
   size_t start = 0;
   while (start < g.size() && g[start].second < 1.0) ++start;
+  if (start == g.size()) {
+    const bool none = std::all_of(g.begin(), g.end(), [](const std::pair<double, double>& b) { return b.second == 0; });
+    p.notes.push_back(none ? "no pairs within r_max = " + fmt(rmax, 4) + " Å: the first shell lies beyond it; pass a larger --rmax"
+                           : "g(r) stays below 1 up to r_max = " + fmt(rmax, 4) + " Å: no first peak; pass a larger --rmax");
+  }
   size_t best = start;
   for (size_t b = start; b < g.size() && g[b].first < g[start].first + 1.5; ++b)
     if (g[b].second > g[best].second) best = b;
@@ -196,6 +213,10 @@ std::string fmt(double v, int digits) {
 }
 
 struct DirectSq { std::vector<double> q, s; size_t frames = 0; double qcut = 0; };
+
+// S(q) above this is a Bragg reflection (S of the order of the number of atoms); a disordered model of n atoms stays far
+// below it, also for a single k-vector
+double bragg_level(size_t n) { return std::max(8.0, 0.05 * double(n)); }
 DirectSq direct_sq(const Trajectory& t, const std::vector<size_t>& fr0, const AnalyzeOptions& o, const std::string& kind, double qcut) {
   DirectSq out;
   const size_t n = t.topology.atoms.size();
@@ -270,17 +291,27 @@ DirectSq direct_sq(const Trajectory& t, const std::vector<size_t>& fr0, const An
         }
       }
   }
-  // adjacent shells merge until each holds at least kMinShell k-vectors per frame (at low q a shell has only a few); the point
-  // sits at the mean |k| of its vectors
+  // Touching shells merge until each point holds at least kMinShell k-vectors per frame (at low q a shell has only a few),
+  // over at most kMaxMerge bins; the point sits at the mean |k| of its vectors. A crystal's Bragg reflection is never
+  // averaged with its extinct neighbours: an empty bin ends a point, and a bin with S above bragg_level (of the order of
+  // the number of atoms for a reflection; a disordered model stays far below) is a point of its own.
   constexpr double kMinShell = 24;
+  const double kBragg = bragg_level(n);
+  constexpr size_t kMaxMerge = 4;
   double S = 0, C = 0, K = 0;
+  size_t width = 0;
+  auto flush = [&] {
+    if (C > 0) { out.q.push_back(K / C); out.s.push_back(S / C); }
+    S = C = K = 0;
+    width = 0;
+  };
+  auto bragg = [&](size_t bi) { return cnt[bi] > 0 && sum[bi] / cnt[bi] > kBragg; };
   for (size_t bi = 0; bi < nb; ++bi) {
+    if (cnt[bi] == 0) continue;
+    if (bragg(bi)) flush();
     S += sum[bi]; C += cnt[bi]; K += ksum[bi];
-    if (C >= kMinShell * fr.size() || (bi + 1 == nb && C > 0)) {
-      out.q.push_back(K / C);
-      out.s.push_back(S / C);
-      S = C = K = 0;
-    }
+    ++width;
+    if (bragg(bi) || C >= kMinShell * fr.size() || width >= kMaxMerge || bi + 1 == nb || cnt[bi + 1] == 0 || bragg(bi + 1)) flush();
   }
   return out;
 }
@@ -339,25 +370,65 @@ Property scattering_prop(const Trajectory& t, const std::vector<size_t>& fr, con
     s.x.push_back(q);
     s.y.push_back(1 + F);
   }
-  // first peak above q = 0.5 Å⁻¹ (below it the finite box and the window dominate)
-  size_t best = 0;
-  bool found = false;
-  for (size_t k = 0; k < s.x.size(); ++k)
-    if (s.x[k] >= 0.5 && (!found || s.y[k] > s.y[best])) {
-      if (s.x[k] > 3.0 && found) break;
-      best = k;
-      found = true;
+  // First peak: the first maximum above S = 1 that reaches half the highest maximum, at q ≥ 0.5 Å⁻¹ (below it the finite
+  // box and the window dominate). The exact reciprocal-lattice part is searched first; the g(r) part (on its own scale,
+  // where a crystal's reflections are broadened by the window) only when it holds none, and only above 2π/r_max.
+  // A crystal's reflections (S above bragg_level) are taken point by point. A disordered model's curve is noisy shell to
+  // shell, so it is smoothed over ±0.25 Å⁻¹ and a maximum must be the highest within ±0.5 Å⁻¹; the reported point is the
+  // highest raw one within ±0.25 Å⁻¹ of it. A curve that only falls from low q (voids, a finite box) has no maximum there.
+  const size_t nd = D.q.size();
+  const double kBragg = bragg_level(t.topology.atoms.size());
+  auto first_peak = [&](size_t lo, size_t hi, double qlo) -> long {
+    if (hi <= lo) return -1;
+    bool bragg = false;
+    for (size_t k = lo; k < hi; ++k) bragg = bragg || (s.x[k] >= qlo && s.y[k] > kBragg);
+    const double h = bragg ? 0.0 : 0.25, W = bragg ? 0.0 : 0.5;
+    std::vector<double> ys(hi - lo);
+    for (size_t k = lo; k < hi; ++k) {
+      double m = 0, c = 0;
+      for (size_t j = lo; j < hi; ++j)
+        if (std::fabs(s.x[j] - s.x[k]) <= h && std::isfinite(s.y[j])) m += s.y[j], c += 1;
+      ys[k - lo] = c > 0 ? m / c : NaN;
     }
-  if (found) {
-    p.value = s.x[best];
-    p.extra["first peak height"] = s.y[best];
-    p.extra["d-spacing 2π/q (Å)"] = 2 * kPi / s.x[best];
-  }
+    std::vector<size_t> peaks;
+    double ymax = 0;
+    for (size_t k = lo; k < hi; ++k) {
+      const double v = ys[k - lo];
+      if (s.x[k] < qlo || !(v > 1.0)) continue;
+      if ((k > lo && ys[k - 1 - lo] > v) || (k + 1 < hi && ys[k + 1 - lo] > v)) continue;
+      bool top = true, lower_left = false, lower_right = false;
+      for (size_t j = lo; j < hi && top; ++j) {
+        const double u = ys[j - lo];
+        if (j == k || !std::isfinite(u)) continue;
+        if (std::fabs(s.x[j] - s.x[k]) <= W && u > v) top = false;
+        if (u < v) (j < k ? lower_left : lower_right) = true;
+      }
+      if (!top || !lower_left || !lower_right) continue;
+      peaks.push_back(k);
+      ymax = std::max(ymax, v);
+    }
+    for (size_t k : peaks)
+      if (ys[k - lo] >= 0.5 * ymax) {
+        size_t b = k;
+        for (size_t j = lo; j < hi; ++j)
+          if (std::fabs(s.x[j] - s.x[k]) <= h && s.y[j] > s.y[b]) b = j;
+        return long(b);
+      }
+    return -1;
+  };
+  long best = nd > 0 ? first_peak(0, nd, 0.5) : -1;
+  if (best < 0) best = first_peak(nd, s.x.size(), std::max(0.5, qmin));
+  if (best >= 0) {
+    p.value = s.x[size_t(best)];
+    p.extra["first peak height"] = s.y[size_t(best)];
+    p.extra["d-spacing 2π/q (Å)"] = 2 * kPi / s.x[size_t(best)];
+  } else
+    p.notes.push_back("no first peak: S(q) has no maximum above 1 between 0.5 and " + fmt(o.qmax, 3) + " Å⁻¹");
   const std::string w = kind == "sq" ? "number-weighted" : kind == "xray" ? "X-ray (Cromer–Mann form factors, International Tables Vol. C)"
                         : kind == "electron" ? "electron (Peng et al. 1996 elastic scattering factors, International Tables Vol. C)" : "neutron (coherent scattering lengths)";
   if (!D.q.empty())
     p.method = w + " Faber–Ziman S(q): direct sum over the cell's reciprocal lattice up to " + fmt(D.qcut, 3) + " Å⁻¹ (" +
-               std::to_string(D.frames) + " frames, |k| shells of " + fmt(o.dq, 3) + " Å⁻¹ merged to ≥ 24 vectors), above it from g(r) up to " + fmt(rmax, 4) +
+               std::to_string(D.frames) + " frames, |k| shells of " + fmt(o.dq, 3) + " Å⁻¹, touching shells merged up to 24 vectors), above it from g(r) up to " + fmt(rmax, 4) +
                " Å with a Lorch window; the smallest q of this cell is " + fmt(2 * kPi / std::cbrt(t.topology.cell.volume()), 3) + " Å⁻¹";
   else
     p.method = w + " Faber–Ziman S(q) from g(r) up to " + fmt(rmax, 4) + " Å with a Lorch window; q below " + fmt(qmin, 3) +
@@ -492,7 +563,13 @@ Property cn_prop(const AnalyzeOptions& o, const ChainFrames& c) {
   for (size_t k = 0; k < s.x.size(); ++k)
     if (s.x[k] >= nmax * 0.3 && s.x[k] <= nmax * 0.8) { xi.push_back(1.0 / s.x[k]); yi.push_back(s.y[k]); }
   const auto [cinf, slope] = linfit(xi, yi);
-  p.value = cinf;
+  // C∞ is at least about 1 for any chain (1 for a freely jointed one): a fit below that, or none, is not a result
+  if (std::isfinite(cinf) && cinf >= 1.0) p.value = cinf;
+  else {
+    p.value = NaN;
+    p.notes.push_back(std::isfinite(cinf) ? "the 1/n fit gives C∞ = " + fmt(cinf, 3) + " (below 1): C_n is not converging; not reported"
+                                          : "too few chain lengths to fit C∞");
+  }
   const auto [cN, eN] = block_mean(ratio_last, o.blocks);
   p.extra["C_N (whole backbone)"] = cN;
   if (!std::isnan(eN)) p.extra["C_N standard error"] = eN;
@@ -844,14 +921,28 @@ Property ced_prop(const Trajectory& t, const std::vector<size_t>& fr, const Anal
   const double cv = std::accumulate(ced_vdw.begin(), ced_vdw.end(), 0.0) / ced_vdw.size(), cc = std::accumulate(ced_coul.begin(), ced_coul.end(), 0.0) / ced_coul.size();
   p.extra["CED van der Waals (J/cm³)"] = cv;
   p.extra["CED electrostatic (J/cm³)"] = cc;
-  p.extra["δ van der Waals (MPa^½)"] = cv > 0 ? std::sqrt(cv) : NaN;
-  p.extra["δ electrostatic (MPa^½)"] = cc > 0 ? std::sqrt(cc) : NaN;
+  // δ of each part is √ of that part: zero stays zero (a model with no charges has no electrostatic part, exactly), a
+  // part that is negative beyond round-off has no square root and gets a note instead of a value
+  const double tol = 1e-9 * std::max(1.0, std::fabs(cv) + std::fabs(cc));
+  auto part_delta = [&](double part, const std::string& key, const std::string& what) {
+    if (part >= -tol) p.extra[key] = std::sqrt(std::max(0.0, part));
+    else p.notes.push_back(key.substr(0, key.find(" (")) + " not defined: the " + what + " part of the CED is negative (" + fmt(part, 4) +
+                           " J/cm³), so it has no square root");
+  };
+  part_delta(cv, "δ van der Waals (MPa^½)", "van der Waals");
+  part_delta(cc, "δ electrostatic (MPa^½)", "electrostatic");
   p.method = "(Σ E_isolated molecule − E_bulk) / V with " + ff.name + " (same cut-off and electrostatics; molecules in vacuum), averaged over " +
              std::to_string(fr.size()) + " frames";
   p.series.push_back(std::move(s));
-  delta->value = p.value > 0 ? std::sqrt(p.value) : NaN;
-  delta->error = p.value > 0 && !std::isnan(p.error) ? p.error / (2 * delta->value) : NaN;
   delta->method = "δ = √CED";
+  if (p.value >= 0) {
+    delta->value = std::sqrt(p.value);
+    delta->error = delta->value > 0 && !std::isnan(p.error) ? p.error / (2 * delta->value) : NaN;
+  } else if (p.value < 0) {
+    p.notes.push_back("CED below 0: the bulk is less bound than the isolated molecules, which points to close contacts or overlaps in an "
+                      "unrelaxed cell; minimise or equilibrate the structure first");
+    delta->notes.push_back("no value: δ = √CED needs CED ≥ 0, and the CED here is " + fmt(p.value, 4) + " J/cm³; relax the structure first");
+  }
   return p;
 }
 
@@ -1139,7 +1230,26 @@ Property orientation_prop(const Trajectory& t, const std::vector<size_t>& fr, co
   const int ax = std::clamp(o.axis, 0, 2);
   const Vec3 nrm = cell ? cell_axis(c0, ax).normal : Vec3{ax == 0 ? 1.0 : 0.0, ax == 1 ? 1.0 : 0.0, ax == 2 ? 1.0 : 0.0};
   const double Lz = cell ? cell_axis(c0, ax).height : 0;
-  const int nzb = cell ? std::max(1, int(std::ceil(Lz / 1.0))) : 0;
+  // the model's own length scale: the mean backbone bond against a C–C bond (1.53 Å). The crystallinity neighbourhood
+  // (5 Å for a carbon backbone) scales with it, so a bead-spring model in σ or a coarse-grained one in Å counts the same
+  // number of neighbouring chords
+  bool reduced = !t.topology.atoms.empty();
+  for (const auto& a : t.topology.atoms)
+    if (std::abs(t.topology.mass_of(a) - 1.0) > 1e-9) { reduced = false; break; }
+  double lsum = 0, lnum = 0;
+  if (!c.pos.empty())
+    for (const auto& b : bb)
+      for (size_t i = 0; i + 1 < b.size(); ++i) {
+        // minimum image: a bond is shorter than half the cell, also where an infinite crystal chain is cut
+        const Vec3 d = c.pos[0][b[i + 1]] - c.pos[0][b[i]];
+        lsum += norm(cell ? c0.minimum_image(d) : d);
+        lnum += 1;
+      }
+  const double lb = lnum > 0 && lsum > 0 ? lsum / lnum : 1.53;
+  const double scale = lb / 1.53, rc = 5.0 * scale;
+  const std::string lu = reduced ? "σ" : "Å";
+  const double zbin = reduced ? scale : 1.0;   // profile bins of 1 Å, or of the same fraction of a bond in reduced units
+  const int nzb = cell ? std::max(1, int(std::ceil(Lz / zbin))) : 0;
   std::vector<double> p2z(size_t(nzb), 0), cnt(size_t(nzb), 0);
   std::vector<double> Sf, fz, cryst;
   double Qall[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
@@ -1180,7 +1290,7 @@ Property orientation_prop(const Trajectory& t, const std::vector<size_t>& fr, co
     fz.push_back(f / double(u.size()));
     ss.x.push_back(times[fr[q]] - times[fr[0]]);
     ss.y.push_back(e.first[2]);
-    // local crystallinity: chords with at least 8 neighbours (midpoints within 5 Å) aligned within 10°
+    // local crystallinity: chords with at least 8 neighbours (midpoints within rc, 5 Å for a carbon backbone) aligned within 10°
     const size_t nc = std::min<size_t>(u.size(), 3000), stride = std::max<size_t>(1, u.size() / nc);
     int crys = 0, tried = 0;
     const double c10 = std::cos(10 * 3.14159265358979 / 180);
@@ -1189,7 +1299,7 @@ Property orientation_prop(const Trajectory& t, const std::vector<size_t>& fr, co
       for (size_t j = 0; j < u.size() && al < 8; ++j) {
         if (j == i) continue;
         const Vec3 d = cell ? c0.minimum_image(mid[j] - mid[i]) : mid[j] - mid[i];
-        if (dot(d, d) <= 25.0 && std::fabs(dot(u[i], u[j])) >= c10) ++al;
+        if (dot(d, d) <= rc * rc && std::fabs(dot(u[i], u[j])) >= c10) ++al;
       }
       crys += al >= 8;
       ++tried;
@@ -1207,13 +1317,15 @@ Property orientation_prop(const Trajectory& t, const std::vector<size_t>& fr, co
   p.extra["local crystallinity (fraction)"] = std::accumulate(cryst.begin(), cryst.end(), 0.0) / cryst.size();
   p.extra["chord vectors per frame"] = double(nall) / double(c.pos.size());
   p.method = "S = largest eigenvalue of Q = ⟨3/2 u u − 1/2 I⟩ over backbone chords u (i → i+2), " + std::to_string(bb.size()) +
-             " chains, " + std::to_string(c.pos.size()) + " frames; Herman f = ⟨P₂(u·" + axis_name(ax) + ")⟩; crystallinity: chords with ≥ 8 neighbours within 5 Å aligned within 10°";
+             " chains, " + std::to_string(c.pos.size()) + " frames; Herman f = ⟨P₂(u·" + axis_name(ax) + ")⟩; crystallinity: chords with ≥ 8 neighbours within " +
+             fmt(rc, 3) + " " + lu + " (5 Å × mean backbone bond " + fmt(lb, 3) + " " + lu + " / 1.53 Å) aligned within 10°";
+  if (reduced) p.notes.push_back("every mass is 1: a bead-spring model in reduced units, so lengths are in σ and the crystallinity neighbourhood is scaled to the bond");
   if (o.exclude_mol) p.notes.push_back("molecule " + std::to_string(o.exclude_mol) + " (the held surface) left out");
   if (Sf.size() == 1 && nall < 500 && p.value < 0.5) p.notes.push_back("few chords: S of an isotropic sample is not zero but about 1/√N");
   p.series.push_back(std::move(ss));
   if (cell) {
     const std::string an = axis_name(ax);
-    Series sz{"P₂(cos θ_" + an + ") along " + an, an + " (Å)", "⟨P₂⟩ against " + an, {}, {}};
+    Series sz{"P₂(cos θ_" + an + ") along " + an, an + " (" + lu + ")", "⟨P₂⟩ against " + an, {}, {}};
     for (int b2 = 0; b2 < nzb; ++b2)
       if (cnt[size_t(b2)] > 0) sz.x.push_back((b2 + 0.5) * Lz / nzb), sz.y.push_back(p2z[size_t(b2)] / cnt[size_t(b2)]);
     p.series.insert(p.series.begin(), std::move(sz));
@@ -1928,15 +2040,32 @@ Property adp_prop(const Trajectory& t, const std::vector<size_t>& fr, const Anal
   const System& top = t.topology;
   std::map<int, std::pair<double, int>> per;
   double sum = 0, aniso = 0;
+  size_t n_aniso = 0;
   for (size_t i = 0; i < r.atoms.size(); ++i) {
     sum += r.atoms[i].u_iso;
-    if (std::isfinite(r.atoms[i].anisotropy)) aniso += r.atoms[i].anisotropy;
+    // λmax/λmin is at least 1 when it is defined; an atom whose smallest eigenvalue is zero (a flat or rigid tensor) has none
+    const double an = r.atoms[i].anisotropy;
+    if (std::isfinite(an) && an >= 1.0) aniso += an, ++n_aniso;
     auto& e = per[top.atoms[i].element];
     e.first += r.atoms[i].b, e.second += 1;
   }
   p.value = sum / double(r.atoms.size());
   p.extra["mean B (Å²)"] = 8 * M_PI * M_PI * p.value;
-  p.extra["mean anisotropy λmax/λmin"] = aniso / double(r.atoms.size());
+  // U from N frames about their mean has rank N − 1 at most, so with fewer than 4 frames λmin is zero for every atom;
+  // displacements at round-off level (rigid or identical frames) carry no shape at all
+  if (!(p.value > 1e-12))
+    p.notes.push_back("the displacements are zero within numerical noise (mean U_iso " + fmt(p.value, 3) +
+                      " Å²): the frames are rigid copies or translations of each other, so no anisotropy is reported");
+  else if (fr.size() < 4)
+    p.notes.push_back("only " + std::to_string(fr.size()) + " frames: U has rank " + std::to_string(fr.size() - 1) +
+                      " at most, so λmax/λmin is undefined and not reported");
+  else if (n_aniso > 0) {
+    p.extra["mean anisotropy λmax/λmin"] = aniso / double(n_aniso);
+    if (n_aniso < r.atoms.size())
+      p.notes.push_back(std::to_string(r.atoms.size() - n_aniso) + " of " + std::to_string(r.atoms.size()) +
+                        " atoms have a zero smallest eigenvalue and are left out of the mean anisotropy");
+  } else
+    p.notes.push_back("every atom has a zero smallest eigenvalue: λmax/λmin is undefined and not reported");
   for (const auto& [z, e] : per) p.extra[std::string("B ") + element(z).symbol + " (Å²)"] = e.first / e.second;
   // U_iso along the axis (an interphase: mobility against the distance from a surface or fibre in the cell)
   if (top.cell.valid() && o.zbin > 0) {
@@ -2661,6 +2790,18 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
                                               "entanglements", "conformation", "vacf", "hbonds", "vanhove", "p2r", "dielectric", "fluct", "modes", "ir", "adp", "pattern", "domains"};
   for (const auto& id : ids)
     if (!known.count(id)) throw std::invalid_argument("unknown property '" + id + "'");
+  // a file with no elements and no masses (a LAMMPS dump without element or mass columns, read with no topology):
+  // properties built on masses, elements or bonds would come out as zeros or nonsense, so they are refused
+  if (t.topology.total_mass() <= 0 &&
+      std::none_of(t.topology.atoms.begin(), t.topology.atoms.end(), [](const Atom& a) { return a.element > 0; })) {
+    static const std::set<std::string> needs = {"density", "rg", "ree", "cn", "persistence", "orientation", "conformation", "p2r", "ced", "delta",
+                                                "xray", "electron", "neutron", "ffv", "psd", "hbonds", "crosslinks", "entanglements",
+                                                "interaction", "adhesion", "dielectric", "ir"};
+    for (const auto& id : ids)
+      if (needs.count(id))
+        throw std::invalid_argument("'" + id + "' needs elements or masses, and the file has neither (a LAMMPS dump without element or mass " +
+                                    "columns); give a topology with --topology DATA");
+  }
   const auto fr = analysis_frames(t, o);
   const auto all_times = frame_times(t, o);
   std::vector<double> times;

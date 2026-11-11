@@ -1568,8 +1568,9 @@ caps::CifDisorder cif_disorder_from(const caps::Json& j) {
   caps::CifDisorder o;
   o.mode = j.text("mode", "major");
   o.group = j.text("group", "");
+  // taken as given: a count below 1 is refused by read_cif ("a supercell of at least 1 × 1 × 1"), not raised to 1
   if (j.has("supercell") && j["supercell"].is_array() && j["supercell"].size() == 3)
-    for (size_t k = 0; k < 3; ++k) o.supercell[k] = std::max(1, int(j["supercell"][k].number()));
+    for (size_t k = 0; k < 3; ++k) o.supercell[k] = int(j["supercell"][k].number());
   o.seed = uint64_t(j.num("seed", 1));
   return o;
 }
@@ -1617,6 +1618,8 @@ extern "C" caps_doc* caps_open_cif(const char* path, const char* json, char* out
     prov_opened(d, path, "", "io.read");
     caps::KeyValues pr = {{"mode", o.mode + (o.mode == "group" ? " " + o.group : std::string())}};
     if (o.mode == "random") pr.push_back({"supercell", std::to_string(o.supercell[0]) + " × " + std::to_string(o.supercell[1]) + " × " + std::to_string(o.supercell[2])}), pr.push_back({"seed", std::to_string(o.seed)});
+    else if (o.supercell[0] * o.supercell[1] * o.supercell[2] > 1)   // major and group repeat the chosen cell too
+      pr.push_back({"supercell", std::to_string(o.supercell[0]) + " × " + std::to_string(o.supercell[1]) + " × " + std::to_string(o.supercell[2])});
     pr.push_back({"assemblies", std::to_string(rep.assemblies)}), pr.push_back({"places", std::to_string(rep.places)});
     prov_step(d, "build.cif_disorder", "Disorder of the CIF resolved", std::move(pr));
     caps::Json r = cif_disorder_json(rep);
@@ -2646,6 +2649,7 @@ extern "C" int32_t caps_adsorption(caps_doc* d, const char* json, caps_stage_fn 
     o.keep = int(j.num("keep", 10));
     o.seed = uint64_t(j.num("seed", 1));
     const std::string side = j.text("region", "cell");   // cell | above (over the substrate's top face)
+    if (side != "cell" && side != "above") throw std::invalid_argument("region must be 'cell' or 'above' (got '" + side + "')");
     if (j.has("z_lo") || j.has("z_hi")) o.z_lo = j.num("z_lo", 0), o.z_hi = j.num("z_hi", 0);
     else if (side == "above" && substrate_atoms > 0 && s.cell.valid()) {
       double top = -1e30;
@@ -2773,7 +2777,12 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
     o.temperature = j.num("temperature", 300);
     o.insertions = int(j.num("insertions", 100000));
     if (j.has("pressures_kpa") && j["pressures_kpa"].is_array())
-      for (const auto& x : j["pressures_kpa"].items()) if (x.number() > 0) o.pressures_kpa.push_back(x.number());
+      for (const auto& x : j["pressures_kpa"].items()) {   // a pressure that is not positive is an error, not a silently shorter isotherm
+        if (!x.is_number()) throw std::invalid_argument("pressures_kpa: each pressure must be a number of kPa");
+        const double p = x.number();
+        if (!(p > 0) || !std::isfinite(p)) throw std::invalid_argument("pressures_kpa: each pressure must be a positive number of kPa (got " + g6(p) + ")");
+        o.pressures_kpa.push_back(p);
+      }
     o.steps = int(j.num("steps", 200000));
     o.cutoff = j.num("cutoff", 12.0);
     o.coulomb = !(j.has("coulomb") && j["coulomb"].kind() == caps::Json::Bool && !j["coulomb"].boolean());
@@ -3528,7 +3537,7 @@ caps_doc* caps_pack(const char* text, const char* base_dir, int32_t threads, cap
     }
     refresh(d);
     prov_step(d, "pack.lbfgs", std::to_string(rep.molecules) + " molecules packed without overlaps",
-              {{"molecules", std::to_string(rep.molecules)}, {"atoms", std::to_string(rep.atoms)}, {"closest contact", g6(rep.dmin) + " Å"},
+              {{"molecules", std::to_string(rep.molecules)}, {"atoms", std::to_string(rep.atoms)}, {"closest contact", std::isfinite(rep.dmin) ? g6(rep.dmin) + " Å" : std::string("none (one structure)")},
                {"input sha256", caps::sha256_hex(text ? text : "").substr(0, 12)},
                // the input itself (molecules, counts, regions, box): the packing can be set up again from it
                {"input", std::string(text ? text : "").substr(0, 20000)}},
@@ -6574,7 +6583,8 @@ caps_doc* grow_chains_impl(const char* spec_json, const caps_grow_opts* o, caps_
         refresh(sd);
         caps::Json j = caps::Json::object();
         j["chains_done"] = double(L.chains_done), j["chains"] = double(L.chains), j["units"] = double(L.units), j["units_total"] = double(L.units_total);
-        j["restarts"] = double(L.restarts), j["worst_margin"] = L.worst_margin, j["density"] = L.density, j["atoms"] = double(part.atoms.size());
+        j["restarts"] = double(L.restarts), j["density"] = L.density, j["atoms"] = double(part.atoms.size());
+        if (std::isfinite(L.worst_margin)) j["worst_margin"] = L.worst_margin;   // left out until a pair was checked (NaN)
         j["acceptance"] = L.acceptance;
         if (std::isfinite(L.ln_w)) j["ln_w"] = L.ln_w;
         live(sd, j.dump(0).c_str(), user);
@@ -8707,7 +8717,9 @@ extern "C" int32_t caps_crystal_find_symmetry(const char* spec_json, const char*
     }
     const caps::SymmetryFound f = caps::find_symmetry(s, tolerance > 0 ? tolerance : 0.1);
     caps::CrystalSpec out = base;
-    const auto& c = s.cell;
+    // the sites belong to the cell the group was found in (a supercell's smaller cell, repeated to make it)
+    const auto& c = f.cell.valid() ? f.cell : s.cell;
+    for (size_t k = 0; k < 3; ++k) out.supercell[k] = std::max(1, base.supercell[k]) * f.supercell[k];
     const double A = caps::norm(c.a), B = caps::norm(c.b), C = caps::norm(c.c);
     auto ang = [](const caps::Vec3& u, const caps::Vec3& v) { return std::acos(std::clamp(caps::dot(u, v) / (caps::norm(u) * caps::norm(v)), -1.0, 1.0)) * 57.29577951308232; };
     out.a = A, out.b = B, out.c = C, out.alpha = ang(c.b, c.c), out.beta = ang(c.a, c.c), out.gamma = ang(c.a, c.b);
@@ -8730,10 +8742,33 @@ extern "C" int32_t caps_crystal_find_symmetry(const char* spec_json, const char*
 namespace {
 
 caps::SolvateOptions solvate_options(const caps::Json& j) {
+  // unknown option names are errors, so a misspelt or foreign key (box=20) never falls back to the defaults unseen
+  static const char* const known[] = {"shape", "edge", "edges", "padding", "tolerance", "solvent", "water_model", "density", "molecules",
+                                      "ion_mode", "salt", "concentration", "cations", "anions", "seed"};
+  if (j.kind() == caps::Json::Object)
+    for (const auto& [k, v] : j.members()) {
+      bool ok = false;
+      for (const char* n : known) ok = ok || k == n;
+      if (!ok)
+        throw std::invalid_argument("unknown solvation option '" + k + "'" + (k == "box" ? " (use edge for a cube, edges [a, b, c] for a rectangular box or padding around the solute)" : "") +
+                                    "; options: shape, edge, edges, padding, tolerance, solvent, water_model, density, molecules, ion_mode, salt, concentration, cations, anions, seed");
+    }
   caps::SolvateOptions o;
-  o.shape = int(j.num("shape", 0));
+  // shape: 0 cube of edge, 1 rectangular edges [a, b, c], 2 solute plus padding. Without "shape" it follows the options
+  // given, as the CLI does: padding implies 2, edges implies 1, else a cube.
+  // A name works as well as the code ("cube", "rectangular", "padding"), so shape="padding" never falls back to a cube.
+  o.shape = j.has("shape") ? int(j.num("shape", -1)) : j.has("padding") ? 2 : j.has("edges") ? 1 : 0;
+  if (j.has("shape") && j["shape"].is_string()) {
+    const std::string& n = j["shape"].str();
+    o.shape = n == "cube" || n == "cubic" ? 0 : n == "rectangular" || n == "box" ? 1 : n == "padding" || n == "solute" ? 2 : -1;
+  }
+  if (o.shape < 0 || o.shape > 2)
+    throw std::invalid_argument("shape must be 0 or \"cube\" (cube of edge), 1 or \"rectangular\" (edges [a, b, c]) or 2 or \"padding\" (solute plus padding)");
   o.edge = j.num("edge", 30);
-  if (j.has("edges") && j["edges"].is_array() && j["edges"].size() == 3) o.edges = {j["edges"][0].number(), j["edges"][1].number(), j["edges"][2].number()};
+  if (j.has("edges")) {
+    if (!j["edges"].is_array() || j["edges"].size() != 3) throw std::invalid_argument("edges must be three box lengths [a, b, c] in Å");
+    o.edges = {j["edges"][0].number(), j["edges"][1].number(), j["edges"][2].number()};
+  }
   o.padding = j.num("padding", 10);
   o.tolerance = j.num("tolerance", 2.0);
   o.solvent = j.text("solvent", "water");
@@ -10520,12 +10555,13 @@ extern "C" int32_t caps_provenance(caps_doc* d, char* json, int32_t cap) {
 
 extern "C" int32_t caps_provenance_file(const char* path, char* json, int32_t cap) {
   caps::Json j = caps::Json::object();
-  if (auto m = caps::read_manifest(path ? path : "")) {
+  std::string why;   // missing, not JSON, or not a caps-manifest/1.0 file
+  if (auto m = caps::read_manifest(path ? path : "", &why)) {
     j = caps::manifest_json(*m);
     j["ok"] = true;
   } else {
     j["ok"] = false;
-    j["error"] = std::string("no provenance beside ") + (path ? path : "") + " (" + caps::sidecar_path(path ? path : "") + ")";
+    j["error"] = why.rfind("no ", 0) == 0 ? std::string("no provenance beside ") + (path ? path : "") + " (" + caps::sidecar_path(path ? path : "") + ")" : why;
   }
   return report_out(j.dump(0), json, cap);
 }
@@ -10698,7 +10734,7 @@ extern "C" int32_t caps_qha(caps_doc* d, const char* json, caps_stage_fn progres
     for (const auto& q : res.rows) {
       caps::Json x = caps::Json::object();
       x["T"] = q.T, x["length"] = arr3(q.length), x["strain"] = arr3(q.strain), x["volume"] = q.volume, x["G"] = q.G;
-      x["alpha_V"] = q.alpha_V, x["alpha"] = arr3(q.alpha), x["B"] = q.B, x["Cv"] = q.Cv, x["Cp"] = q.Cp, x["S"] = q.S, x["extrapolated"] = q.extrapolated;
+      x["alpha_V"] = q.alpha_V, x["alpha"] = arr3(q.alpha), x["B"] = q.B, x["Cv"] = q.Cv, x["Cp"] = q.Cp, x["S"] = q.S, x["extrapolated"] = q.extrapolated, x["unstable"] = q.unstable;
       rows.push_back(x);
     }
     for (const auto& q : res.samples) {
@@ -11227,7 +11263,7 @@ extern "C" caps_doc* caps_martini_melt(const char* options_json, caps_progress_f
       }
       if (!missing.empty()) {
         missing.pop_back();
-        throw std::runtime_error(def.name + " has no bead type" + missing + " (MARTINI 2 names such as C1, PEO are not Martini 3's; choose the force field the mapping is written for)");
+        throw std::runtime_error(def.name + " has no bead type" + missing + " (the MARTINI 2 polymer beads PEO, SC4PS and SC1PS are in martini2-polymers; MARTINI 2 names such as C1 are not Martini 3's; choose the force field the mapping is written for)");
       }
     }
     std::string chain_text;
@@ -13980,7 +14016,8 @@ extern "C" int32_t caps_zmelt(caps_doc* d, const char* json, caps_stage_fn progr
     const caps::ZResult res = caps::z_method(s, o);
     r = caps::z_method_json(res);
     caps::KeyValues pr = {{"force field", d->field ? d->field->base.name : std::string("built-in")}, {"runs", std::to_string(res.points.size())},
-                          {"steps", std::to_string(o.steps) + " × " + g6(o.dt) + " fs"}, {"T_m", g6(res.t_melt) + " K"}, {"T_LS", g6(res.t_superheat) + " K"}};
+                          {"steps", std::to_string(o.steps) + " × " + g6(o.dt) + " fs"}, {"T_m", res.t_melt > 0 ? g6(res.t_melt) + " K" : std::string("none (no Z found)")},
+                          {"T_LS", res.t_melt > 0 ? g6(res.t_superheat) + " K" : std::string("none")}};
     prov_step(d, "analysis.zmelt", "Melting point by the Z method: NVE runs from the perfect crystal", std::move(pr));
     r["ok"] = true;
   } catch (const std::exception& e) {

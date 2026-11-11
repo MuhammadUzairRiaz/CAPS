@@ -322,7 +322,7 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
    formed between chains are selected, and the stats JSON is {cycle, reactions, crosslinks, target, density, degree,
    conversion, atoms}. */
 /* v45: the last caps_react run on this document as JSON {chains, crosslinks, intrachain, byproducts, target, volume,
-   chain_mass, density (mol/m³), per_chain, mc (g/mol), reactions, initial_sites, conversion, field, field_after,
+   chain_mass, density (mol/m³), per_chain, mc (g/mol; null with no links between chains), reactions, initial_sites, conversion, field, field_after,
    notes[]}. Returns the length needed or -1. */
 int32_t caps_react_summary(caps_doc* d, char* json, int32_t cap);
 /* v70: the summary also has removed_unreacted, removed_unreacted_atoms and, when the network holds sulfur, "sulfur" (as
@@ -441,8 +441,8 @@ int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn progress, voi
 int32_t caps_index(const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap);
 /* Melting by the Z method (v86, zmethod.hpp) of the current frame with the Field assignment: JSON {temperatures [K …],
    steps, dt (fs), bisect, sample_every, melt_order, cutoff, seed} → {ok, error, points [{t0, energy (kcal/mol per atom),
-   temperature, temperature_sd, pressure, order, msd, drift, melted, time_ps, t_trace, order_trace}] by energy, t_melt,
-   t_superheat, e_superheat, e_melt, g, order0, notes}. The cell must be at least twice the cut-off wide. */
+   temperature, temperature_sd, pressure, order, msd, drift, melted, time_ps, t_trace, order_trace}] by energy, z_found, t_melt,
+   t_superheat, e_superheat, e_melt, g, order0, notes}; t_melt and e_melt are 0 when no Z was found. The cell must be at least twice the cut-off wide. */
 int32_t caps_zmelt(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap);
 /* Substitutional disorder (v85, sqs.hpp) of the current frame: JSON {op "sqs" (default), from, to (element symbols),
    fraction, shells, steps, restarts, seed, path (the structure written: .cif, .vasp or POSCAR, else PDB)} → {ok, error,
@@ -508,7 +508,7 @@ int32_t caps_qha(caps_doc* d, const char* json, caps_stage_fn progress, void* us
    F, intensity (strongest 100), fwhm}], two_theta, q, intensity (strongest point 100), wavelengths, reflections, frames,
    seconds, notes}. The document is not changed. */
 int32_t caps_powder(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap);
-/* DPD (v34, dpd.hpp): JSON {species: [{name, sequence ("AAAAABBBBB"), count}], density, chi: {"AB": χ}, a: {"AB": a_ij},
+/* DPD (v34, dpd.hpp): JSON {species: [{name, sequence ("AAAAABBBBB" or "A5B5"), count}], density, chi: {"AB": χ}, a: {"AB": a_ij},
    gamma, dt, bond_k, steps, equilibration, frame_every, rc_angstrom, seed; v96: box (r_c), regions [{name, shape
    droplet|rod|slab|shell|tube, centre [fx, fy, fz] of the box, radius, inner, thickness, axis, priority}] and per species
    region (its molecules start there; "" outside every region) and orient ("in" | "out": head on the region's surface,
@@ -1322,8 +1322,9 @@ int32_t caps_crystal_find_symmetry(const char* spec_json, const char* cif_path, 
 /* Solvation (v20, design/boards/SolvationBuilder). Options JSON {shape: 0 cubic | 1 rectangular | 2 solute plus padding,
    edge, edges: [a, b, c], padding (Å), tolerance (Å), solvent (an id of caps_solvent_library), water_model: "TIP3P" |
    "SPC/E" | "TIP4P/2005", density (g/cm³, 0: the solvent's), molecules (0: from the free volume), ion_mode: 0 none |
-   1 neutralise | 2 concentration | 3 custom, salt, concentration (mol/L), cations, anions, seed}. The solute is the
-   document's current frame (NULL: pure solvent), held at the centre.
+   1 neutralise | 2 concentration | 3 custom, salt, concentration (mol/L), cations, anions, seed}. shape may also be named
+   "cube", "rectangular" or "padding"; without shape, padding implies 2 and edges implies 1; an unknown key is an error.
+   The solute is the document's current frame (NULL: pure solvent), held at the centre.
    caps_solvent_library: {solvents: [{id, name, smiles, density, use}], salts: [{id, cation, anion, zc, za}]}.
    caps_solvate_plan: {ok, error, box: [a, b, c], box_volume, solute_volume, free_volume, solute_atoms, solute_charge,
    solvent, cations, anions, solvent_name, cation, anion, solvent_mass, concentration, density, notes} without packing.
@@ -1465,7 +1466,8 @@ int32_t caps_sequence_report(const caps_doc* d, char* out, int32_t cap);
 caps_doc* caps_graft_chains(caps_doc* d, const char* json, char* out, int32_t cap);
 /* v90 CIF disorder (crystal.hpp): disorder groups by assembly, mixed and split sites, vacancies. caps_cif_disorder: the
    file read the default way → {ok, error, assemblies, groups, places, expected {element: atoms}, obtained, notes}.
-   caps_open_cif: JSON {mode "major" | "group" | "random", group (the label kept), supercell [na, nb, nc] (random), seed}
+   caps_open_cif: JSON {mode "major" | "group" | "random", group (the label kept), supercell [na, nb, nc] (each
+   count at least 1; random fills it to the occupancies, major and group repeat the chosen cell), seed}
    → a new document (NULL on error) and the same report in out. */
 int32_t caps_cif_disorder(const char* path, char* out, int32_t cap);
 caps_doc* caps_open_cif(const char* path, const char* json, char* out, int32_t cap);

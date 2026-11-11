@@ -179,10 +179,12 @@ struct Model {
       double err = 0;
       for (size_t i = 0; i < th.size(); ++i) err = std::max(err, std::fabs(th[i] - target[i]));
       if (err < tol) return it;
-      // δÛ(q) = λ R(q)⁻¹ (θ̂[U] − θ̂*)(q): too dense where U is too low, so raise it there
+      // δÛ(q) = λ R(q)⁻¹ ê(q), e = θ̄ ln(θ[U] / θ*): too dense where U is too low, so raise it there. The residual is
+      // logarithmic (U ← U + λ ln(θ[U] / θ*) where the chain is local, R → θ̄ at large q): a cell far below its mean answers
+      // a field change by about −θ δU, not −θ̄ δU, and a linear residual would step it θ/θ̄ too short each iteration
       std::vector<std::vector<cd>> e(nt);
       for (size_t t = 0; t < nt; ++t) {
-        for (size_t c = 0; c < M; ++c) buf[c] = th[t * M + c] - target[t * M + c];
+        for (size_t c = 0; c < M; ++c) buf[c] = mean[t] * std::log(std::max(th[t * M + c], 1e-300) / std::max(target[t * M + c], 1e-300));
         fft3d(buf, nx, ny, nz, -1);
         e[t] = buf;
       }
@@ -251,6 +253,7 @@ DdftResult ddft_run(const DdftOptions& o) {
     r.worst_inverse = md.invert(U, theta, o.inverse_iterations, o.inverse_tol);
   }
   const int dims[3] = {md.nx, md.ny, md.nz};
+  const int active = (md.nx > 1) + (md.ny > 1) + (md.nz > 1);   // faces per cell: 2 × active
   auto idx = [&](int i, int j, int k) { return size_t(i) + size_t(md.nx) * (size_t(j) + size_t(md.ny) * size_t(k)); };
   auto record = [&](double tau) {
     r.times.push_back(tau);
@@ -315,7 +318,12 @@ DdftResult ddft_run(const DdftOptions& o) {
               const size_t n = d == 0 ? idx((i + 1) % md.nx, j, k) : d == 1 ? idx(i, (j + 1) % md.ny, k) : idx(i, j, (k + 1) % md.nz);
               const double tf = std::max(0.0, 0.5 * (theta[t * M + c] + theta[t * M + n]));
               double J = -tf * (mu[t * M + n] - mu[t * M + c]);
-              if (o.noise > 0) J += std::sqrt(2 * tf / (o.noise * o.dt)) * G(rng);
+              // the Gaussian noise has no bound: a tail draw would empty a cell. Through any one face it may move at
+              // most the share 1/(2 × active) of the poorer neighbour, so the noise alone never takes a cell below zero
+              if (o.noise > 0) {
+                const double cap = std::min(theta[t * M + c], theta[t * M + n]) / (2 * active * o.dt);
+                J += std::clamp(std::sqrt(2 * tf / (o.noise * o.dt)) * G(rng), -cap, cap);
+              }
               dtheta[t * M + c] -= o.dt * J;
               dtheta[t * M + n] += o.dt * J;
             }

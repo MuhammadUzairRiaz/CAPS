@@ -46,7 +46,9 @@ struct Descriptor {
 };
 
 // The descriptors of a structure taken as one molecule (every atom; hydrogens explicit). Charges: the structure's own
-// when it has them, else Gasteiger–Marsili (charges_used says which); none: the CPSA family is NaN.
+// when it has them, else Gasteiger–Marsili (charges_used says which); none: the CPSA family is NaN and charges_used
+// gives the reason. A repeat unit's [*] attachment points (element 0) are capped with H for the 3D descriptors and the
+// charges (volume, areas, shadows, CPSA); mass, Rg and the graph indices use the structure as given.
 std::vector<Descriptor> molecular_descriptors(const System& s, std::string* charges_used = nullptr);
 
 // ---- models

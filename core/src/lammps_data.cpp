@@ -900,7 +900,7 @@ std::string export_title(std::string t, const std::string& ffname) {
     for (size_t k; (k = t.find(x)) != std::string::npos;) t.erase(k, x.size());
   };
   for (const char* junk : {"CAPS 0.1 · ", "CAPS · ", " · atom_style full", " · units real"}) erase_all(junk);
-  erase_all(" · " + ffname);
+  if (!ffname.empty()) erase_all(" · " + ffname);   // an empty name would erase every " · " separator
   while (!t.empty() && (t.back() == ' ' || t.back() == '\n' || t.back() == '\r')) t.pop_back();
   while (!t.empty() && t.front() == ' ') t.erase(t.begin());
   return t.empty() ? "structure" : t;

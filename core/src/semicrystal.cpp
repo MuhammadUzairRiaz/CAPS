@@ -1120,13 +1120,31 @@ System build_semicrystalline(const SemicrystallineOptions& o, SemicrystallineRep
     }
     return s;
   }();
+  // a tail ends where the chain may be cut: after an sp3-sp3 bond (CH2-CH2, so the end is CH3 or OCH2CH3), or, in a
+  // chain with none (PLLA), next to one trigonal atom; never in a ring, an amide or ester bond, or at a C=C
+  int best_cls = -1;
+  for (int k = 0; k < T.P; ++k)
+    if (T.cls[size_t(k)] == kSp3 || T.cls[size_t(k)] == kSp2Sp3) best_cls = std::max(best_cls, T.cls[size_t(k)] == kSp3 ? 1 : 0);
+  if (best_cls < 0) throw std::invalid_argument(pc.name + ": no backbone bond a chain end may be cut at (every one in a ring, an amide or ester, or double)");
+  const int cut_cls = best_cls == 1 ? kSp3 : kSp2Sp3;
+  // a tail of n atoms from the stem end with label sigma, running in direction d: the last unit sigma + d n is cut from
+  // the next one, the bond (s, s + d)
+  auto tail_cuttable = [&](int sigma, int d, int n) {
+    const int sl = wrapi(sigma + d * n, T.P);
+    return T.cls[size_t(d > 0 ? sl : wrapi(sl - 1, T.P))] == cut_cls;
+  };
   for (size_t g = 0; g < seg.size(); ++g) {
     Seg& G = seg[g];
     if (G.type == 1 && G.a % 2 == 0) std::swap(G.a, G.b);   // bridges grow from the top face
     int a1, a2, a3;
     end_units(G.a, a1, a2, a3);
     G.d = G.a % 2 ? dir(G.a / 2) : -dir(G.a / 2);
-    if (G.type == 2) { nmin[g] = 1; continue; }
+    if (G.type == 2) {   // a tail is at least as long as its shortest cuttable length (one repeat at most)
+      int n = 1;
+      while (n < T.P && !tail_cuttable(U[size_t(a1)].sigma, G.d, n)) ++n;
+      nmin[g] = n;
+      continue;
+    }
     int b1, b2, b3;
     end_units(G.b, b1, b2, b3);
     G.q = wrapi(G.d * (U[size_t(b1)].sigma - U[size_t(a1)].sigma) - 1, T.P);
@@ -1160,24 +1178,13 @@ System build_semicrystalline(const SemicrystallineOptions& o, SemicrystallineRep
     }
     for (int k = given; k < left; ++k) extra[tails[UniformInt<size_t>(0, tails.size() - 1)(rng)]]++;
     for (size_t g = 0; g < seg.size(); ++g) seg[g].n = nmin[g] + extra[g];
-    // a tail ends where the chain may be cut: after an sp3-sp3 bond (CH2-CH2, so the end is CH3 or OCH2CH3), or, in a
-    // chain with none (PLLA), next to one trigonal atom; never in a ring, an amide or ester bond, or at a C=C
-    int best_cls = -1;
-    for (int k = 0; k < T.P; ++k)
-      if (T.cls[size_t(k)] == kSp3 || T.cls[size_t(k)] == kSp2Sp3) best_cls = std::max(best_cls, T.cls[size_t(k)] == kSp3 ? 1 : 0);
-    if (best_cls < 0) throw std::invalid_argument(pc.name + ": no backbone bond a chain end may be cut at (every one in a ring, an amide or ester, or double)");
-    const int cut_cls = best_cls == 1 ? kSp3 : kSp2Sp3;
     std::vector<std::vector<int>> cuts(seg.size());   // each tail's cuttable lengths up to its share and a repeat beyond
     for (size_t g = 0; g < seg.size(); ++g) {
       Seg& G = seg[g];
       if (G.type != 2) continue;
       int a1, a2, a3;
       end_units(G.a, a1, a2, a3);
-      // the last unit sigma_a + d n, cut from the next one: the bond (s, s + d)
-      auto cuttable = [&](int n) {
-        const int sl = wrapi(U[size_t(a1)].sigma + G.d * n, T.P);
-        return T.cls[size_t(G.d > 0 ? sl : wrapi(sl - 1, T.P))] == cut_cls;
-      };
+      auto cuttable = [&](int n) { return tail_cuttable(U[size_t(a1)].sigma, G.d, n); };
       for (int n = 1; n <= std::max(1, G.n) + T.P; ++n) if (cuttable(n)) cuts[g].push_back(n);
       int best = cuts[g].back();   // the cuttable length nearest the tail's share
       for (int n : cuts[g]) if (std::abs(n - G.n) < std::abs(best - G.n)) best = n;
@@ -1196,6 +1203,13 @@ System build_semicrystalline(const SemicrystallineOptions& o, SemicrystallineRep
       if (std::abs(total - (seg[lg].n - lower) - M) >= std::abs(total - M)) break;
       seg[lg].n = lower;
     }
+    // the tails' cut lengths can leave the layer a little off its budget; more than a repeat over is a density not asked for
+    int total = 0;
+    for (const auto& G : seg) total += G.n;
+    if (total > M + T.P)
+      throw std::invalid_argument("the amorphous layer holds " + std::to_string(M) + " backbone atoms at " + std::to_string(o.density).substr(0, 5) +
+                                  " g/cm³ but the loops, bridges and tails, cut where a chain may end, need " + std::to_string(total) +
+                                  ": a thicker amorphous layer, fewer bridges, or loops that re-enter nearby");
   }
 
   // --- growth: one backbone atom per segment per round, in random order; each atom placed brings the side atoms of the
@@ -1764,6 +1778,13 @@ SemicrystallineReport analyse_semicrystalline(const System& s, double p2_cut, in
     return d >= 0 ? 1 : -1;
   };
   std::vector<double> tilts;
+  std::vector<double> stem_top, stem_bot;   // each stem's ends, z from the lamella's middle plane
+  double step_sum = 0;                      // backbone steps along z inside the stems
+  long step_n = 0;
+  auto rel_z = [&](const Vec3& p) {
+    double d = p[2] - zc;
+    return d - Lz * std::round(d / Lz);
+  };
   R.atom_class.assign(n, SemicrystallineReport::kNone);
   R.atom_segment.assign(n, -1);
   int32_t nseg = 0;
@@ -1783,6 +1804,9 @@ SemicrystallineReport analyse_semicrystalline(const System& s, double p2_cut, in
         if (fl != fh) {
           runs.push_back({k, e, fl, fh});
           tilts.push_back(std::acos(std::min(1.0, std::fabs(span[2]) / norm(span))) / kDeg);
+          const double a = rel_z(s.atoms[chains[c][k]].pos), b = a + span[2];
+          stem_top.push_back(std::max(a, b)), stem_bot.push_back(std::min(a, b));
+          for (size_t q = k; q < e; ++q) step_sum += std::fabs(up[c][q + 1][2] - up[c][q][2]), ++step_n;
         }
       }
       k = e + 1;
@@ -1878,16 +1902,43 @@ SemicrystallineReport analyse_semicrystalline(const System& s, double p2_cut, in
   }
   R.crystallinity_mass = ct >= 0 && mass_all > 0 ? mass_crys / mass_all : R.crystallinity_p2;
   R.density = s.density();
-  {   // the amorphous layer's density: the bins whose chords are disordered (mean P2 below 0.2)
-    double sr = 0;
-    int nr = 0, nc = 0;
-    for (int k = 0; k < bins; ++k) {
-      if (R.p2[size_t(k)] < 0.2 && pc[size_t(k)]) sr += R.rho[size_t(k)], ++nr;
-      if (R.p2[size_t(k)] > 0.5) ++nc;
+  {   // the lamella's thickness and the two layers' densities, measured on the atoms (not on the profile bins, which
+      // alias against the chain's repeat along z); each layer's mass over its volume
+    auto median = [](std::vector<double> v) {
+      std::sort(v.begin(), v.end());
+      const size_t h = v.size() / 2;
+      return v.size() % 2 ? v[h] : 0.5 * (v[h - 1] + v[h]);
+    };
+    double Lc = -1, mass_lam = 0;
+    if (ct >= 0) {   // the cell's own "crystal" tag (a built stack, or a frame that kept its tags): the builder's definition.
+                     // Each run of crystal backbone atoms spans its z range and one mean step more (n atoms, n steps: a
+                     // perfect stem of nc cells gives nc c); the median over the runs, so stems staggered along z (the
+                     // sheets of a nylon) do not widen the lamella as their union would
+      std::vector<double> spans;
+      for (size_t c = 0; c < chains.size(); ++c)
+        for (size_t k = 0; k < chains[c].size();) {
+          if (!((s.atoms[chains[c][k]].tags >> ct) & 1u)) { ++k; continue; }
+          size_t e = k;
+          while (e + 1 < chains[c].size() && ((s.atoms[chains[c][e + 1]].tags >> ct) & 1u)) ++e;
+          if (e > k) spans.push_back(std::fabs(up[c][e][2] - up[c][k][2]) * double(e - k + 1) / double(e - k));
+          k = e + 1;
+        }
+      if (!spans.empty()) Lc = median(spans), mass_lam = mass_crys;
     }
-    R.amorphous_density = nr ? sr / nr : 0;
-    R.crystal_thickness = nc * dz;
-    R.amorphous_thickness = Lz - R.crystal_thickness;
+    if (Lc < 0 && !stem_top.empty() && step_n) {   // no tags: the stems' ends (medians, so a stray long stem does not count)
+      const double step = step_sum / double(step_n), top = median(stem_top) + 0.5 * step, bot = median(stem_bot) - 0.5 * step;
+      Lc = top - bot;
+      for (const auto& at : s.atoms) {
+        const double d = rel_z(at.pos);
+        if (d >= bot && d < top) mass_lam += s.mass_of(at);
+      }
+    }
+    if (Lc < 0) Lc = 0, mass_lam = 0;   // no stems: no lamella
+    Lc = std::min(Lc, Lz);
+    R.crystal_thickness = Lc;
+    R.amorphous_thickness = Lz - Lc;
+    R.crystal_density = Lc > 0 ? mass_lam / (area * Lc) * kAmuPerA3 : 0;
+    R.amorphous_density = Lz - Lc > 1e-6 ? (mass_all - mass_lam) / (area * (Lz - Lc)) * kAmuPerA3 : 0;
   }
   return R;
 }
@@ -1898,9 +1949,11 @@ std::string semicrystalline_json(const SemicrystallineReport& r) {
   auto dbl = [](const std::vector<double>& v) { Json a = Json::array(); for (double x : v) a.push_back(Json(x)); return a; };
   j["format"] = Json("caps-semicrystalline/1");
   if (!r.polymer.empty()) j["polymer"] = Json(r.polymer);
-  j["repeat_period"] = Json(double(r.repeat_period)), j["polar"] = Json(r.polar);
-  j["cell_tilt_deg"] = Json(r.cell_tilt_deg), j["crystal_density"] = Json(r.crystal_density);
-  j["nx"] = Json(double(r.nx)), j["ny"] = Json(double(r.ny)), j["nc"] = Json(double(r.nc));
+  // a frame analysed on its own does not know the build's repeat or unit cells: null, not a zero that reads as measured
+  j["repeat_period"] = r.repeat_period > 0 ? Json(double(r.repeat_period)) : Json(nullptr), j["polar"] = Json(r.polar);
+  j["cell_tilt_deg"] = Json(r.cell_tilt_deg), j["crystal_density"] = r.crystal_density > 0 ? Json(r.crystal_density) : Json(nullptr);
+  if (r.nc > 0) j["nx"] = Json(double(r.nx)), j["ny"] = Json(double(r.ny)), j["nc"] = Json(double(r.nc));
+  else j["nx"] = Json(nullptr), j["ny"] = Json(nullptr), j["nc"] = Json(nullptr);
   j["atoms"] = Json(double(r.atoms)), j["stems"] = Json(double(r.stems)), j["chains"] = Json(double(r.chains));
   j["loops"] = Json(double(r.loops)), j["bridges"] = Json(double(r.bridges)), j["tails"] = Json(double(r.tails));
   j["loops_top"] = Json(double(r.loops_top)), j["loops_bottom"] = Json(double(r.loops_bottom));
@@ -1926,8 +1979,13 @@ std::string semicrystalline_summary(const SemicrystallineReport& r) {
   const double segs = std::max(1, r.loops + r.bridges + r.tails);
   auto mean = [](const std::vector<int>& v) { return v.empty() ? 0.0 : std::accumulate(v.begin(), v.end(), 0.0) / double(v.size()); };
   std::string out;
-  std::snprintf(b, sizeof b, "cell %.2f × %.2f × %.2f Å · %d × %d × %d unit cells · lamella %.1f Å · amorphous %.1f Å\n", r.lx, r.ly, r.lz, r.nx, r.ny, r.nc,
-                r.crystal_thickness, r.amorphous_thickness);
+  std::snprintf(b, sizeof b, "cell %.2f × %.2f × %.2f Å · ", r.lx, r.ly, r.lz);
+  out += b;
+  if (r.nc > 0) {   // known from a build; an analysed frame does not know its unit cells
+    std::snprintf(b, sizeof b, "%d × %d × %d unit cells · ", r.nx, r.ny, r.nc);
+    out += b;
+  }
+  std::snprintf(b, sizeof b, "lamella %.1f Å · amorphous %.1f Å\n", r.crystal_thickness, r.amorphous_thickness);
   out += b;
   std::snprintf(b, sizeof b, "%zu atoms · %d stems · %d chains (%.0f backbone atoms on average)\n", r.atoms, r.stems, r.chains, mean(r.chain_units));
   out += b;

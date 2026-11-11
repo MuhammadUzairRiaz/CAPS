@@ -90,7 +90,13 @@ internal static class GuiSweep
         Directory.CreateDirectory(tmp);
         AppSettings.Override = Path.Combine(tmp, "settings.json");
         RecentFiles.Override = Path.Combine(tmp, "recent");
-        var sample = args.Length > 0 ? args[0] : Path.Combine("samples", "ps_melt.data");
+        var given = args.Length > 0 ? args[0] : Path.Combine("samples", "ps_melt.data");
+        // a copy in the sweep's own folder (with the files beside it that share its name): what the clicked commands write
+        // next to the structure (a notebook, an export) lands there, never in the samples folder
+        var sample = Path.Combine(tmp, Path.GetFileName(given));
+        if (Path.GetDirectoryName(Path.GetFullPath(given)) is { } gdir)
+            foreach (var f in Directory.GetFiles(gdir, Path.GetFileNameWithoutExtension(given) + ".*"))
+                File.Copy(f, Path.Combine(tmp, Path.GetFileName(f)), true);
         var only = Environment.GetEnvironmentVariable("CAPS_SWEEP_MODULES") is { Length: > 0 } list ? list.Split(',').Select(int.Parse).ToHashSet() : null;
 
         var current = "";
@@ -186,7 +192,12 @@ internal static class GuiSweep
                 top.AddHandler(InputElement.PointerPressedEvent, WinPress, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
                 thumb.AddHandler(InputElement.PointerPressedEvent, (_, e) => presses += $"[tunnel handled={e.Handled} by {e.Source?.GetType().Name}]", Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
                 thumb.AddHandler(InputElement.PointerPressedEvent, (_, e) => presses += $"[bubble handled={e.Handled} left={e.GetCurrentPoint(thumb).Properties.IsLeftButtonPressed}]", Avalonia.Interactivity.RoutingStrategies.Bubble, handledEventsToo: true);
-                foreach (var delta in new[] { 40.0, -40.0 })
+                // a divider beside a pane at zero size (a hidden pane) has no room on that side: the first drag goes
+                // toward the side with room, and a divider that moves neither way is the failure
+                var ki = rows ? Grid.GetRow(d) - 1 : Grid.GetColumn(d) - 1;
+                var defs = grid == null ? new double[0] : rows ? grid.RowDefinitions.Select(r => r.ActualHeight).ToArray() : grid.ColumnDefinitions.Select(cd => cd.ActualWidth).ToArray();
+                var towardFirst = ki + 1 < defs.Length && ki >= 0 && defs[ki + 1] < 1;
+                foreach (var delta in towardFirst ? new[] { -40.0, 40.0 } : new[] { 40.0, -40.0 })
                 {
                     var b = rows ? new Point(a.X, a.Y + delta) : new Point(a.X + delta, a.Y);
                     top.MouseMove(a);
@@ -194,7 +205,7 @@ internal static class GuiSweep
                     for (var k = 1; k <= 6; k++) { top.MouseMove(a + (b - a) * (k / 6.0), RawInputModifiers.LeftMouseButton); Pump(1); }
                     top.MouseUp(b, MouseButton.Left);
                     Pump(6);
-                    if (delta > 0 && Sizes() == s0)
+                    if (delta == (towardFirst ? -40.0 : 40.0) && Sizes() == s0)
                     {
                         var hit = Avalonia.Input.InputExtensions.InputHitTest(top, a);
                         var chain = hit is Visual hv ? string.Join(" < ", new[] { hv }.Concat(hv.GetVisualAncestors()).Take(5).Select(x => x.GetType().Name)) : "nothing";
@@ -221,7 +232,13 @@ internal static class GuiSweep
             wtop.MouseUp(wb, MouseButton.Left);
             Pump(6);
             _dividers++;
-            if (Math.Abs(host.Bounds.Width - w0 - 80) > 12) Failures.Add($"Molecule: the wall between the sketch and the view moved {host.Bounds.Width - w0:F0} px for an 80 px drag");
+            if (Math.Abs(host.Bounds.Width - w0 - 80) > 12)
+            {
+                var hit = Avalonia.Input.InputExtensions.InputHitTest(wtop, wa);
+                var chain = hit is Visual hv ? string.Join(" < ", new[] { hv }.Concat(hv.GetVisualAncestors()).Take(5).Select(x => x.GetType().Name + (x is Control xc && !string.IsNullOrEmpty(xc.Name) ? "#" + xc.Name : ""))) : "nothing";
+                var centre = host.GetVisualParent() is Control hp ? hp.Bounds.Width : 0;
+                Failures.Add($"Molecule: the wall between the sketch and the view moved {host.Bounds.Width - w0:F0} px for an 80 px drag (sketch {w0:F0} px in a centre of {centre:F0} px; under the pointer: {chain})");
+            }
         }
         else Failures.Add("Molecule: the wall between the sketch and the view is missing");
         Console.WriteLine($"dividers: {_dividers} dragged");

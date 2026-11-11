@@ -10,6 +10,7 @@
 
 #include "caps/analysis.hpp"
 #include "caps/elements.hpp"
+#include "caps/io.hpp"
 
 namespace caps {
 
@@ -61,7 +62,8 @@ void finish_adp(AtomAdp& a, double c) {
     a.axes[size_t(k)] = c * std::sqrt(std::max(0.0, w[src]));
     a.dirs[size_t(k)] = {V[0][src], V[1][src], V[2][src]};
   }
-  a.anisotropy = w[0] > 1e-300 ? w[2] / w[0] : std::numeric_limits<double>::infinity();
+  // λmin relative to λmax: a smallest eigenvalue at round-off level (a rank-deficient tensor from few frames) is zero
+  a.anisotropy = w[2] > 0 && w[0] > 1e-8 * w[2] ? w[2] / w[0] : std::numeric_limits<double>::infinity();
 }
 
 Sym6 u_cif_from_cartesian(const Sym6& u, const Cell& cell) {
@@ -163,12 +165,20 @@ AdpResult displacement_tensors(const Trajectory& t, const std::vector<size_t>& f
   }
   // sites of the unit cell
   const Cell& cell = t.topology.cell;
+  if (o.supercell[0] < 1 || o.supercell[1] < 1 || o.supercell[2] < 1)
+    throw std::invalid_argument("displacement tensors: the supercell repeats must be whole numbers of at least 1");
   const bool sc = o.supercell[0] > 1 || o.supercell[1] > 1 || o.supercell[2] > 1;
   if (sc) {
     if (!cell.valid()) throw std::invalid_argument("displacement tensors: sites need the supercell's cell");
     Cell u = cell;
     u.a = cell.a * (1.0 / o.supercell[0]), u.b = cell.b * (1.0 / o.supercell[1]), u.c = cell.c * (1.0 / o.supercell[2]);
     R.unit_cell = u;
+    // each site of the unit cell has one image per repeat, so the repeats must divide the atoms
+    const size_t reps = size_t(o.supercell[0]) * size_t(o.supercell[1]) * size_t(o.supercell[2]);
+    const std::string sc_name = std::to_string(o.supercell[0]) + " x " + std::to_string(o.supercell[1]) + " x " + std::to_string(o.supercell[2]);
+    if (n % reps != 0)
+      throw std::invalid_argument("displacement tensors: " + std::to_string(n) + " atoms cannot split into " + sc_name + " = " + std::to_string(reps) +
+                                  " images of a unit cell; the repeats must divide the trajectory's cell");
     std::vector<Vec3> fold;   // fractional in the unit cell
     for (size_t i = 0; i < n; ++i) {
       Vec3 f = u.to_fractional(R.atoms[i].mean);
@@ -182,18 +192,37 @@ AdpResult displacement_tensors(const Trajectory& t, const std::vector<size_t>& f
       if (s < 0) s = int(fold.size()), fold.push_back(f), R.site_atoms.push_back({});
       R.site_atoms[size_t(s)].push_back(uint32_t(i));
     }
+    // every site must collect exactly one atom per image; anything else means the repeats are not the trajectory's period
+    bool even = fold.size() * reps == n;
+    for (const auto& sa : R.site_atoms) even = even && sa.size() == reps;
+    if (!even) {
+      std::map<size_t, size_t> counts;   // atoms per site -> number of sites
+      for (const auto& sa : R.site_atoms) ++counts[sa.size()];
+      std::string found;
+      for (const auto& [per, ns] : counts) found += (found.empty() ? "" : ", ") + std::to_string(ns) + " of " + std::to_string(per) + (per == 1 ? " atom" : " atoms");
+      throw std::invalid_argument("displacement tensors: the supercell repeats " + sc_name + " do not match the trajectory's periodicity: each site should hold " +
+                                  std::to_string(reps) + " atoms (one per image), but the atoms fold onto " + std::to_string(fold.size()) +
+                                  " sites (" + found + ")");
+    }
     for (size_t k = 0; k < fold.size(); ++k) {
       AtomAdp a;
-      a.mean = u.to_cartesian(fold[k]);
-      for (uint32_t i : R.site_atoms[k])
-        for (int q = 0; q < 6; ++q) a.U[size_t(q)] += R.atoms[i].U[size_t(q)] / double(R.site_atoms[k].size());
+      const double ns = double(R.site_atoms[k].size());
+      // the mean over all images of the site, each taken by its minimum image about the site's first atom so that
+      // images near a cell face do not split
+      Vec3 acc{0, 0, 0};
+      for (uint32_t i : R.site_atoms[k]) {
+        Vec3 df = u.to_fractional(R.atoms[i].mean);
+        for (int q = 0; q < 3; ++q) df[size_t(q)] -= fold[k][size_t(q)], df[size_t(q)] -= std::round(df[size_t(q)]);
+        acc = acc + df * (1.0 / ns);
+        for (int q = 0; q < 6; ++q) a.U[size_t(q)] += R.atoms[i].U[size_t(q)] / ns;
+      }
+      Vec3 fm = fold[k] + acc;
+      for (auto& x : fm) x -= std::floor(x);
+      a.mean = u.to_cartesian(fm);
       finish_adp(a, R.scale);
       R.sites.push_back(a);
     }
-    const size_t per = n / std::max<size_t>(1, fold.size());
-    bool even = true;
-    for (const auto& sa : R.site_atoms) even = even && sa.size() == per;
-    R.notes.push_back(std::to_string(fold.size()) + " sites in the unit cell" + (even ? ", " + std::to_string(per) + " atoms each" : " (unequal numbers of atoms: the cell may not be a supercell of that unit cell)"));
+    R.notes.push_back(std::to_string(fold.size()) + " sites in the unit cell, " + std::to_string(reps) + " atoms each");
   } else {
     R.unit_cell = cell;
   }
@@ -207,8 +236,7 @@ void write_cif_adp(const std::vector<int>& elements, const std::vector<AtomAdp>&
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);
   auto ang = [](const Vec3& u, const Vec3& v) { return std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180 / kPi; };
-  std::string name = title;
-  for (char& ch : name) if (std::isspace(static_cast<unsigned char>(ch))) ch = '_';
+  const std::string name = cif_block_name(title);   // printable ASCII, at most 75 characters, never empty
   char b[256];
   out << "# written by CAPS: mean positions and displacement parameters from a trajectory\ndata_" << name << "\n"
       << "_space_group_name_H-M_alt 'P 1'\n_space_group_IT_number 1\n_symmetry_space_group_name_H-M 'P 1'\n_symmetry_Int_Tables_number 1\n";

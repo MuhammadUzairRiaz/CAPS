@@ -169,7 +169,16 @@ int cg(const Operator& A, const std::vector<char>& free, const std::vector<doubl
     if (res < tol) break;
     A.apply(p, q);
     mask(q);
-    const double alpha = rz / dotv(p, q);
+    const double pq = dotv(p, q);
+    // H must be positive definite (the energy a minimum, not a saddle): a direction of zero or negative curvature means
+    // the shielded Coulomb kernel outgrows the hardness at short range (the polarisation catastrophe), and CG would
+    // converge to a saddle point with absurd charges
+    // (Ewald leaves out the k = 0 term, so its matrix is positive only over neutral charge changes: a direction with a net
+    // charge may curve down there without any catastrophe, and only the neutral combination of the two solves counts)
+    if (!A.ewald && !(pq > 1e-12 * dotv(p, p) * *std::min_element(A.pre.begin(), A.pre.end())))
+      throw std::invalid_argument("QEq: the hardness matrix is not positive definite, so the charges have no minimum (the kernel's short-range "
+                                  "Coulomb outgrows the hardness: with the Slater kernel lower λ toward the default 0.4913, or use the ohno kernel)");
+    const double alpha = rz / pq;
     for (size_t i = 0; i < n; ++i) x[i] += alpha * p[i], r[i] -= alpha * q[i];
     for (size_t i = 0; i < n; ++i) z[i] = r[i] / A.pre[i];
     const double rz2 = dotv(r, z);
@@ -202,21 +211,39 @@ Built build(const System& s, const QEqOptions& o, QEqReport& R, bool coulomb_onl
     B.zeta[i] = o.lambda * (2 * principal_quantum_number(s.atoms[i].element) + 1) / (2 * rad / kBohr);
   }
   const bool periodic = s.cell.valid() && s.cell.periodic[0] && s.cell.periodic[1] && s.cell.periodic[2];
-  const bool ewald = o.ewald && periodic;
-  if (o.ewald && !periodic) R.notes.push_back("Ewald needs a cell periodic along a, b and c: not used");
+  const bool some_periodic = s.cell.valid() && (s.cell.periodic[0] || s.cell.periodic[1] || s.cell.periodic[2]);
+  bool ewald = o.ewald && periodic;
+  if (o.ewald && !periodic && some_periodic)
+    R.notes.push_back("Ewald needs a cell periodic along a, b and c: the tapered kernel is summed over the periodic images within the cut-off instead");
   if (ewald && !(o.ewald_accuracy > 0 && o.ewald_accuracy < 1)) throw std::invalid_argument("Ewald accuracy between 0 and 1");
   double rc = o.cutoff > 0 ? o.cutoff : 10.0;
+  if (ewald && o.ewald_auto) {
+    // the default Ewald only where it is quick: every CG step applies the reciprocal sum at n × (k-vectors) terms, the
+    // k-vectors within k_max = 2α√(−ln ε) = −2 ln ε / r_c numbering k_max³ V / 12π² over the half space. Past 2·10⁷
+    // terms (a few thousand atoms) the solve would take minutes, and such a cell is wider than the cut-off anyway, so
+    // the tapered image sum stands in; Ewald asked for explicitly is always used
+    const double kmax = -2 * std::log(o.ewald_accuracy) / rc;
+    const double kvec = kmax * kmax * kmax * s.cell.volume() / (12 * M_PI * M_PI);
+    if (double(n) * kvec > 2e7) {
+      ewald = false;
+      char b[260];
+      std::snprintf(b, sizeof b, "Ewald left off by default for this cell: %zu atoms × about %.0f k-vectors per step would make the solve slow "
+                    "(ask for Ewald explicitly to use it)", n, kvec);
+      R.notes.push_back(b);
+    }
+  }
   double widths[3] = {0, 0, 0};
   if (s.cell.valid()) {
     const double v = s.cell.volume();
     widths[0] = v / norm(cross(s.cell.b, s.cell.c)), widths[1] = v / norm(cross(s.cell.c, s.cell.a)), widths[2] = v / norm(cross(s.cell.a, s.cell.b));
-    const double w = std::min({widths[0], widths[1], widths[2]});
-    if (rc > w / 2 && !ewald) {   // with Ewald the real space runs over explicit images instead
-      rc = w / 2;
-      char b[120];
-      std::snprintf(b, sizeof b, "cut-off reduced to %.2f Å, half the narrowest cell width", rc);
-      R.notes.push_back(b);
-    }
+  }
+  // A cell narrower than twice the cut-off keeps the whole cut-off: the pair sums below run over every periodic image
+  // within it (a minimum-image sum would have to shrink the cut-off to half the cell, and the taper would then cut the
+  // 1-3 and 1-4 Coulomb that holds the charges in check)
+  if (some_periodic && !ewald) {
+    char b[160];
+    std::snprintf(b, sizeof b, "periodic cell without Ewald: the tapered kernel summed over every image within %.2f Å", rc);
+    R.notes.push_back(b);
   }
   B.rc = rc;
   std::map<std::pair<int, int>, SlaterTable> tables;   // per element pair
@@ -245,35 +272,54 @@ Built build(const System& s, const QEqOptions& o, QEqReport& R, bool coulomb_onl
     if (slater) return tables.at(std::minmax(s.atoms[i].element, s.atoms[j].element)).at(r);
     return kCoul / r;
   };
-  if (ewald) {
-    // real space over every periodic image within rc (the cell may be narrower than 2 rc): images of the atoms binned in
-    // fractional coordinates over [−f, 1 + f] per axis, f = rc / width, bins at least f wide so that neighbouring bins
-    // hold every image within rc; each (i, j > i, image) once, an atom's own images onto the diagonal
-    double fcut[3];
+  if (s.cell.valid()) {
+    // pairs over every periodic image within rc (the cell may be narrower than 2 rc): images of the atoms binned in
+    // fractional coordinates over [−f, 1 + f] per periodic axis, f = rc / width (a non-periodic axis spans the atoms
+    // themselves), bins at least f wide so that neighbouring bins hold every image within rc; each (i, j > i, image)
+    // once, an atom's own images onto the diagonal. With Ewald the pair term is the real-space erfc(αr)/r plus the
+    // kernel's short-range difference from 1/r; without, the tapered kernel.
+    std::vector<Vec3> fr(n);
+    for (size_t i = 0; i < n; ++i) {
+      fr[i] = s.cell.to_fractional(s.atoms[i].pos);
+      for (int a = 0; a < 3; ++a)
+        if (s.cell.periodic[size_t(a)]) fr[i][size_t(a)] -= std::floor(fr[i][size_t(a)]);
+    }
+    double fcut[3], lo[3], hi[3], bw[3];
     int N[3], nb[3];
-    double bw[3];
+    double images = double(n);   // the images to bin, about n Π(1 + 2f) over the periodic axes
     for (int a = 0; a < 3; ++a) {
       fcut[a] = rc / widths[a];
-      N[a] = int(std::ceil(fcut[a]));
-      nb[a] = std::max(1, int(std::floor((1 + 2 * fcut[a]) / fcut[a])));
-      bw[a] = (1 + 2 * fcut[a]) / nb[a];
+      if (s.cell.periodic[size_t(a)]) {
+        N[a] = int(std::ceil(fcut[a]));
+        lo[a] = -fcut[a], hi[a] = 1 + fcut[a];
+        images *= 1 + 2 * fcut[a];
+      } else {
+        N[a] = 0;
+        lo[a] = 1e300, hi[a] = -1e300;
+        for (size_t i = 0; i < n; ++i) lo[a] = std::min(lo[a], fr[i][size_t(a)]), hi[a] = std::max(hi[a], fr[i][size_t(a)]);
+      }
+      const double span = std::max(hi[a] - lo[a], fcut[a]);
+      nb[a] = std::clamp(int(std::floor(span / fcut[a])), 1, 64);   // at most 64 per axis: wider bins stay correct
+      bw[a] = span / nb[a];
+    }
+    if (!(images < 4e7)) {
+      char b[200];
+      std::snprintf(b, sizeof b, "QEq: the cell (narrowest width %.3g Å) is too small for the %.3g Å cut-off: about %.3g periodic images to sum; use a "
+                    "smaller --cutoff or a supercell", std::min({widths[0], widths[1], widths[2]}), rc, images);
+      throw std::invalid_argument(b);
     }
     struct Img { uint32_t j; Vec3 r; };
     std::vector<std::vector<Img>> bins(size_t(nb[0]) * size_t(nb[1]) * size_t(nb[2]));
     auto bidx = [&](int x, int y, int z) { return (size_t(x) * size_t(nb[1]) + size_t(y)) * size_t(nb[2]) + size_t(z); };
-    std::vector<Vec3> fr(n);
-    for (size_t i = 0; i < n; ++i) {
-      fr[i] = s.cell.to_fractional(s.atoms[i].pos);
-      for (int a = 0; a < 3; ++a) fr[i][size_t(a)] -= std::floor(fr[i][size_t(a)]);
-    }
-    auto binof = [&](const Vec3& f, int a) { return std::clamp(int((f[size_t(a)] + fcut[a]) / bw[a]), 0, nb[a] - 1); };
+    auto binof = [&](const Vec3& f, int a) { return std::clamp(int((f[size_t(a)] - lo[a]) / bw[a]), 0, nb[a] - 1); };
     for (uint32_t j = 0; j < n; ++j)
       for (int u = -N[0]; u <= N[0]; ++u)
         for (int v = -N[1]; v <= N[1]; ++v)
           for (int w = -N[2]; w <= N[2]; ++w) {
             const Vec3 f = fr[j] + Vec3{double(u), double(v), double(w)};
             bool in = true;
-            for (int a = 0; a < 3; ++a) in = in && f[size_t(a)] >= -fcut[a] && f[size_t(a)] <= 1 + fcut[a];
+            for (int a = 0; a < 3; ++a)
+              if (s.cell.periodic[size_t(a)]) in = in && f[size_t(a)] >= lo[a] && f[size_t(a)] <= hi[a];
             if (in) bins[bidx(binof(f, 0), binof(f, 1), binof(f, 2))].push_back({j, s.cell.to_cartesian(f) - s.cell.origin});
           }
     std::vector<double> acc(n, 0.0);
@@ -291,7 +337,8 @@ Built build(const System& s, const QEqOptions& o, QEqReport& R, bool coulomb_onl
               const double r2 = dot(d, d);
               if (r2 >= rc2 || r2 < 1e-12) continue;   // r ≈ 0: the atom itself
               const double r = std::sqrt(r2);
-              const double v = kCoul * std::erfc(alpha * r) / r + (kernel(i, im.j, r) - kCoul / r) * (o.kernel == "ohno" ? taper(r) : 1.0);
+              const double v = ewald ? kCoul * std::erfc(alpha * r) / r + (kernel(i, im.j, r) - kCoul / r) * (o.kernel == "ohno" ? taper(r) : 1.0)
+                                     : taper(r) * kernel(i, im.j, r);
               if (acc[im.j] == 0.0) touched.push_back(im.j);
               acc[im.j] += v;
               if (acc[im.j] == 0.0) acc[im.j] = 1e-300;   // keep it marked
@@ -302,20 +349,21 @@ Built build(const System& s, const QEqOptions& o, QEqReport& R, bool coulomb_onl
         acc[j] = 0.0;
       }
     }
-  }
-  const Grid g(s, rc);
-  for (uint32_t i = 0; i < n && !ewald; ++i) {
-    const Vec3& f = g.frac[i];
-    g.for_neighbour_bins(g.bin(f, 0), g.bin(f, 1), g.bin(f, 2), [&](const std::vector<uint32_t>& bin) {
-      for (uint32_t j : bin) {
-        if (j <= i) continue;
-        const Vec3 d = g.sep(i, j);
-        const double r2 = dot(d, d);
-        if (r2 >= rc2) continue;
-        const double r = std::sqrt(r2);
-        A.off[i].push_back({j, taper(r) * kernel(i, j, r)});
-      }
-    });
+  } else {
+    const Grid g(s, rc);   // no cell: a padded bounding box, nothing periodic
+    for (uint32_t i = 0; i < n; ++i) {
+      const Vec3& f = g.frac[i];
+      g.for_neighbour_bins(g.bin(f, 0), g.bin(f, 1), g.bin(f, 2), [&](const std::vector<uint32_t>& bin) {
+        for (uint32_t j : bin) {
+          if (j <= i) continue;
+          const Vec3 d = g.sep(i, j);
+          const double r2 = dot(d, d);
+          if (r2 >= rc2) continue;
+          const double r = std::sqrt(r2);
+          A.off[i].push_back({j, taper(r) * kernel(i, j, r)});
+        }
+      });
+    }
   }
   if (ewald) {
     A.ewald = true;
@@ -363,7 +411,10 @@ Built build(const System& s, const QEqOptions& o, QEqReport& R, bool coulomb_onl
 QEqOptions qeq_options_from_json(const Json& j) {
   QEqOptions o;
   o.kernel = j.text("kernel", o.kernel);
-  o.ewald = j.has("ewald") && j["ewald"].kind() == Json::Bool && j["ewald"].boolean();
+  if (j.has("ewald") && j["ewald"].kind() == Json::Bool) {   // absent: the default (on for 3D-periodic cells where affordable)
+    o.ewald = j["ewald"].boolean();
+    o.ewald_auto = false;
+  }
   o.ewald_accuracy = j.num("accuracy", o.ewald_accuracy);
   o.lambda = j.num("lambda", o.lambda);
   o.hydrogen = j.has("hydrogen") && j["hydrogen"].kind() == Json::Bool && j["hydrogen"].boolean();
@@ -561,11 +612,30 @@ std::vector<double> qeq_charges(const System& s, const QEqOptions& o, QEqReport*
     if (!hyd.empty()) std::snprintf(b, sizeof b, "%d self-consistent pass(es), last change %.1e e", R.scf, change);
     else std::snprintf(b, sizeof b, "%d pass(es) to settle the atoms held at bounds", R.scf);
     R.notes.push_back(b);
-    if (!hyd.empty() && change >= o.scf_tolerance) R.notes.push_back("the self-consistent passes did not converge");
+    if (!hyd.empty() && change >= o.scf_tolerance) {
+      R.notes.push_back("the self-consistent passes did not converge");
+      R.converged = false;
+    }
   }
   if (R.bounded) R.notes.push_back(std::to_string(R.bounded) + " atom(s) held at a charge bound");
-  if (unsettled) R.notes.push_back("the atoms held at bounds did not settle within the pass limit; free atoms re-equalised to the total once more");
-  if (R.residual > 1e-5) R.notes.push_back("conjugate gradients did not converge fully");
+  if (unsettled) {
+    R.notes.push_back("the atoms held at bounds did not settle within the pass limit; free atoms re-equalised to the total once more");
+    R.converged = false;
+  }
+  if (R.residual > 1e-5) {
+    R.notes.push_back("conjugate gradients did not converge fully");
+    R.converged = false;
+  }
+  // QEq charges stay within a few e (quartz Si about +3.2); far beyond that the hardness matrix is close to singular
+  // (with the Slater kernel, λ too large), and the solve, however small its residual, is no answer
+  double qmax = 0;
+  for (double x : q) qmax = std::max(qmax, std::fabs(x));
+  if (!(qmax <= 6)) {
+    std::snprintf(b, sizeof b, "a charge of %.3g e: the hardness matrix is close to singular (with the Slater kernel, λ %.4g is too large for this "
+                  "structure; try the default 0.4913 or the ohno kernel)", qmax, o.lambda);
+    R.notes.push_back(b);
+    R.converged = false;
+  }
   if (report) *report = R;
   return q;
 }

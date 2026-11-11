@@ -36,18 +36,63 @@ System build_interface(const System& slab, const ChainSpec& spec, const Interfac
   g.cell = {Lx, Ly, Lz};
   g.z_lo = z_lo, g.z_hi = z_hi;
   g.substrate = &sub;
-  if (o.chains > 0) g.chains = o.chains;
-  else {
-    // chains for the film density, from the mean chain mass over a few sequences
-    double m = 0;
-    for (int k = 0; k < 8; ++k) m += chain_mass(spec, chain_sequence(spec, g.seed + uint64_t(k) * 101));
-    m /= 8;
-    g.chains = std::max(1, int(std::lround(o.density * Lx * Ly * o.film * 0.602214076 / m)));
-  }
+  // the mean chain mass over a few sequences: the chain count for the film density, or the density a count gives
+  double m = 0;
+  for (int k = 0; k < 8; ++k) m += chain_mass(spec, chain_sequence(spec, g.seed + uint64_t(k) * 101));
+  m /= 8;
+  const double vol = Lx * Ly * o.film * 0.602214076;   // film volume × N_A: g/cm³ = chains · (g/mol) / vol
+  const double rho0 = o.density > 0 ? o.density : 0.9;
+  const int for_density = std::max(1, int(std::lround(rho0 * vol / m)));
+  const double implied = o.chains > 0 && m > 0 ? o.chains * m / vol : 0;
+  // the chain count against the film the surface cell leaves: what it comes to, and the lateral supercell of this
+  // surface (as square as it goes) that would hold the same chains at the density
+  auto in_cell = [&]() {
+    char b[260];
+    std::snprintf(b, sizeof b, "%d chains of %d units in this %.2f × %.2f Å surface cell with a %.1f Å film come to %.2f g/cm³", o.chains, spec.dp, Lx, Ly,
+                  o.film, implied);
+    return std::string(b);
+  };
+  auto wider = [&]() -> std::string {
+    const double f = implied / rho0;   // the area factor the chains need
+    if (f < 1.5) return "";
+    int ba = 1, bb = 1;
+    double best = 1e300;
+    for (int na = 1; na <= 16; ++na)
+      for (int nb = 1; nb <= 16; ++nb) {
+        const double cost = std::fabs(std::log(na * nb / f)) + 0.1 * std::fabs(std::log(na * Lx / (nb * Ly)));
+        if (cost < best) best = cost, ba = na, bb = nb;
+      }
+    char b[200];
+    std::snprintf(b, sizeof b, ", or widen the surface: a %d × %d supercell of it (%.1f × %.1f Å) holds %d chains at %.2f g/cm³", ba, bb, ba * Lx, bb * Ly, o.chains,
+                  implied / (ba * bb));
+    return b;
+  };
+  if (o.chains > 0) {
+    g.chains = o.chains;
+    // both a count and a density: they must agree, or the film is not what was asked for
+    if (o.density_given && o.density > 0 && std::fabs(implied / o.density - 1) > 0.10) {
+      char b[200];
+      std::snprintf(b, sizeof b, ", not the %.2f g/cm³ asked for: give the density or the chain count (%.2f g/cm³ is %d chain%s here)", o.density, o.density,
+                    for_density, for_density == 1 ? "" : "s");
+      throw GrowError(in_cell() + b + wider());
+    }
+  } else g.chains = for_density;
   // dense films between hard walls: the contact scale steps down when a chain cannot be placed
   g.auto_scale = o.auto_scale;
   GrowReport rep;
-  System s = grow_chains(spec, g, &rep);
+  System s;
+  try {
+    s = grow_chains(spec, g, &rep);
+  } catch (const GrowError& e) {
+    // a chain count too many for the room the surface cell leaves: say so in terms of the cell, not of a melt density
+    // only the placement failures (no room, could not be placed); a bad unit or option keeps its own message
+    const std::string w = e.what();
+    if (w == "cancelled" || o.chains <= 0 || implied < 1.0 || (w.find("no room") == std::string::npos && w.find("could not be placed") == std::string::npos))
+      throw;
+    char b[200];
+    std::snprintf(b, sizeof b, ", more than chains grown one unit at a time can fill: give fewer chains (%d fill it at %.2f g/cm³) or a thicker film", for_density, rho0);
+    throw GrowError(in_cell() + b + wider());
+  }
   s.title = "CAPS interface: " + (slab.title.empty() ? std::string("slab") : slab.title) + " + " + std::to_string(g.chains) + " chains";
   char b[200];
   std::snprintf(b, sizeof b, "interface: slab %.2f Å thick · film %.1f–%.1f Å (%.1f Å) · %s above · cell %.2f × %.2f × %.2f Å", top - 0.5, z_lo, z_hi, o.film,

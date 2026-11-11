@@ -179,7 +179,9 @@ BranchCounts branch_counts(const DendrimerTree& t, int n) {
   if (n == 2) {
     c.terminal = c.by_used[0], c.linear = c.by_used[1], c.dendritic = c.by_used[2];
     const double D = c.dendritic, L = c.linear, T = c.terminal;
-    c.db_frey = 2 * D + L > 0 ? 2 * D / (2 * D + L) : NAN;
+    // Frey's DB counts linear units as the defects; a tree of terminal units only (one shell on a core, PAMAM G0 or
+    // PPI G1) has none, so it is perfectly branched like any other tree with L = 0
+    c.db_frey = L == 0 ? (D + T > 0 ? 1.0 : NAN) : 2 * D / (2 * D + L);
     c.db_frechet = D + T + L > 0 ? (D + T) / (D + T + L) : NAN;
   }
   return c;

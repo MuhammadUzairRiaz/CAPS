@@ -91,7 +91,10 @@ struct BeadGroup {
 struct BeadMapReport {
   int beads = 0, molecules_mapped = 0;
   std::map<std::string, int> by_type;
-  std::vector<uint32_t> uncovered;   // atoms of the input left as they were
+  std::vector<uint32_t> uncovered;   // atoms of the input left as they were (whole molecules the fragments cannot cover)
+  std::vector<uint32_t> unmatched;   // of those, the heavy atoms no fragment matches at all, with their hydrogens (sorted)
+  int molecules_unmapped = 0;        // molecules left as atoms
+  int searches_exhausted = 0;        // of those, the ones whose cover search ran out of steps
   std::vector<int> site_of;          // for each input atom, its site (bead, or the atom kept) in the result
   std::vector<std::string> notes;
 };

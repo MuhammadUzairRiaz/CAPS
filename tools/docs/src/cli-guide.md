@@ -6,10 +6,11 @@ lede: How the `caps` command is organised, the conventions every command shares,
 
 ## First steps
 
-Run `caps` with no arguments to see every command and its main options on one screen. The workflow commands (coarse-graining and DFT surfaces) also take `--help`, which prints every option with its default and the reason for that default:
+Run `caps` with no arguments (or `caps --help`) to see every command and its main options on one screen. Every command takes `--help` (or `caps help COMMAND`), which prints that command's own lines of the usage; for the workflow commands (coarse-graining and DFT surfaces) it prints every option with its default and the reason for that default. An unknown command or option is refused with the nearest name when one is close:
 
 ```bash
 caps                      # the usage: every command
+caps edit --help          # one command's usage lines
 caps cgfit --help         # one command's options, defaults and reasons
 caps info ps.data          # any structure: atoms, molecules, bonds, cell, frames
 ```
@@ -47,7 +48,7 @@ The recipe runner and the coarse-graining and DFT commands write `FILE.provenanc
 
 ### Output and exit codes
 
-Commands print a short report and the files they wrote. `--json` (recipes, coarse-graining and DFT commands) prints the result as JSON for scripts. A command exits 0 on success and non-zero on an error. `caps run` distinguishes 2 (bad input), 3 (parameters missing from the force field) and 4 (a failed run); `caps validate` exits 1 when a slab fails a check, so it can stop a batch script.
+Commands print a short report and the files they wrote. `--json` (recipes, coarse-graining and DFT commands) prints the result as JSON for scripts. A command exits 0 on success and non-zero on an error. `caps run` distinguishes 2 (bad input), 3 (parameters missing from the force field) and 4 (a failed run); `caps validate` exits 1 when a slab fails a check, so it can stop a batch script. `caps relax` and `caps equilibrate --until-converged` use 3 for a different case: the run finished and wrote its output, but did not converge (relax stopped on `--iterations` before `--ftol`; equilibrate used up `--max-blocks` before every check passed). The file is usable; a `set -e` script can accept it with `|| [ $? -eq 3 ]`.
 
 ## Which command for what
 

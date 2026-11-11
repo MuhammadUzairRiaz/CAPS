@@ -31,6 +31,7 @@
 <div class="code" data-lang="shell"><pre><code>caps grow -o pbs.data --chains 6 --dp 6 --density 0.6 --units &#x27;*OCCCCOC(=O)CCC(=O)*&#x27; --seed 1
 caps relax pbs.data -o pbs_min.data --iterations 500 --quiet
 caps md pbs_min.data -o pbs_md.data --steps 3000 --dt 1 --temp 450 --dump pbs.lammpstrj --every 100 --quiet</code></pre></div>
+<p>If the relax stops on <code>--iterations 500</code> before its force tolerance, it still writes <code>pbs_min.data</code> and exits 3 (not converged); a <code>set -e</code> script can accept that with <code>|| [ $? -eq 3 ]</code>.</p>
 <h2 id="1-map">1. Map</h2>
 <p>The <code>ester-cut</code> preset cuts every ester C(=O)–O bond, so the fragments are the beads: B for the butanediol part, S for the succinate. Beads are named by rules; a fragment no rule names is reported, never merged silently.</p>
 <div class="code" data-lang="shell"><pre><code>caps cgmap pbs_md.data --preset ester-cut -o cg --dump pbs.lammpstrj</code></pre></div>

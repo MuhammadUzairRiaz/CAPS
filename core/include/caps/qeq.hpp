@@ -4,7 +4,7 @@
 // Minimises E(q) = Σ χ_i q_i + ½ Σ J_i q_i² + Σ_{i<j} q_i q_j K(r_ij) at fixed total charge, with the shielded Coulomb
 // kernel of Ohno and Klopman, K = 14.40 / √(r² + a_ij²) eV, a_ij = 7.20 (1/J_i + 1/J_j) Å, which tends to the
 // point-charge 1/r at long range and stays finite at bond lengths; a 7th-order taper brings it to zero at the cut-off
-// (minimum image in periodic cells). The linear system is solved by Jacobi-preconditioned conjugate gradients, twice
+// (summed over every periodic image within the cut-off, so a cell narrower than twice the cut-off keeps all of it). The linear system is solved by Jacobi-preconditioned conjugate gradients, twice
 // (H s = −χ, H t = 1; q = s + μ t with μ fixing the total charge), as LAMMPS fix qeq does. Like the original QEq it
 // gives ionic crystals large charges (quartz O about −1.6 e); molecules come out close to chemical intuition.
 //
@@ -13,7 +13,10 @@
 //                   n the element's period, ζ = λ (2n + 1) / (2R) with R the QEq radius and λ = 0.4913 (Rappé & Goddard);
 //                   tends to 1/r at long range, finite at r = 0. Computed exactly (incomplete gamma functions, then a
 //                   radial quadrature) and tabulated per element pair. "point" is the bare 1/r (for checks).
-//  ewald            the long-range 1/r summed over all images by Ewald (as Wilmer, Kim & Snurr's EQeq): real space
+//  ewald            (the default for a cell periodic along a, b and c, when it is affordable: by default a cell whose
+//                   reciprocal sum would cost more than 2·10⁷ atom × k-vector terms per step takes the tapered kernel over
+//                   the images within the cut-off instead, with a note; asked for explicitly, Ewald is always used)
+//                   the long-range 1/r summed over all images by Ewald (as Wilmer, Kim & Snurr's EQeq): real space
 //                   erfc(αr)/r, reciprocal space (4π/V) Σ_k e^(−k²/4α²)/k² cos k·r, self −2α/√π; the kernel's short-range
 //                   difference from 1/r is added for pairs within the cut-off. The matrix is never stored: the reciprocal
 //                   part is applied as structure factors.
@@ -34,11 +37,12 @@ namespace caps {
 
 struct QEqOptions {
   double total_charge = 0.0;   // e
-  double cutoff = 10.0;        // Å (reduced to half the narrowest cell width when the cell is smaller)
+  double cutoff = 10.0;        // Å (pairs over every periodic image within it, however narrow the cell)
   double tolerance = 1e-8;     // CG residual (relative)
   int max_iterations = 1000;
   std::string kernel = "ohno";   // ohno | slater | point
-  bool ewald = false;            // periodic cells only
+  bool ewald = true;             // cells periodic along a, b and c; false: the tapered kernel over the images within the cut-off
+  bool ewald_auto = true;        // true: the default, Ewald skipped for a cell too large to sum it quickly; false: as asked
   double ewald_accuracy = 1e-7;  // erfc(α r_c) and the reciprocal cut-off's Gaussian
   double lambda = 0.4913;        // Slater exponent scale
   bool hydrogen = false;         // charge-dependent hydrogen hardness
@@ -56,6 +60,7 @@ struct QEqReport {
   int bounded = 0;               // atoms held at a bound
   double alpha = 0;              // Ewald α (1/Å), 0 without Ewald
   int kvectors = 0;
+  bool converged = true;         // false: the self-consistent passes, the bounds or the CG solve did not converge (see notes)
   std::vector<std::string> notes;
 };
 
@@ -65,7 +70,7 @@ std::vector<double> qeq_charges(const System& s, const QEqOptions& o = {}, QEqRe
 // QEq parameters of an element from the UFF table: χ (eV), J (eV) and the QEq radius (Å); false when unknown.
 bool qeq_parameters(int z, double& chi, double& J, double& radius);
 
-// Options from JSON: {kernel, ewald, accuracy, lambda, hydrogen, cutoff, total, bounds: {"O": [qmin, qmax], …}}.
+// Options from JSON (ewald absent: the default, on for a cell periodic along a, b and c where affordable; given: as asked): {kernel, ewald, accuracy, lambda, hydrogen, cutoff, total, bounds: {"O": [qmin, qmax], …}}.
 QEqOptions qeq_options_from_json(const Json& j);
 // Bounds from text: "O:-1.2:0, Si:0:2.4".
 std::map<int, std::pair<double, double>> qeq_bounds_from_text(const std::string& t);

@@ -232,6 +232,66 @@ std::string ff_path(const std::string& s0) {
   return s0;
 }
 
+// A crystal by path, or from the library in data/crystals by its catalogue id (pe-orthorhombic, silicon), its file
+// (polymers/pe-orthorhombic.cif) or that file's name (pe-orthorhombic.cif, periclase.cif), as caps phono3py and vasp-relax
+// take it. An existing file always wins; a name found nowhere is refused naming both places looked in.
+std::string crystal_path(const std::string& in) {
+  if (in.empty() || exists_here(in)) return in;
+  for (const auto& root : caps_roots()) {
+    std::ifstream f(root + "/data/crystals/catalogue.json");
+    if (root.empty() || !f) continue;
+    std::stringstream ss;
+    ss << f.rdbuf();
+    try {
+      const Json cat = Json::parse(ss.str());
+      for (const auto& e : cat["crystals"].items()) {
+        const std::string file = e.text("file");
+        if (file.empty()) continue;
+        if (e.text("id") == in || file == in || std::filesystem::path(file).filename().string() == in) {
+          const std::string p = root + "/data/crystals/" + file;
+          if (exists_here(p)) return p;
+        }
+      }
+    } catch (const std::exception&) {}
+  }
+  throw std::invalid_argument(in + ": no such file, nor a crystal of data/crystals/catalogue.json");
+}
+
+// The library in data/forcefields whose "name" is this one (a CAPS data file records its force field by that name in its
+// "# caps-ff name" line), or "" when none is. Only the head of each file is read: the name is one of its first keys.
+std::string library_of_field_name(const std::string& name) {
+  namespace fs = std::filesystem;
+  if (name.empty()) return "";
+  for (const auto& root : caps_roots()) {
+    const fs::path dir = fs::path(root) / "data" / "forcefields";
+    std::error_code ec;
+    if (!fs::is_directory(dir, ec)) continue;
+    std::vector<fs::path> files;
+    for (const auto& e : fs::directory_iterator(dir, ec))
+      if (e.path().extension() == ".json" && e.path().filename() != "catalogue.json") files.push_back(e.path());
+    std::sort(files.begin(), files.end());
+    for (const auto& f : files) {
+      std::ifstream in(f);
+      std::string head(4096, '\0');
+      in.read(head.data(), std::streamsize(head.size()));
+      head.resize(size_t(in.gcount()));
+      const size_t k = head.find("\n \"name\": \"");
+      if (k == std::string::npos) continue;
+      std::string v;
+      for (size_t i = k + 11; i < head.size() && head[i] != '"'; ++i) {
+        if (head[i] == '\\' && i + 1 < head.size()) ++i;
+        v += head[i];
+      }
+      if (v != name) continue;
+      try {
+        if (load_forcefield(f.string()).name == name) return f.string();
+      } catch (const std::exception&) {
+      }
+    }
+  }
+  return "";
+}
+
 // Charges worth keeping: a file whose charge column is all zero (a builder's placeholder) has none.
 bool file_charges(const System& s) {
   if (!s.has_charges) return false;
@@ -240,17 +300,28 @@ bool file_charges(const System& s) {
   return false;
 }
 
-int usage() {
-  std::cerr << "caps 0.1.0\n"
+// --charges keep asked of a structure with no charges (a .pdb, .xyz or .gro has no charge column; a builder writes zeros):
+// every atom would get 0 and the Coulomb energy 0, so say so rather than write it silently
+void warn_keep_without_charges(const std::map<std::string, std::string>& o, const System& s) {
+  const auto c = o.find("--charges");
+  if (c != o.end() && c->second == "keep" && !file_charges(s))
+    std::fprintf(stderr, "charges: --charges keep, but the structure has no charges (none in its format, or all zero); every atom gets "
+                         "charge 0 and Coulomb is 0 (--charges auto gives the force field's own)\n");
+}
+
+const char* usage_text() {
+  return "caps 0.1.0\n"
                "usage:\n"
                "  caps --version | --check-update   this build; whether a newer CAPS release is out (exit 0 no, 1 yes, 2 cannot tell)\n"
-               "  caps report  [--email]                a problem report for support@caps-studio.org (version, system, the last failed command)\n"
+               "  caps report  [--email]                a problem report for support@caps-studio.org (version, system, the last failed command;\n"
+               "                                        a wrong argument is not kept)\n"
                "  caps info    FILE [--topology DATA]\n"
                "  caps render  FILE -o OUT.png|OUT.svg [--topology DATA] [--frame N] [--size WxH]\n"
                "               [--bg dark|white|transparent] [--colour molecule|element|type|distance]\n"
                "               [--style ball|space|sticks|noh|backbone] [--yaw DEG] [--pitch DEG] [--zoom Z] [--no-cell] [--wrap]\n"
                "  caps shape   FILE [--topology DATA]          per-molecule Rg and shape\n"
-               "  caps rdf     FILE [--topology DATA] [--rmax 12] [--dr 0.2] [--pair C-C] [--inter]\n"
+               "  caps rdf     FILE [--topology DATA] [--rmax 12] [--dr 0.2] [--pair C-C] [--inter]   g(r) of a periodic cell (all images within\n"
+               "               --rmax count, so it may pass half the cell); --pair takes element symbols or all\n"
                "  caps analyze FILE [--topology DATA] [--props density,rdf,sq,xray,neutron,rg,ree,cn,persistence,msd,diffusion,\n"
                "               relaxation,ced,delta,ffv,psd,crosslinks,entanglements] [--first N --last N --stride N] [--frame-ps X | --timestep-fs 1]\n"
                "               [--pair C-C --inter] [--qmax 25 --dq 0.02 --qdirect 4] [--probe 0] [--grid 0.4] [--ff FF.json] [--json OUT] [--csv DIR]\n"
@@ -262,14 +333,18 @@ int usage() {
                "               hbonds: [--hb-donors 'N O F'] [--hb-acceptors 'N O F S'] [--hb-criterion da|ha] [--hb-da 3.5] [--hb-ha Å]\n"
                "                [--hb-angle °] (da: ∠H–D···A at most, 30; ha: ∠D–H···A at least, 110) [--hb-between 'molecule 1 | molecule 2']\n"
                "  caps elastic FILE [--topology DATA] [--method strain|fluct|fluct-run] [--configs N] [--strain 1e-4] [--temp T] [--ps 100] [--ff FF.json] [--json OUT]\n"
-               "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]\n"
+               "  caps tensile DATA -o OUT.data [--axis x|y|z|xyz] [--rate 1e-3] [--strain 0.2] [--temp 300] [--dt 1] [--equilibrate 20] [--pressure 1] [--tau-p 1000] [--fixed-lateral]\n"
+               "               [--fit 0.02] [--seed 1] [--new-velocities] [--dump T.lammpstrj [--every 1000]] [--checkpoint-every N] [--resume-curve OUT.tensile-curve.json]\n"
+               "               [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]\n"
+               "               runs --equilibrate ps of NPT (each axis at --pressure atm; 20 ps is 20000 steps at 1 fs) before the pull, so the box starts\n"
+               "               stress-free; --equilibrate 0 skips it for a cell already equilibrated (--eq-ps is the same option)\n"
                "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]   |   caps tg --fit RUN [RUN ...] [--volume]\n"
                "  caps exchange arrhenius TABLE [TABLE2] [--reduced] [--from T --to T]   |   caps exchange modulus PTENSOR --cell-volume A3 --temp K --dt FS [--fit PS] [--g-inf MPa] [--corr-ps PS]\n"
                "               | caps exchange memory PARTNERS --frame-ps PS   |   caps exchange bridges START NOW [--axis z] [--plane 0.5] [--bin 1]\n"
                "               | caps exchange heal HEALED INTACT [--modulus-strain 0.03] [--at-strain E] [--up-to E]   [--json OUT] [--csv DIR]   (bond exchange and healing)\n"
                "               | caps exchange list   |   caps exchange show CHEMISTRY   (exchange chemistries and their barriers, data/exchange)\n"
                "               | caps exchange run DATA -o OUT [--chemistry ID] --kind swap|shift|bind [--sites SEL] [--partners SEL] [--labels chain|ends] [--capture 1.3]\n"
-               "                 [--barrier E] [--binding E] [--valence N[,M]] [--relax 1000 [--relax-depth 3]] [--every 10] [--attempts 1] [--steps 10000] [--temp 300] [--dt 1] [--kg [--k-theta K] | --ff FF.json]\n"
+               "                 [--barrier E] [--binding E] [--valence N[,M]] [--relax 1000 [--relax-depth 3]] [--every 10] [--attempts 1] [--steps 10000] [--temp 300] [--dt FS (default: the force field's own step, 0.49 with --kg; else 1)] [--kg [--k-theta K] | --ff FF.json]\n"
                "               | caps exchange bond-react DATA -o STEM --chemistry ID [--temp 300] [--t-ref T] [--steps N] [--ff FF.json]   (LAMMPS fix bond/react)\n"
                "               | caps exchange bond-swap DATA -o STEM [--sites SEL] [--stickers | --both-ends] [--every 50] [--fraction 0.5] [--cutoff 1.3] [--seed 1] [--steps N] [--k-theta K]\n"
                "               | caps exchange cut|gap|crack|fragment DATA -o OUT [--axis z] [--plane 0.5] [--gap A] [--radius A [--centre x,y,z]] [--axes xyz]   (healing-test starts)\n"
@@ -277,7 +352,8 @@ int usage() {
                "               | caps exchange heal-run DATA --ps PS [--start START] [--axis z] [--plane 0.5] [--chunks 10] [--npt]\n"
                "                 (with the moves and field options of run, or --no-exchange; [-o OUT] [--json OUT] [--csv DIR])\n"
                "  caps frames  FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N]   (read thinned)\n"
-               "  caps convert FILE OUT.data|xyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA]   (.car: with its .mdf)\n"
+               "  caps convert FILE OUT.data|lmp|xyz|extxyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA] [--supercell auto|na,nb,nc]   (.car: with its .mdf)\n"
+               "               a crystal cell too small for its bonds is refused for a format with bonds: --supercell auto writes the copies that hold them\n"
                "  caps table   CSV [--sort 'A,-B'] [--hist COLUMN [--rule fd|scott|sturges|N]] [--sdf OUT.sdf --structure COLUMN]\n"
                "               a table's rows ordered by columns (- descending), a histogram of a column, an SD file of the rows\n"
                "  caps pointgroup FILE [--tolerance 0.1] [--symmetrize -o OUT]   the molecule's point group and symmetry elements;\n"
@@ -285,10 +361,13 @@ int usage() {
                "  caps qha     CRYSTAL [--mode volume|axes] [--lock c] [--range 0.02] [--points 7] [--temps 0,100,200,298.15,400] [--pressure 0]\n"
                "               [--no-relax-cell] [--ff FF.json] [--cutoff 10] [--supercell n,n,n] [--mesh m,m,m] [--csv OUT]\n"
                "               quasi-harmonic free energy: phonons at strained cells, the cell, α, B_T, C_v, C_p and S at each temperature\n"
+               "               (--points: cells on the volume grid, at least 4, volume mode only; the axes mode uses a fixed grid of the\n"
+               "               centre, 4 cells per free axis, 4 per pair of free axes and, with a, b and c all free, 4 along the diagonal: 29)\n"
                "  caps tension THERMO.csv|log.lammps [--axis z] [--interfaces 2] [--skip 0.2] [--blocks 5] [--cell Lz]\n"
                "               surface or interfacial tension of a slab cell from its pressure tensor (Kirkwood–Buff), mN/m\n"
-               "  caps planes  FILE --hkl h,k,l [--shift 0.5] [--max N] [--json OUT]   lattice planes (hkl) of the cell: d-spacing,\n"
+               "  caps planes  FILE --hkl h,k,l [--shift 0] [--max N] [--json OUT]   lattice planes (hkl) of the cell: d-spacing,\n"
                "               normal, each plane cut to the cell, and the view angles that look down the normal\n"
+               "               (--shift in units of d, 0 through the origin; planes on the cell's faces are not listed)\n"
                "  caps edit    FILE --ops 'OP ARGS; OP ARGS …' | --ops-file OPS.txt -o OUT   edits in order, atoms numbered from 1:\n"
                "               element SEL Sym · delete SEL · bond I J [order] · unbond I J · addh [SEL] · attach I SMILES ·\n"
                "               length I J Å · angle I J K ° · torsion I J K L ° · invert I · config I R|S · rotate SEL x,y,z ° ·\n"
@@ -299,7 +378,9 @@ int usage() {
                "               nanowire u v w radius [repeats] [cylinder|hexagonal|square] [vacuum] ·\n"
                "               SEL: 3,5-9 · all · element:C,N · smarts:PATTERN · type:LABEL (numbers after a delete shift)\n"
                "  caps provenance FILE [--json | --bibtex | --methods] [--compare OTHER]   the steps that produced FILE (FILE.provenance.json)\n"
-               "  caps bench   [T1 T2 … | --all] [--repeats 3] [--quick] [--out DIR] [--samples DIR]   the built-in validation suite\n"
+               "  caps bench   [T1 T2 … | --all] [--repeats 3] [--quick] [--out DIR] [--samples DIR] [--cells DIR] [--reference polymers.json]\n"
+               "               the built-in validation suite; T6/T7 measure the equilibrated cells in --cells (else CAPS_BENCH_CELLS,\n"
+               "               else ~/.caps/bench/cells), one per material named by its reference id, against data/reference/polymers.json\n"
                "  caps build   SMILES -o OUT.mol2|OUT.pdb|OUT.xyz|OUT.data [--conformers 1] [--seed 1] [--ff FF.json] [--all]\n"
                "               a 3D molecule from SMILES; --ff cleans each conformer up with that force field (with typing rules)\n"
                "  caps check   FILE [--topology DATA] [--report OUT.md]   file checks (counts, bonds, contacts, charges, cell)\n"
@@ -324,18 +405,22 @@ int usage() {
                "  caps cgmap STRUCTURE… --preset ester-cut -o DIR [--dump DUMP]    chemistry-aware coarse-grained mapping\n"
                "  caps cgfit bonded|refine|targets|ibi-start|ibi-step|ibi-run|fit|tg|calibrate|sample-chain …   CG potentials\n"
                "  caps cgbuild --units BS=B+S --dp 100 --chains 50 --bonded DIR --maps MAP -o DIR   a CG melt of repeat units\n"
-               "  caps ppa MAP FRAMES [--method caps|z1|lammps] -o DIR      entanglements: primitive paths, N_e estimators\n"
+               "  caps ppa MAP FRAMES [--method caps|z1|both|lammps] -o DIR entanglements: primitive paths, N_e estimators\n"
                "  caps mech decks|analyze …       tension decks and their analysis · caps cgdyn MAP DUMP -o DIR  chain dynamics\n"
                "  caps backmap REF_MAP REF_DATA --cg CG_MAP --frame CG_FRAME -o DIR   CG beads back to all atoms\n"
                "  caps bundle  FILE [--topology DATA] --steps S.json [-o OUT.caps-bundle.zip] [--include-input] [--frame N]\n"
                "                                   a figure with its data, pipeline, provenance and hashes (and the input)\n"
-               "  caps reproduce BUNDLE.caps-bundle.zip   rebuild a bundle's data from its input and pipeline, compare sha256\n"
+               "  caps reproduce BUNDLE.caps-bundle.zip   check every shipped file's sha256, rebuild the data from its input and pipeline, compare\n"
                "  caps run     RECIPE.yaml|json [--seed N] [--threads N] [--out DIR] [--json] [--log thermo.csv] [--dump traj.lammpstrj]   build → type → grow → relax → equilibrate →\n"
-               "               md → analyze → export from one file (exit 0 ok · 2 input · 3 missing params · 4 failed run)\n"
-               "  caps run     PIPELINE.yaml|json [--input 'runs/*/X.lammpstrj'] [--frame first|last] [--csv OUT] [--out DIR: the outputs: block] [--branch NAME]\n"
-               "                                   a saved pipeline over many inputs: one row of attributes per input\n"
+               "               md → analyze → export from one file (exit 0 ok · 2 input · 3 missing params · 4 failed run); an unknown\n"
+               "               key in any stage is refused (exit 2); --dump: frames every frame_ps (or frame_every steps) of an md or\n"
+               "               equilibrate stage, about 100 per stage that sets neither\n"
+               "  caps run     PIPELINE.yaml|json [--input 'runs/*/X.lammpstrj'] [--topology DATA] [--frame first|last] [--csv OUT] [--out DIR: the outputs: block] [--branch NAME]\n"
+               "                                   a saved pipeline over many inputs: one row of attributes per input; the topology is\n"
+               "                                   --topology, else the pipeline's source: topology:, else STEM.data next to each dump\n"
                "  caps crystal --group 'P 42/m n m' --cell a,b,c[,α,β,γ] --sites 'Ti1 Ti 0 0 0; O1 O 0.3048 0.3048 0' -o OUT\n"
-               "               (OUT.cif in P 1, OUT.vasp or POSCAR for VASP, .data, .pdb, .xyz …)\n"
+               "               (OUT.cif keeps the space group and its asymmetric unit, P 1 once caps symmetry clears it;\n"
+               "               OUT.vasp or POSCAR for VASP, .data, .pdb, .xyz … hold every atom)\n"
                "               [--supercell 2,2,2] [--primitive] [--symmetrize] [--tolerance 0.01]   a crystal from a space group\n"
                "  caps crystal CRYSTAL.cif --find-symmetry [--tolerance 0.1]   its space group and asymmetric unit\n"
                "  caps crystal --groups [QUERY]    the 530 space-group settings (key, number, Hermann–Mauguin, Hall)\n"
@@ -358,12 +443,13 @@ int usage() {
                "  caps blend   --components SMILES1,SMILES2 [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs | --droplet] -o OUT\n"
                "  caps semicrystalline -o OUT.data [--polymer pe|pvdf-beta|ipp-alpha|nylon6-alpha|pet|...|CELL.cif | --polymer list]\n"
                "               [--repeats 4,6] [--crystal 7.6 (nm) | --crystal-cells 30] [--amorphous 7.6 (nm)] [--loops 0.35 --bridges 0.1 --tails 0.55]\n"
-               "               [--reentry adjacent|random] [--density 0.852] [--seed 1] [--ff auto|oplsaa2024|pcff|compass|oplsua2024] [--no-relax]\n"
+               "               [--reentry adjacent|random] [--density 0.852] [--seed 1] [--ff auto|oplsaa2024|pcff|compass|oplsua2024]\n"
+               "               [--no-relax: skip the CAPS relax, tens of minutes on one thread for a library cell of ~14,000 atoms]\n"
                "               [--report R.json] [--lammps-input IN.lmp] [--gromacs STEM]   a lamellar stack of any library crystal: stems, loops,\n"
                "               bridges and tails grown from the crystal's repeat unit (groups crystal, amorphous); defaults and force field per polymer\n"
                "  caps semicrystalline FILE --analyse [--report R.json] [--labels L.txt]   loops, bridges, tails, P2 crystallinity, profiles\n"
                "               of any frame; --labels: each atom's id, class (stem, loop, bridge, tail, none) and segment (side atoms as their backbone atom)\n"
-               "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
+               "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz|OUT.mol2|OUT.gro|OUT.cif [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               copolymers: --sequence terminal|markov|penultimate --weights FEED [--r1 R --r2 R | --reactivity 'r11,r12;r21,r22'\n"
                "                | --transition 'p11,p12;p21,p22' | --penultimate r1,r1p,r2,r2p] [--drift none|chains|along --conversion 0.8]\n"
                "                [--sequence-report OUT.json]   composition, dyads, triads and run lengths, model against built\n"
@@ -373,13 +459,16 @@ int usage() {
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|shuffled|gradient|pattern\n"
                "                --weights 0.7,0.3 --blocks 20,20 --pattern AAB --ff FF.json --method trials|rosenbluth|rosenbluth_lj\n"
-               "                --threads N --lookahead 1]   any repeat units (else polystyrene); the contact scale is automatic\n"
+               "                --threads N --lookahead 1]   any repeat units (else polystyrene); several units and no --sequence:\n"
+               "                alternating (random with --weights); gradient: A falls from the head to the tail, its share the first\n"
+               "                weight, the other units in their weights' ratio; the contact scale is automatic\n"
                "                (lowered only where a chain is stuck) unless --scale fixes it\n"
-               "  caps field   FILE [--topology DATA] [--forces OUT.txt]   the structure's force field (below): types, terms, energy (and per-atom forces)\n"
+               "  caps field   FILE [--topology DATA] [--ff FF.json [--overlay OV.json] [--charges MODE]] [--cutoff Å] [--forces OUT.txt]   the structure's force field (below): types, terms, energy (and per-atom forces)\n"
                "  caps relax   FILE -o OUT.data|OUT.pdb|OUT.xyz [--method lbfgs|cg|sd|fire] [--ftol 0.5] [--iterations 5000]\n"
                "               [--density 1.05] [--step 0.06] [--box-relax] [--pressure 1] [--no-pushoff] [--cutoff Å]\n"
                "               [--no-coulomb] [--ff FF.json [--overlay OV.json[,MORE.json]] [--charges auto|types|gasteiger|keep|qeq|increments] [--complete ml]] [--quiet]\n"
-               "               (.data output carries the force field for LAMMPS)\n"
+               "               (.data output carries the force field for LAMMPS; --quiet hides only the live progress line)\n"
+               "               exit 3: OUT was written but the last minimisation stopped on --iterations before --ftol (not converged)\n"
                "               --restraints 'distance 1 2 3.0 20; angle 1 2 3 109.5; torsion 1 2 3 4 60:90 50; position 1-40 5 axes z radius 0.5'\n"
                "               or a file of them (relax, md, equilibrate; ff apply writes them into the LAMMPS and GROMACS files): ½ k Δ², flat between\n"
                "               LO:HI, atoms from 1, k kcal/mol/Å² or /rad² (defaults 10 and 50), 'ramp KEND' to change k over a run\n"
@@ -388,29 +477,38 @@ int usage() {
                "               without --cutoff (relax, md, equilibrate): the force field's own cut-off, else 10 Å\n"
                "  caps cbmc    FILE -o OUT.data [--moves 1000] [--trials 8] [--max-torsions 4] [--temp 300] [--cutoff 9] [--seed 1]\n"
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
-               "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
+               "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=0.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
                "               [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)\n"
                "  caps cellrelax FILE -o OUT [--hold c,beta] [--pressure 0] [--ftol 0.01] [--steps 3000] [--cutoff 10] [--ff FF.json]\n"
                "               the cell and atoms relaxed with chosen lattice parameters held (a b c alpha beta gamma)\n"
-               "  caps path A B -o PATH.xyz [--no-match] [--method idpp|lst|linear] [--images 7] [--neb [--ff FF.json] [--relax-ends] [--spring 5] [--fmax 0.05] [--no-climb] [--steps 2000]]\n"
+               "  caps path A B -o PATH.xyz [--no-match] [--method idpp|lst|linear] [--images 7] [--neb [--ff FF.json [--overlay OV.json] [--charges auto|types|gasteiger|keep|qeq|increments]]\n"
+               "           [--cutoff 10] [--no-coulomb] [--relax-ends] [--spring 5] [--fmax 0.05] [--no-climb] [--steps 2000]]\n"
                "           atoms of B matched to A, the images between them, and the climbing-image NEB barrier with the force field\n"
-               "  caps data FILE [-o OUT.csv|.cube|.vtk|.npy] [--json OUT]   a measured curve (columns, .xrdml, GSAS, .uxd, Rigaku, JCAMP-DX) or a .cube grid\n"
+               "  caps data FILE [-o OUT.csv|.npy (a curve) | OUT.cube|.vtk|.npy (a .cube grid)] [--json OUT]   a measured curve (columns, .xrdml, GSAS, .uxd, Rigaku, JCAMP-DX) or a .cube grid\n"
                "  caps symmetry FILE [--find [--tolerance 0.1]] [--clear] [--cell a,b,c,alpha,beta,gamma] [-o OUT.cif]\n"
                "             the space group kept with the structure: found or read, the cell fitted to its crystal system, the CIF as its asymmetric unit\n"
                "  caps pores FILE [--probe 1.4] [--grid 0.25] [--samples 2000] [--radii bondi|uff] [--json OUT] [--cube FIELD.cube]\n"
                "             channels and pockets, LCD, PLD per axis, accessible volume and surface (per cell, m²/cm³, m²/g)\n"
-               "  caps qeq FILE [--kernel ohno|slater|point] [--ewald [--accuracy 1e-7]] [--lambda 0.4913] [--hydrogen] [--bounds 'O:-1.2:0,Si:0:2.4']\n"
-               "           [--cutoff 10] [--total 0] [--chg OUT.chg] [-o OUT.data|mol2|car|pdb]   charge equilibration (Slater shielding, Ewald for periodic cells)\n"
+               "  caps qeq FILE [--kernel ohno|slater|point] [--ewald|--no-ewald] [--accuracy 1e-7] [--lambda 0.4913] [--hydrogen] [--bounds 'O:-1.2:0,Si:0:2.4']\n"
+               "           [--cutoff 10] [--total 0] [--chg OUT.chg] [-o OUT.data|mol2|car]   charge equilibration (Slater shielding; Ewald by default for cells\n"
+               "           periodic along a, b and c unless the cell is too large for it to be quick; --ewald always, --no-ewald never:\n"
+               "           the tapered kernel summed over the images within the cut-off); charges that did not converge exit 1 and are not\n"
+               "           written unless [--allow-unconverged]\n"
                "  caps dendrimer -o OUT [--preset pamam|ppi|bismpa --generation G] [--core SMILES] [--unit SMILES] [--end SMILES]\n"
                "               [--focal SMILES] [--shells 2] [--growth perfect|sma|flory --units 30 --seed 1] [--no-relax]\n"
                "               AB_n units with sites [*:1] (A) and [*:2] (B); prints units per shell and the degree of branching\n"
                "  caps dpd --molecules 'AAAABBBB:300@shell:in; C:9000' [--regions 'core droplet r=3 prio=2; shell shell r=5 in=3 prio=1'] [--box 16]\n"
-               "           [--chi AB=25] [--density 3] [--steps 2000] [--equilibration 500] [--every 50] [--seed 1] [--spec SPEC.json] [-o OUT.xyz] [--json OUT]\n"
-               "           dissipative particle dynamics; regions (droplet, rod, slab, shell, tube; c=fx,fy,fz r= in= t= axis= prio=) compose the start\n"
+               "           [--chi AB=25] [--density 3] [--steps 20000] [--equilibration STEPS/4] [--every STEPS/40] [--seed 1] [--spec SPEC.json] [-o OUT.xyz] [--json OUT]\n"
+               "           dissipative particle dynamics; a sequence is bead letters A-Z with optional counts (A4B4 = AAAABBBB), branches in parentheses;\n"
+               "           regions (droplet, rod, slab, shell, tube; c=fx,fy,fz r= in= t= axis= prio=) compose the start;\n"
+               "           frames write bead types as elements A=C, B=O, C=N, D=S, others P (select them with 'element O' in domains, analyze)\n"
                "  caps index DATA.xy [--wavelength 1.54056] [--tolerance 0.03] [--systems cubic,tetragonal,hexagonal,orthorhombic,monoclinic] [--max-length 20]\n"
-               "             [--lines 20] [--unindexed 0] [--json OUT]   cells that index the pattern's lines (successive dichotomy), by M20\n"
-               "  caps solve DATA.xy MOLECULE --cell a,b,c,al,be,ga --space-group 'P 21/c' [--wavelength Å] [--steps 6000] [--seed 1] -o CRYSTAL.cif\n"
-               "             a molecular crystal found by simulated annealing against the pattern (direct space)\n"
+               "             [--lines 20] [--unindexed 0] [--max-boxes 20000000] [--json OUT]   cells that index the pattern's lines (successive\n"
+               "             dichotomy), by M20; a cell that indexes every line with M20 100 or more ends the search of lower symmetries\n"
+               "  caps solve DATA.xy MOLECULE --cell a,b,c,al,be,ga --space-group 'P 21/c' [--wavelength Å] [--steps 6000] [--restarts 2] [--seed 1]\n"
+               "             [--uvw U,V,W] [--xy X,Y] [--zero DEG] -o CRYSTAL.cif   a molecular crystal found by simulated annealing against the\n"
+               "             pattern (direct space); --steps counts all moves, shared by the restarts; the peak profile is fitted to the data\n"
+               "             (Pawley, in the cell) first unless --uvw, --xy or --zero give it\n"
                "  caps zmelt CRYSTAL --temps 100,200,300,400 [--ff FF] [--steps 10000] [--dt 1] [--bisect 3] [--cutoff 10] [--sample-every 20]\n"
                "              [--csv OUT] [--json OUT]   melting point by the Z method: NVE runs from the perfect crystal (Belonoshko et al.)\n"
                "  caps domains FILE [--group QUERY] [--grid 0.8] [--sigma 1.5] [--threshold ρ | the mean] [--below] [--min-voxels 1]\n"
@@ -443,26 +541,33 @@ int usage() {
                "               force-field parameters fitted to crystal structures, lattice energies and elastic constants (the spec lists them)\n"
                "  caps phonons CRYSTAL [--ff FF.json] [--cutoff Å] [--supercell n1,n2,n3] [--mesh m1,m2,m3] [--path 'G 0 0 0; X 0.5 0 0; …'] [--displacement 0.01]\n"
                "               [--sigma 5 (cm⁻¹)] [--temps 100,300] [--csv STEM] [--json OUT]   force-field phonons: dispersion, DOS, harmonic thermodynamics, sound speeds\n"
+               "               (CRYSTAL for phonons, qha and dielectric: a file, or a library crystal by id or file name: silicon, pe-orthorhombic.cif)\n"
                "  caps powder FILE [--topology DATA] [--anode Cu|Mo|Co|Fe|Cr|Ag | --wavelength Å] [--no-kalpha2] [--neutron] [--two-theta 5:90] [--step 0.02]\n"
                "               [--profile tch|pseudo-voigt|gaussian|lorentzian] [--uvw U,V,W] [--xy X,Y] [--size Å | --size-abc La,Lb,Lc] [--strain ε] [--biso B]\n"
                "               [--preferred h,k,l --march r] [--zero °] [--monochromator 2θ°] [--polarised] [--first N --last N --stride N] [--peaks 20] [--csv OUT] [--json OUT]\n"
                "               the powder pattern of the cell (its reciprocal lattice, frames averaged): reflections with hkl, d, 2θ, multiplicity, |F|, I\n"
                "  caps thermal FILE --dimensionality 3d|2d [--method gk|nemd] [--temp 300] [--eq-ps 10] [--ps 100] [--dt 1] [--every 5]\n"
                "               [--corr-ps 5] [--axis x|y|z] [--layers 20] [--swap-every 100] [--transient 0.3] [--thickness 3.35] [--seed 1]\n"
-               "               [--ff FF] [--json OUT.json] [--lammps-input IN.lmp]   thermal conductivity by MD: Green-Kubo (heat-flux\n"
-               "               autocorrelation, centroid form for bonded terms) or Muller-Plathe NEMD; 2d: a sheet with vacuum along z,\n"
-               "               in-plane only, kappa over an effective thickness and the sheet conductance\n"
+               "               [--ff FF] [--json OUT.json] [--lammps-input IN.lmp [--lammps-eq-ps 100] [--lammps-ps 2000]]\n"
+               "               thermal conductivity by MD: Green-Kubo (heat-flux autocorrelation, centroid form for bonded terms)\n"
+               "               or Muller-Plathe NEMD; 2d: a sheet with vacuum along z,\n"
+               "               in-plane only, kappa over an effective thickness and the sheet conductance; NEMD takes any force field\n"
+               "               and an even --layers of at least 10; Green-Kubo here takes harmonic bonds and angles, Fourier torsions\n"
+               "               and impropers and 12-6 LJ with DSF Coulomb (for other terms use nemd or --lammps-input); --eq-ps/--ps are the\n"
+               "               local run, the LAMMPS input's lengths are --lammps-eq-ps/--lammps-ps (with --lammps-input, --ps also runs here)\n"
                "  caps md      FILE -o OUT.data [--steps 10000] [--dt 1] [--temp 300] [--thermostat bussi|langevin|nose-hoover|none]\n"
                "               [--tau-t 100] [--barostat none|crescale|berendsen|mtk] [--pressure 1] [--tau-p 1000]\n"
                "               [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--hmr 3.024] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]\n"
                "               [--log thermo.csv] [--cutoff Å] [--skin 1.5] [--threads N] [--no-coulomb] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--quiet]\n"
                "               [--checkpoint-every N [--checkpoint OUT.restart.data]]   the full state every N steps\n"
                "               [--progress-file progress.jsonl]   one JSON line per thermo row (default in a SLURM job)\n"
-               "               caps md OUT.restart.data --resume --steps TOTAL -o OUT   continues from a checkpoint\n"
+               "               caps md OUT.restart.data --resume --steps TOTAL -o OUT   continues from a checkpoint with the first run's settings\n"
+               "               (kept beside it in OUT.restart.settings.json; --dt, --constraints and --hmr cannot change on a resume)\n"
                "  caps equilibrate FILE -o OUT.data [--protocol larsen21|annealing|pushoff|PROTOCOL.txt] [--print-protocol]\n"
                "               [--tfinal 300] [--tmax 600] [--pfinal 1] [--pmax 49346] [--scale 1] (atm, K; --scale shortens every stage)\n"
                "               [--cycles 3] [--tlow 300] [--thigh 600] [--ramp 50] [--hold 50]   (annealing, ps)\n"
                "               [--until-converged] [--block 20] [--max-blocks 20] [--dt 1] [--thermostat bussi|langevin|nose-hoover] [--tau-t 100]\n"
+               "               (--until-converged exits 3 when --max-blocks run out before every check passes; OUT is still written)\n"
                "               [--barostat crescale|berendsen|mtk] [--tau-p 1000] [--seed 1] [--dump TRAJ.lammpstrj --every-ps 10] [--log thermo.csv]\n"
                "               [--precision mixed|double] [--constraints h-bonds] [--hmr 3.024] [--cutoff Å] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--quiet]\n"
                "               (mixed: pair terms in single precision\n"
@@ -481,14 +586,44 @@ int usage() {
                "  caps ff complete FILE --ff FF.json [--overlay OV.json] -o OVERLAY.json [--report R.json] [--model M.model] [--step 15]\n"
                "               the bonded terms FF lacks for FILE, found and fitted with CAPS's machine-learned potential\n"
                "  caps ff import-lt FILE.lt -o FF.json          convert a moltemplate force field into the CAPS format\n"
-               "  caps ff info FF.json                           types, rules, styles, references\n"
+               "  caps ff info FF.json|NAME|uff                  types, rules, styles, references\n"
                "  caps ff overlays [FF_ID]                       the library's overlays (parameter refits) for --overlay\n"
-               "  caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules\n"
+               "  caps ff type FILE --ff FF.json|NAME|uff [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules (UFF: its own typer)\n"
                "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --dt FS (default: the force field's, Martini 20, else 0.5) --steps N] [--moltemplate SYSTEM.lt]]] [--gromacs STEM] [--dlpoly DIR] [--overlay USER.json[,MORE.json]] [--types TYPES.txt] [--charges auto|keep|types|gasteiger]\n"
                "               [--complete ml [--model M.model]]   (terms the force field lacks fitted by CAPS ML, marked as such in every file)\n"
                "               [--lammps-style native|exact] [--hybrid] [--kspace auto|pppm|ewald|dsf|cut] [--kspace-accuracy 1e-4] [--lammps-cutoff Å] [--units auto|real|metal]\n"
+               "               [--supercell auto|NA,NB,NC]   copies of the cell first (a --types file names the cell's atoms); a cell too small for its bonds is refused without them (ff type types it on its copies)\n"
                "               [--list] [-o OUT.data]   parameters for a structure whose atoms carry type names (or TYPES.txt)\n";
+}
+
+std::string usage_of(const std::string& cmd);
+std::string g_usage_cmd;   // the command main() is running: usage() shows its entries, not all 250 lines
+
+// the usage on stderr, exit 2: a command line CAPS could not run (the running command's entries when it has some)
+int usage() {
+  const std::string u = g_usage_cmd.empty() ? std::string() : usage_of(g_usage_cmd);
+  if (u.empty()) std::cerr << usage_text();
+  else std::cerr << "caps " << g_usage_cmd << ": a required input or option is missing\nusage:\n" << u << "(caps --help lists every command)\n";
   return 2;
+}
+
+// One command's entries of the usage text (a line '  caps CMD …' and its indented continuation lines, cut as the
+// website's command reference cuts them); empty when the usage has no entry for it.
+std::string usage_of(const std::string& cmd) {
+  std::string out, line;
+  bool in = false;
+  std::istringstream u(usage_text());
+  while (std::getline(u, line)) {
+    if (line.rfind("  caps ", 0) == 0 && line.size() > 7 && line[7] != '-') {
+      size_t e = 7;
+      while (e < line.size() && line[e] != ' ') ++e;
+      in = line.compare(7, e - 7, cmd) == 0 && e - 7 == cmd.size();
+    } else if (line.rfind("    ", 0) != 0) {
+      in = false;
+    }
+    if (in) out += line.substr(2) + "\n";
+  }
+  return out;
 }
 
 // Files matching a pattern with * and ? in any path segment (cells/seed*/PS_melt.data), sorted.
@@ -541,16 +676,16 @@ const std::set<std::string>& known_options() {
     "--amber", "--digits", "--dsf-alpha", "--fit", "--fix-mol", "--fixed-lateral", "--flake", "--fluid", "--forcefields", "--forces", "--frame",
     "--frame-ps", "--from", "--ftol", "--gap", "--grid", "--gromacs", "--group", "--groups", "--hkl", "--hmr",
     "--hold", "--hybrid", "--include-input", "--input", "--insert", "--inter", "--ions", "--itp", "--iterations",
-    "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--units", "--lammps-input", "--lammps-run", "--moltemplate",
+    "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--lammps-ps", "--lammps-eq-ps", "--units", "--lammps-input", "--lammps-run", "--moltemplate",
     "--lammps-style", "--last", "--layers", "--length", "--list", "--list-templates", "--log", "--lx", "--ly", "--m",
-    "--labels", "--email", "--lookahead", "--martini", "--max-blocks", "--max-torsions", "--moves", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size",
+    "--labels", "--email", "--lookahead", "--martini", "--max-blocks", "--max-boxes", "--max-torsions", "--moves", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size",
     "--molecules", "--n", "--names", "--neutralise", "--new-velocities", "--no-cell", "--wrap",
     "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
     "--no-tail", "--normal", "--out", "--overlay", "--padding", "--pair", "--particles",
     "--ops", "--ops-file", "--checkpoint-every", "--checkpoint", "--resume", "--resume-at", "--bench-json", "--resume-points", "--resume-curve", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--pitch", "--pmax", "--pme",
     "--pme-order", "--pme-spacing", "--precision", "--press", "--pressure", "--primitive", "--print-protocol", "--probe", "--progress-file",
     "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
-    "--ratio", "--batch", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence",
+    "--ratio", "--batch", "--repeats", "--cells", "--reference", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence",
     "--shape", "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents", "--spring", "--step",
     "--steps", "--strain", "--stride", "--style", "--supercell", "--surface",
     "--symmetrize", "--table", "--tacticity", "--target", "--tau-p", "--tau-t", "--temp", "--template",
@@ -558,15 +693,22 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--images", "--neb", "--fmax", "--no-climb", "--relax-ends", "--no-match", "--find", "--clear", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--accuracy", "--chg", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--mode", "--range", "--lock", "--no-relax-cell", "--slab", "--interfaces", "--skip", "--blocks", "--cell", "--shift", "--hold", "--hist", "--rule", "--sort", "--sdf", "--structure", "--preset", "--unit", "--core", "--end", "--focal", "--generation", "--growth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--r1", "--r2", "--reactivity", "--transition", "--penultimate", "--drift", "--conversion", "--sequence-report", "--feed", "--points", "--architecture", "--arms", "--arm-dp", "--spacing", "--branch-probability", "--generations", "--graft-units", "--graft-sequence", "--graft-weights", "--graft-dp", "--graft-on", "--graft-probability", "--graft-max", "--equivalent", "--per-site", "--disorder", "--probability", "--no-drift", "--cif", "--hb-donors", "--hb-acceptors", "--hb-criterion", "--hb-da", "--hb-angle", "--hb-ha", "--hb-between", "--pattern-bin", "--threshold", "--below", "--min-voxels", "--slice", "--slice-csv", "--cube", "--whole-molecules", "--min-spacing", "--max", "--probability", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--images", "--neb", "--fmax", "--no-climb", "--relax-ends", "--no-match", "--find", "--clear", "--samples", "--radii", "--kernel", "--lambda", "--total", "--bounds", "--hydrogen", "--ewald", "--no-ewald", "--accuracy", "--chg", "--allow-unconverged", "--spec", "--regions", "--gamma", "--equilibration", "--rc-angstrom", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--mode", "--range", "--lock", "--no-relax-cell", "--slab", "--interfaces", "--skip", "--blocks", "--cell", "--shift", "--hold", "--hist", "--rule", "--sort", "--sdf", "--structure", "--preset", "--unit", "--core", "--end", "--focal", "--generation", "--growth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
-// The known option closest to a mistyped one (edit distance), for the error message.
-std::string closest_option(const std::string& a) {
+// The candidate closest to a mistyped word (edit distance), for an error message. Only a plausible typo is offered:
+// at most a third of the word's letters (leading dashes not counted, at least one) changed, and of two equally near
+// candidates the one of the same length; none when that still leaves a tie.
+template <class Words>
+std::string closest_word(const std::string& a, const Words& words) {
+  size_t letters = a.size();
+  for (size_t k = 0; k < a.size() && a[k] == '-'; ++k) --letters;
+  const size_t limit = std::max<size_t>(1, letters / 3);
   std::string best;
   size_t bd = 99;
-  for (const auto& k : known_options()) {
+  bool tie = false;
+  for (const std::string& k : words) {
     std::vector<size_t> d(k.size() + 1);
     for (size_t j = 0; j <= k.size(); ++j) d[j] = j;
     for (size_t i = 1; i <= a.size(); ++i) {
@@ -578,10 +720,19 @@ std::string closest_option(const std::string& a) {
         prev = t;
       }
     }
-    if (d[k.size()] < bd) bd = d[k.size()], best = k;
+    const size_t dk = d[k.size()];
+    if (dk < bd) bd = dk, best = k, tie = false;
+    else if (dk == bd) {
+      const bool same_k = k.size() == a.size(), same_best = best.size() == a.size();
+      if (same_k && !same_best) best = k, tie = false;
+      else if (same_k == same_best) tie = true;
+    }
   }
-  return bd <= 3 ? best : std::string();
+  return bd <= limit && !tie ? best : std::string();
 }
+
+// The known option closest to a mistyped one, for the error message.
+std::string closest_option(const std::string& a) { return closest_word(a, known_options()); }
 
 // Options without a value (the rest take the next word)
 bool is_cli_switch(const std::string& a) {
@@ -591,7 +742,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--no-relax" || a == "--no-relax-cell" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
          a == "--during-md" || a == "--remove-unreacted" || a == "--remove-pendant" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
-         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo" || a == "--equivalent" || a == "--no-drift" || a == "--below" || a == "--whole-molecules" || a == "--ewald" || a == "--hydrogen" || a == "--find" || a == "--clear" || a == "--neb" || a == "--no-climb" || a == "--relax-ends" || a == "--no-match";
+         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo" || a == "--equivalent" || a == "--no-drift" || a == "--below" || a == "--whole-molecules" || a == "--ewald" || a == "--no-ewald" || a == "--hydrogen" || a == "--allow-unconverged" || a == "--find" || a == "--clear" || a == "--neb" || a == "--no-climb" || a == "--relax-ends" || a == "--no-match";
 }
 
 // A switch for this command? --json is one for run and provenance (print JSON) and names the output file for the
@@ -609,7 +760,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
     std::string a = argv[i];
     if (a.rfind("--", 0) == 0 && !known_options().count(a)) {
       const std::string near = closest_option(a);
-      throw std::invalid_argument("unknown option " + a + (near.empty() ? "" : " (did you mean " + near + "?)"));
+      throw std::invalid_argument("unknown option " + a + (near.empty() ? " (caps " + cmd + " --help shows the command's options)" : " (did you mean " + near + "?)"));
     }
     if (a.rfind("--", 0) == 0 || a == "-o") {
       if (a == "--json" && !is_cli_switch_for(cmd, a) && (i + 1 >= argc || argv[i + 1][0] == '-'))
@@ -758,31 +909,36 @@ void copolymer_options(ChainSpec& spec, std::map<std::string, std::string>& o) {
 }
 // the sequence report of a grown copolymer: printed, and whole to --sequence-report FILE.json
 void print_sequence_report(const ChainSpec& spec, const GrowReport& rep, std::map<std::string, std::string>& o) {
-  if (spec.units.size() < 2 || rep.sequences.empty()) return;
+  if (rep.sequences.empty()) return;
   const Json r = sequence_report(spec, rep.sequences);
   const int n = int(r["units"].number());
-  auto row = [&](const char* name, const Json& a) {
-    std::printf("  %-22s", name);
-    for (const auto& x : a.items()) std::printf(" %9.4f", x.is_number() ? x.number() : std::nan(""));
+  // one unit: nothing to tabulate (composition 1, run length DP), but a --sequence-report file is still written
+  if (spec.units.size() >= 2) {
+    auto row = [&](const char* name, const Json& a) {
+      std::printf("  %-22s", name);
+      for (const auto& x : a.items()) std::printf(" %9.4f", x.is_number() ? x.number() : std::nan(""));
+      std::printf("\n");
+    };
+    std::printf("sequence (%s), units", r["kind"].str().c_str());
+    for (int k = 0; k < n; ++k) std::printf(" %9c", char('A' + k));
     std::printf("\n");
-  };
-  std::printf("sequence (%s), units", r["kind"].str().c_str());
-  for (int k = 0; k < n; ++k) std::printf(" %9c", char('A' + k));
-  std::printf("\n");
-  if (r.has("model")) row("model composition", r["model"]["composition"]);
-  if (r.has("drift")) row("model cumulative", r["drift"].items().back()["cumulative"]);
-  row("built composition", r["built"]["composition"]);
-  if (r.has("model")) row("model run length", r["model"]["run_length"]);
-  row("built run length", r["built"]["run_length"]);
-  if (r.has("model")) {
-    double worst = 0;
-    const auto& md = r["model"]["dyads"].items();
-    const auto& bd = r["built"]["dyads"].items();
-    for (size_t k = 0; k < md.size() && k < bd.size(); ++k) worst = std::max(worst, std::fabs(md[k].number() - bd[k].number()));
-    std::printf("  largest dyad difference built − model %.4f over %.0f units\n", worst, r["built"]["count"].number());
+    if (r.has("model")) row("model composition", r["model"]["composition"]);
+    if (r.has("drift")) row("model cumulative", r["drift"].items().back()["cumulative"]);
+    row("built composition", r["built"]["composition"]);
+    if (r.has("model")) row("model run length", r["model"]["run_length"]);
+    row("built run length", r["built"]["run_length"]);
+    if (r.has("model")) {
+      double worst = 0;
+      const auto& md = r["model"]["dyads"].items();
+      const auto& bd = r["built"]["dyads"].items();
+      for (size_t k = 0; k < md.size() && k < bd.size(); ++k) worst = std::max(worst, std::fabs(md[k].number() - bd[k].number()));
+      std::printf("  largest dyad difference built − model %.4f over %.0f units\n", worst, r["built"]["count"].number());
+    }
   }
   if (o.count("--sequence-report") && o["--sequence-report"] != "1") {
-    std::ofstream(o["--sequence-report"]) << r.dump(1) << "\n";
+    std::ofstream f(o["--sequence-report"]);
+    if (!f) throw std::runtime_error("cannot write " + o["--sequence-report"]);
+    f << r.dump(1) << "\n";
     std::printf("wrote %s\n", o["--sequence-report"].c_str());
   }
 }
@@ -804,6 +960,58 @@ std::vector<Restraint> cli_restraints(const System& s, std::map<std::string, std
     std::printf("%zu restraint(s), %.4f kcal/mol at the start\n", rs.size(), add_restraint_forces(rs, x, s.cell, f).energy);
   }
   return rs;
+}
+
+// One row of a CSV or tab-separated table (RFC 4180): a field in double quotes is one value whatever separators it holds,
+// the quotes are not part of it, and "" inside it is a literal quote. The separator is a tab when one appears outside
+// quotes, else a comma (sep 0), or the one given.
+std::vector<std::string> split_csv_record(const std::string& line, char sep = 0) {
+  if (!sep) {
+    sep = ',';
+    bool q = false;
+    for (char c : line) {
+      if (c == '"') q = !q;
+      else if (c == '\t' && !q) {
+        sep = '\t';
+        break;
+      }
+    }
+  }
+  std::vector<std::string> v;
+  std::string cur;
+  bool q = false;
+  for (size_t i = 0; i < line.size(); ++i) {
+    const char c = line[i];
+    if (c == '"') {
+      if (q && i + 1 < line.size() && line[i + 1] == '"') cur += '"', ++i;
+      else q = !q;
+    } else if (c == sep && !q) {
+      v.push_back(cur), cur.clear();
+    } else if (c != '\r') {
+      cur += c;
+    }
+  }
+  v.push_back(cur);
+  return v;
+}
+
+// A pipeline's steps as caps pipeline, caps run and caps bundle read them: JSON when the text starts with '[' or '{',
+// the YAML a Studio pipeline is saved as otherwise. Either way a mistake is the user's (invalid_argument) and names
+// the format it was read as.
+Pipeline cli_pipeline(const std::string& text, std::string* name = nullptr, std::string* file = nullptr, std::string* topology = nullptr) {
+  const auto t0 = text.find_first_not_of(" \t\r\n");
+  if (t0 == std::string::npos) throw std::invalid_argument("the pipeline is empty: give a JSON list of steps or a pipeline YAML");
+  if (text[t0] == '[' || text[t0] == '{') {
+    try {
+      return pipeline_from_json(Json::parse(text));
+    } catch (const JsonError& e) {
+      throw std::invalid_argument(std::string("pipeline JSON: ") + e.what());
+    }
+  }
+  if (text.rfind("caps_pipeline", 0) != 0 && text.find("\ncaps_pipeline") == std::string::npos)
+    throw std::invalid_argument("not a CAPS pipeline: a pipeline YAML starts with the line \"caps_pipeline: 1\" and lists its steps under "
+                                "\"steps:\", one a line, as \"  - wrap: {}\" or \"  - cluster: {mode: cutoff, cutoff: 3.3}\" (a JSON list of steps works too)");
+  return pipeline_from_yaml(text, name, file, topology);
 }
 
 ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, bool quiet = false) {
@@ -831,16 +1039,43 @@ ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, boo
     if (!s0.forcefield_error.empty() && s0.forcefield_atoms == s0.atoms.size()) throw std::runtime_error(s0.forcefield_error);
     const bool ch = std::all_of(s0.atoms.begin(), s0.atoms.end(), [](const Atom& a) { return a.element == 1 || a.element == 6; });
     if (ch) {
+      // A crystal cell too small for its bonds lists one bond per pair of atoms (bonds.cpp), so a polyethylene carbon
+      // bonded to two images of one neighbour looks three-bonded, an alkene GAFF cannot type. The crystal commands
+      // (phonons, qha, dielectric, cellrelax) type the copies that hold every bond (field_for), so GAFF is judged on
+      // those copies here too and the force field named is the one they use.
+      std::array<int, 3> n{1, 1, 1};
+      if (s0.cell.valid() && !s0.bonds.empty() && !cell_fit(s0).fits) {
+        try {
+          n = copies_to_fit(s0);
+        } catch (const std::invalid_argument&) {   // no repetition within 15000 atoms: judged on the cell as it is
+        }
+      }
+      const bool copies = n != std::array<int, 3>{1, 1, 1};
       try {
-        ForceField F = assign_gaff(s0);
-        if (!quiet) std::printf("force field: the built-in GAFF (C and H; the structure has no force field of its own); give --ff for another\n");
-        return F;
+        if (!copies) {
+          ForceField F = assign_gaff(s0);
+          if (!quiet) std::printf("force field: the built-in GAFF (C and H; the structure has no force field of its own); give --ff for another\n");
+          return F;
+        }
+        (void)assign_gaff(supercell(s0, n[0], n[1], n[2]));   // throws FieldError when the copies are beyond it too
+        if (!quiet)
+          std::printf("force field: the built-in GAFF (C and H; the structure has no force field of its own), typed on the %d×%d×%d copies this cell "
+                      "needs for its bonds; give --ff for another\n", n[0], n[1], n[2]);
+        try {
+          return assign_gaff(s0);
+        } catch (const FieldError&) {   // the cell alone misses bonds: only its copies can be computed on (dynamics and relax refuse it)
+          ForceField F = assign_uff(s0);
+          F.name = "UFF on the cell alone (too small for its bonds; GAFF on its " + std::to_string(n[0]) + "×" + std::to_string(n[1]) + "×" +
+                   std::to_string(n[2]) + " copies)";
+          return F;
+        }
       } catch (const FieldError&) {   // the built-in GAFF knows sp3 and aromatic carbon only (not C=C of rubbers)
       }
     }
     if (!quiet) std::printf("force field: UFF (the structure has no force field of its own%s); give --ff for another\n", ch ? "; C=C is beyond the built-in GAFF" : "");
     return assign_uff(s0);
   }
+  if (!quiet) warn_keep_without_charges(o, s0);
   if (is_uff(o["--ff"])) {
     UffOptions uo;
     uo.keep_charges = o.count("--charges") && o["--charges"] == "keep";
@@ -869,9 +1104,11 @@ ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, boo
   ParamReport rep;
   if (!o.count("--charges") && file_charges(s0) && !quiet)
     std::fprintf(stderr, "charges: the file's own charges are kept, not %s's (--charges auto gives the force field's own)\n", def.name.c_str());
-  // --charges auto | increments as caps ff apply and the Studio take them (parameterize_charges), the rest as parameterize
+  // --charges auto | increments as caps ff apply and the Studio take them (parameterize_charges), the rest as parameterize.
+  // No --charges and no charges in the file: auto (the force field's own, else Gasteiger-Marsili, else QEq), the default of
+  // caps ff apply, the recipe runner and the Studio, so a force field without per-type charges (GAFF, DREIDING) still runs
   std::vector<std::string> said;
-  ForceField ff = parameterize_charges(s0, def, types, o.count("--charges") ? o["--charges"] : (file_charges(s0) ? "keep" : "types"),
+  ForceField ff = parameterize_charges(s0, def, types, o.count("--charges") ? o["--charges"] : (file_charges(s0) ? "keep" : "auto"),
                                        ff_path(o["--ff"]), &rep, false, &said);
   if (!quiet) for (const auto& l : said) std::printf("%s\n", l.c_str());
   if (!rep.missing.empty()) throw std::runtime_error(std::to_string(rep.missing.size()) + " parameters missing in " + def.name + " (caps ff apply lists them)");
@@ -968,6 +1205,7 @@ int cli_recipe(const Json& r, const std::string& file, std::map<std::string, std
   if (const std::string pf = o.count("--progress-file") ? o["--progress-file"] : default_progress_file(); !pf.empty()) live.open_progress(pf, resuming);
   ro.live = &live;
   ro.frames_path = o.count("--dump") ? o["--dump"] : (std::filesystem::path(ro.out_dir) / "traj.lammpstrj").string();
+  ro.frames_requested = o.count("--dump") > 0;   // md / equilibrate stages without frame_ps then write about 100 frames
   // stage checkpoints in a job (or with --resume): a run stopped near its time limit goes on from its last finished stage
   install_stop_signals();
   ro.resume = o.count("--resume") > 0;
@@ -1023,6 +1261,8 @@ int cli_recipe(const Json& r, const std::string& file, std::map<std::string, std
         if (std::isfinite(p.value)) std::printf("%s: %.6g%s%s\n", p.name.c_str(), p.value, p.unit.empty() ? "" : " ", p.unit.c_str());
       for (const auto& f : res.files) std::printf("wrote %s\n", f.c_str());
     }
+    if (ro.frames_requested && !live.frames_open())
+      std::fprintf(stderr, "caps run: --dump wrote no frames (no md or equilibrate stage ran, or each set frame_ps / frame_every to 0)\n");
     return 0;
   } catch (const RecipeError& e) {
     if (stop_requested() && !ro.checkpoint_dir.empty()) {   // stopped from outside: go on from the last finished stage
@@ -1051,7 +1291,9 @@ void cli_report(const std::vector<Property>& props, std::map<std::string, std::s
       if (!p.unit.empty()) std::printf(" %s", p.unit.c_str());
     }
     std::printf("\n  method: %s\n", p.method.c_str());
-    for (const auto& [k, v] : p.extra) std::printf("  %s: %.6g\n", k.c_str(), v);
+    for (const auto& [k, v] : p.extra)
+      if (std::isfinite(v)) std::printf("  %s: %.6g\n", k.c_str(), v);
+      else std::printf("  %s: n/a\n", k.c_str());   // not defined (see the notes); never a bare "nan"
     for (const auto& n : p.notes) std::printf("  note: %s\n", n.c_str());
   }
   if (o.count("--json")) {
@@ -1072,28 +1314,19 @@ void cli_report(const std::vector<Property>& props, std::map<std::string, std::s
   }
 }
 
-// Atoms by a selection: all, type:LABEL (a type label or number), or 1-based numbers and ranges (1-10,15).
+// Atoms by a selection, SEL as caps edit reads it (core parse_selection): all, element:C,N, smarts:PATTERN, type:LABEL
+// (a type label or number), or 1-based numbers and ranges (1-10,15).
 std::vector<uint32_t> cli_selection(const System& s, const std::string& sel) {
+  std::vector<char> m;
+  try {
+    m = parse_selection(s, sel);
+  } catch (const std::exception& e) {
+    throw std::invalid_argument("selection '" + sel + "': " + e.what() + " (use all, element:SYM[,SYM], smarts:PATTERN, type:LABEL or atom numbers 1-" +
+                                std::to_string(s.atoms.size()) + " such as 3,5-9)");
+  }
   std::vector<uint32_t> out;
-  if (sel == "all") {
-    for (uint32_t i = 0; i < s.atoms.size(); ++i) out.push_back(i);
-    return out;
-  }
-  if (sel.rfind("type:", 0) == 0) {
-    const auto m = select_type(s, sel.substr(5));
-    for (uint32_t i = 0; i < m.size(); ++i)
-      if (m[i]) out.push_back(i);
-    if (out.empty()) throw std::invalid_argument("no atom has type " + sel.substr(5));
-    return out;
-  }
-  std::stringstream ss(sel);
-  std::string part;
-  while (std::getline(ss, part, ',')) {
-    const size_t dash = part.find('-');
-    const long a = std::stol(part.substr(0, dash)), b = dash == std::string::npos ? a : std::stol(part.substr(dash + 1));
-    if (a < 1 || b < a || size_t(b) > s.atoms.size()) throw std::invalid_argument("selection " + part + ": atoms are numbered 1 to " + std::to_string(s.atoms.size()));
-    for (long k = a; k <= b; ++k) out.push_back(uint32_t(k - 1));
-  }
+  for (uint32_t i = 0; i < m.size(); ++i)
+    if (m[i]) out.push_back(i);
   return out;
 }
 
@@ -1173,19 +1406,134 @@ static bool poscar_name(const std::string& p) {
   return n.rfind("POSCAR", 0) == 0 || n.rfind("CONTCAR", 0) == 0;
 }
 
-// A structure written by its file extension: .pdb .xyz .mol2 .car .gro .sdf/.mol .cif, .vasp or a POSCAR/CONTCAR name,
-// else a LAMMPS data file.
+// A structure written by its file extension: .pdb .xyz/.extxyz .mol2 .car .gro .sdf/.mol .cif, .vasp or a POSCAR/CONTCAR
+// name, a LAMMPS data file for .data/.lmp/.lammps or a name with no extension. Any other extension is refused (a
+// .lammpstrj or .top holding a data file would not read back as one).
+static void write_structure_file(const System& s, const std::string& out);
+// the same name check before a long build, so a run is not lost to an output name write_structure_file refuses
+static void require_structure_name(const std::string& out) {
+  std::string low = out;
+  for (char& c : low) c = char(std::tolower(static_cast<unsigned char>(c)));
+  auto ends = [&](const char* e) { const std::string x(e); return low.size() > x.size() && low.compare(low.size() - x.size(), x.size(), x) == 0; };
+  for (const char* e : {".pdb", ".xyz", ".extxyz", ".mol2", ".car", ".gro", ".sdf", ".mol", ".cif", ".vasp", ".poscar", ".data", ".lmp", ".lammps"})
+    if (ends(e)) return;
+  if (poscar_name(out) || !std::filesystem::path(out).has_extension()) return;
+  throw std::invalid_argument("output format '" + std::filesystem::path(out).extension().string() +
+                              "': write .data/.lmp, .xyz/.extxyz, .pdb, .mol2, .car, .gro, .sdf/.mol, .cif, .vasp or a "
+                              "POSCAR/CONTCAR name (caps frames writes trajectories such as .lammpstrj)");
+}
+
 static void write_structure_file(const System& s, const std::string& out) {
-  auto ends = [&](const char* e) { const std::string x(e); return out.size() > x.size() && out.compare(out.size() - x.size(), x.size(), x) == 0; };
+  std::string low = out;
+  for (char& c : low) c = char(std::tolower(static_cast<unsigned char>(c)));
+  auto ends = [&](const char* e) { const std::string x(e); return low.size() > x.size() && low.compare(low.size() - x.size(), x.size(), x) == 0; };
   if (ends(".pdb")) write_pdb(s, out);
-  else if (ends(".xyz")) write_xyz(s, out);
+  else if (ends(".xyz") || ends(".extxyz")) write_xyz(s, out);
   else if (ends(".mol2")) write_mol2(s, out);
   else if (ends(".car")) write_car(s, out);
   else if (ends(".gro")) write_gro(s, out);
   else if (ends(".sdf") || ends(".mol")) write_sdf(s, out);
   else if (ends(".cif")) write_cif(s, out);
   else if (ends(".vasp") || ends(".poscar") || poscar_name(out)) write_poscar(s, out);
-  else write_lammps_data(s, out);
+  else if (ends(".data") || ends(".lmp") || ends(".lammps") || !std::filesystem::path(out).has_extension()) write_lammps_data(s, out);
+  else
+    throw std::invalid_argument("output format '" + std::filesystem::path(out).extension().string() +
+                                "': write .data/.lmp, .xyz/.extxyz, .pdb, .mol2, .car, .gro, .sdf/.mol, .cif, .vasp or a "
+                                "POSCAR/CONTCAR name (caps frames writes trajectories such as .lammpstrj)");
+}
+
+// write_structure_file, but a LAMMPS data name carries the force field (Coeffs sections, charges, core-shell types and
+// masses) as caps relax writes it
+static void write_structure_file(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& out) {
+  std::string low = out;
+  for (char& c : low) c = char(std::tolower(static_cast<unsigned char>(c)));
+  auto ends = [&](const char* x) { const std::string y(x); return low.size() > y.size() && low.compare(low.size() - y.size(), y.size(), y) == 0; };
+  const bool data = (ends(".data") || ends(".lmp") || ends(".lammps") || !std::filesystem::path(out).has_extension()) &&
+                    !ends(".poscar") && !poscar_name(out);
+  if (!data) return write_structure_file(s, out);
+  if (const std::string why = write_lammps_data_or_structure(s, ff, e, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
+}
+
+// True for a name write_structure_file writes as a LAMMPS data file (it carries the force field, core-shell types too)
+static bool lammps_data_name(const std::string& out) {
+  std::string low = out;
+  for (char& c : low) c = char(std::tolower(static_cast<unsigned char>(c)));
+  auto ends = [&](const char* x) { const std::string y(x); return low.size() > y.size() && low.compare(low.size() - y.size(), y.size(), y) == 0; };
+  return (ends(".data") || ends(".lmp") || ends(".lammps") || !std::filesystem::path(out).has_extension()) && !ends(".poscar") && !poscar_name(out);
+}
+
+// The chemistry a force field read from a file is bound to, atom by atom: elements, charges and the bond list. A geometry
+// edit (move, rotate, a torsion, the cell) leaves it as it was, so the file's force field still describes the structure;
+// an edit of the elements, the bonds, the charges or the atom count does not.
+struct ChemistryKey {
+  std::vector<int> z;
+  std::vector<double> q;
+  std::vector<std::pair<uint32_t, uint32_t>> bonds;
+  bool operator==(const ChemistryKey& k) const { return z == k.z && q == k.q && bonds == k.bonds; }
+};
+static ChemistryKey chemistry_key(const System& s) {
+  ChemistryKey k;
+  for (const auto& a : s.atoms) k.z.push_back(a.element), k.q.push_back(a.charge);
+  for (const auto& b : s.bonds) k.bonds.emplace_back(std::min(b.i, b.j), std::max(b.i, b.j));
+  std::sort(k.bonds.begin(), k.bonds.end());
+  return k;
+}
+
+// caps edit / caps convert: the result as a file. A LAMMPS data output keeps the force field the input carried (its
+// coefficients, read back) when the chemistry is unchanged (same_chemistry); otherwise it is the structure only, and a
+// note says the force field was not carried over, so the loss is never silent.
+static void write_edited_structure(const System& s, bool had_ff, bool same_chemistry, const std::string& from, const std::string& out,
+                                   std::map<std::string, std::string>& o, const std::string& why_dropped) {
+  if (!lammps_data_name(out)) return write_structure_file(s, out);   // a structure format: coordinates and bonds only
+  if (had_ff && same_chemistry && s.forcefield && s.forcefield->charge.size() == s.atoms.size()) {
+    EnergyOptions e;
+    electrostatics(e, o);
+    run_cutoff(e, *s.forcefield, o, true);
+    return write_structure_file(s, *s.forcefield, e, out);
+  }
+  write_structure_file(s, out);
+  if (had_ff)
+    std::fprintf(stderr, "note: %s is the structure only: the force field of %s (%s) was not carried over because %s; give it again with caps ff apply %s --ff FF\n",
+                 out.c_str(), from.c_str(), s.forcefield ? s.forcefield->name.c_str() : "its coefficients", why_dropped.c_str(), out.c_str());
+  else if (!s.forcefield_error.empty() && s.forcefield_atoms > 0)
+    std::fprintf(stderr, "note: %s is the structure only: the coefficients of %s were not read back (%s)\n", out.c_str(), from.c_str(), s.forcefield_error.c_str());
+}
+
+// True for a name write_structure_file writes in a structure format other than LAMMPS data (.cif, .pdb, POSCAR, ...)
+static bool structure_format_name(const std::string& out) {
+  std::string low = out;
+  for (char& c : low) c = char(std::tolower(static_cast<unsigned char>(c)));
+  auto ends = [&](const char* x) { const std::string y(x); return low.size() > y.size() && low.compare(low.size() - y.size(), y.size(), y) == 0; };
+  for (const char* e : {".pdb", ".xyz", ".extxyz", ".mol2", ".car", ".gro", ".sdf", ".mol", ".cif", ".vasp", ".poscar"})
+    if (ends(e)) return true;
+  return poscar_name(out);
+}
+
+// The structure as it was read, at the positions and cell of `prepared`: the copy cli_forcefield prepared for a shell
+// model (a shell appended per core) or a water model (massless sites inserted) holds atoms that are not atoms of the
+// material, and a CIF, PDB or XYZ file must not list them. The atoms are matched by order (shells come after every core;
+// sites have element 0); anything else (united atoms, beads) has no such match and `prepared` is returned as it is.
+static System as_read(const System& in, const System& prepared) {
+  const size_t n = in.atoms.size();
+  if (prepared.atoms.size() <= n) return prepared;
+  std::vector<size_t> keep;
+  bool order = true;
+  for (size_t i = 0; i < n && order; ++i) order = prepared.atoms[i].element == in.atoms[i].element;
+  if (order) {
+    for (size_t i = 0; i < n; ++i) keep.push_back(i);
+  } else {
+    for (size_t i = 0; i < prepared.atoms.size(); ++i) if (prepared.atoms[i].element != 0) keep.push_back(i);
+    if (keep.size() != n) return prepared;
+    for (size_t k = 0; k < n; ++k) if (prepared.atoms[keep[k]].element != in.atoms[k].element) return prepared;
+  }
+  System out = in;
+  out.cell = prepared.cell;
+  for (size_t k = 0; k < n; ++k) out.atoms[k].pos = prepared.atoms[keep[k]].pos;
+  if (prepared.velocities.size() == prepared.atoms.size()) {
+    out.velocities.resize(n);
+    for (size_t k = 0; k < n; ++k) out.velocities[k] = prepared.velocities[keep[k]];
+  }
+  return out;
 }
 
 void keep_cli_error(int argc, char** argv, const std::exception& e);
@@ -1199,7 +1547,21 @@ static int dft_main(const std::string& cmd, int argc, char** argv) {
     const std::string a = argv[i];
     if (a == "--help" || a == "-h") { std::printf("%s", dft_help(cmd).c_str()); return 0; }
     if (a == "--json") { json = true; continue; }
-    if (a.rfind("--", 0) == 0 || a == "-o") {
+    const std::vector<std::string> own = dft_option_names(cmd);
+    // a single dash before a one-letter option the command declares (-a), as --help prints it; a negative number stays
+    // a positional
+    const bool short_opt = a.size() == 2 && a[0] == '-' && std::isalpha(static_cast<unsigned char>(a[1])) &&
+                           std::find(own.begin(), own.end(), a) != own.end();
+    const bool stray_short = a.size() == 2 && a[0] == '-' && std::isalpha(static_cast<unsigned char>(a[1])) && a != "-o" && !short_opt;
+    if (a.rfind("--", 0) == 0 || a == "-o" || short_opt || stray_short) {
+      if (stray_short || (a != "-o" && !dft_known_option(a))) {
+        std::vector<std::string> words = own;
+        words.insert(words.end(), {"--json", "--help", "-o"});
+        const std::string near = closest_word(a, words);
+        std::fprintf(stderr, "caps %s: unknown option %s%s; caps %s --help lists the options\n", cmd.c_str(), a.c_str(),
+                     near.empty() ? "" : (" (did you mean " + near + "?)").c_str(), cmd.c_str());
+        return 2;
+      }
       if (dft_is_switch(cmd, a)) flags.push_back({a, "true"});
       else if (i + 1 < argc) flags.push_back({a, argv[++i]});
       else { std::fprintf(stderr, "caps %s: %s needs a value\n", cmd.c_str(), a.c_str()); return 2; }
@@ -1444,6 +1806,7 @@ int job_main(int argc, char** argv) {
     a = parse_job_args(argc, argv);
   } catch (const std::exception& e) {
     std::fprintf(stderr, "caps job: %s\n", e.what());
+    keep_cli_error(argc, argv, e);
     return 2;
   }
   try {
@@ -1473,9 +1836,27 @@ int job_main(int argc, char** argv) {
           if (eq == std::string::npos) throw std::invalid_argument("--set key=value,…");
           const std::string k = kv.substr(0, eq), v = kv.substr(eq + 1);
           if (!j.has(k)) throw std::invalid_argument("no profile key " + k);
-          if (j[k].is_number()) j[k] = std::stod(v);
-          else if (j[k].kind() == Json::Bool) j[k] = v == "1" || v == "true" || v == "yes";
-          else j[k] = v;
+          // checked here, before host_profile_from_json (which quietly mends an old or hand-edited file): a value
+          // outside the allowed set is refused, not replaced
+          if (k == "scheduler" && v != "slurm" && v != "pbs" && v != "direct")
+            throw std::invalid_argument("scheduler must be slurm, pbs or direct (got '" + v + "')");
+          if (k == "scratch" && v != "workspace" && v != "env" && v != "none")
+            throw std::invalid_argument("scratch must be workspace, env or none (got '" + v + "')");
+          if (j[k].is_number()) {
+            // port, cpus, ws_days, node_cores: whole numbers, the whole value read
+            std::size_t used = 0;
+            long n = 0;
+            try { n = std::stol(v, &used); } catch (const std::exception&) { used = 0; }
+            if (v.empty() || used != v.size()) throw std::invalid_argument(k + " needs a whole number (got '" + v + "')");
+            if (k == "cpus" && n < 1) throw std::invalid_argument("cpus must be at least 1 (got " + v + ")");
+            if (k == "port" && (n < 1 || n > 65535)) throw std::invalid_argument("port must be 1 to 65535 (got " + v + ")");
+            if (n < 0 || n > 1000000) throw std::invalid_argument(k + " must be 0 to 1000000 (got " + v + ")");
+            j[k] = double(n);
+          } else if (j[k].kind() == Json::Bool) {
+            if (v == "1" || v == "true" || v == "yes") j[k] = true;
+            else if (v == "0" || v == "false" || v == "no") j[k] = false;
+            else throw std::invalid_argument(k + " takes true, false, yes, no, 1 or 0 (got '" + v + "')");
+          } else j[k] = v;
         }
         h = host_profile_from_json(j);
         changed = true;
@@ -1827,6 +2208,108 @@ std::string resume_line(const std::string& head, const std::string& input, const
   return line;
 }
 
+// --pair A-B of rdf and analyze: element symbols, "all" for any element; an unknown symbol is an error (0 would be read
+// as "any element" and give the all-atom g(r) under the pair's name)
+std::pair<int, int> rdf_pair_elements(const std::string& p) {
+  const auto dash = p.find('-');
+  auto one = [&](const std::string& w) {
+    if (w == "all" || w == "*") return 0;
+    const int z = element_from_symbol(w);
+    if (z == 0) throw std::invalid_argument("--pair " + p + ": unknown element '" + w + "' (element symbols such as C-H, or all)");
+    return z;
+  };
+  return {one(p.substr(0, dash)), one(dash == std::string::npos ? p : p.substr(dash + 1))};
+}
+
+// caps md's run settings beside its checkpoint (run.restart.data -> run.restart.settings.json): every option of the run
+// (time step, thermostat, barostat, constraints, HMR, restraints, cut-off, electrostatics, precision, seed ...) except
+// those of one invocation, so caps md CHECKPOINT --resume continues with them when they are not given again
+std::string md_settings_path(const std::string& checkpoint) {
+  return std::filesystem::path(checkpoint).replace_extension(".settings.json").string();
+}
+
+std::string md_settings_text(const std::map<std::string, std::string>& o) {
+  static const std::set<std::string> skip = {"-o", "--steps", "--resume", "--topology", "--frame", "--new-velocities", "--bench-json",
+                                             "--quiet", "--threads", "--progress-file"};
+  Json j = Json::object(), opts = Json::object();
+  j["caps_md_settings"] = 1;
+  for (const auto& [k, v] : o)
+    if (!skip.count(k)) opts[k] = v;
+  j["options"] = opts;
+  return j.dump(1) + "\n";
+}
+
+// --resume: the stored settings fill every option not given again. A change of time step, constraints or HMR breaks
+// the trajectory, so it is refused; other changes are said. A checkpoint with no settings file (an older CAPS) runs
+// with the options given now, and says which.
+void md_resume_settings(const std::string& checkpoint, const System& s, std::map<std::string, std::string>& o) {
+  const DynamicsOptions def;
+  const std::string sp = md_settings_path(checkpoint);
+  std::ifstream f(sp);
+  if (!f) {
+    std::fprintf(stderr,
+                 "note: no %s beside the checkpoint, so the first run's settings are unknown; the run continues with the options given "
+                 "now (--dt %s, --thermostat %s, --barostat %s, --constraints %s%s): give them again if the first run used others\n",
+                 sp.c_str(), o.count("--dt") ? o["--dt"].c_str() : "1", o.count("--thermostat") ? o["--thermostat"].c_str() : "bussi",
+                 o.count("--barostat") ? o["--barostat"].c_str() : "none", o.count("--constraints") ? o["--constraints"].c_str() : "none",
+                 o.count("--hmr") ? (", --hmr " + o["--hmr"]).c_str() : "");
+    return;
+  }
+  std::stringstream ss;
+  ss << f.rdbuf();
+  Json j;
+  try {
+    j = Json::parse(ss.str());
+  } catch (const JsonError& e) {
+    throw std::invalid_argument(sp + ": " + e.what());
+  }
+  if (!j.is_object() || !j.has("options") || !j["options"].is_object()) throw std::invalid_argument(sp + " is not a caps md settings file");
+  std::map<std::string, std::string> stored;
+  for (const auto& [k, v] : j["options"].members()) stored[k] = v.is_string() ? v.str() : v.dump(0);
+  // the checkpoint carries the force field it ran with (its coefficients and charges): used as it is, not retyped
+  const bool own_ff = s.forcefield && s.forcefield->charge.size() == s.atoms.size();
+  static const std::set<std::string> ff_keys = {"--ff", "--overlay", "--charges", "--typing", "--complete"};
+  auto same = [](const std::string& a, const std::string& b) {
+    if (a == b) return true;
+    try {
+      size_t ia = 0, ib = 0;
+      const double x = std::stod(a, &ia), y = std::stod(b, &ib);
+      return ia == a.size() && ib == b.size() && x == y;
+    } catch (const std::exception&) {
+      return false;
+    }
+  };
+  // the settings a resumed run cannot change; a value not stored is the first run's default
+  auto as_run = [&](const std::string& k, const std::string& v) {
+    if (k == "--constraints") return std::to_string(int(constraints_from_string(v)));
+    if (k == "--constraint-solver") return std::to_string(int(constraint_algorithm_from_string(v)));
+    return v;
+  };
+  const std::map<std::string, std::string> fixed_default = {{"--dt", std::to_string(def.dt)},
+                                                            {"--constraints", std::to_string(int(def.constraints))},
+                                                            {"--constraint-solver", std::to_string(int(def.constraint_algorithm))},
+                                                            {"--hmr", std::to_string(def.hmr)}};
+  for (const auto& [k, dv] : fixed_default) {
+    if (!o.count(k)) continue;
+    const std::string was = stored.count(k) ? as_run(k, stored[k]) : dv;
+    if (!same(as_run(k, o[k]), was))
+      throw std::invalid_argument(k + " " + o[k] + " is not the checkpoint's run (" + k + " " + (stored.count(k) ? stored[k] : "not given") +
+                                  "): a resumed run keeps it; leave out --resume to start a new run from this state");
+  }
+  std::string restored, changed;
+  for (const auto& [k, v] : stored) {
+    if (own_ff && ff_keys.count(k)) continue;
+    if (!o.count(k)) {
+      o[k] = v;
+      restored += " " + k + (is_cli_switch_for("md", k) ? "" : " " + v);
+    } else if (!same(o[k], v)) {
+      changed += " " + k + " " + o[k] + " (was " + v + ")";
+    }
+  }
+  if (!restored.empty()) std::printf("the checkpoint's run settings:%s\n", restored.c_str());
+  if (!changed.empty()) std::printf("changed from the checkpoint's run:%s\n", changed.c_str());
+}
+
 // caps --check-update: the manifest of the latest release (one GET, nothing sent), compared with this build.
 // Exit 0: this build is the latest or newer; 1: a newer release is out; 2: cannot tell (offline, turned off, no manifest).
 int check_update_main() {
@@ -1940,8 +2423,49 @@ int report_main(int argc, char** argv) {
   return 0;
 }
 
+// The commands main() runs itself (the DFT, coarse-graining and job commands have their own tables): a name not here
+// is refused before any file is read. Keep in step with the `cmd == "…"` branches below.
+const std::set<std::string>& main_commands() {
+  static const std::set<std::string> k = {
+    "adp", "analyze", "bench", "blend", "build", "bundle", "cbmc", "cellrelax", "chains", "check", "cif", "contacts",
+    "convert", "copolymer", "crystal", "data", "dendrimer", "dielectric", "domains", "dpd", "edit", "elastic",
+    "enumerate", "equilibrate", "exchange", "ff", "field", "fields", "fit", "frames", "graft", "grow", "habit", "index",
+    "info", "interface", "martini", "md", "ml", "nano", "pack", "path", "phonons", "pipeline", "planes", "pointgroup",
+    "pore", "pores", "powder", "provenance", "pull", "qeq", "qha", "qspr", "rdf", "react", "refine", "relax", "render",
+    "reproduce", "run", "semicrystalline", "shape", "solvate", "solve", "sqs", "surface", "symmetry", "table", "tensile",
+    "tension", "tg", "thermal", "zmelt"};
+  return k;
+}
+
+// caps CMD --help (or caps help CMD): the command's own help where it has one, else its entries of the usage text
+int command_help(const std::string& cmd, char* argv0) {
+  if (cmd == "job") {
+    char help[] = "--help", job[] = "job";
+    char* a[] = {argv0, job, help, nullptr};
+    return job_main(3, a);
+  }
+  if (is_dft_command(cmd)) { std::printf("%s", dft_help(cmd).c_str()); return 0; }
+  if (is_cg_command(cmd)) { std::printf("%s", cg_help(cmd).c_str()); return 0; }
+  const std::string u = usage_of(cmd);
+  if (u.empty()) { std::printf("%s", usage_text()); return 0; }
+  std::printf("%s(caps --help lists every command)\n", u.c_str());
+  return 0;
+}
+
 int main(int argc, char** argv) {
   if (argc >= 2 && std::string(argv[1]) == "report") return report_main(argc, argv);
+  if (argc >= 2) {
+    const std::string a1 = argv[1];
+    if (a1 == "--help" || a1 == "-h" || a1 == "help") {
+      if (argc >= 3) return command_help(argv[2], argv[0]);
+      std::printf("%s", usage_text());
+      return 0;
+    }
+    if ((a1 == "--version" || a1 == "version" || a1 == "--check-update") && argc > 2) {
+      std::fprintf(stderr, "caps: %s takes no arguments\n", a1.c_str());
+      return 2;
+    }
+  }
   if (argc == 2 && (std::string(argv[1]) == "--version" || std::string(argv[1]) == "version")) {
     // "caps 0.1.0 (commit a1b2c3d4e5)": the Studio compares it with its own before running jobs on a host
     std::printf("caps %s (commit %s)\n", version_string(), commit_string());
@@ -1951,6 +2475,24 @@ int main(int argc, char** argv) {
   if (argc >= 2 && std::string(argv[1]) == "job") return job_main(argc, argv);
   if (argc >= 2 && is_dft_command(argv[1])) return dft_main(argv[1], argc, argv);
   if (argc >= 2 && is_cg_command(argv[1])) return cg_main(argv[1], argc, argv);
+  if (argc >= 2 && !main_commands().count(argv[1])) {
+    // an unknown command is said to be one before any file is opened (a missing file is not blamed on CAPS)
+    const std::string c = argv[1];
+    std::vector<std::string> all(main_commands().begin(), main_commands().end());
+    all.insert(all.end(), dft_commands().begin(), dft_commands().end());
+    all.insert(all.end(), cg_commands().begin(), cg_commands().end());
+    all.insert(all.end(), {"job", "report"});
+    std::string near = closest_word(c, all);
+    if (near.empty() && c.size() >= 3)   // the start of a longer name: adsorb, adsorb-dft
+      for (const auto& k : all)
+        if (k.rfind(c + "-", 0) == 0) { near = k; break; }
+    std::fprintf(stderr, "caps: unknown command %s%s; caps --help lists the commands\n", c.c_str(),
+                 near.empty() ? "" : (" (did you mean " + near + "?)").c_str());
+    return 2;
+  }
+  for (int i = 2; i < argc; ++i)
+    if (std::strcmp(argv[i], "--help") == 0 || std::strcmp(argv[i], "-h") == 0) return command_help(argv[1], argv[0]);
+  if (argc >= 2) g_usage_cmd = argv[1];
   if (argc < 3) return usage();
   const std::string cmd = argv[1];
   std::vector<std::string> pos;
@@ -1963,20 +2505,34 @@ int main(int argc, char** argv) {
   }
   if (cmd == "grow") {
     try {
+      // a number option read whole: "--dp abc" or "--dp 3x" names the option rather than passing or failing as "stoi"
+      auto num_opt = [&](const char* key, bool whole) {
+        const std::string& v = o[key];
+        size_t pos = 0;
+        double x = 0;
+        try { x = whole ? double(std::stoll(v, &pos)) : std::stod(v, &pos); } catch (const std::exception&) { pos = 0; }
+        if (pos == 0 || pos != v.size()) throw std::invalid_argument(std::string(key) + ": expected " + (whole ? "a whole number" : "a number") + ", got '" + v + "'");
+        return x;
+      };
+      auto int_opt = [&](const char* key) { return int(std::clamp(num_opt(key, true), -2147483648.0, 2147483647.0)); };
       GrowOptions g;
-      if (o.count("--chains")) g.chains = std::stoi(o["--chains"]);
-      if (o.count("--dp")) g.dp = std::stoi(o["--dp"]);
-      if (o.count("--box")) g.box = std::stod(o["--box"]);
-      g.density = o.count("--density") ? std::stod(o["--density"]) : 0.5;
+      if (o.count("--chains")) g.chains = int_opt("--chains");
+      if (o.count("--dp")) g.dp = int_opt("--dp");
+      if (o.count("--box")) g.box = num_opt("--box", false);
+      g.density = o.count("--density") ? num_opt("--density", false) : 0.5;
       if (o.count("--tacticity")) g.tacticity = tacticity_from_string(o["--tacticity"]);
       if (o.count("--seed")) g.seed = std::stoull(o["--seed"]);
       g.curve = !o.count("--trans");
-      if (o.count("--scale")) g.contact_scale = std::stod(o["--scale"]);
-      if (o.count("--trials")) g.trials = std::stoi(o["--trials"]);
-      if (o.count("--comfortable")) g.comfortable = std::stod(o["--comfortable"]);
+      if (o.count("--scale")) g.contact_scale = num_opt("--scale", false);
+      if (o.count("--trials")) g.trials = int_opt("--trials");
+      if (o.count("--comfortable")) g.comfortable = num_opt("--comfortable", false);
       g.escalate = o.count("--escalate");
       g.auto_scale = o.count("--auto-scale") || !o.count("--scale");   // automatic unless --scale fixes it
       if (!o.count("-o")) return usage();
+      // the core would build DP 1 or one chain for these and still report the number asked for
+      if (o.count("--chains") && g.chains < 1) throw std::invalid_argument("--chains must be at least 1 (got " + o["--chains"] + ")");
+      if (o.count("--dp") && g.dp < 1) throw std::invalid_argument("--dp must be at least 1 (got " + o["--dp"] + ")");
+      require_structure_name(o["-o"]);
       GrowReport rep;
       System s;
       if (o.count("--units")) {
@@ -1996,30 +2552,35 @@ int main(int argc, char** argv) {
         spec.tacticity = g.tacticity;
         if (o.count("--sequence")) spec.sequence = sequence_from_string(o["--sequence"]);
         if (o.count("--weights")) for (const auto& w : split(o["--weights"])) spec.weights.push_back(std::stod(w));
+        // several units and no sequence: all of them, as caps graft does (homopolymer would keep unit A only)
+        if (spec.units.size() > 1 && !o.count("--sequence")) spec.sequence = spec.weights.empty() ? Sequence::Alternating : Sequence::Random;
         copolymer_options(spec, o);
         architecture_options(spec, o);
         if (o.count("--blocks")) for (const auto& b : split(o["--blocks"])) spec.blocks.push_back(std::stoi(b));
         if (o.count("--pattern")) spec.pattern = o["--pattern"];
-        if (o.count("--ff")) spec.forcefield = o["--ff"];
+        if (o.count("--ff")) spec.forcefield = ff_path(o["--ff"]);
         if (o.count("--method")) {
           const std::string m = o["--method"];
           if (m != "trials" && m != "rosenbluth" && m != "rosenbluth_lj") throw std::invalid_argument("--method trials|rosenbluth|rosenbluth_lj");
           g.method = m == "rosenbluth" ? 1 : m == "rosenbluth_lj" ? 2 : 0;
         }
-        if (o.count("--threads")) g.threads = std::stoi(o["--threads"]);
-        if (o.count("--lookahead")) g.lookahead = std::clamp(std::stoi(o["--lookahead"]), 1, 4);
+        if (o.count("--threads")) g.threads = int_opt("--threads");
+        if (o.count("--lookahead")) g.lookahead = std::clamp(int_opt("--lookahead"), 1, 4);
         s = grow_chains(spec, g, &rep);
         print_sequence_report(spec, rep, o);
-      } else
+      } else {
+        if (o.count("--sequence-report"))
+          throw std::invalid_argument("--sequence-report needs --units (the built-in chain has no repeat-unit sequence)");
         s = grow(g, &rep);
+      }
       const std::string out = o["-o"];
-      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
-      if (ends(".pdb")) write_pdb(s, out);
-      else if (ends(".xyz")) write_xyz(s, out);
-      else write_lammps_data(s, out);
+      write_structure_file(s, out);   // .data, .pdb, .xyz, .mol2, .gro, .car, .sdf, .cif … by the name's extension
       for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
-      std::printf("%zu atoms · %zu bonds · %d restarts · %d backtracks · closest contact margin %.2f Å · wrote %s\n", s.atoms.size(),
-                  s.bonds.size(), rep.restarts, rep.backtracks, rep.worst_margin, out.c_str());
+      char margin[64];
+      if (std::isfinite(rep.worst_margin)) std::snprintf(margin, sizeof margin, "%.2f Å", rep.worst_margin);
+      else std::snprintf(margin, sizeof margin, "n/a (no non-bonded pairs)");
+      std::printf("%zu atoms · %zu bonds · %d restarts · %d backtracks · closest contact margin %s · wrote %s\n", s.atoms.size(),
+                  s.bonds.size(), rep.restarts, rep.backtracks, margin, out.c_str());
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps grow: %s\n", e.what());
@@ -2121,6 +2682,12 @@ int main(int argc, char** argv) {
       else ff = default_forcefield(s);
       const auto field = std::make_shared<const ForceField>(ff);
       if (!o.count("--no-relax")) {
+        // the push-off and two minimisations cost about 1.5 min per 1000 atoms on one thread (1844 atoms of nylon 6 with
+        // PCFF: 159 s), so a library-size cell takes tens of minutes: said before it starts, with the way round it
+        if (!quiet && s.atoms.size() > 3000)
+          std::fprintf(stderr, "relaxing %zu atoms in CAPS (%s): roughly %.0f min on one thread, less with more threads; --no-relax skips it%s\n",
+                       s.atoms.size(), ff.name.c_str(), std::max(1.0, 1.5 * double(s.atoms.size()) / 1000.0),
+                       o.count("--lammps-input") ? " (the --lammps-input deck minimises the cell itself)" : "");
         relax_semicrystalline(s, field, e, 1.0, [&](const std::string& what, double f) {
           if (!quiet) std::fprintf(stderr, "\r%-60s %3.0f %%", what.substr(0, 60).c_str(), 100 * std::min(1.0, f));
           return true;
@@ -2243,19 +2810,39 @@ int main(int argc, char** argv) {
   }
   if (cmd == "provenance") {
     if (pos.empty()) return usage();
-    const auto m = read_manifest(pos[0]);
-    if (!m) { std::fprintf(stderr, "caps provenance: no %s\n", sidecar_path(pos[0]).c_str()); return 1; }
+    std::string why;   // missing, not JSON, or not a caps-manifest/1.0 file
+    const auto m = read_manifest(pos[0], &why);
+    if (!m) {
+      std::fprintf(stderr, "caps provenance: %s\n", why.c_str());
+      log_cli_error(argc, argv, why);   // kept for caps report, as every failed command is
+      return 1;
+    }
     if (o.count("--json")) { std::printf("%s\n", manifest_json(*m).dump(2).c_str()); return 0; }
-    if (o.count("--bibtex")) { std::printf("%s", bibtex(all_cites(*m)).c_str()); return 0; }
+    if (o.count("--bibtex")) {
+      const std::string b = bibtex(all_cites(*m));
+      std::printf("%s", b.c_str());
+      if (b.empty()) {
+        std::string engines;
+        for (const auto& st : m->steps) engines += (engines.empty() ? "" : ", ") + st.engine;
+        std::fprintf(stderr, "caps provenance: no citations recorded for %s\n", engines.empty() ? "a manifest with no steps" : ("these steps (" + engines + ")").c_str());
+      }
+      return 0;
+    }
     if (o.count("--methods")) {
       std::vector<std::string> refs;
-      std::printf("%s\n\n", methods_text(*m, &refs).c_str());
+      const std::string text = methods_text(*m, &refs);
+      if (text.empty()) { std::fprintf(stderr, "caps provenance: the manifest has no steps to describe\n"); return 0; }
+      std::printf("%s\n\n", text.c_str());
       for (size_t k = 0; k < refs.size(); ++k) std::printf("[%zu] %s\n", k + 1, refs[k].c_str());
       return 0;
     }
     if (auto c = o.find("--compare"); c != o.end()) {
-      const auto other = read_manifest(c->second);
-      if (!other) { std::fprintf(stderr, "caps provenance: no %s\n", sidecar_path(c->second).c_str()); return 1; }
+      const auto other = read_manifest(c->second, &why);
+      if (!other) {
+        std::fprintf(stderr, "caps provenance: %s\n", why.c_str());
+        log_cli_error(argc, argv, why);
+        return 1;
+      }
       const auto d = compare(*m, *other);
       for (const auto& r : d.rows) std::printf("step %d %-22s %-18s %s  vs  %s\n", r.step + 1, r.engine.c_str(), r.key.c_str(), r.a.c_str(), r.b.c_str());
       for (const auto& n : d.notes) std::printf("%s\n", n.c_str());
@@ -2297,6 +2884,10 @@ int main(int argc, char** argv) {
         const System s = ext == ".cif" ? read_cif(pos[0]) : load(pos[0], o);
         const SymmetryFound f = find_symmetry(s, tol > 0 ? tol : 0.1);
         std::printf("%s (No. %d, %s) · %d operations · setting %s\n", f.hm.c_str(), f.number, f.system.c_str(), f.operations, f.key.c_str());
+        if (f.supercell[0] * f.supercell[1] * f.supercell[2] > 1) {
+          const auto& c = f.cell;
+          std::printf("the file is a %d x %d x %d supercell of a = %.4f, b = %.4f, c = %.4f Å; the sites below are in that cell\n", f.supercell[0], f.supercell[1], f.supercell[2], norm(c.a), norm(c.b), norm(c.c));
+        }
         std::printf("origin shift %.4f %.4f %.4f\n", f.origin[0], f.origin[1], f.origin[2]);
         std::printf("%-8s %-3s %9s %9s %9s\n", "label", "el", "x", "y", "z");
         for (const auto& site : f.sites)
@@ -2474,7 +3065,7 @@ int main(int argc, char** argv) {
         std::stringstream ss(o["--units"]);
         for (std::string u; std::getline(ss, u, ',');) spec.units.push_back({u, u});
         spec.dp = o.count("--dp") ? std::stoi(o["--dp"]) : 20;
-        if (o.count("--ff")) spec.forcefield = o["--ff"];
+        if (o.count("--ff")) spec.forcefield = ff_path(o["--ff"]);
         FillerMatrixOptions fo;
         fo.chains = o.count("--chains") ? std::stoi(o["--chains"]) : 10;
         if (o.count("--density")) fo.density = std::stod(o["--density"]);
@@ -2512,12 +3103,24 @@ int main(int argc, char** argv) {
       std::vector<BlendComponent> comps;
       const auto smi = list(o["--components"]);
       const auto w = o.count("--weights") ? list(o["--weights"]) : std::vector<std::string>{};
+      // one weight per component, each a number of 0 or more (a missing one is not taken as 1, a negative one not as 0)
+      if (o.count("--weights") && w.size() != smi.size())
+        throw std::invalid_argument("--weights needs one value per component (" + std::to_string(smi.size()) + " components, " +
+                                    std::to_string(w.size()) + " weights)");
+      std::vector<double> wt(smi.size(), 1.0);
+      for (size_t k = 0; k < w.size(); ++k) {
+        size_t used = 0;
+        try { wt[k] = std::stod(w[k], &used); } catch (const std::exception&) { used = 0; }
+        if (used == 0 || used != w[k].size() || !std::isfinite(wt[k]) || wt[k] < 0)
+          throw std::invalid_argument("--weights: '" + w[k] + "' is not a weight of 0 or more");
+      }
+      if (!w.empty() && *std::max_element(wt.begin(), wt.end()) <= 0) throw std::invalid_argument("--weights: at least one weight must be above 0");
       for (size_t k = 0; k < smi.size(); ++k) {
         BlendComponent c;
         c.spec.units.push_back({smi[k], smi[k]});
         c.spec.dp = o.count("--dp") ? std::stoi(o["--dp"]) : 20;
-        if (o.count("--ff")) c.spec.forcefield = o["--ff"];
-        c.weight = k < w.size() ? std::stod(w[k]) : 1.0;
+        if (o.count("--ff")) c.spec.forcefield = ff_path(o["--ff"]);
+        c.weight = wt[k];
         comps.push_back(c);
       }
       BlendOptions bo;
@@ -2548,6 +3151,8 @@ int main(int argc, char** argv) {
     // a polymer film grown onto a slab: a slab file, or a crystal (CIF) cleaved with the surface options
     try {
       if (pos.empty() || !o.count("-o") || !o.count("--units")) return usage();
+      // a word left over (a value after an option that takes none) is refused, not dropped
+      if (pos.size() > 1) throw std::invalid_argument("unexpected argument " + pos[1] + " (caps interface takes one SLAB or CRYSTAL.cif)");
       auto list = [](const std::string& t) {
         std::vector<std::string> v;
         std::stringstream ss(t);
@@ -2582,13 +3187,14 @@ int main(int argc, char** argv) {
       if (o.count("--tacticity")) spec.tacticity = tacticity_from_string(o["--tacticity"]);
       if (o.count("--sequence")) spec.sequence = sequence_from_string(o["--sequence"]);
       if (o.count("--weights")) for (const auto& w : list(o["--weights"])) spec.weights.push_back(std::stod(w));
+      if (spec.units.size() > 1 && !o.count("--sequence")) spec.sequence = spec.weights.empty() ? Sequence::Alternating : Sequence::Random;   // all the units given
       copolymer_options(spec, o);
       if (o.count("--blocks")) for (const auto& b : list(o["--blocks"])) spec.blocks.push_back(std::stoi(b));
       if (o.count("--pattern")) spec.pattern = o["--pattern"];
-      if (o.count("--ff")) spec.forcefield = o["--ff"];
+      if (o.count("--ff")) spec.forcefield = ff_path(o["--ff"]);
       InterfaceOptions io;
       if (o.count("--film")) io.film = std::stod(o["--film"]);
-      if (o.count("--film-density")) io.density = std::stod(o["--film-density"]);
+      if (o.count("--film-density")) io.density = std::stod(o["--film-density"]), io.density_given = true;
       if (o.count("--chains")) io.chains = std::stoi(o["--chains"]);
       if (o.count("--gap")) io.gap = std::stod(o["--gap"]);
       if (o.count("--vacuum")) io.vacuum = std::stod(o["--vacuum"]);
@@ -2616,6 +3222,8 @@ int main(int argc, char** argv) {
     // a slab cleaved from a crystal (CIF), with its terminations
     try {
       if (pos.empty()) return usage();
+      // a word left over (a value after an option that takes none) is refused, not dropped
+      if (pos.size() > 1) throw std::invalid_argument("unexpected argument " + pos[1] + " (caps surface takes one CRYSTAL.cif)");
       const System bulk = read_cif(pos[0]);
       for (const auto& n : bulk.notes) std::printf("%s\n", n.c_str());
       SlabOptions so;
@@ -2644,7 +3252,7 @@ int main(int argc, char** argv) {
       const auto terms = slab_terminations(bulk, so.h, so.k, so.l, &d);
       std::printf("(%d%d%d): plane spacing %.4f Å · %zu terminations\n", so.h, so.k, so.l, d, terms.size());
       for (size_t i = 0; i < terms.size(); ++i) std::printf("  %zu  %s\n", i + 1, terms[i].label.c_str());
-      if (o.count("--list")) return 0;
+      if (o.count("--list") && !o.count("-o")) return 0;   // the list alone; with -o the slab is written as well
       if (!o.count("-o")) return usage();
       SlabReport rep;
       const System slab = cleave(bulk, so, &rep);
@@ -2674,7 +3282,7 @@ int main(int argc, char** argv) {
         Json r;
         try {
           const auto t0 = text.find_first_not_of(" \t\r\n");
-          r = t0 != std::string::npos && text[t0] == '{' ? Json::parse(text) : yaml_parse(text);
+          r = t0 != std::string::npos && (text[t0] == '{' || text[t0] == '[') ? Json::parse(text) : yaml_parse(text);   // '[': a JSON list of steps
         } catch (const std::exception& e) {
           std::fprintf(stderr, "caps run: %s: %s\n", pos[0].c_str(), e.what());
           keep_cli_error(argc, argv, e);
@@ -2683,11 +3291,23 @@ int main(int argc, char** argv) {
         if (r.is_object() && (r.has("recipe") || r.has("build"))) return cli_recipe(r, pos[0], o);
       }
       std::string name, file, topo;
-      Pipeline pl = text.find("caps_pipeline") != std::string::npos ? pipeline_from_yaml(text, &name, &file, &topo) : pipeline_from_json(Json::parse(text));
+      Pipeline pl = cli_pipeline(text, &name, &file, &topo);
       if (o.count("--branch")) pl.branch = o["--branch"];   // the branch to run (steps of the others are skipped)
+      // relative paths in the pipeline's source: block are read next to the pipeline file first, then from here
+      const std::filesystem::path pipe_dir = std::filesystem::path(pos[0]).parent_path();
       const std::string pattern = o.count("--input") ? o["--input"] : file;
-      const auto inputs = glob_files(pattern);
+      if (pattern.empty()) throw std::runtime_error(pos[0] + " names no input: give --input FILE or a source: file: line");
+      auto inputs = glob_files(pattern);
+      if (inputs.empty() && !o.count("--input") && !pipe_dir.empty() && std::filesystem::path(pattern).is_relative())
+        inputs = glob_files((pipe_dir / pattern).string());
       if (inputs.empty()) throw std::runtime_error("no files match " + pattern);
+      // the topology: --topology, else the pipeline's source: topology:, else STEM.data next to each trajectory
+      std::string topology = o.count("--topology") ? o["--topology"] : "";
+      if (topology.empty() && !topo.empty()) {
+        topology = topo;
+        if (std::filesystem::path(topo).is_relative() && !pipe_dir.empty() && std::filesystem::exists(pipe_dir / topo)) topology = (pipe_dir / topo).string();
+        if (!std::filesystem::exists(topology)) throw std::runtime_error("the topology " + topo + " named in " + pos[0] + " does not exist");
+      }
       const bool last = !o.count("--frame") || o["--frame"] != "first";
       std::vector<std::string> keys;
       std::vector<std::pair<std::string, std::map<std::string, double>>> rows;
@@ -2697,14 +3317,18 @@ int main(int argc, char** argv) {
       for (const auto& in : inputs) {
         ++idx;
         try {
-          std::string tp = o.count("--topology") ? o["--topology"] : "";
-          if (tp.empty() && (in.size() > 10 && (in.rfind(".lammpstrj") == in.size() - 10 || in.rfind(".dump") == in.size() - 5))) {
+          std::string tp = topology;
+          const std::string ext = std::filesystem::path(in).extension().string();
+          const bool dump = ext == ".lammpstrj" || ext == ".dump";
+          if (tp.empty() && dump) {
             const auto d = std::filesystem::path(in).replace_extension(".data");
             if (std::filesystem::exists(d)) tp = d.string();
           }
           const Trajectory t = open_file(in, tp);
           const int fr = last ? int(t.frames()) - 1 : 0;
           System f0 = t.frame(size_t(fr));
+          if (tp.empty() && dump && !f0.atoms.empty() && f0.total_mass() <= 0)
+            std::fprintf(stderr, "note    %s has no topology: no masses or bonds, so Mass and Density are 0 and bonds are guessed (give --topology DATA)\n", in.c_str());
           if (!f0.unwrapped && f0.cell.valid()) make_molecules_whole(f0);
           const auto st = run_pipeline(f0, pl, fr, t.timesteps.empty() ? 0 : t.timesteps[size_t(fr)], &t);
           std::map<std::string, double> m;
@@ -2779,6 +3403,13 @@ int main(int argc, char** argv) {
       b.forcefields = o.count("--forcefields") ? o["--forcefields"] : find("data/forcefields", "catalogue.json");
       if (o.count("--repeats")) b.repeats = std::stoi(o["--repeats"]);
       b.quick = o.count("--quick") > 0;
+      // T6 / T7, as the C API sets them: the reference ranges beside the force-field library (data/reference/
+      // polymers.json), the equilibrated cells from --cells, else CAPS_BENCH_CELLS, else ~/.caps/bench/cells
+      b.reference = o.count("--reference") ? o["--reference"]
+                                           : (std::filesystem::path(b.forcefields).parent_path() / "reference" / "polymers.json").string();
+      if (o.count("--cells")) b.cells = o["--cells"];
+      else if (const char* c = std::getenv("CAPS_BENCH_CELLS"); c && *c) b.cells = c;
+      else if (const char* h = std::getenv("HOME"); h && *h) b.cells = std::string(h) + "/.caps/bench/cells";
       std::vector<std::string> ids = pos;
       if (ids.empty() || o.count("--all")) ids = bench_ids();
       b.progress = [](const std::string& id, const std::string& what, double f) {
@@ -2848,7 +3479,13 @@ int main(int argc, char** argv) {
       BuildOptions b;
       if (o.count("--conformers")) b.conformers = std::stoi(o["--conformers"]);
       if (o.count("--seed")) b.seed = std::stoull(o["--seed"]);
-      if (o.count("--ff")) b.forcefield = o["--ff"];
+      if (o.count("--ff")) {
+        // a library name (oplsaa2024, gaff2, pcff …) or a path, as every other command takes it; a name that is
+        // neither stops here rather than cleaning up with UFF in its place
+        b.forcefield = ff_path(o["--ff"]);
+        if (!b.forcefield.empty() && !is_uff(b.forcefield) && !exists_here(b.forcefield))
+          throw std::runtime_error("--ff " + o["--ff"] + ": no such force field (a library name in data/forcefields, a path, or uff)");
+      }
       const BuildResult r = build_molecule(pos[0], b);
       const std::string out = o["-o"];
       auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - std::strlen(e)) == e; };
@@ -2858,23 +3495,40 @@ int main(int argc, char** argv) {
         else if (ends(".mol2")) write_mol2(s, path);
         else write_lammps_data(s, path);
       };
+      std::vector<std::string> written;   // the files actually written, for the report
       if (o.count("--all") && r.conformers.size() > 1) {
         // confs.pdb -> confs_1.pdb ... (the number goes on the file's stem, in the same folder; a name may have no extension)
         const std::filesystem::path op(out);
         const std::string stem = op.stem().string(), ext = op.extension().string();
-        for (size_t k = 0; k < r.conformers.size(); ++k)
-          write(molecule_system(r.graph, r.conformers[k].pos), (op.parent_path() / (stem + "_" + std::to_string(k + 1) + ext)).string());
-      } else
+        for (size_t k = 0; k < r.conformers.size(); ++k) {
+          const std::string p = (op.parent_path() / (stem + "_" + std::to_string(k + 1) + ext)).string();
+          write(molecule_system(r.graph, r.conformers[k].pos), p);
+          written.push_back(p);
+        }
+      } else {
         write(r.system, out);
-      std::printf("%s · %.2f g/mol · %d atoms (%d heavy) · %d rings · %d stereocentres\n", r.info.formula.c_str(), r.info.mass, r.info.atoms,
-                  r.info.heavy, r.info.rings, r.info.stereocentres + r.info.stereo_bonds);
+        written.push_back(out);
+      }
+      // stereo: every centre (and stereogenic double bond) in the built structure, with how many the SMILES left open
+      const int centres = r.info.stereocentres + r.open_centres, dbonds = r.info.stereo_bonds + r.open_bonds;
+      std::string stereo = std::to_string(centres) + (centres == 1 ? " stereocentre" : " stereocentres");
+      if (r.open_centres) stereo += " (" + std::to_string(r.open_centres) + " unspecified)";
+      if (dbonds) {
+        stereo += " · " + std::to_string(dbonds) + (dbonds == 1 ? " stereo double bond" : " stereo double bonds");
+        if (r.open_bonds) stereo += " (" + std::to_string(r.open_bonds) + " unspecified)";
+      }
+      std::printf("%s · %.2f g/mol · %d atoms (%d heavy) · %d rings · %s\n", r.info.formula.c_str(), r.info.mass, r.info.atoms,
+                  r.info.heavy, r.info.rings, stereo.c_str());
       std::printf("%s\n", r.method.c_str());
       const double e0 = r.conformers.front().energy;
       for (size_t k = 0; k < r.conformers.size(); ++k)
         std::printf("  conformer %zu  %s\n", k + 1,
                     r.conformers[k].minimised ? (std::to_string(r.conformers[k].energy - e0).substr(0, 6) + " kcal/mol").c_str() : "not minimised");
       for (const auto& n : r.notes) std::printf("note: %s\n", n.c_str());
-      std::printf("wrote %s\n", out.c_str());
+      if (written.size() > 1)
+        std::printf("wrote %s … %s (%zu conformers)\n", written.front().c_str(), written.back().c_str(), written.size());
+      else
+        std::printf("wrote %s\n", written.front().c_str());
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps build: %s\n", e.what());
@@ -2886,7 +3540,13 @@ int main(int argc, char** argv) {
     // Martini 3 small molecules: every molecule of an all-atom structure that is one of the model's molecules becomes its
     // beads with the explicit topology; water and ions are left out, other molecules too (listed)
     try {
-      if (pos.empty() || !o.count("-o")) return usage();
+      if (pos.empty()) return usage();
+      if (!o.count("-o") || o["-o"].empty()) {
+        std::fprintf(stderr, "caps martini: no output file: give -o CG.data\n");
+        return 2;
+      }
+      if (o.count("--centre") && o["--centre"] != "geometric" && o["--centre"] != "mass")
+        throw std::invalid_argument("--centre " + o["--centre"] + ": geometric or mass");
       std::string mdir;
       for (const std::string& root : caps_roots())
         if (!root.empty() && exists_here(root + "/data/martini/martini3-small-molecules.json")) { mdir = root + "/data/martini"; break; }
@@ -2896,7 +3556,7 @@ int main(int argc, char** argv) {
       const bool geometric = !(o.count("--centre") && o["--centre"] == "mass");   // geometry (default) or mass
       std::vector<std::string> notes;
       const System cg = martini3_all_atom(aa, mdir + "/martini3-small-molecules.json", 1e6, &notes, geometric, false);
-      write_lammps_data(cg, o["-o"]);
+      write_structure_file(cg, o["-o"]);   // by its extension: LAMMPS data for .data, .gro, .pdb ... in their own format
       if (o.count("--itp")) {
         std::ofstream f(o["--itp"]);
         f << "; Martini 3 molecules written by CAPS\n" << martini3_itp(cg);
@@ -2960,6 +3620,7 @@ int main(int argc, char** argv) {
         // OUT: {"model": ..., "results": [{"energy_ev", "positions", "held" (A / degrees), "converged", "steps"} | {"error"}]}
         if (!o.count("-o")) return usage();
         std::ifstream jf(pos[1]);
+        if (!jf) throw std::runtime_error("cannot open " + pos[1]);
         const Json jobs = Json::parse(std::string((std::istreambuf_iterator<char>(jf)), std::istreambuf_iterator<char>()));
         const auto& list = jobs["jobs"].items();
         // the jobs are independent: --threads N workers (default: the machine's cores, at most one per job), each with
@@ -3104,7 +3765,8 @@ int main(int argc, char** argv) {
       }
       if (sub == "info") {
         if (pos.size() < 2) return usage();
-        const FFDef ff = load_forcefield(ff_path(pos[1]));
+        // UFF is built in (no library file): its description, as the C API and the Studio list it
+        const FFDef ff = is_uff(pos[1]) ? uff_definition() : load_forcefield(ff_path(pos[1]));
         std::printf("%s %s\nsource %s\nstyles pair %s · bond %s · angle %s · dihedral %s · improper %s\nmixing %s · special lj %g %g %g · coul %g %g %g · "
                     "cut-off %g · impropers %s\n",
                     ff.name.c_str(), ff.version.c_str(), ff.source.c_str(), ff.pair_style.c_str(), ff.bond_style.c_str(), ff.angle_style.c_str(),
@@ -3124,18 +3786,42 @@ int main(int argc, char** argv) {
         // caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]
         if (pos.size() < 2 || !o.count("--ff")) return usage();
         System s = load(pos[1], o);
-        FFDef ff = load_forcefield(ff_path(o["--ff"]));
-        if (o.count("--typing"))
-          for (std::stringstream ts(o["--typing"]); ts.good();) {   // several files: comma-separated, later ones on top
-            std::string f;
-            std::getline(ts, f, ',');
-            if (!f.empty()) load_typing(ff, f);
+        const bool uff = is_uff(o["--ff"]);
+        if (uff && o.count("--typing"))
+          throw std::invalid_argument("--typing: UFF types atoms from element, hybridisation and oxidation state, not from SMARTS rules");
+        FFDef ff;
+        TypingResult r;
+        if (uff) {   // the built-in UFF typer (as ff apply --ff uff and the C API type)
+          ff.name = "UFF";
+          if (cell_fit(s).fits) {
+            r.types = uff_types(s, &r.why);
+          } else {   // a cell too small for its bonds: typed on the copies that fit, each atom given its first copy's type
+            std::array<int, 3> n{1, 1, 1};
+            try { n = copies_to_fit(s); } catch (const std::invalid_argument&) { throw std::invalid_argument(cell_fit_message(s)); }
+            r.types = uff_types(supercell(s, n[0], n[1], n[2]), &r.why);
+            r.types.resize(s.atoms.size());
+            r.why.resize(s.atoms.size());
+            r.notes.push_back("this cell is too small for its bonds (its bond list would give an atom the wrong neighbours), so it was typed as " +
+                              std::to_string(n[0]) + "×" + std::to_string(n[1]) + "×" + std::to_string(n[2]) +
+                              " copies and each atom given the type of its first copy");
           }
-        {
+          r.rule.assign(s.atoms.size(), -1);
+          r.candidates.assign(s.atoms.size(), {});
+          for (size_t i = 0; i < r.types.size(); ++i)
+            if (r.types[i].empty()) ++r.untyped;
+            else r.candidates[i] = {r.types[i]};
+        } else {
+          ff = load_forcefield(ff_path(o["--ff"]));
+          if (o.count("--typing"))
+            for (std::stringstream ts(o["--typing"]); ts.good();) {   // several files: comma-separated, later ones on top
+              std::string f;
+              std::getline(ts, f, ',');
+              if (!f.empty()) load_typing(ff, f);
+            }
           std::string ch = "types";   // typing only: no charges
           if (const std::string ua = prepare_for_forcefield(s, ff, ch); !ua.empty()) std::printf("note: %s\n", ua.c_str());
+          r = assign_types_fitted(s, ff);   // a cell too small for its bonds: typed on the copies that fit (cell_fit.hpp)
         }
-        const TypingResult r = assign_types(s, ff);
         for (const auto& n : r.notes) std::printf("note: %s\n", n.c_str());
         const bool explain = o.count("--explain");
         for (size_t i = 0; i < s.atoms.size(); ++i) {
@@ -3161,7 +3847,29 @@ int main(int argc, char** argv) {
       if (sub == "apply") {
         if (pos.size() < 2 || !o.count("--ff")) return usage();
         System s = load(pos[1], o);
-        if (const std::string small = cell_fit_message(s); !small.empty()) std::fprintf(stderr, "warning: %s; the file written here would not describe the crystal\n", small.c_str());
+        size_t cell_atoms = 0;   // with --supercell copies: the cell's own atoms (a --types file names them, each copy takes them)
+        if (o.count("--supercell")) {   // auto: the copies this cell needs for its bonds (cell_fit.hpp); or na,nb,nc
+          if (!s.cell.valid()) throw std::invalid_argument("--supercell: " + pos[1] + " has no cell");
+          std::array<int, 3> n{1, 1, 1};
+          std::string v = o["--supercell"];
+          if (v == "auto") {
+            n = copies_to_fit(s);
+          } else {
+            for (auto& c : v) if (c == 'x' || c == 'X') c = ',';
+            if (std::sscanf(v.c_str(), "%d,%d,%d", &n[0], &n[1], &n[2]) != 3 || n[0] < 1 || n[1] < 1 || n[2] < 1)
+              throw std::invalid_argument("--supercell: auto, or na,nb,nc (whole numbers of at least 1)");
+          }
+          if (n != std::array<int, 3>{1, 1, 1}) {
+            if (o["--ff"] == "file") throw std::invalid_argument("--supercell: a file's own force field describes its own atoms only; make the copies with --ff NAME");
+            cell_atoms = s.atoms.size();
+            s = supercell(s, n[0], n[1], n[2]);
+            std::printf("note: %d×%d×%d copies of the cell, %zu atoms\n", n[0], n[1], n[2], s.atoms.size());
+          }
+        }
+        // a cell too small for its bonds gives a file whose bonds, angles and exclusions miss their image partners (a
+        // polyethylene cell typed as an alkene): refused, not written with a warning
+        if (const std::string small = cell_fit_message(s, o["--ff"] == "file" && s.forcefield ? s.forcefield.get() : nullptr); !small.empty())
+          throw std::runtime_error(small + (o["--ff"] == "file" ? "" : " (caps ff apply --supercell auto makes those copies and writes them)"));
         const bool uff = is_uff(o["--ff"]);
         ForceField f;
         ParamReport rep;
@@ -3171,6 +3879,7 @@ int main(int argc, char** argv) {
         std::string ml_model;
         bool ml_ran = false;
         if ((own || uff) && completion_asked(o)) throw std::runtime_error("--complete ml fills a library force field's gaps (--ff NAME or FF.json), not UFF's or a file's own");
+        if (!own) warn_keep_without_charges(o, s);
         if (own) {
           if (!s.forcefield || s.forcefield->charge.size() != s.atoms.size())
             throw std::runtime_error(!s.forcefield_error.empty() ? s.forcefield_error
@@ -3219,12 +3928,7 @@ int main(int argc, char** argv) {
                 }
               std::printf("note: %d atoms keep their type from the .car file\n", kept);
             }
-            if (r.untyped) {
-              std::string l;
-              for (size_t i = 0; i < s.atoms.size(); ++i)
-                if (r.types[i].empty()) l += " " + std::to_string(i + 1) + element(s.atoms[i].element).symbol;
-              throw std::runtime_error(std::to_string(r.untyped) + " atoms match no typing rule:" + l + " (give them with --types)");
-            }
+            if (r.untyped) throw std::runtime_error(untyped_message(ff, s, r.untyped, &r.types) + " (give them with --types)");
             std::printf("typed %zu atoms automatically (%d ambiguous; caps ff type --explain shows why)\n", s.atoms.size(), r.ambiguous);
             types = r.types;
           }
@@ -3234,6 +3938,7 @@ int main(int argc, char** argv) {
             for (const auto& a : s.atoms) types.push_back(a.name);
             std::ifstream tf(o["--types"]);
             if (!tf) throw std::runtime_error("cannot open " + o["--types"]);
+            const size_t named = cell_atoms ? cell_atoms : types.size();   // with --supercell: the cell's atoms, as caps ff type writes them
             std::string line;
             size_t k = 0;
             while (std::getline(tf, line)) {
@@ -3244,13 +3949,18 @@ int main(int argc, char** argv) {
               if (w.empty()) continue;
               if (w.size() >= 2) {
                 const size_t i = std::stoul(w[0]);
-                if (i < 1 || i > types.size()) throw std::runtime_error("atom " + w[0] + " out of range in " + o["--types"]);
+                if (i < 1 || i > named) throw std::runtime_error("atom " + w[0] + " out of range in " + o["--types"]);
                 types[i - 1] = w[1];
               } else {
-                if (k >= types.size()) throw std::runtime_error("more types than atoms in " + o["--types"]);
+                if (k >= named) throw std::runtime_error("more types than atoms in " + o["--types"]);
                 types[k++] = w[0];
               }
             }
+            // one-per-line entries must cover every atom: the rest would keep their file names as types
+            if (k > 0 && k < named)
+              throw std::runtime_error(o["--types"] + " has " + std::to_string(k) + " types for " + std::to_string(named) +
+                                       " atoms (give one per atom, or 'index type' lines to change only some)");
+            for (size_t i = named; i < types.size(); ++i) types[i] = types[i % named];   // each copy: its cell atom's type
           } else {
             for (const auto& a : s.atoms) types.push_back(a.name);
           }
@@ -3467,7 +4177,19 @@ int main(int argc, char** argv) {
       auto fr = analysis_frames(t, ao);
       System s0 = t.frame(fr.empty() ? 0 : fr[0]);
       if (!s0.unwrapped) make_molecules_whole(s0);
+      const size_t n_read = s0.atoms.size();
+      const std::map<std::string, std::string> o_read = o;   // the options before cli_forcefield records --charges keep
       auto ff = std::make_shared<ForceField>(cli_forcefield(s0, o));
+      // A shell model (or another field that changes the atoms: shells added, united atoms) describes the structure
+      // cli_forcefield prepared, not the frames as read: every frame handed to the solver gets the same preparation.
+      auto prepared = [&](System& s) {
+        if (s.atoms.size() == ff->atom_type.size()) return;
+        std::map<std::string, std::string> oq = o_read;
+        (void)cli_forcefield(s, oq, true);
+        if (s.atoms.size() != ff->atom_type.size())
+          throw std::invalid_argument("the force field is for " + std::to_string(ff->atom_type.size()) + " atoms; the frame has " +
+                                      std::to_string(s.atoms.size()) + " after preparation");
+      };
       EnergyOptions eo;
       if (o.count("--cutoff")) eo.cutoff = std::stod(o["--cutoff"]);
       electrostatics(eo, o);
@@ -3478,6 +4200,7 @@ int main(int argc, char** argv) {
         if (!o.count("--temp")) throw std::invalid_argument("--temp: the temperature of the NVT run");
         System s = t.frame(fr.empty() ? 0 : fr.back());
         if (!s.unwrapped) make_molecules_whole(s);
+        prepared(s);
         FluctuationRunOptions fo;
         fo.field = ff;
         fo.energy = eo;
@@ -3494,6 +4217,10 @@ int main(int argc, char** argv) {
         if (!o.count("--quiet")) std::fprintf(stderr, "\n");
       } else if (method == "fluct") {
         if (!o.count("--temp")) throw std::invalid_argument("--temp: the temperature of the NVT run");
+        if (ff->atom_type.size() != n_read)
+          throw std::invalid_argument("the fluctuation method reads the frames as they are, and " + std::to_string(n_read) + " atoms per frame do not match the " +
+                                      std::to_string(ff->atom_type.size()) + " the force field describes (a shell model adds shells the frames do not hold); "
+                                      "use --method strain or --method fluct-run");
         FluctuationOptions fo;
         fo.ff = ff.get();
         fo.energy = eo;
@@ -3508,6 +4235,7 @@ int main(int argc, char** argv) {
         for (size_t k = 0; k < nc; ++k) {
           System s = t.frame(fr[nc == 1 ? fr.size() - 1 : k * (fr.size() - 1) / (nc - 1)]);
           if (!s.unwrapped) make_molecules_whole(s);
+          prepared(s);
           cs.push_back(std::move(s));
         }
         StaticElasticOptions so;
@@ -3530,7 +4258,8 @@ int main(int argc, char** argv) {
   }
   if (cmd == "tensile") {
     // caps tensile DATA -o OUT.data [--axis x|y|z|xyz] [--rate 1e-3 (1/ps)] [--strain 0.2] [--temp 300] [--dt 1] [--fixed-lateral]
-    //              [--pressure 1] [--tau-p 1000] [--fit 0.02] [--seed 1] [--new-velocities] [--ff ...] [--dump T.lammpstrj --every N]
+    //              [--equilibrate 20 (ps of NPT before the pull; 0 none; --eq-ps the same)] [--pressure 1] [--tau-p 1000] [--fit 0.02]
+    //              [--seed 1] [--new-velocities] [--ff ...] [--dump T.lammpstrj --every N] [--checkpoint-every N] [--resume-curve FILE]
     try {
       if (pos.empty() || !o.count("-o")) return usage();
       System s = load(pos[0], o);
@@ -3549,7 +4278,10 @@ int main(int argc, char** argv) {
       if (o.count("--pressure")) to.pressure = std::stod(o["--pressure"]);
       if (o.count("--tau-p")) to.tau_p = std::stod(o["--tau-p"]);
       if (o.count("--fit")) to.fit_strain = std::stod(o["--fit"]);
+      if (o.count("--eq-ps")) to.equilibrate_ps = std::stod(o["--eq-ps"]);   // the name caps pull uses
       if (o.count("--equilibrate")) to.equilibrate_ps = std::stod(o["--equilibrate"]);
+      if (to.equilibrate_ps < 0) throw std::invalid_argument("--equilibrate: ps of NPT before the pull, 0 or more");
+      if (to.dt <= 0) throw std::invalid_argument("--dt: a time step in fs, above 0");
       if (o.count("--seed")) to.seed = std::stoull(o["--seed"]);
       to.new_velocities = o.count("--new-velocities") || s.velocities.size() != s.atoms.size();
       to.lateral_pressure = !o.count("--fixed-lateral");
@@ -3613,6 +4345,12 @@ int main(int argc, char** argv) {
           std::ofstream("resume.txt") << resume_line("caps tensile", t_cp, o, {{"--resume-curve", t_curve}}) << "\n";
         };
       TensileResult r;
+      if (!quiet && to.equilibrate_ps > 0 && !to.resume) {   // the prelude prints nothing while it runs: say what it is
+        const long long neq = std::llround(to.equilibrate_ps * 1000 / to.dt);
+        std::printf("NPT %g ps (%lld steps of %g fs%s) before the pull, each axis at %g atm; --equilibrate 0 skips it\n", to.equilibrate_ps, neq, to.dt,
+                    to.axis == 3 ? ", once per axis" : "", to.pressure);
+        std::fflush(stdout);
+      }
       try {
         r = run_tensile(s, to);
       } catch (const DynamicsInterrupted& ex) {
@@ -3764,11 +4502,19 @@ int main(int argc, char** argv) {
         };
         if (sub == "list") {
           const auto lib = exchange_lib();
-          std::printf("%-26s %-13s %-6s %-22s %s\n", "id", "mechanism", "move", "scheme", "default barrier (kcal/mol) and sources");
+          // columns as wide as their longest entry: a mechanism such as "associative or dissociative" is printed whole
+          int iw = 2, mw = 9, vw = 4, sw = 6;
+          for (const auto& c : lib) {
+            iw = std::max<int>(iw, int(c.id.size()));
+            mw = std::max<int>(mw, int(c.mechanism.size()));
+            vw = std::max<int>(vw, int(c.move.size()));
+            sw = std::max<int>(sw, int(c.scheme.empty() ? 10 : c.scheme.size()));
+          }
+          std::printf("%-*s %-*s %-*s %-*s %s\n", iw, "id", mw, "mechanism", vw, "move", sw, "scheme", "default barrier (kcal/mol) and sources");
           for (const auto& c : lib) {
             char bar[64] = "none";
             if (std::isfinite(c.default_kcal_per_mol)) std::snprintf(bar, sizeof bar, "%.4g", c.default_kcal_per_mol);
-            std::printf("%-26s %-13s %-6s %-22s %s, %zu value%s from the literature\n", c.id.c_str(), c.mechanism.substr(0, 13).c_str(), c.move.c_str(),
+            std::printf("%-*s %-*s %-*s %-*s %s, %zu value%s from the literature\n", iw, c.id.c_str(), mw, c.mechanism.c_str(), vw, c.move.c_str(), sw,
                         c.scheme.empty() ? "(none yet)" : c.scheme.c_str(), bar, c.barriers.size(), c.barriers.size() == 1 ? "" : "s");
           }
           return 0;
@@ -3983,6 +4729,17 @@ int main(int argc, char** argv) {
                       (long long)st.unparameterised, st.energy, st.local ? " (local energies)" : " (whole-system energies)");
           if (!st.note.empty()) std::printf("note: %s\n", st.note.c_str());
         };
+        // --dt, else the force field's own step (the Kremer-Grest model's 0.01 tau, a coarse-grained model's), else the default
+        auto time_step = [&](const ForceField& f, double fallback) {
+          double dt = fallback;
+          if (o.count("--dt")) dt = std::stod(o["--dt"]);
+          else if (f.native_timestep > 0) {
+            dt = f.native_timestep;
+            if (!o.count("--quiet")) std::printf("time step: %.4g fs (the force field's own; --dt for another)\n", dt);
+          }
+          if (!(dt > 0) || !std::isfinite(dt)) throw std::invalid_argument("--dt: a time step in fs, above 0");
+          return dt;
+        };
         auto save_after = [&](System& s, const EnergyOptions& e) {
           if (!o.count("-o")) return;
           const ForceField after = kg ? kremer_grest_forcefield(s, ko) : cli_forcefield(s, o, true);
@@ -3999,7 +4756,7 @@ int main(int argc, char** argv) {
           d.field = std::make_shared<ForceField>(ff);
           d.steps = o.count("--steps") ? std::stoll(o["--steps"]) : 10000;
           d.temperature = o.count("--temp") ? std::stod(o["--temp"]) : 300;
-          if (o.count("--dt")) d.dt = std::stod(o["--dt"]);
+          d.dt = time_step(ff, d.dt);
           if (o.count("--seed")) d.seed = std::stoull(o["--seed"]);
           energy_options(d.energy);
           d.topology_every = every;
@@ -4020,7 +4777,7 @@ int main(int argc, char** argv) {
           po.field = std::make_shared<const ForceField>(kg ? kremer_grest_forcefield(s, ko) : cli_forcefield(s, o));
           energy_options(po.energy);
           po.temperature = o.count("--temp") ? std::stod(o["--temp"]) : 300;
-          if (o.count("--dt")) po.dt = std::stod(o["--dt"]);
+          po.dt = time_step(*po.field, po.dt);
           if (o.count("--pressure")) po.pressure = std::stod(o["--pressure"]);
           if (o.count("--seed")) po.seed = std::stoull(o["--seed"]);
           po.exchange = !o.count("--no-exchange");
@@ -4074,7 +4831,8 @@ int main(int argc, char** argv) {
             char where[64];
             std::snprintf(where, sizeof where, "%.4g along %s", plane, ax);
             p.method = std::string("MD with exchange") + (po.npt ? " at constant pressure" : "") + "; bridges: bonds joining atoms that started on the two sides of the plane at " +
-                       where + " (sides from " + (o.count("--start") ? "--start" : "the input") + ")";
+                       where + " (sides from " + (o.count("--start") ? "--start" : "the input") +
+                       "), across the cut plane; bonds joining the sides through the periodic cell face are not counted";
             p.value = r.bridges.empty() ? kNaN : r.bridges.back();
             p.series.push_back(Series{"bridges", "t (ps)", "bonds", r.t_ps, r.bridges});
             p.series.push_back(Series{"crossing the plane", "t (ps)", "bonds", r.t_ps, r.crossing});
@@ -4178,6 +4936,7 @@ int main(int argc, char** argv) {
           arr.push_back(q);
         }
         j["points"] = arr;
+        j["atoms"] = double(now.atoms.size());   // tg --fit takes the potential energy per atom
         std::ofstream(tg_state) << j.dump(1) << "\n";
         std::ofstream("resume.txt") << resume_line("caps tg", tg_cp, o, {{"--resume-points", tg_state}}) << "\n";
       };
@@ -4214,7 +4973,7 @@ int main(int argc, char** argv) {
     }
   }
   if (cmd == "fields") {
-    // caps fields --molecules 'A4B4:1; A8:0.5' [--chi AB=1.9,AC=0.5] [--grid 32,32,32] [--bond 1.1543] [--kappa 10] [--noise 75]
+    // caps fields --molecules 'A4B4:1; A8:0.5' [--chi AB=0.9,AC=0.5] [--grid 32,32,32] [--bond 1.1543] [--kappa 10] [--noise 75]
     //             [--dt 0.02] [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv] [--json OUT.json]
     try {
       if (!o.count("--molecules")) throw std::invalid_argument("--molecules 'SEQUENCE:fraction; …' (e.g. 'A8B8:1')");
@@ -4236,7 +4995,7 @@ int main(int argc, char** argv) {
         std::string item;
         while (std::getline(ss, item, ',')) {
           const auto e = item.find('=');
-          if (e == std::string::npos) throw std::invalid_argument("--chi AB=1.9,AC=0.5");
+          if (e == std::string::npos) throw std::invalid_argument("--chi AB=0.9,AC=0.5");
           d.chi[item.substr(0, e)] = std::stod(item.substr(e + 1));
         }
       }
@@ -4326,12 +5085,10 @@ int main(int argc, char** argv) {
       for (std::string line; std::getline(in, line);) {
         if (!line.empty() && line.back() == '\r') line.pop_back();
         if (line.empty()) continue;
-        const char sep = line.find('\t') != std::string::npos ? '\t' : ',';
-        std::vector<std::string> f;
-        std::string cur;
-        for (char c : line + sep) {
-          if (c == sep) { const auto a = cur.find_first_not_of(' '), b = cur.find_last_not_of(' '); f.push_back(a == std::string::npos ? "" : cur.substr(a, b - a + 1)); cur.clear(); }
-          else cur += c;
+        std::vector<std::string> f = split_csv_record(line);   // quoted fields ("Nylon 6,6") are one value, without their quotes
+        for (auto& x : f) {
+          const auto a = x.find_first_not_of(' '), b = x.find_last_not_of(' ');
+          x = a == std::string::npos ? "" : x.substr(a, b - a + 1);
         }
         cells.push_back(f);
       }
@@ -4433,6 +5190,7 @@ int main(int argc, char** argv) {
       eo.cutoff = o.count("--cutoff") ? std::stod(o["--cutoff"]) : 10.0;
       electrostatics(eo, o);
       auto field_for = [&](const System& sup) { System x = sup; return cli_forcefield(x, o, true); };
+      const System s_in = s;
       (void)cli_forcefield(s, o, quiet);   // the structure as the force field describes it (shells, united atoms, charges); says which field
       const auto r = relax_cell(s, field_for, eo, co);
       for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
@@ -4443,7 +5201,9 @@ int main(int argc, char** argv) {
       std::printf("volume %.4f → %.4f Å³ · energy %.6f → %.6f kcal/mol · pressure %.2f atm · %d steps%s\n", r.volume_before, r.volume_after,
                   r.energy_before, r.energy_after, r.pressure_after, r.steps, r.converged ? "" : " (not converged)");
       std::printf("stress GPa (xx yy zz yz xz xy): %.5f %.5f %.5f %.5f %.5f %.5f\n", r.stress[0], r.stress[1], r.stress[2], r.stress[3], r.stress[4], r.stress[5]);
-      write_structure_file(s, o["-o"]);
+      // a .data file keeps the field it was relaxed with (shells as core-shell types); any other format the atoms as read
+      if (lammps_data_name(o["-o"])) write_structure_file(s, field_for(s), eo, o["-o"]);
+      else write_structure_file(as_read(s_in, s), o["-o"]);
       std::printf("wrote %s\n", o["-o"].c_str());
       return r.converged ? 0 : 2;
     } catch (const std::exception& e) {
@@ -4548,8 +5308,38 @@ int main(int argc, char** argv) {
       std::printf("%s%s%s: %zu points, x %.6g … %.6g%s%s, y %s%s\n", c.format.c_str(), c.title.empty() ? "" : " · ", c.title.c_str(), c.x.size(), c.x.front(), c.x.back(),
                   c.xunits.empty() ? "" : " ", c.xunits.c_str(), c.yunits.empty() ? "as written" : c.yunits.c_str(), c.sigma.empty() ? "" : " with σ");
       for (const auto& n : c.notes) std::printf("%s\n", n.c_str());
-      if (o.count("-o")) {
+      if (o.count("-o") && (ends(o["-o"], ".npy") || ends(o["-o"], ".NPY"))) {
+        // NumPy .npy v1.0: float64, shape (N, 2) of x, y, or (N, 3) with sigma, row by row (as write_grid writes a grid)
+        const size_t cols = c.sigma.empty() ? 2 : 3;
+        std::ofstream f(o["-o"], std::ios::binary);
+        if (!f) throw std::runtime_error("cannot write " + o["-o"]);
+        std::string h = "{'descr': '<f8', 'fortran_order': False, 'shape': (" + std::to_string(c.x.size()) + ", " + std::to_string(cols) + "), }";
+        const size_t total = 10 + h.size() + 1;
+        h += std::string((64 - total % 64) % 64, ' ') + "\n";
+        const unsigned char magic[8] = {0x93, 'N', 'U', 'M', 'P', 'Y', 1, 0};
+        f.write(reinterpret_cast<const char*>(magic), 8);
+        const uint16_t hl = uint16_t(h.size());
+        const unsigned char l2[2] = {uint8_t(hl & 0xFF), uint8_t(hl >> 8)};
+        f.write(reinterpret_cast<const char*>(l2), 2);
+        f.write(h.data(), std::streamsize(h.size()));
+        std::vector<double> rows;
+        rows.reserve(c.x.size() * cols);
+        for (size_t k = 0; k < c.x.size(); ++k) {
+          rows.push_back(c.x[k]), rows.push_back(c.y[k]);
+          if (cols == 3) rows.push_back(c.sigma[k]);
+        }
+        f.write(reinterpret_cast<const char*>(rows.data()), std::streamsize(rows.size() * sizeof(double)));
+        if (!f) throw std::runtime_error("cannot write " + o["-o"]);
+        std::printf("wrote %s\n", o["-o"].c_str());
+      } else if (o.count("-o")) {
+        {
+          std::string low = std::filesystem::path(o["-o"]).extension().string();
+          for (char& ch : low) ch = char(std::tolower(static_cast<unsigned char>(ch)));
+          if (!low.empty() && low != ".csv" && low != ".txt" && low != ".dat")
+            throw std::invalid_argument("-o " + o["-o"] + ": write a curve as .csv (or .txt, .dat) or .npy; .cube and .vtk are for a .cube grid");
+        }
         std::ofstream f(o["-o"]);
+        if (!f) throw std::runtime_error("cannot write " + o["-o"]);
         f << "# " << c.format << (c.title.empty() ? "" : ": " + c.title) << "\n# x" << (c.xunits.empty() ? "" : " (" + c.xunits + ")") << ", y" << (c.sigma.empty() ? "" : ", sigma") << "\n";
         char b[96];
         for (size_t k = 0; k < c.x.size(); ++k) {
@@ -4653,11 +5443,20 @@ int main(int argc, char** argv) {
   if (cmd == "qeq") {
     try {
       if (pos.empty()) return usage();
+      if (o.count("-o")) {   // checked before the solve: a PDB has no partial-charge column (its columns 79-80 hold an integer formal charge)
+        const std::string ext = std::filesystem::path(o["-o"]).extension().string();
+        if (ext == ".pdb" || ext == ".ent")
+          throw std::invalid_argument("-o " + o["-o"] + ": PDB has no column for partial charges, so the QEq charges would be lost; write .mol2, .car or "
+                                      ".data, or the charges alone with --chg");
+        if (ext != ".data" && ext != ".mol2" && ext != ".car") throw std::invalid_argument("-o takes .data, .mol2 or .car (the charges alone: --chg)");
+      }
       Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
       System s = t.frames() ? t.frame(t.frames() - 1) : t.topology;
       QEqOptions qo;
       if (o.count("--kernel")) qo.kernel = o["--kernel"];
-      qo.ewald = o.count("--ewald") > 0;
+      if (o.count("--ewald") && o.count("--no-ewald")) throw std::invalid_argument("--ewald and --no-ewald together");
+      qo.ewald = o.count("--no-ewald") == 0;   // Ewald by default; used only for a cell periodic along a, b and c
+      qo.ewald_auto = !o.count("--ewald") && !o.count("--no-ewald");   // by default not for a cell too large to sum quickly
       if (o.count("--accuracy")) qo.ewald_accuracy = std::stod(o["--accuracy"]);
       if (o.count("--lambda")) qo.lambda = std::stod(o["--lambda"]);
       qo.hydrogen = o.count("--hydrogen") > 0;
@@ -4677,6 +5476,12 @@ int main(int argc, char** argv) {
         std::printf("%-7s %6zu  %9.4f  %9.4f  %9.4f\n", element(z).symbol, v.size(), m / double(v.size()), *std::min_element(v.begin(), v.end()),
                     *std::max_element(v.begin(), v.end()));
       }
+      const bool allow = o.count("--allow-unconverged") > 0;
+      if (!rep.converged && !allow) {
+        std::fprintf(stderr, "caps qeq: the charges did not converge (see the notes above); nothing written (--allow-unconverged writes them anyway)\n");
+        return 1;
+      }
+      if (!rep.converged) std::fprintf(stderr, "caps qeq: the charges did not converge; written as asked (--allow-unconverged)\n");
       if (o.count("--chg")) {
         std::ofstream f(o["--chg"]);
         f << "# CAPS QEq charges (e), one per atom in order\n";
@@ -4695,8 +5500,7 @@ int main(int argc, char** argv) {
         if (ends(".data")) write_lammps_data(s, out);
         else if (ends(".mol2")) write_mol2(s, out);
         else if (ends(".car")) write_car(s, out);
-        else if (ends(".pdb")) write_pdb(s, out);
-        else throw std::invalid_argument("-o takes .data, .mol2, .car or .pdb (the charges alone: --chg)");
+        else throw std::invalid_argument("-o takes .data, .mol2 or .car (the charges alone: --chg)");
         std::printf("wrote %s\n", out.c_str());
       }
       return 0;
@@ -4863,7 +5667,7 @@ int main(int argc, char** argv) {
   if (cmd == "qha") {
     try {
       if (pos.empty()) return usage();
-      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      Trajectory t = open_file(crystal_path(pos[0]), o.count("--topology") ? o["--topology"] : "");   // a path or a library crystal
       System s0 = t.frames() ? t.frame(0) : t.topology;
       const bool quiet = o.count("--quiet");
       const ForceField ff0 = cli_forcefield(s0, o, quiet);
@@ -4879,6 +5683,8 @@ int main(int argc, char** argv) {
         for (auto& ch : w) if (ch == ',' || ch == 'x') ch = ' ';
         std::istringstream in(w);
         if (!(in >> v[0] >> v[1] >> v[2])) throw std::invalid_argument(key + ": three numbers, comma-separated");
+        for (int x : v)
+          if (x < 0) throw std::invalid_argument(key + ": whole numbers of 0 (chosen automatically) or more");
         return v;
       };
       if (o.count("--supercell")) q.phonon.supercell = ints("--supercell");
@@ -4909,16 +5715,16 @@ int main(int argc, char** argv) {
       std::printf("%zu strained cells · %s · V0 %.3f Å³ · fit rms %.2e kcal/mol\n", r.samples.size(), r.field.c_str(), r.volume0, r.fit_rms);
       std::printf("%8s %9s %9s %9s %10s %10s %10s %10s %10s %8s %9s %9s %9s\n", "T/K", "a/Å", "b/Å", "c/Å", "V/Å3", "aV/1e-6K", "aa/1e-6K", "ab/1e-6K", "ac/1e-6K", "B/GPa", "Cv", "Cp", "S");
       for (const auto& w : r.rows)
-        std::printf("%8.2f %9.4f %9.4f %9.4f %10.3f %10.2f %10.2f %10.2f %10.2f %8.3f %9.3f %9.3f %9.3f%s\n", w.T, w.length[0], w.length[1], w.length[2], w.volume, 1e6 * w.alpha_V,
-                    1e6 * w.alpha[0], 1e6 * w.alpha[1], 1e6 * w.alpha[2], w.B, w.Cv, w.Cp, w.S, w.extrapolated ? "  extrapolated" : "");
+        std::printf("%8.2f %9.4f %9.4f %9.4f %10.3f %10.2f %10.2f %10.2f %10.2f %8.3f %9.3f %9.3f %9.3f%s%s\n", w.T, w.length[0], w.length[1], w.length[2], w.volume, 1e6 * w.alpha_V,
+                    1e6 * w.alpha[0], 1e6 * w.alpha[1], 1e6 * w.alpha[2], w.B, w.Cv, w.Cp, w.S, w.extrapolated ? "  extrapolated" : "", w.unstable ? "  unstable" : "");
       std::printf("Cv, Cp, S in cal/mol/K per cell\n");
       if (o.count("--csv")) {
         std::ofstream f(o["--csv"]);
-        f << "T_K,a_A,b_A,c_A,V_A3,alpha_V_per_K,alpha_a_per_K,alpha_b_per_K,alpha_c_per_K,B_GPa,Cv,Cp,S,G_kcal_mol,extrapolated\n";
+        f << "T_K,a_A,b_A,c_A,V_A3,alpha_V_per_K,alpha_a_per_K,alpha_b_per_K,alpha_c_per_K,B_GPa,Cv,Cp,S,G_kcal_mol,extrapolated,unstable\n";
         char b[400];
         for (const auto& w : r.rows) {
-          std::snprintf(b, sizeof b, "%.3f,%.6f,%.6f,%.6f,%.5f,%.6e,%.6e,%.6e,%.6e,%.5f,%.5f,%.5f,%.5f,%.6f,%d\n", w.T, w.length[0], w.length[1], w.length[2], w.volume, w.alpha_V,
-                        w.alpha[0], w.alpha[1], w.alpha[2], w.B, w.Cv, w.Cp, w.S, w.G, int(w.extrapolated));
+          std::snprintf(b, sizeof b, "%.3f,%.6f,%.6f,%.6f,%.5f,%.6e,%.6e,%.6e,%.6e,%.5f,%.5f,%.5f,%.5f,%.6f,%d,%d\n", w.T, w.length[0], w.length[1], w.length[2], w.volume, w.alpha_V,
+                        w.alpha[0], w.alpha[1], w.alpha[2], w.B, w.Cv, w.Cp, w.S, w.G, int(w.extrapolated), int(w.unstable));
           f << b;
         }
         std::printf("wrote %s\n", o["--csv"].c_str());
@@ -4935,7 +5741,7 @@ int main(int argc, char** argv) {
     //              [--displacement 0.01] [--sigma 5] [--temps 100,300] [--csv STEM] [--json OUT]
     try {
       if (pos.empty()) return usage();
-      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      Trajectory t = open_file(crystal_path(pos[0]), o.count("--topology") ? o["--topology"] : "");   // a path or a library crystal
       System s0 = t.frames() ? t.frame(0) : t.topology;
       const bool quiet = o.count("--quiet");
       const ForceField ff0 = cli_forcefield(s0, o, quiet);
@@ -4956,11 +5762,16 @@ int main(int argc, char** argv) {
           if (c == std::string::npos && k < 2) throw std::invalid_argument(key + ": three numbers, comma-separated");
           at = c + 1;
         }
+        for (int x : v)
+          if (x < 0) throw std::invalid_argument(key + ": whole numbers of 0 (chosen automatically) or more");
         return v;
       };
       if (o.count("--supercell")) po.supercell = ints("--supercell");
       if (o.count("--mesh")) po.mesh = ints("--mesh");
-      if (o.count("--displacement")) po.step = std::stod(o["--displacement"]);
+      if (o.count("--displacement")) {
+        po.step = std::stod(o["--displacement"]);
+        if (!(po.step > 0 && po.step <= 0.5)) throw std::invalid_argument("--displacement: a length above 0 and at most 0.5 Å, e.g. 0.01");
+      }
       if (o.count("--sigma")) po.dos_sigma = std::stod(o["--sigma"]);
       if (o.count("--temps")) {
         po.temperatures.clear();
@@ -5046,6 +5857,8 @@ int main(int argc, char** argv) {
       if (o.count("--max-length")) io.max_length = std::stod(o["--max-length"]);
       if (o.count("--lines")) io.lines = std::stoi(o["--lines"]);
       if (o.count("--unindexed")) io.unindexed = std::stoi(o["--unindexed"]);
+      if (o.count("--max-boxes")) io.max_boxes = std::stol(o["--max-boxes"]);
+      if (!o.count("--quiet")) io.progress = [&](const std::string& w, double f) { std::fprintf(stderr, "\r%-20s %3.0f %%", w.c_str(), 100 * f); return true; };
       if (o.count("--systems")) {
         io.systems.clear();
         std::stringstream ss(o["--systems"]);
@@ -5060,7 +5873,9 @@ int main(int argc, char** argv) {
       std::printf("%zu peaks:", tt.size());
       for (size_t k = 0; k < tt.size() && k < 30; ++k) std::printf(" %.3f", tt[k]);
       std::printf("\n");
+      std::fflush(stdout);
       const IndexResult r = index_pattern(tt, io);
+      if (!o.count("--quiet")) std::fprintf(stderr, "\r%-30s\r", "");
       std::printf("%-13s %9s %9s %9s %8s %8s %8s %9s %8s %8s %s\n", "system", "a", "b", "c", "alpha", "beta", "gamma", "V", "M20", "F_N", "indexed");
       for (const auto& s2 : r.solutions)
         std::printf("%-13s %9.4f %9.4f %9.4f %8.3f %8.3f %8.3f %9.2f %8.1f %8.1f %d/%zu\n", s2.system.c_str(), s2.cell[0], s2.cell[1], s2.cell[2], s2.cell[3], s2.cell[4], s2.cell[5],
@@ -5073,6 +5888,25 @@ int main(int argc, char** argv) {
       }
       for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
       std::printf("%.1f s\n", r.seconds);
+      if (o.count("--json")) {
+        auto arr = [](const auto& v) { Json a = Json::array(); for (double x : v) a.push_back(Json(x)); return a; };
+        Json j = Json::object(), sols = Json::array(), nt = Json::array();
+        for (const auto& s2 : r.solutions) {
+          Json x = Json::object(), hk = Json::array();
+          for (const auto& h : s2.hkl) {
+            Json t3 = Json::array();
+            for (int q : h) t3.push_back(Json(q));
+            hk.push_back(t3);
+          }
+          x["system"] = s2.system, x["cell"] = arr(s2.cell), x["volume"] = s2.volume, x["M20"] = s2.M20, x["FN"] = s2.FN, x["indexed"] = double(s2.indexed);
+          x["hkl"] = hk, x["two_theta_obs"] = arr(s2.two_theta_obs), x["two_theta_calc"] = arr(s2.two_theta_calc);
+          sols.push_back(x);
+        }
+        for (const auto& n : r.notes) nt.push_back(Json(n));
+        j["lines"] = arr(r.lines), j["solutions"] = sols, j["notes"] = nt, j["seconds"] = r.seconds;
+        std::ofstream(o["--json"]) << j.dump(1) << "\n";
+        std::printf("wrote %s\n", o["--json"].c_str());
+      }
       return r.solutions.empty() ? 2 : 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps index: %s\n", e.what());
@@ -5097,7 +5931,22 @@ int main(int argc, char** argv) {
       if (o.count("--space-group")) so.space_group = o["--space-group"];
       if (o.count("--wavelength")) so.refine.wavelength = std::stod(o["--wavelength"]);
       if (o.count("--steps")) so.steps = std::stoi(o["--steps"]);
+      if (o.count("--restarts")) so.restarts = std::stoi(o["--restarts"]);
       if (o.count("--seed")) so.seed = std::stoull(o["--seed"]);
+      {
+        // a known instrument profile, held instead of the Pawley fit of it
+        auto nums = [&](const std::string& key, size_t n) {
+          std::string v = o[key];
+          for (auto& c : v) if (c == ',') c = ' ';
+          std::istringstream is(v);
+          std::vector<double> x(n);
+          for (auto& q : x) if (!(is >> q)) throw std::invalid_argument(key + ": " + std::to_string(n) + " numbers, comma-separated");
+          return x;
+        };
+        if (o.count("--uvw")) { const auto v = nums("--uvw", 3); so.refine.U = v[0], so.refine.V = v[1], so.refine.W = v[2], so.fit_profile = false; }
+        if (o.count("--xy")) { const auto v = nums("--xy", 2); so.refine.X = v[0], so.refine.Y = v[1], so.fit_profile = false; }
+        if (o.count("--zero")) so.refine.zero = std::stod(o["--zero"]), so.fit_profile = false;
+      }
       if (!o.count("--quiet")) so.progress = [&](const std::string& w, double f) { std::fprintf(stderr, "\r%-20s %3.0f %%", w.c_str(), 100 * f); return true; };
       const SolveResult r = solve_structure(d, mol, cp, so);
       if (!o.count("--quiet")) std::fprintf(stderr, "\r%-30s\r", "");
@@ -5283,10 +6132,12 @@ int main(int argc, char** argv) {
       ChainSpec spec;
       for (const auto& u : list(o["--units"])) spec.units.push_back({u, u});
       spec.dp = o.count("--dp") ? std::stoi(o["--dp"]) : 10;
+      if (spec.dp < 1) throw std::invalid_argument("--dp must be at least 1 (got " + o["--dp"] + ")");
+      require_structure_name(o["-o"]);
       if (o.count("--sequence")) spec.sequence = sequence_from_string(o["--sequence"]);
       if (o.count("--weights")) for (const auto& w : list(o["--weights"])) spec.weights.push_back(std::stod(w));
       if (spec.units.size() > 1 && spec.sequence == Sequence::Homopolymer) spec.sequence = spec.weights.empty() ? Sequence::Alternating : Sequence::Random;
-      if (o.count("--ff")) spec.forcefield = o["--ff"];
+      if (o.count("--ff")) spec.forcefield = ff_path(o["--ff"]);
       ChainGraftOptions go;
       for (const auto& x : list(o["--sites"])) {
         const long a = std::stol(x);
@@ -5304,10 +6155,7 @@ int main(int argc, char** argv) {
       const System s = graft_chains(host, spec, go, &rep);
       if (s.atoms.size() > 15000) throw std::invalid_argument(std::to_string(s.atoms.size()) + " atoms (at most 15000): fewer or shorter grafts");
       const std::string out = o["-o"];
-      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
-      if (ends(".pdb")) write_pdb(s, out);
-      else if (ends(".xyz")) write_xyz(s, out);
-      else write_lammps_data(s, out);
+      write_structure_file(s, out);   // the format the name asks for (.mol2, .gro, .cif …), LAMMPS data for .data
       for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
       std::printf("%d grafts of %d units on %d of %d candidate sites; %zu atoms · wrote %s\n", rep.grafted, spec.dp,
                   int(std::set<uint32_t>(rep.sites.begin(), rep.sites.end()).size()), rep.candidates, s.atoms.size(), out.c_str());
@@ -5376,7 +6224,27 @@ int main(int argc, char** argv) {
         std::printf("wrote %s\n", o["--csv"].c_str());
       }
       if (o.count("--json") && o["--json"] != "1") {
-        std::ofstream(o["--json"]) << sequence_report(spec, {}).dump(1) << "\n";
+        // the model and the drift table above, as the C API's caps_copolymer_model gives them:
+        // no "built" block (this command builds no chains), and the drift from the same --points
+        const Json full = sequence_report(spec, {});
+        Json r = Json::object();
+        r["kind"] = full["kind"], r["units"] = full["units"];
+        if (full.has("model")) r["model"] = full["model"];
+        if (!drift.empty()) {
+          auto arr = [](const std::vector<double>& v) {
+            Json a = Json::array();
+            for (double x : v) a.push_back(Json(x));
+            return a;
+          };
+          Json d = Json::array();
+          for (const auto& p : drift) {
+            Json q = Json::object();
+            q["conversion"] = p.conversion, q["feed"] = arr(p.feed), q["instantaneous"] = arr(p.instantaneous), q["cumulative"] = arr(p.cumulative);
+            d.push_back(q);
+          }
+          r["drift"] = d;
+        }
+        std::ofstream(o["--json"]) << r.dump(1) << "\n";
         std::printf("wrote %s\n", o["--json"].c_str());
       }
       return 0;
@@ -5388,7 +6256,8 @@ int main(int argc, char** argv) {
   }
   if (cmd == "zmelt") {
     try {
-      if (pos.empty() || !o.count("--temps")) return usage();
+      if (pos.empty()) return usage();
+      if (!o.count("--temps")) throw std::invalid_argument("--temps T1,T2,... is required (the NVE starting temperatures, K)");
       Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
       System s0 = t.frames() ? t.frame(0) : t.topology;
       if (s0.atoms.size() > 15000) throw std::invalid_argument("the cell has " + std::to_string(s0.atoms.size()) + " atoms (at most 15000)");
@@ -5497,7 +6366,7 @@ int main(int argc, char** argv) {
   if (cmd == "dielectric") {
     try {
       if (pos.empty()) return usage();
-      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      Trajectory t = open_file(crystal_path(pos[0]), o.count("--topology") ? o["--topology"] : "");   // a path or a library crystal
       System s0 = t.frames() ? t.frame(0) : t.topology;
       const bool quiet = o.count("--quiet");
       (void)cli_forcefield(s0, o, quiet);   // shells added for a shell model
@@ -5528,7 +6397,7 @@ int main(int argc, char** argv) {
         for (const auto& row : m) std::printf("  %10.4f %10.4f %10.4f\n", row[0], row[1], row[2]);
       };
       std::printf("cell a b c %.5f %.5f %.5f Å, angles %.3f %.3f %.3f° (%s), largest force %.1e kcal/mol/Å\n", r.cell[0], r.cell[1], r.cell[2], r.cell[3], r.cell[4], r.cell[5],
-                  dop.relax ? (dop.relax_cell ? "relaxed" : "atoms relaxed in the cell") : "as given", r.max_force);
+                  dop.relax ? (dop.relax_cell ? "relaxed" : "atoms relaxed in the cell") : (r.shells ? "cores as given, shells relaxed" : "as given"), r.max_force);
       m3("static dielectric tensor ε⁰", r.eps0);
       m3("high-frequency dielectric tensor ε^∞", r.epsinf);
       std::printf("principal values: ε⁰ %.4f %.4f %.4f · ε^∞ %.4f %.4f %.4f", r.eps0_principal[0], r.eps0_principal[1], r.eps0_principal[2], r.epsinf_principal[0],
@@ -5663,18 +6532,7 @@ int main(int argc, char** argv) {
         if (!in) throw std::runtime_error("cannot read " + path);
         Table t;
         std::string line;
-        auto split = [](const std::string& l) {
-          std::vector<std::string> v;
-          std::string cur;
-          bool q = false;
-          for (char c : l) {
-            if (c == '"') q = !q;
-            else if (c == ',' && !q) v.push_back(cur), cur.clear();
-            else if (c != '\r') cur += c;
-          }
-          v.push_back(cur);
-          return v;
-        };
+        auto split = [](const std::string& l) { return split_csv_record(l, ','); };   // the reader caps table uses
         if (!std::getline(in, line)) throw std::runtime_error(path + " is empty");
         t.names = split(line);
         while (std::getline(in, line))
@@ -5873,6 +6731,7 @@ int main(int argc, char** argv) {
   if (cmd == "habit") {
     try {
       if (pos.empty()) return usage();
+      if (pos.size() > 1) throw std::invalid_argument("unexpected argument " + pos[1] + " (caps habit takes one CRYSTAL)");
       Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
       System s0 = t.frames() ? t.frame(0) : t.topology;
       const bool quiet = o.count("--quiet");
@@ -5883,8 +6742,21 @@ int main(int argc, char** argv) {
       if (o.count("--vacuum")) ho.vacuum = std::stod(o["--vacuum"]);
       ho.attachment = o.count("--attachment");
       ho.surface = o.count("--surface-energy");
+      // the structure as the force field describes it (shells, ionic bonds): with --ff alone too, so a force field that makes
+      // ions the growth units shapes the BFDH analysis and the particle as well
+      // the force field's charges and the names of the shells it adds (at their core's place, bonded to it) are kept for the
+      // particle: its net charge is reported and the shells are folded into their cores before it is written
+      const size_t atoms_read = s0.atoms.size();
+      ForceField hff;
+      std::set<std::string> shell_names;
+      if (ho.attachment || ho.surface || o.count("--ff")) {
+        hff = cli_forcefield(s0, o, quiet);
+        for (const auto& b : s0.bonds) {
+          const size_t lo = std::min(b.i, b.j), hi = std::max(b.i, b.j);
+          if (hi >= atoms_read && lo < atoms_read && norm(s0.atoms[hi].pos - s0.atoms[lo].pos) < 1e-6) shell_names.insert(s0.atoms[hi].name);
+        }
+      }
       if (ho.attachment || ho.surface) {
-        (void)cli_forcefield(s0, o, quiet);   // the structure as the force field describes it (shells, ionic bonds)
         ho.energy.cutoff = o.count("--cutoff") ? std::stod(o["--cutoff"]) : 10.0;
         ho.energy.tail = false;
         ho.energy.electrostatics = EnergyOptions::Electrostatics::PME;   // slabs of ionic crystals need Ewald sums
@@ -5934,10 +6806,43 @@ int main(int argc, char** argv) {
         std::vector<Vec3> n;
         std::vector<double> d;
         habit_planes(s0, r, model, n, d);
-        const System p = carve_particle(s0, n, d, std::stod(o["--particle"]));
+        System sc = s0;   // the force field's charges on the atoms, so the carved particle carries them
+        const bool charged = hff.charge.size() == sc.atoms.size() && !sc.atoms.empty();
+        if (charged) {
+          for (size_t i = 0; i < sc.atoms.size(); ++i) sc.atoms[i].charge = hff.charge[i];
+          sc.has_charges = true;
+        }
+        System p = carve_particle(sc, n, d, std::stod(o["--particle"]));
+        double q = 0;
+        for (const auto& a : p.atoms) q += a.charge;
+        // shells are the force field's particles, not atoms: each folds into its core (its charge with it) and the
+        // structure file holds one atom per ion
+        size_t shells = 0;
+        if (!shell_names.empty()) {
+          std::vector<char> rm(p.atoms.size(), 0);
+          for (size_t i = 0; i < p.atoms.size(); ++i) rm[i] = shell_names.count(p.atoms[i].name) ? 1 : 0;
+          for (const auto& b : p.bonds) {
+            if (rm[b.i] && !rm[b.j]) p.atoms[b.j].charge += p.atoms[b.i].charge;
+            else if (rm[b.j] && !rm[b.i]) p.atoms[b.i].charge += p.atoms[b.j].charge;
+          }
+          shells = size_t(std::count(rm.begin(), rm.end(), char(1)));
+          if (shells) delete_atoms(p, rm);
+          for (size_t i = 0; i < p.atoms.size(); ++i) p.atoms[i].id = int64_t(i + 1);
+        }
         const std::string out = o.count("--out") ? o["--out"] : "particle.pdb";
         write_structure_file(p, out);
-        std::printf("wrote %s: a %s-shaped particle of %zu atoms, radius %s Å\n", out.c_str(), model.c_str(), p.atoms.size(), o["--particle"].c_str());
+        std::map<std::string, int> by_element;
+        for (const auto& a : p.atoms) by_element[a.element > 0 ? element(a.element).symbol : a.name]++;
+        std::string formula;
+        for (const auto& [e, c] : by_element) formula += (formula.empty() ? "" : " ") + e + std::to_string(c);
+        std::printf("wrote %s: a %s-shaped particle of %zu atoms (%s), radius %s Å", out.c_str(), model.c_str(), p.atoms.size(), formula.c_str(), o["--particle"].c_str());
+        if (shells) std::printf(", the %zu shells folded into their cores", shells);
+        std::printf("\n");
+        if (charged && std::abs(q) > 1e-3)
+          std::printf("note: the particle's net charge is %+.3f e (the force field's charges): the cut kept or dropped single ions at its "
+                      "faces, so it is not stoichiometric; neutralise it (remove surface ions) before a run that needs a neutral particle\n", q);
+        else if (charged)
+          std::printf("net charge %+.3f e\n", q);
       }
       if (o.count("--json") && o["--json"] != "1") {
         const Json j = habit_json(r);
@@ -6058,6 +6963,7 @@ int main(int argc, char** argv) {
       if (o.count("--first")) rd.frames.first = size_t(std::max(0L, std::stol(o["--first"])));
       if (o.count("--last") && std::stol(o["--last"]) >= 0) rd.frames.last = size_t(std::stol(o["--last"]));
       if (o.count("--stride")) rd.frames.stride = size_t(std::max(1L, std::stol(o["--stride"])));
+      if (rd.frames.first > rd.frames.last) throw std::invalid_argument("--first " + std::to_string(rd.frames.first) + " is after --last " + std::to_string(rd.frames.last) + ": the selection is empty");
       Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "", rd);
       if (t.frames_read == 0 && !rd.frames.all()) t.select(rd.frames);
       PowderOptions po;
@@ -6154,6 +7060,7 @@ int main(int argc, char** argv) {
       if (o.count("--first")) rd.frames.first = std::stoul(o["--first"]);
       if (o.count("--last")) rd.frames.last = std::stoul(o["--last"]);
       if (o.count("--stride")) rd.frames.stride = std::max<size_t>(1, std::stoul(o["--stride"]));
+      if (rd.frames.first > rd.frames.last) throw std::invalid_argument("--first " + std::to_string(rd.frames.first) + " is after --last " + std::to_string(rd.frames.last) + ": the selection is empty");
       const Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "", rd);
       write_trajectory(t, pos[1], o.count("--timestep-fs") ? std::stod(o["--timestep-fs"]) : 1.0);
       std::printf("wrote %s: %zu frames (%zu read)\n", pos[1].c_str(), t.frames(), t.frames_read ? t.frames_read : t.frames());
@@ -6175,6 +7082,7 @@ int main(int argc, char** argv) {
       if (o.count("--first")) rd.frames.first = size_t(std::max(0L, std::stol(o["--first"])));
       if (o.count("--last") && std::stol(o["--last"]) >= 0) rd.frames.last = size_t(std::stol(o["--last"]));
       if (o.count("--stride")) rd.frames.stride = size_t(std::max(1L, std::stol(o["--stride"])));
+      if (rd.frames.first > rd.frames.last) throw std::invalid_argument("--first " + std::to_string(rd.frames.first) + " is after --last " + std::to_string(rd.frames.last) + ": the selection is empty");
       Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "", rd);
       if (t.frames_read == 0 && !rd.frames.all()) t.select(rd.frames);   // a file read whole (one frame): the same frames
       AnalyzeOptions ao;
@@ -6183,6 +7091,8 @@ int main(int argc, char** argv) {
       if (o.count("--blocks")) ao.blocks = std::stoi(o["--blocks"]);
       if (o.count("--rmax")) ao.rdf_rmax = std::stod(o["--rmax"]);
       if (o.count("--dr")) ao.rdf_dr = std::stod(o["--dr"]);
+      if (!(ao.rdf_dr > 0)) throw std::invalid_argument("--dr: the g(r) bin width in Å, more than 0 (got " + o["--dr"] + ")");
+      if (!(ao.rdf_rmax >= 0)) throw std::invalid_argument("--rmax: the g(r) range in Å, 0 or more (0: from the cell; got " + o["--rmax"] + ")");
       if (o.count("--qmax")) ao.qmax = std::stod(o["--qmax"]);
       if (o.count("--dq")) ao.dq = std::stod(o["--dq"]);
       if (o.count("--qdirect")) ao.q_direct = std::stod(o["--qdirect"]);
@@ -6196,10 +7106,8 @@ int main(int argc, char** argv) {
       ao.inter_only = o.count("--inter") > 0;
       if (o.count("--pair")) {
         const auto pr = o["--pair"];
-        const auto dash = pr.find('-');
-        ao.elem_a = pr.substr(0, dash) == "all" ? 0 : element_from_symbol(pr.substr(0, dash));
-        const std::string b = dash == std::string::npos ? pr : pr.substr(dash + 1);
-        ao.elem_b = b == "all" ? 0 : element_from_symbol(b);
+        const auto [za, zb] = rdf_pair_elements(pr);
+        ao.elem_a = za, ao.elem_b = zb;
       }
       std::vector<std::string> ids;
       {
@@ -6349,6 +7257,21 @@ int main(int argc, char** argv) {
       // --ff [--overlay --typing --charges]: that force field types and relaxes every state of the network (as the Studio's
       // assigned force field; a complete assignment is needed from the start), else the built-in default (GAFF / UFF)
       std::shared_ptr<const ForceField> field_now;
+      // no --ff, and the file carries a force field (a CAPS data file names it): every state of the network is typed with
+      // that field's library, as md, relax and tensile keep a file's own field, not the built-in GAFF or UFF in its place
+      // (a file that carries the built-in GAFF stays on the built-in default, which types C and H with it)
+      if (!o.count("--ff") && s.forcefield && !s.forcefield->name.empty() && s.forcefield->name.rfind("GAFF 1.81 (hydrocarbon subset", 0) != 0) {
+        const bool uff = s.forcefield->name.rfind("UFF", 0) == 0;
+        const std::string lib = uff ? std::string("uff") : library_of_field_name(s.forcefield->name);
+        if (!lib.empty()) {
+          o["--ff"] = lib;
+          if (!o.count("--charges") && !uff) o["--charges"] = "auto";   // the field's own charges, for the new chemistry too
+          if (!quiet) std::printf("force field: %s, the file's own, typed again after each reaction (give --ff for another)\n", s.forcefield->name.c_str());
+        } else if (r.relax) {   // relaxing each state needs a field for the new bonds: not GAFF or UFF in the file's place unasked
+          throw std::runtime_error("the file's force field (" + s.forcefield->name + ") is not a library CAPS can type the reacted network with; "
+                                   "give --ff (oplsaa2024, pcff, gaff2 ...), or --no-relax for the topology only");
+        }
+      }
       if (o.count("--ff")) {
         System s0 = s;
         field_now = std::make_shared<ForceField>(cli_forcefield(s0, o, quiet));
@@ -6364,20 +7287,30 @@ int main(int argc, char** argv) {
       electrostatics(r.energy, o);
       if (!quiet) std::printf("%6s %6s %6s %11s %9s %11s %12s %13s\n", "cycle", "react", "total", "conversion", "clusters", "largest %", "reduced Mw", "E/kcal·mol⁻¹");
       r.progress = [&](const CycleRow& c) {
-        if (!quiet)
-          std::printf("%6d %6d %6d %11.4f %9d %11.1f %12.1f %13.1f\n", c.cycle, c.reactions, c.total, c.conversion, c.clusters.clusters,
-                      100 * c.clusters.largest_fraction, c.clusters.reduced_mw, c.energy);
+        if (!quiet) {
+          char e[32] = "-";   // 0: no energy evaluated (relaxation off, or nothing reacted yet)
+          if (c.energy != 0) std::snprintf(e, sizeof e, "%.1f", c.energy);
+          std::printf("%6d %6d %6d %11.4f %9d %11.1f %12.1f %13s\n", c.cycle, c.reactions, c.total, c.conversion, c.clusters.clusters,
+                      100 * c.clusters.largest_fraction, c.clusters.reduced_mw, e);
+        }
         std::fflush(stdout);
         return true;
       };
       ReactReport rep;
       react(s, r, &rep);
+      // the built-in default is GAFF only while every carbon is one it types (no C=C): the note names the one the network got
+      std::shared_ptr<const ForceField> builtin;
+      if (!r.retype && r.relax) {
+        builtin = std::make_shared<ForceField>(default_forcefield(s));
+        for (auto& n : rep.notes)
+          if (n.rfind("force field during the run: built-in default", 0) == 0) n += "; the network written: " + builtin->name;
+      }
       const std::string out = o["-o"];
       auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".xyz")) write_xyz(s, out);
       else if (r.retype) write_lammps_data_ff(s, *r.retype(s), r.energy, out);   // the network with its force field re-assigned
-      else if (r.relax) write_lammps_data_ff(s, default_forcefield(s), r.energy, out);
+      else if (builtin) write_lammps_data_ff(s, *builtin, r.energy, out);
       else write_lammps_data(s, out);
       for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
       if (o.count("--summary")) std::ofstream(o["--summary"]) << react_summary_json(rep, s) << "\n";
@@ -6415,8 +7348,10 @@ int main(int argc, char** argv) {
       int nm = 0;
       s.molecules(&nm);
       const auto [dmin, close] = intermolecular_contacts(s, tol, per);
-      std::printf("%zu atoms, %d molecules, %s · smallest intermolecular distance %.4f Å · %d pairs closer than %.2f Å\n", s.atoms.size(), nm,
-                  per ? "periodic (minimum image)" : "not periodic", dmin, close, tol);
+      char dtext[64] = "only one molecule: no intermolecular distance";
+      if (std::isfinite(dmin)) std::snprintf(dtext, sizeof dtext, "smallest intermolecular distance %.4f Å", dmin);
+      std::printf("%zu atoms, %d molecules, %s · %s · %d pairs closer than %.2f Å\n", s.atoms.size(), nm,
+                  per ? "periodic (minimum image)" : "not periodic", dtext, close, tol);
       return close == 0 ? 0 : 1;
     }
     if (cmd == "bundle") {   // write a figure bundle: caps bundle FILE --steps S.json -o OUT.caps-bundle.zip [--include-input]
@@ -6425,6 +7360,7 @@ int main(int argc, char** argv) {
       std::string text = o.count("--steps") ? o["--steps"] : "[]";
       if (!text.empty() && text[0] != '[' && text[0] != '{') {
         std::ifstream f(text);
+        if (!f) throw std::runtime_error("cannot read " + text);
         text.assign(std::istreambuf_iterator<char>(f), {});
       }
       BundleOptions bo;
@@ -6434,24 +7370,34 @@ int main(int argc, char** argv) {
       bo.frame = o.count("--frame") ? std::stoi(o["--frame"]) : 0;
       const std::string out = o.count("-o") ? o["-o"] : "figure.caps-bundle.zip";
       bo.name = std::filesystem::path(out).stem().stem().string();
-      const auto files = bundle_files(t, pipeline_from_json(Json::parse(text)), bo, Camera{}, RenderOptions{});
+      const auto files = bundle_files(t, cli_pipeline(text), bo, Camera{}, RenderOptions{});
       write_bundle(out, files);
       for (const auto& f : files) std::printf("%-40s %8zu bytes  %s\n", f.name.c_str(), f.bytes.size(), sha256_hex(f.bytes).substr(0, 12).c_str());
       std::printf("wrote %s\n", out.c_str());
       return 0;
     }
     if (cmd == "pipeline") {   // visualize pipeline: steps from a JSON file (or --steps '[…]'), on one frame
-      const Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      // the steps first: a pipeline YAML's source: topology: is the topology when --topology is not given
       std::string text = o.count("--steps") ? o["--steps"] : "[]";
+      std::filesystem::path steps_dir;
       if (!text.empty() && text[0] != '[' && text[0] != '{') {
         std::ifstream f(text);
         if (!f) throw std::runtime_error("cannot read " + text);
+        steps_dir = std::filesystem::path(text).parent_path();
         text.assign(std::istreambuf_iterator<char>(f), {});
       }
+      std::string topo;
+      Pipeline pl = cli_pipeline(text, nullptr, nullptr, &topo);
+      std::string tp = o.count("--topology") ? o["--topology"] : "";
+      if (tp.empty() && !topo.empty()) {
+        tp = topo;
+        if (std::filesystem::path(topo).is_relative() && !steps_dir.empty() && std::filesystem::exists(steps_dir / topo)) tp = (steps_dir / topo).string();
+        if (!std::filesystem::exists(tp)) throw std::runtime_error("the topology " + topo + " named in " + o["--steps"] + " does not exist");
+      }
+      const Trajectory t = open_file(pos[0], tp);
       const int fr = o.count("--frame") ? std::stoi(o["--frame"]) : 0;
       if (fr < 0 || size_t(fr) >= t.frames()) throw std::runtime_error("frame out of range");
       const System f0 = t.frame(size_t(fr));
-      Pipeline pl = text.rfind("caps_pipeline", 0) == 0 || text.find("\ncaps_pipeline") != std::string::npos ? pipeline_from_yaml(text) : pipeline_from_json(Json::parse(text));
       if (o.count("--branch")) pl.branch = o["--branch"];
       const auto st = run_pipeline(f0, pl, fr, t.timesteps.empty() ? 0 : t.timesteps[size_t(fr)], &t);
       for (size_t k = st.steps.size(); k-- > 0;)
@@ -6497,8 +7443,21 @@ int main(int argc, char** argv) {
       for (const auto& a : s.atoms) q += a.charge;
       std::map<std::string, int> counts;
       for (const auto& a : s.atoms) counts[element(a.element).symbol]++;
-      std::printf("file        %s\nformat      %s\natoms       %zu\nbonds       %zu (%s)\nmolecules   %d\n", pos[0].c_str(), s.source_format.c_str(), s.atoms.size(),
-                  s.bonds.size(), s.bonds_from_file ? "from file" : "perceived", nm);
+      // a crystal cell too small for its bonds holds one bond per pair of atoms (bonds.cpp): the count is short and the
+      // chains look cut, so the crystal's own count (from the copies that hold every bond once) and the reason are given
+      const std::string small = s.cell.valid() ? cell_fit_message(s) : "";
+      std::string per_cell;
+      if (!small.empty() && !s.bonds_from_file) {
+        try {
+          const auto n = copies_to_fit(s);
+          const size_t k = size_t(n[0]) * size_t(n[1]) * size_t(n[2]);
+          if (k * s.atoms.size() <= 4000)
+            per_cell = "; the crystal has " + std::to_string(supercell(s, n[0], n[1], n[2]).bonds.size() / k) + " per cell, see the note";
+        } catch (const std::exception&) {
+        }
+      }
+      std::printf("file        %s\nformat      %s\natoms       %zu\nbonds       %zu (%s%s)\nmolecules   %d\n", pos[0].c_str(), s.source_format.c_str(), s.atoms.size(),
+                  s.bonds.size(), s.bonds_from_file ? "from file" : "perceived", per_cell.c_str(), nm);
       std::printf("elements   ");
       for (const auto& [e, c] : counts) std::printf(" %s %d", e.c_str(), c);
       std::printf("\n");
@@ -6506,28 +7465,58 @@ int main(int argc, char** argv) {
         std::printf("cell        %.4f %.4f %.4f Å · volume %.1f Å³\ndensity     %.4f g/cm³\n", norm(s.cell.a), norm(s.cell.b), norm(s.cell.c), s.cell.volume(), s.density());
       std::printf("mass        %.3f g/mol\ncharge      %+.3e e\n", s.total_mass(), q);
       for (const auto& n : s.notes) std::printf("note        %s\n", n.c_str());
+      if (!small.empty()) std::printf("note        %s\n", small.c_str());
       return 0;
     }
     if (cmd == "render") {
       if (!o.count("-o")) return usage();
       const std::string out = o["-o"];
+      // every value checked before anything is drawn: an unknown one is refused, not drawn as the default
+      auto pick = [&](const char* key, const char* def, std::initializer_list<const char*> ok) {
+        const std::string v = o.count(key) ? o[key] : def;
+        std::string list;
+        for (const char* k : ok) {
+          if (v == k) return v;
+          list += (list.empty() ? "" : "|") + std::string(k);
+        }
+        throw std::invalid_argument(std::string(key) + ": unknown value '" + v + "' (" + list + ")");
+      };
+      std::string ext = std::filesystem::path(out).extension().string();
+      for (char& ch : ext) ch = char(std::tolower(static_cast<unsigned char>(ch)));
+      if (ext != ".png" && ext != ".svg") throw std::invalid_argument("-o: the picture is written as .png or .svg (got " + out + ")");
+      const bool svg = ext == ".svg";
       Camera cam;
       RenderOptions opt;
       if (o.count("--yaw")) cam.yaw = std::stod(o["--yaw"]) * M_PI / 180;
       if (o.count("--pitch")) cam.pitch = std::stod(o["--pitch"]) * M_PI / 180;
       if (o.count("--zoom")) cam.zoom = std::stod(o["--zoom"]);
       cam.perspective = o.count("--perspective");
-      if (o.count("--size")) std::sscanf(o["--size"].c_str(), "%dx%d", &opt.width, &opt.height);
-      const std::string bg = o.count("--bg") ? o["--bg"] : "dark";
+      if (o.count("--size")) {
+        int w = 0, h = 0;
+        char tail = 0;
+        if (std::sscanf(o["--size"].c_str(), "%dx%d%c", &w, &h, &tail) != 2 || w <= 0 || h <= 0)
+          throw std::invalid_argument("--size takes WIDTHxHEIGHT in pixels, e.g. 1280x800 (got " + o["--size"] + ")");
+        // the renderer holds about 80 bytes per output pixel (2x2 supersampled colour, depth and atom id): 8192 a side and
+        // 8K-poster area at most keeps it near 3 GB
+        constexpr int side_max = 8192;
+        constexpr long long area_max = 8192LL * 4608;
+        if (w > side_max || h > side_max || (long long)w * h > area_max)
+          throw std::invalid_argument("--size " + o["--size"] + " is too large: at most " + std::to_string(side_max) + " pixels a side and " +
+                                      std::to_string(area_max / 1000000) + " megapixels in all (e.g. 7680x4320)");
+        opt.width = w, opt.height = h;
+      }
+      const std::string bg = pick("--bg", "dark", {"dark", "white", "transparent"});
+      const std::string colour_v = pick("--colour", "molecule", {"molecule", "element", "type", "distance"});
+      const std::string style_v = pick("--style", "ball", {"ball", "space", "sticks", "noh", "backbone"});
       opt.background = bg == "white" ? Background::White : bg == "transparent" ? Background::Transparent : Background::Dark;
-      const std::string c = o.count("--colour") ? o["--colour"] : "molecule";
+      const std::string& c = colour_v;
       opt.colour_by = c == "element" ? ColourBy::Element : c == "type" ? ColourBy::Type : c == "distance" ? ColourBy::Property : ColourBy::Molecule;
       if (opt.colour_by == ColourBy::Property) {
         const auto sh = molecule_shapes(s);
         const auto mol = s.molecules();
         for (size_t i = 0; i < s.atoms.size(); ++i) opt.property.push_back(norm(s.atoms[i].pos - sh[mol[i]].com));
       }
-      const std::string st = o.count("--style") ? o["--style"] : "ball";
+      const std::string& st = style_v;
       opt.style = st == "space" ? Style::SpaceFilling : st == "sticks" ? Style::Sticks : st == "noh" ? Style::NoHydrogens : st == "backbone" ? Style::Backbone : Style::BallAndStick;
       opt.show_cell = !o.count("--no-cell");
       // --wrap: atoms folded into the cell as in the simulation box; bonds across the boundary are not drawn; each chain
@@ -6549,7 +7538,7 @@ int main(int argc, char** argv) {
         for (auto& a : s.atoms) a.pos = s.cell.wrap(a.pos);
         std::erase_if(s.bonds, [&](const Bond& b) { return norm(s.atoms[b.i].pos - s.atoms[b.j].pos) > 4.0; });
       }
-      if (out.size() > 4 && out.substr(out.size() - 4) == ".svg") {
+      if (svg) {
         std::ofstream f(out);
         f << render_svg(s, cam, opt);
       } else {
@@ -6565,14 +7554,17 @@ int main(int argc, char** argv) {
       return 0;
     }
     if (cmd == "field") {
-      const ForceField ff = default_forcefield(s);
+      // --ff as relax, md and equilibrate take it (the file's own coefficients otherwise): a data file whose pair
+      // coefficients sit in the LAMMPS input is then typed afresh, as its refusal without --ff advises
+      const ForceField ff = o.count("--ff") ? cli_forcefield(s, o, true) : default_forcefield(s);
       std::printf("force field %s\n", ff.name.c_str());
       for (const auto& n : ff.notes) std::printf("  %s\n", n.c_str());
       std::map<std::string, std::string> why;
-      for (size_t i = 0; i < ff.atom_type.size(); ++i) why[ff.atom_type[i]] = ff.why[i];
+      for (size_t i = 0; i < ff.atom_type.size(); ++i) why[ff.atom_type[i]] = i < ff.why.size() ? ff.why[i] : "";
       for (const auto& [t, w] : why) std::printf("  %-3s %s\n", t.c_str(), w.c_str());
       EnergyOptions eo;
-      if (o.count("--cutoff")) eo.cutoff = std::stod(o["--cutoff"]);
+      if (o.count("--ff")) run_cutoff(eo, ff, o, true);   // the force field's own cut-off, as relax uses
+      else if (o.count("--cutoff")) eo.cutoff = std::stod(o["--cutoff"]);
       if (o.count("--no-tail")) eo.tail = false;
       electrostatics(eo, o);
       Evaluator ev(ff, eo);
@@ -6608,6 +7600,7 @@ int main(int argc, char** argv) {
       r.pushoff = !o.count("--no-pushoff");
       r.energy.coulomb = !o.count("--no-coulomb");
       electrostatics(r.energy, o);
+      const System s_in = s;   // shells or sites cli_forcefield adds are not written to a structure format (as_read)
       r.field = std::make_shared<ForceField>(cli_forcefield(s, o, o.count("--quiet") > 0));
       run_cutoff(r.energy, *r.field, o, o.count("--quiet") > 0);
       r.restraint_terms = cli_restraints(s, o, o.count("--quiet") > 0);
@@ -6636,11 +7629,12 @@ int main(int argc, char** argv) {
       if (!quiet) std::fprintf(stderr, "\n");
       const std::string out = o["-o"];
       auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
-      if (ends(".pdb")) write_pdb(s, out);
+      if (ends(".pdb")) write_pdb(as_read(s_in, s), out);
       else if (ends(".gro")) write_gro(s, out);   // same atoms and order as a GROMACS topology read with --topology
-      else if (ends(".xyz")) write_xyz(s, out);
-      else if (ends("mol2")) write_mol2(s, out);
-      else if (ends(".car")) write_car(s, out);
+      else if (ends(".xyz")) write_xyz(as_read(s_in, s), out);
+      else if (ends("mol2")) write_mol2(as_read(s_in, s), out);
+      else if (ends(".car")) write_car(as_read(s_in, s), out);
+      else if (!lammps_data_name(out) && structure_format_name(out)) write_structure_file(as_read(s_in, s), out);
       else if (const std::string why = write_lammps_data_or_structure(s, r.field ? *r.field : default_forcefield(s), r.energy, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
       std::printf("%s\n", rep.field.c_str());
       for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
@@ -6717,15 +7711,23 @@ int main(int argc, char** argv) {
         run.kind = LammpsRun::Kind::None;
         write_lammps_input(s, *to.field, to.energy, std::filesystem::path(data).filename().string(), in, 0, false, run);
         ThermalLammps q;
-        q.method = to.method, q.temperature = to.temperature, q.dt = to.dt, q.equilibrate_ps = std::max(to.equilibrate_ps, 100.0);
-        q.ps = std::max(to.ps, 2000.0), q.sample_every = to.sample_every, q.corr_ps = to.corr_ps, q.axis = to.axis, q.slabs = to.slabs;
+        // The cluster run has its own lengths (default 100 ps equilibration, 2000 ps sampled), as the C API's
+        // lammps_equilibrate_ps / lammps_ps: --eq-ps / --ps are the local run's and are never raised here.
+        q.method = to.method, q.temperature = to.temperature, q.dt = to.dt;
+        q.equilibrate_ps = o.count("--lammps-eq-ps") ? std::stod(o["--lammps-eq-ps"]) : 100.0;
+        q.ps = o.count("--lammps-ps") ? std::stod(o["--lammps-ps"]) : 2000.0;
+        if (!(q.equilibrate_ps >= 0)) throw std::invalid_argument("--lammps-eq-ps: ps of equilibration in the LAMMPS input, 0 or more");
+        if (!(q.ps > 0)) throw std::invalid_argument("--lammps-ps: ps sampled in the LAMMPS input, more than 0");
+        q.sample_every = to.sample_every, q.corr_ps = to.corr_ps, q.axis = to.axis, q.slabs = to.slabs;
         q.swap_every = to.swap_every, q.dimensionality = to.dimensionality;
         q.thickness = to.dimensionality == 2 ? (to.thickness > 0 ? to.thickness : sheet_thickness(s)) : 0;
         q.kspace = to.energy.electrostatics == EnergyOptions::Electrostatics::PME;
         std::ofstream f(in, std::ios::app);
         f << thermal_lammps_run(q);
-        std::printf("wrote %s and %s (%s, %.0f ps equilibration, %.0f ps sampled)\n", in.c_str(), data.c_str(), to.method.c_str(), q.equilibrate_ps, q.ps);
+        std::printf("wrote %s and %s (%s, %g ps equilibration, %g ps sampled; --lammps-eq-ps / --lammps-ps set these)\n", in.c_str(), data.c_str(),
+                    to.method.c_str(), q.equilibrate_ps, q.ps);
         if (!o.count("--ps")) return 0;   // only the inputs unless a local run is asked for too
+        if (!quiet) std::printf("--ps given: running %g ps (after %g ps equilibration) here as well\n", to.ps, to.equilibrate_ps);
       }
       if (std::llround(to.ps * 1000 / to.dt) + std::llround(to.equilibrate_ps * 1000 / to.dt) > 5000 && !o.count("--long"))
         std::fprintf(stderr, "note: %lld steps; long runs belong on a cluster (--lammps-input writes the inputs)\n",
@@ -6764,8 +7766,11 @@ int main(int argc, char** argv) {
     if (cmd == "md") {
       if (!o.count("-o")) return usage();
       const auto md_clock = std::chrono::steady_clock::now();   // setup + run, for --bench-json
+      // --resume: the first run's settings (beside the checkpoint) for every option not given again, before any is read
+      if (o.count("--resume") && s.title.find("checkpoint step ") != std::string::npos) md_resume_settings(pos[0], s, o);
       DynamicsOptions d;
       if (o.count("--steps")) d.steps = std::stoll(o["--steps"]);
+      if (d.steps < 0) throw std::invalid_argument("--steps must be 0 or more (got " + o["--steps"] + ")");
       if (o.count("--dt")) d.dt = std::stod(o["--dt"]);
       if (o.count("--temp")) d.temperature = std::stod(o["--temp"]);
       if (o.count("--thermostat")) d.thermostat = thermostat_from_string(o["--thermostat"]);
@@ -6813,7 +7818,8 @@ int main(int argc, char** argv) {
       {
         if (o.count("--checkpoint-every")) d.checkpoint_every = std::stoll(o["--checkpoint-every"]);
         const int64_t total = d.step_offset + d.steps;
-        d.checkpoint = [&, cp, total](const std::vector<double>& x, const std::vector<double>& v, const Cell& c, int64_t step) {
+        const std::string settings = md_settings_text(o);   // the run's options, for --resume
+        d.checkpoint = [&, cp, total, settings](const std::vector<double>& x, const std::vector<double>& v, const Cell& c, int64_t step) {
           System k = s;
           k.cell = c;
           k.velocities.resize(k.atoms.size());
@@ -6827,6 +7833,9 @@ int main(int argc, char** argv) {
           const std::string why = write_lammps_data_or_structure(k, d.field ? *d.field : default_forcefield(k), d.energy, tmp);
           if (!why.empty()) write_lammps_data(k, tmp);
           std::filesystem::rename(tmp, cp);
+          const std::string sp = md_settings_path(cp);
+          std::ofstream(sp + ".tmp") << settings;
+          std::filesystem::rename(sp + ".tmp", sp);
           if (!quiet) std::printf("checkpoint: step %lld → %s\n", static_cast<long long>(step), cp.c_str());
         };
       }
@@ -6871,6 +7880,14 @@ int main(int argc, char** argv) {
         return 75;
       }
       std::filesystem::remove("resume.txt");   // finished: nothing to continue
+      // the last step too (the core writes one only before the end), so the checkpoint is the finished run, not the last
+      // multiple of N before it, and a longer --resume continues from the end instead of repeating the steps after it
+      if (d.checkpoint_every > 0 && d.steps > 0 && s.velocities.size() == s.atoms.size()) {
+        std::vector<double> fx(3 * s.atoms.size()), fv(3 * s.atoms.size());
+        for (size_t i = 0; i < s.atoms.size(); ++i)
+          for (int k = 0; k < 3; ++k) fx[3 * i + size_t(k)] = s.atoms[i].pos[k], fv[3 * i + size_t(k)] = s.velocities[i][k];
+        d.checkpoint(fx, fv, s.cell, d.step_offset + d.steps);
+      }
       live.done(true);
       if (o.count("--bench-json")) {   // a scaling check's measurement (caps job scaling)
         const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - md_clock).count();
@@ -6898,7 +7915,12 @@ int main(int argc, char** argv) {
       return 0;
     }
     if (cmd == "chains") {
+      if (s.total_mass() <= 0 && s.bonds.empty() && std::none_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element > 0; }))
+        throw std::runtime_error(pos[0] + " has no elements or masses (a LAMMPS dump without element or mass columns), so its backbones are unknown; "
+                                 "give a topology with --topology DATA");
       const InternalDistances d = internal_distances(s);
+      if (d.periodic > 0)
+        std::printf("# %d of the backbones are infinite chains bonded through the cell, each cut once at a bond: their end-to-end distance is about one period, not a coil size\n", d.periodic);
       std::printf("%d backbones · ⟨b²⟩ %.4f Å² · ⟨R²⟩ end to end %.1f Å²\n# n  <R2(n)>/(n b2)\n", d.chains, d.b2, d.r2_end);
       for (size_t k = 0; k < d.n.size(); ++k) std::printf("%d %.4f\n", d.n[k], d.ratio[k]);
       return 0;
@@ -6911,6 +7933,7 @@ int main(int argc, char** argv) {
       if (o.count("--pfinal")) pp.p_final = std::stod(o["--pfinal"]);
       if (o.count("--pmax")) pp.p_max = std::stod(o["--pmax"]);
       if (o.count("--scale")) pp.time_scale = std::stod(o["--scale"]);
+      if (!(pp.time_scale > 0)) throw std::invalid_argument("--scale must be above 0 (got " + o["--scale"] + "); it multiplies every stage's length");
       if (o.count("--cycles")) pp.cycles = std::stoi(o["--cycles"]);
       if (o.count("--tlow")) pp.t_low = std::stod(o["--tlow"]);
       if (o.count("--thigh")) pp.t_high = std::stod(o["--thigh"]);
@@ -7030,12 +8053,19 @@ int main(int argc, char** argv) {
     }
     if (cmd == "rdf") {
       const double rmax = o.count("--rmax") ? std::stod(o["--rmax"]) : 12.0, dr = o.count("--dr") ? std::stod(o["--dr"]) : 0.2;
+      if (!(dr > 0)) throw std::invalid_argument("--dr: the bin width in Å, more than 0 (got " + o["--dr"] + ")");
+      if (!(rmax > 0)) throw std::invalid_argument("--rmax: the range in Å, more than 0 (got " + o["--rmax"] + ")");
+      // g(r) is the pair density over the bulk density: without a cell there is no density, and every value would be 0
+      if (!s.cell.valid())
+        throw std::invalid_argument(pos[0] + " has no periodic cell, and g(r) is normalised by the number density of the cell; "
+                                    "give a file with a cell (a LAMMPS data file, a PDB with CRYST1, a CIF ...)");
       int ea = 0, eb = 0;
       if (o.count("--pair")) {
-        const auto p = o["--pair"];
-        const auto dash = p.find('-');
-        ea = element_from_symbol(p.substr(0, dash));
-        eb = element_from_symbol(dash == std::string::npos ? p : p.substr(dash + 1));
+        const auto [za, zb] = rdf_pair_elements(o["--pair"]);
+        ea = za, eb = zb;
+        auto present = [&](int z) { return z == 0 || std::any_of(s.atoms.begin(), s.atoms.end(), [z](const Atom& a) { return a.element == z; }); };
+        for (int z : {ea, eb})
+          if (!present(z)) throw std::invalid_argument("--pair " + o["--pair"] + ": the system has no " + std::string(element(z).symbol) + " atoms");
       }
       std::printf("# r(Å) g(r)\n");
       for (auto [r, g] : rdf(s, ea, eb, rmax, dr, o.count("--inter"))) std::printf("%.3f %.5f\n", r, g);
@@ -7064,7 +8094,7 @@ int main(int argc, char** argv) {
       return 0;
     }
     if (cmd == "planes") {
-      if (!o.count("--hkl")) throw std::invalid_argument("caps planes FILE --hkl h,k,l [--shift 0.5] [--max N] [--json OUT]");
+      if (!o.count("--hkl")) throw std::invalid_argument("caps planes FILE --hkl h,k,l [--shift 0] [--max N] [--json OUT]");
       std::vector<int> hk;
       {
         std::string t = o["--hkl"];
@@ -7073,7 +8103,8 @@ int main(int argc, char** argv) {
         for (int x; in >> x;) hk.push_back(x);
       }
       if (hk.size() != 3) throw std::invalid_argument("--hkl takes three integers, e.g. 1,1,-1");
-      const auto mp = miller_planes(s.cell, hk[0], hk[1], hk[2], o.count("--shift") ? std::stod(o["--shift"]) : 0.0, o.count("--max") ? std::stoi(o["--max"]) : 0);
+      const double shift = o.count("--shift") ? std::stod(o["--shift"]) : 0.0;   // 0: through the origin, as the Studio and caps_miller
+      const auto mp = miller_planes(s.cell, hk[0], hk[1], hk[2], shift, o.count("--max") ? std::stoi(o["--max"]) : 0);
       std::printf("%s  d = %.6f Å  normal (%.6f, %.6f, %.6f)\n", mp.label().c_str(), mp.d, mp.normal[0], mp.normal[1], mp.normal[2]);
       std::printf("view down the normal: yaw %.4f°, pitch %.4f°\n", mp.yaw * 180 / M_PI, mp.pitch * 180 / M_PI);
       std::printf("plane  offset Å  corners  area Å²\n");
@@ -7087,6 +8118,9 @@ int main(int argc, char** argv) {
         for (const auto& v : poly) { Json vj = Json::array(); for (int k = 0; k < 3; ++k) vj.push_back(v[size_t(k)]); pj.push_back(vj); }
         polys.push_back(pj);
       }
+      if (mp.polygons.empty())   // (h00) at shift 0: the only planes are the cell's faces, which are not listed
+        std::printf("no plane of %s crosses the inside of the cell at shift %g (planes on the cell's faces are not listed); "
+                    "try --shift 0.5\n", mp.label().c_str(), shift);
       if (o.count("--json")) {
         Json j = Json::object();
         j["label"] = mp.label(), j["d"] = mp.d, j["yaw"] = mp.yaw, j["pitch"] = mp.pitch, j["polygons"] = polys;
@@ -7109,16 +8143,59 @@ int main(int argc, char** argv) {
       }
       if (script.find_first_not_of("; \t\r\n") == std::string::npos || !o.count("-o"))
         throw std::invalid_argument("caps edit FILE --ops 'OP ARGS; …' (or --ops-file) -o OUT");
+      const bool had_ff = s.forcefield && s.forcefield->charge.size() == s.atoms.size();
+      const ChemistryKey before = chemistry_key(s);
       const auto report = edit_script(s, script);
       for (const auto& line : report) std::printf("%s\n", line.c_str());
-      write_structure_file(s, o["-o"]);
+      // a geometry edit keeps the file's force field; one that changes atoms, elements, bonds or charges does not
+      write_edited_structure(s, had_ff, chemistry_key(s) == before, pos[0], o["-o"], o, "the edit changed the atoms, elements, bonds or charges");
       std::printf("%zu atoms · %zu bonds · wrote %s\n", s.atoms.size(), s.bonds.size(), o["-o"].c_str());
       return 0;
     }
     if (cmd == "convert") {
       if (pos.size() < 2) return usage();
       const std::string out = pos[1];
-      write_structure_file(s, out);   // every writer by the extension (.car with its .mdf, POSCAR by name)
+      const bool had_ff = s.forcefield && s.forcefield->charge.size() == s.atoms.size();
+      const ChemistryKey before = chemistry_key(s);
+      // --supercell auto (the copies this cell needs for its bonds) or na,nb,nc; 1,1,1 writes the cell as it is
+      bool asked = false;
+      if (o.count("--supercell") && s.cell.valid()) {
+        std::array<int, 3> n{1, 1, 1};
+        std::string v = o["--supercell"];
+        if (v == "auto") {
+          n = copies_to_fit(s);
+        } else {
+          for (auto& c : v) if (c == 'x' || c == 'X' || c == ':') c = ',';
+          if (std::sscanf(v.c_str(), "%d,%d,%d", &n[0], &n[1], &n[2]) != 3 || n[0] < 1 || n[1] < 1 || n[2] < 1)
+            throw std::invalid_argument("--supercell: auto, or na,nb,nc (whole numbers of at least 1)");
+        }
+        asked = true;
+        if (n != std::array<int, 3>{1, 1, 1}) {
+          s = supercell(s, n[0], n[1], n[2]);
+          std::printf("%d×%d×%d copies of the cell, %zu atoms, %zu bonds\n", n[0], n[1], n[2], s.atoms.size(), s.bonds.size());
+        }
+      } else if (o.count("--supercell")) {
+        throw std::invalid_argument("--supercell: " + pos[0] + " has no cell");
+      }
+      // A cell too small for its bonds holds one bond per pair of atoms (bonds.cpp), so a polyethylene cell keeps 10 of its
+      // 12 bonds: a format that carries bonds (LAMMPS data, mol2, PDB CONECT, SDF, CAR/MDF) would describe broken chains.
+      // Coordinates alone (xyz, gro, cif, POSCAR) are right as they are.
+      std::string low = out;
+      for (char& c : low) c = char(std::tolower(static_cast<unsigned char>(c)));
+      auto ends = [&](const char* e) { const std::string x(e); return low.size() > x.size() && low.compare(low.size() - x.size(), x.size(), x) == 0; };
+      // the writers that carry bonds, as write_structure_file picks them (an unknown extension is left to its own refusal)
+      const bool coordinates_only = ends(".xyz") || ends(".extxyz") || ends(".gro") || ends(".cif") || ends(".vasp") || ends(".poscar") || poscar_name(out);
+      const bool with_bonds = !coordinates_only && (ends(".pdb") || ends(".mol2") || ends(".car") || ends(".sdf") || ends(".mol") || ends(".data") ||
+                                                    ends(".lmp") || ends(".lammps") || !std::filesystem::path(out).has_extension());
+      if (with_bonds && s.cell.valid()) {
+        if (const std::string small = cell_fit_message(s); !small.empty()) {
+          if (!asked) throw std::invalid_argument(small + " (caps convert " + pos[0] + " " + out + " --supercell auto writes those copies; --supercell 1,1,1 writes this cell anyway)");
+          std::fprintf(stderr, "warning: %s; the bonds written here do not describe the crystal\n", small.c_str());
+        }
+      }
+      // every writer by the extension (.car with its .mdf, POSCAR by name); a LAMMPS data file keeps the input's force
+      // field unless --supercell made copies (the field is bound to the atoms it was read with)
+      write_edited_structure(s, had_ff, chemistry_key(s) == before, pos[0], out, o, "--supercell made copies of the cell");
       std::printf("wrote %s\n", out.c_str());
       return 0;
     }

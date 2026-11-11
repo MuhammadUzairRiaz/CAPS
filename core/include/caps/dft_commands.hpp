@@ -16,6 +16,11 @@ const std::vector<std::string>& dft_commands();
 bool is_dft_command(const std::string& cmd);
 // an option that takes no value (--janus, --force, --json …)
 bool dft_is_switch(const std::string& cmd, std::string name);
+// the command's own options as typed on the command line ("--preset", "-a"), in table order
+std::vector<std::string> dft_option_names(const std::string& cmd);
+// an option some DFT command reads (its own table, another command's, or a shared VASP set option): anything else is
+// a typing error the CLI refuses
+bool dft_known_option(std::string name);
 // --help text: what it does, every option with its default and the reason, examples
 std::string dft_help(const std::string& cmd);
 // Runs a command; throws std::invalid_argument / std::runtime_error with a message for the user on failure.

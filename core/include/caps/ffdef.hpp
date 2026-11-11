@@ -85,6 +85,7 @@ inline bool is_ml_source(const std::string& source) { return source.rfind("CAPS 
 
 struct FFDef {
   std::string name, version, source;
+  std::string loaded_from;   // the file load_forcefield read ("" when built in memory): library overlays are looked up beside it
   std::vector<std::string> references;
   std::string units = "real";
   // default styles (a rule may name its own style, as in LAMMPS hybrid styles)
@@ -302,8 +303,10 @@ struct FFDef {
 FFDef load_forcefield(const std::string& path);
 // Charges "increments" for a force field whose charge_increments_from names another (a file beside ff_path): that
 // force field types the structure by its own rules and gives its charges from its bond increments, which balance bond
-// by bond; they are used with this force field's types and parameters (fixed per-type charges replaced by another library's increments). Throws
-// FFError with the reason when it cannot (atoms it cannot type, a bond without an increment).
+// by bond; they are used with this force field's types and parameters (fixed per-type charges replaced by another library's increments).
+// A force field that names no companion but has bond increments of its own (PCFF, COMPASS, CVFF) gives its own. Throws
+// FFError with the reason when it cannot (atoms it cannot type, a bond without an increment), std::invalid_argument when
+// the force field has neither a companion nor increments.
 std::vector<double> companion_charges(const System& s, const FFDef& def, const std::string& ff_path, std::string* note = nullptr);
 // Reads a "caps-typing" rules file and appends its rules to the force field (types must exist in it).
 void load_typing(FFDef& ff, const std::string& path);
@@ -311,7 +314,9 @@ void save_forcefield(const FFDef& ff, const std::string& path);
 // Appends the overlay's types and rules after the base's (so they win), replacing types of the same name.
 void merge_forcefield(FFDef& base, const FFDef& overlay);
 // --overlay A.json[,B.json …] (caps ff apply, relax, md, equilibrate, react; the Studio's Field overlays): each file merged
-// in turn onto def, a later file's rules over an earlier's. Empty entries are skipped.
+// in turn onto def, a later file's rules over an earlier's. Empty entries are skipped. An entry that is not a file here is
+// looked up as a library overlay (NAME or NAME.json, as caps ff overlays lists them) beside def's own file, then in
+// $CAPS_HOME/data/forcefields.
 void merge_overlays(FFDef& def, const std::string& comma_separated_paths);
 
 // The overlay files of a force-field library folder: caps-forcefield files with no catalogue.json entry and no atom types

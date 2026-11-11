@@ -96,6 +96,26 @@ TEST(Measured, Gsas) {
   ASSERT_EQ(e.y.size(), 3u);
   EXPECT_DOUBLE_EQ(e.x[1], 10.02);
   EXPECT_DOUBLE_EQ(e.sigma[2], 9.0);
+  // a BANK record with no data lines after it is an error, not an empty curve
+  EXPECT_THROW(parse_measured("title\nBANK 1 100 10 CONS 1000 2 0 0 STD\n", "e.gsa"), std::invalid_argument);
+  EXPECT_THROW(parse_measured("title\nBANK 1 3 1 CONS 1000 2 0 0 FXY\n", "e2.txt"), std::invalid_argument);
+}
+
+// Columns: a header picks x, y and σ by name (caps powder --csv writes 2θ, q, intensity); with no header the order is
+// x, y[, σ]; a header with no intensity column is refused
+TEST(Measured, ColumnsByHeader) {
+  const MeasuredCurve p = parse_measured("two_theta_deg,q_inv_angstrom,intensity\n10,0.710931,0.0309317\n10.02,0.7123,0.031\n", "pe.csv");
+  ASSERT_EQ(p.y.size(), 2u);
+  EXPECT_DOUBLE_EQ(p.x[0], 10.0);
+  EXPECT_DOUBLE_EQ(p.y[0], 0.0309317);
+  EXPECT_TRUE(p.sigma.empty());
+  const MeasuredCurve s = parse_measured("2theta\tintensity\tesd\n10\t5\t1\n11\t6\t2\n");
+  ASSERT_EQ(s.sigma.size(), 2u);
+  EXPECT_DOUBLE_EQ(s.sigma[1], 2.0);
+  const MeasuredCurve n = parse_measured("1 2 0.1\n3 4 0.2\n");
+  ASSERT_EQ(n.sigma.size(), 2u);
+  EXPECT_DOUBLE_EQ(n.y[1], 4.0);
+  EXPECT_THROW(parse_measured("two_theta,q\n1,2\n3,4\n"), std::invalid_argument);
 }
 
 // UXD (single-column counts from _START by _STEPSIZE, the first range of two; two-column data) and Rigaku *TYPE text (a

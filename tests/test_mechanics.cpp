@@ -250,14 +250,17 @@ TEST(Mechanics, CoolingScansReadBackAndPooled) {
       std::snprintf(b, sizeof b, "  %6.1f K  %.5f ± 0.00100 g/cm³\n", T, 1 / v);
       printed += b;
     }
-    std::ofstream(run / "out.tg-points.json") << pts << "]}\n";
+    std::ofstream(run / "out.tg-points.json") << pts << "]" << (r ? ", \"atoms\": 50" : "") << "}\n";   // run2: the count caps tg writes
     std::ofstream(run / "csv" / "tg_3.csv") << table;
     std::ofstream(run / "csv" / "tg_2.csv") << "# Glass transition Tg: fit\nT (K),specific volume (cm³/g)\n300,9\n400,9\n";
     std::ofstream(root / ("tg" + std::to_string(r + 1) + ".log"))
         << "step 1 of 9: 500.0 K\n" << printed << "\nGlass transition Tg: " << tg_true[r] << " ± 1 K\n"
         << "  method: stepwise cooling 500 → 300 K in 25 K steps of 100 ps after 50 ps at 500 K (NPT, 1 atm, stochastic cell rescaling); Tg = x\n";
-    std::ofstream(run / "cell.data") << "LAMMPS data\n\n100 atoms\n2 atom types\n";
+    std::ofstream(run / "out.data") << "LAMMPS data\n\n100 atoms\n2 atom types\n";   // the run's own structure
+    std::ofstream(run / "aa.data") << "LAMMPS data\n\n999 atoms\n1 atom types\n";    // another one that shares the folder
   }
+  std::ofstream(root / "lone.data") << "LAMMPS data\n\n12 atoms\n1 atom types\n\nMasses\n\n1 12.011\n";
+  std::ofstream(root / "plain.txt") << "500 1.10\n450 1.05\n400 1.02\n";   // no header: --volume decides
   const CoolingScan a = read_cooling_scan((root / "run1").string());
   ASSERT_EQ(a.points.size(), 9u);
   EXPECT_EQ(fs::path(a.source).filename(), "out.tg-points.json");
@@ -269,6 +272,17 @@ TEST(Mechanics, CoolingScansReadBackAndPooled) {
   ASSERT_EQ(c.points.size(), 9u);
   EXPECT_NEAR(c.points[3].density, a.points[3].density, 1e-6);
   EXPECT_EQ(fs::path(c.log).filename(), "tg1.log");
+  EXPECT_EQ(c.atoms, 100u);   // the run's own out.data, through its points file, not aa.data
+  const CoolingScan cv = read_cooling_scan((root / "run1" / "csv").string(), true);   // a column headed density stays density
+  ASSERT_EQ(cv.points.size(), 9u);
+  EXPECT_NEAR(cv.points[3].density, a.points[3].density, 1e-6);
+  const CoolingScan s = read_cooling_scan((root / "run1" / "out.data").string());   // the structure: its points file beside it
+  EXPECT_EQ(fs::path(s.source).filename(), "out.tg-points.json");
+  EXPECT_EQ(s.points.size(), 9u);
+  EXPECT_EQ(read_cooling_scan((root / "run2" / "out.tg-points.json").string()).atoms, 50u);
+  EXPECT_THROW(read_cooling_scan((root / "lone.data").string()), std::runtime_error);   // a structure, no scan beside it
+  EXPECT_NEAR(read_cooling_scan((root / "plain.txt").string()).points[0].density, 1.10, 1e-12);
+  EXPECT_NEAR(read_cooling_scan((root / "plain.txt").string(), true).points[0].specific_volume, 1.10, 1e-12);
   const auto one = fit_cooling_scans({a});
   ASSERT_EQ(one.size(), 1u);
   EXPECT_EQ(one[0].id, "tg");

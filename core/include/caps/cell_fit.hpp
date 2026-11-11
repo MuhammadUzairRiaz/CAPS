@@ -12,6 +12,7 @@
 #include <string>
 
 #include "caps/system.hpp"
+#include "caps/typing.hpp"
 
 namespace caps {
 
@@ -29,5 +30,13 @@ std::array<int, 3> copies_to_fit(const System& s, size_t max_atoms = 15000);
 
 // What is wrong and what to do, for error messages and reports ("" when the cell fits).
 std::string cell_fit_message(const System& s, const ForceField* field = nullptr);
+
+// assign_types for a cell too small for its bonds: the cell's bonds hold one entry per pair of atoms, so a carbon of a
+// polyethylene cell bonded to two images of one neighbour would be typed with three neighbours (an alkene). The copies
+// that fit (copies_to_fit) are typed instead and each atom takes the type of its own copy (the first: a supercell keeps
+// atom i of that copy at i), with a note naming the copies. A cell that fits is typed as it is. `copies`, when given,
+// receives the repetition used ({1, 1, 1} for a fit). Throws std::invalid_argument when no repetition within 15000 atoms
+// fits, with cell_fit_message's reason.
+TypingResult assign_types_fitted(const System& s, const FFDef& ff, std::array<int, 3>* copies = nullptr);
 
 }  // namespace caps

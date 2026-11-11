@@ -87,6 +87,10 @@ std::vector<Stage> pushoff(const ProtocolParams& p) {
 }
 
 std::vector<Stage> protocol_by_name(const std::string& name, const ProtocolParams& p) {
+  // every stage length is a product of these: zero or negative would give stages that run backwards
+  if (!(p.time_scale > 0)) throw std::invalid_argument("the time scale must be above 0 (got " + std::to_string(p.time_scale) + ")");
+  if (!(p.ramp_ps >= 0) || !(p.hold_ps >= 0) || !(p.cap_ps >= 0)) throw std::invalid_argument("stage lengths (ramp, hold, push-off) must be 0 ps or more");
+  if (p.cycles < 0) throw std::invalid_argument("the number of annealing cycles must be 0 or more");
   if (name == "larsen21" || name == "21-step") return larsen21(p);
   if (name == "annealing" || name == "anneal") return annealing(p);
   if (name == "pushoff" || name == "push-off") return pushoff(p);

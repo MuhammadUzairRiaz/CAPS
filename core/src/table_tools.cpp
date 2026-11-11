@@ -3,8 +3,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <numeric>
+#include <sstream>
 #include <stdexcept>
 
 #include "caps/io.hpp"
@@ -97,11 +99,13 @@ std::vector<size_t> sort_rows(const std::vector<std::vector<double>>& keys, cons
 }
 
 int write_sdf_table(const std::vector<SdfRow>& rows, const std::string& path, std::vector<std::string>* notes) {
-  std::ofstream out(path);
-  if (!out) throw std::runtime_error("cannot write " + path);
+  // every record is built first: a row whose structure cannot be read leaves the output file as it was (no empty file)
+  std::ostringstream out;
   int written = 0, skipped = 0;
   for (const auto& r : rows) {
     if (r.structure.empty()) { ++skipped; continue; }
+    if (!std::filesystem::exists(r.structure))
+      throw std::invalid_argument("cannot open " + r.structure + " (the structure column holds structure file paths, not SMILES)");
     Trajectory t = open_file(r.structure);
     System s = t.frames() ? t.frame(t.frames() - 1) : t.topology;
     if (!r.title.empty()) s.title = r.title;
@@ -111,6 +115,10 @@ int write_sdf_table(const std::vector<SdfRow>& rows, const std::string& path, st
     write_sdf_record(s, out, r.data);
     ++written;
   }
+  std::ofstream f(path);
+  if (!f) throw std::runtime_error("cannot write " + path);
+  f << out.str();
+  if (!f) throw std::runtime_error("cannot write " + path);
   if (notes && skipped) notes->push_back(std::to_string(skipped) + " row(s) without a structure left out");
   return written;
 }

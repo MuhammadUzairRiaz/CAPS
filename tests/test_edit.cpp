@@ -78,7 +78,8 @@ TEST(Edit, AtomsBondsElementsAndDeletion) {
   EXPECT_EQ(s.atoms.size(), n0 + 3);
   const uint32_t o = add_atom(s, int(h), 8, 1);
   EXPECT_NEAR(norm(s.atoms[o].pos - s.atoms[h].pos), element(8).covalent + element(6).covalent, 1e-9);
-  add_bond(s, 0, o, 1);
+  EXPECT_THROW(add_bond(s, 0, o, 1), EditError);   // carbon 0 holds four bonds already
+  add_bond(s, 0, o, 1, false);                       // the check skipped on request
   EXPECT_TRUE(remove_bond(s, 0, o));
   std::vector<char> del(s.atoms.size(), 0);
   del[o] = 1;
@@ -86,6 +87,43 @@ TEST(Edit, AtomsBondsElementsAndDeletion) {
   delete_atoms(s, del);
   EXPECT_EQ(s.atoms.size(), n0 + 3);
   EXPECT_EQ(s.bonds.size(), nb - 1);
+}
+
+TEST(Edit, BondsBeyondValenceAreRefused) {
+  System s = molecule("CCO");   // C1 C2 O3, then the hydrogens
+  const size_t nb0 = s.bonds.size();
+  std::vector<uint32_t> h;   // the methyl hydrogens
+  for (const auto& b : s.bonds) {
+    if (b.i == 0 && s.atoms[b.j].element == 1) h.push_back(b.j);
+    if (b.j == 0 && s.atoms[b.i].element == 1) h.push_back(b.i);
+  }
+  ASSERT_GE(h.size(), 2u);
+  ASSERT_EQ(s.atoms[2].element, 8);
+  EXPECT_THROW(add_bond(s, h[0], h[1], 1), EditError);   // H-H on two hydrogens that each have their bond
+  EXPECT_THROW(add_bond(s, 0, 2, 2), EditError);     // C=O on a saturated carbon
+  EXPECT_EQ(s.bonds.size(), nb0);                    // nothing changed
+  // an existing bond's order lowered, or kept, passes
+  add_bond(s, 0, 1, 1);
+  EXPECT_EQ(s.bonds.size(), nb0);
+}
+
+TEST(Edit, AttachingOnAHydrogenReplacesIt) {
+  System s = molecule("CCO");
+  uint32_t ho = 0;
+  for (const auto& b : s.bonds) {
+    if (s.atoms[b.i].element == 8 && s.atoms[b.j].element == 1) ho = b.j;
+    if (s.atoms[b.j].element == 8 && s.atoms[b.i].element == 1) ho = b.i;
+  }
+  ASSERT_NE(ho, 0u);
+  attach_fragment(s, ho, "*C(=O)C");   // ethyl acetate
+  EXPECT_EQ(s.atoms.size(), 14u);
+  std::vector<int> deg(s.atoms.size(), 0);
+  for (const auto& b : s.bonds) ++deg[b.i], ++deg[b.j];
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    if (s.atoms[i].element == 1) EXPECT_EQ(deg[i], 1) << i;
+  // a carbon with four heavy neighbours and no hydrogen takes nothing more
+  System neo = molecule("CC(C)(C)C");
+  EXPECT_THROW(attach_fragment(neo, 1, "*C"), EditError);
 }
 
 TEST(Edit, InvertingTheCentreOfAlanine) {

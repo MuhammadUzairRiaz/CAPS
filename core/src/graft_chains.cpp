@@ -81,7 +81,7 @@ System graft_chains(const System& host, const ChainSpec& graft, const ChainGraft
       for (int k = 0; k < 3; ++k) lo[size_t(k)] = std::min(lo[size_t(k)], a.pos[size_t(k)]), hi[size_t(k)] = std::max(hi[size_t(k)], a.pos[size_t(k)]);
     const double pad = o.padding > 0 ? o.padding : std::max(10.0, 1.3 * graft.dp + 6.0);
     for (int k = 0; k < 3; ++k) L[size_t(k)] = hi[size_t(k)] - lo[size_t(k)] + 2 * pad, shift[size_t(k)] = pad - lo[size_t(k)];
-    R.notes.push_back("the host has no cell: grafted in a box with " + std::to_string(int(std::lround(pad))) + " Å of room around it");
+    R.notes.push_back("the host has no cell: grafted in a box with " + std::to_string(int(std::lround(pad))) + " Å of room around it, and given back without a cell");
   }
   Cell box;
   box.a = {L[0], 0, 0}, box.b = {0, L[1], 0}, box.c = {0, 0, L[2]};
@@ -161,7 +161,14 @@ System graft_chains(const System& host, const ChainSpec& graft, const ChainGraft
   // positions back where the host was, molecules by connectivity
   for (auto& a : s.atoms) a.pos = a.pos - shift;
   if (periodic) s.cell = host.cell;
-  else s.cell = Cell{};
+  else {   // a molecule comes back a molecule: the summary gives no cell or density (the growth box's are not the result's)
+    s.cell = Cell{};
+    if (!R.grow.notes.empty()) {
+      std::string& first = R.grow.notes.front();   // "<chains> · <atoms> · cell … · … g/cm³"
+      const size_t a = first.find(" · "), b = a == std::string::npos ? a : first.find(" · ", a + 1);
+      if (b != std::string::npos) first = first.substr(0, b) + " · no cell";
+    }
+  }
   int nmol = 0;
   s.has_mol = false;   // by bonds, not the ids grow gave each chain
   const auto mol = s.molecules(&nmol);

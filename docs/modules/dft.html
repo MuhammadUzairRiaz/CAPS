@@ -31,8 +31,8 @@
 <div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button></div>
 <div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code>caps sheet --preset Ti3C2 -o ti3c2.vasp
 caps terminate ti3c2.vasp --top O:0.5,OH:0.25,F:0.25 --supercell 3x3 -o term.vasp
-caps validate term.vasp --expect Ti3C2O2
-caps adsorb-dft term.vasp --supercell 5x5 --smiles &#x27;O=C=O&#x27; --out ads/
+caps validate term.vasp
+caps adsorb-dft term.vasp --smiles &#x27;O=C=O&#x27; --out ads/
 caps vasp-set term.vasp --out sets/term --profile slurm-workspace
 caps vasp-analyze summary</code></pre></div></div>
 <h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="jobs.html"><img src="../manual/img/23_jobs.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-out"></i>Analyse &amp; export</span><b>Jobs</b><span>Every run, local or on a SLURM / PBS cluster, with live progress, logs and recovery hints.</span></a></div>

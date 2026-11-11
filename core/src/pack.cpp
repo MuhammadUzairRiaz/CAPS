@@ -11,6 +11,7 @@
 #include <deque>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <numeric>
 #include <random>
 #include <sstream>
@@ -741,16 +742,22 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
   std::snprintf(b, sizeof b, "%d molecules, %d atoms · %d rounds, %d iterations, %d molecules moved · %.2f s", rep.molecules, rep.atoms, rep.loops,
                 rep.iterations, rep.moved, rep.seconds);
   rep.notes.push_back(b);
-  std::snprintf(b, sizeof b, "smallest distance between molecules %.3f Å (tolerance %.2f Å) · %d pairs closer · largest region violation %.3g Å",
-                rep.dmin, o.tolerance, rep.close_pairs, rep.region_violation);
+  const bool measured = std::isfinite(rep.dmin);   // false: a single structure, no pair between molecules to measure
+  if (measured)
+    std::snprintf(b, sizeof b, "smallest distance between molecules %.3f Å (tolerance %.2f Å) · %d pairs closer · largest region violation %.3g Å",
+                  rep.dmin, o.tolerance, rep.close_pairs, rep.region_violation);
+  else
+    std::snprintf(b, sizeof b, "only one structure placed: no distances between structures to check · largest region violation %.3g Å", rep.region_violation);
   rep.notes.push_back(b);
   if (!o.cell.valid() || !o.periodic) rep.notes.push_back("not periodic: distances across the cell faces were not checked");
-  emit("verification", rep.loops, f, rep.dmin, rep.close_pairs);
+  emit("verification", rep.loops, f, measured ? rep.dmin : 0.0, rep.close_pairs);
   if (rep_out) *rep_out = rep;
   if (!rep.success) {
-    std::snprintf(b, sizeof b, "could not pack within the tolerance: %d pairs closer than %.2f Å (smallest %.3f Å), largest region violation %.3f Å "
+    char smallest[48] = "";
+    if (measured) std::snprintf(smallest, sizeof smallest, " (smallest %.3f Å)", rep.dmin);
+    std::snprintf(b, sizeof b, "could not pack within the tolerance: %d pairs closer than %.2f Å%s, largest region violation %.3f Å "
                                "after %d rounds; lower the number of molecules or the tolerance, or enlarge the regions",
-                  rep.close_pairs, o.tolerance, rep.dmin, rep.region_violation, rep.loops);
+                  rep.close_pairs, o.tolerance, smallest, rep.region_violation, rep.loops);
     throw PackError(b);
   }
   // stage 3: compression to the target density (the packed cell holds no overlaps to start from)
@@ -794,8 +801,10 @@ std::pair<double, int> intermolecular_contacts(const System& s, double tolerance
 std::pair<double, int> intermolecular_contacts(const System& s, double tolerance, bool periodic, const std::vector<int>& group) {
   const size_t n = s.atoms.size();
   const auto mol = group.size() == n ? group : s.molecules();
-  const double rs = tolerance + 1.0;   // search radius: distances beyond it are reported as ≥ rs
-  Grid g;
+  constexpr double none = std::numeric_limits<double>::infinity();
+  bool pairs = false;   // at least two molecules (groups): otherwise there is no distance to report
+  for (size_t i = 1; i < n && !pairs; ++i) pairs = mol[i] != mol[0];
+  if (!pairs) return {none, 0};
   Vec3 lo, L;
   const bool per = periodic && s.cell.valid();
   if (per) {
@@ -808,30 +817,45 @@ std::pair<double, int> intermolecular_contacts(const System& s, double tolerance
     lo = a - Vec3{1, 1, 1};
     L = b - a + Vec3{2, 2, 2};
   }
-  g.setup(lo, L, per, rs);
   std::vector<Vec3> x(n);
   for (size_t i = 0; i < n; ++i) x[i] = s.atoms[i].pos;
-  g.build(x);
-  double dmin2 = rs * rs;
+  // The first pass counts the pairs closer than the tolerance on cells of tolerance + 1 Å. A cell list of radius rs sees
+  // every pair closer than rs, so the smallest distance is exact only when it lies inside rs: when no pair does, the
+  // radius doubles until one turns up or every cell neighbours every other cell (a search over all pairs). The bounding
+  // box (or cell) is finite, so the loop ends after a few passes. Cells hold about one atom on average at least, so a
+  // sparse system does not get a huge grid.
+  const double vol = std::max(L[0] * L[1] * L[2], 1e-9);
+  double rs = std::max({std::max(tolerance, 0.0) + 1.0, std::cbrt(vol / double(n))});
   int close = 0;
-  const double t2 = tolerance * tolerance;
-  for (size_t c = 0; c < g.ncells(); ++c) {
-    const int cx = int(c / (size_t(g.n[1]) * g.n[2])), cy = int((c / g.n[2]) % g.n[1]), cz = int(c % g.n[2]);
-    for (uint32_t a = g.start[c]; a < g.start[c + 1]; ++a) {
-      const uint32_t i = g.order[a];
-      g.neighbours(cx, cy, cz, [&](size_t c2) {
-        for (uint32_t b2 = g.start[c2]; b2 < g.start[c2 + 1]; ++b2) {
-          const uint32_t j = g.order[b2];
-          if (j <= i || mol[i] == mol[j]) continue;
-          const Vec3 d = g.sep(x[i], x[j]);
-          const double r2 = dot(d, d);
-          dmin2 = std::min(dmin2, r2);
-          if (r2 < t2) ++close;
-        }
-      });
+  const double t2 = tolerance > 0 ? tolerance * tolerance : 0.0;
+  for (int pass = 0;; ++pass) {
+    Grid g;
+    g.setup(lo, L, per, rs);
+    g.build(x);
+    bool all = true;   // ±1 neighbour cells reach every cell (with wrap-around when periodic)
+    for (int k = 0; k < 3; ++k) all = all && g.n[k] <= (per ? 3 : 2);
+    const double rs2 = rs * rs;
+    double dmin2 = none;
+    for (size_t c = 0; c < g.ncells(); ++c) {
+      const int cx = int(c / (size_t(g.n[1]) * g.n[2])), cy = int((c / g.n[2]) % g.n[1]), cz = int(c % g.n[2]);
+      for (uint32_t a = g.start[c]; a < g.start[c + 1]; ++a) {
+        const uint32_t i = g.order[a];
+        g.neighbours(cx, cy, cz, [&](size_t c2) {
+          for (uint32_t b2 = g.start[c2]; b2 < g.start[c2 + 1]; ++b2) {
+            const uint32_t j = g.order[b2];
+            if (j <= i || mol[i] == mol[j]) continue;
+            const Vec3 d = g.sep(x[i], x[j]);
+            const double r2 = dot(d, d);
+            if (all || r2 < rs2) dmin2 = std::min(dmin2, r2);
+            if (pass == 0 && r2 < t2) ++close;
+          }
+        });
+      }
     }
+    if (dmin2 < none) return {std::sqrt(dmin2), close};
+    if (all) return {none, close};   // not reached with two groups: every pair was visited
+    rs *= 2;
   }
-  return {std::sqrt(dmin2), close};
 }
 
 namespace {

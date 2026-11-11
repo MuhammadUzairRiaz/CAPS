@@ -1,12 +1,16 @@
 #include "caps/provenance.hpp"
 
 #include <algorithm>
+#include <filesystem>
 #include <sstream>
 #include <ctime>
 #include <fstream>
 #include <cstring>
 #include <map>
 #include <set>
+#include <system_error>
+
+#include "caps/bundle.hpp"   // sha256_hex
 
 namespace caps {
 
@@ -58,6 +62,14 @@ const Cite kCites[] = {
     {"gale1998", "@article{gale1998,\n  author = {Gale, J. D.},\n  title = {Analytical free energy minimization of silica polymorphs},\n  journal = {J. Phys. Chem. B}, volume = {102}, pages = {5423--5431}, year = {1998}, doi = {10.1021/jp980396p}\n}"},
     {"rappe1991", "@article{rappe1991,\n  author = {Rapp{\\'e}, A. K. and Goddard, W. A.},\n  title = {Charge equilibration for molecular dynamics simulations},\n  journal = {J. Phys. Chem.}, volume = {95}, pages = {3358--3363}, year = {1991}, doi = {10.1021/j100161a070}\n}"},
     {"wang2004", "@article{wang2004,\n  author = {Wang, J. and Wolf, R. M. and Caldwell, J. W. and Kollman, P. A. and Case, D. A.},\n  title = {Development and testing of a general amber force field},\n  journal = {J. Comput. Chem.}, volume = {25}, pages = {1157--1174}, year = {2004}, doi = {10.1002/jcc.20035}\n}"},
+    // the force fields' own papers (recipe.cpp cites them from the library file's references)
+    {"jorgensen1996", "@article{jorgensen1996,\n  author = {Jorgensen, W. L. and Maxwell, D. S. and Tirado-Rives, J.},\n  title = {Development and testing of the {OPLS} all-atom force field on conformational energetics and properties of organic liquids},\n  journal = {J. Am. Chem. Soc.}, volume = {118}, pages = {11225--11236}, year = {1996}, doi = {10.1021/ja9621760}\n}"},
+    {"jorgensen2024", "@article{jorgensen2024,\n  author = {Jorgensen, W. L. and Ghahremanpour, M. M. and Saar, A. and Tirado-Rives, J.},\n  title = {{OPLS/2020} force field for unsaturated hydrocarbons, alcohols, and ethers},\n  journal = {J. Phys. Chem. B}, volume = {128}, pages = {250--262}, year = {2024}, doi = {10.1021/acs.jpcb.3c06602}\n}"},
+    {"sun1994", "@article{sun1994,\n  author = {Sun, H. and Mumby, S. J. and Maple, J. R. and Hagler, A. T.},\n  title = {An ab initio {CFF93} all-atom force field for polycarbonates},\n  journal = {J. Am. Chem. Soc.}, volume = {116}, pages = {2978--2987}, year = {1994}, doi = {10.1021/ja00086a030}\n}"},
+    {"sun1995", "@article{sun1995,\n  author = {Sun, H.},\n  title = {Ab initio calculations and force field development for computer simulation of polysilanes},\n  journal = {Macromolecules}, volume = {28}, pages = {701--712}, year = {1995}, doi = {10.1021/ma00107a006}\n}"},
+    {"sun1998", "@article{sun1998,\n  author = {Sun, H.},\n  title = {{COMPASS}: an ab initio force-field optimized for condensed-phase applications. {Overview} with details on alkane and benzene compounds},\n  journal = {J. Phys. Chem. B}, volume = {102}, pages = {7338--7364}, year = {1998}, doi = {10.1021/jp980939v}\n}"},
+    {"dauberosguthorpe1988", "@article{dauberosguthorpe1988,\n  author = {Dauber-Osguthorpe, P. and Roberts, V. A. and Osguthorpe, D. J. and Wolff, J. and Genest, M. and Hagler, A. T.},\n  title = {Structure and energetics of ligand binding to proteins: {Escherichia coli} dihydrofolate reductase-trimethoprim, a drug-receptor system},\n  journal = {Proteins}, volume = {4}, pages = {31--47}, year = {1988}, doi = {10.1002/prot.340040106}\n}"},
+    {"mayo1990", "@article{mayo1990,\n  author = {Mayo, S. L. and Olafson, B. D. and Goddard, W. A.},\n  title = {{DREIDING}: a generic force field for molecular simulations},\n  journal = {J. Phys. Chem.}, volume = {94}, pages = {8897--8909}, year = {1990}, doi = {10.1021/j100389a010}\n}"},
     {"gasteiger1980", "@article{gasteiger1980,\n  author = {Gasteiger, J. and Marsili, M.},\n  title = {Iterative partial equalization of orbital electronegativity---a rapid access to atomic charges},\n  journal = {Tetrahedron}, volume = {36}, pages = {3219--3228}, year = {1980}, doi = {10.1016/0040-4020(80)80168-2}\n}"},
     {"cordero2008", "@article{cordero2008,\n  author = {Cordero, B. and G{\\'o}mez, V. and Platero-Prats, A. E. and Rev{\\'e}s, M. and Echeverr{\\'i}a, J. and Cremades, E. and Barrag{\\'a}n, F. and Alvarez, S.},\n  title = {Covalent radii revisited},\n  journal = {Dalton Trans.}, pages = {2832--2838}, year = {2008}, doi = {10.1039/b801115j}\n}"},
     {"liu1989", "@article{liu1989,\n  author = {Liu, D. C. and Nocedal, J.},\n  title = {On the limited memory {BFGS} method for large scale optimization},\n  journal = {Math. Program.}, volume = {45}, pages = {503--528}, year = {1989}, doi = {10.1007/BF01589116}\n}"},
@@ -297,17 +309,63 @@ void write_manifest(const Manifest& m, const std::string& data_path) {
   f << manifest_json(m).dump(2) << "\n";
 }
 
-std::optional<Manifest> read_manifest(const std::string& data_path) {
-  std::ifstream f(sidecar_path(data_path));
-  if (!f) return std::nullopt;
-  std::string text((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-  try {
-    const Json j = Json::parse(text);
-    if (j.text("schema") != "caps-manifest/1.0") return std::nullopt;
-    return manifest_from_json(j);
-  } catch (...) {
+std::optional<Manifest> read_manifest(const std::string& data_path) { return read_manifest(data_path, nullptr); }
+
+std::optional<Manifest> read_manifest(const std::string& data_path, std::string* error) {
+  const std::string side = sidecar_path(data_path);
+  auto fail = [&](const std::string& why) -> std::optional<Manifest> {
+    if (error) *error = why;
     return std::nullopt;
+  };
+  std::error_code ec;
+  if (!std::filesystem::exists(side, ec)) return fail("no " + side);
+  if (std::filesystem::is_directory(side, ec)) return fail(side + " is a folder, not a caps-manifest/1.0 file");
+  std::ifstream f(side, std::ios::binary);
+  if (!f) return fail("cannot open " + side);
+  std::string text((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+  Json j;
+  try {
+    j = Json::parse(text);
+  } catch (const std::exception& e) {
+    return fail(side + " is not valid JSON (" + e.what() + ")");
   }
+  if (!j.is_object()) return fail(side + " is not a caps-manifest/1.0 file (not a JSON object)");
+  std::string schema;
+  try { schema = j.text("schema"); } catch (const std::exception&) {}
+  if (schema != "caps-manifest/1.0")
+    return fail(side + " is not a caps-manifest/1.0 file (" + (schema.empty() ? std::string("no \"schema\"") : "schema \"" + schema + "\"") + ")");
+  try {
+    return manifest_from_json(j);
+  } catch (const std::exception& e) {
+    return fail(side + " is not a readable caps-manifest/1.0 file (" + e.what() + ")");
+  }
+}
+
+Manifest manifest_from_inputs(const std::vector<std::string>& input_paths) {
+  Manifest m;
+  auto add_input = [&](const std::string& name, const std::string& sha) {
+    for (const auto& [n, h] : m.inputs) if (n == name && h == sha) return;
+    m.inputs.push_back({name, sha});
+  };
+  for (const auto& p : input_paths) {
+    std::error_code ec;
+    if (p.empty() || !std::filesystem::is_regular_file(p, ec)) continue;
+    if (const auto prev = read_manifest(p)) {
+      m.steps.insert(m.steps.end(), prev->steps.begin(), prev->steps.end());
+      for (const auto& [n, h] : prev->inputs) add_input(n, h);
+      m.deterministic = m.deterministic && prev->deterministic;
+    }
+    const auto n = std::filesystem::file_size(p, ec);
+    std::string sha;
+    if (ec) sha = "";
+    else if (n > (1ull << 30)) sha = "not hashed (" + std::to_string(n) + " bytes)";
+    else {
+      std::ifstream f(p, std::ios::binary);
+      sha = sha256_hex(std::string((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>()));
+    }
+    add_input(std::filesystem::path(p).filename().string(), sha);
+  }
+  return m;
 }
 
 KeyValues approximations(const Manifest& m) {
@@ -501,9 +559,14 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
         t += drifting ? std::string(", with the feed's drift over the batch's conversion") + cite({"skeist1946"}) + "." : ".";
       built = true;
     } else if (e == "field.assign") {
-      const std::string ff = param(s, "force field"), ch = param(s, "charges");
-      t = "Atom types were assigned from " + ff + cite(only(s, {"rappe1992", "wang2004"})) +
-          (ch == "from the force field" ? ", with the force field's charges" : ", with " + ch + " charges" + cite(only(s, {"rappe1991", "gasteiger1980"}))) + ".";
+      // the force field's papers: every cited key but the charge methods', and references the bibliography lacks as text
+      const std::string ff = param(s, "force field"), ch = param(s, "charges"), refs = param(s, "references");
+      std::vector<std::string> ffc;
+      for (const auto& k : s.cites) if (k != "rappe1991" && k != "gasteiger1980") ffc.push_back(k);
+      t = "Atom types were assigned from " + ff + cite(ffc) + (refs.empty() ? std::string() : " (" + refs + ")") +
+          (ch == "from the force field" ? ", with the force field's charges"
+           : ch.rfind("from ", 0) == 0  ? ", with charges " + ch   // "from the force field's bond increments"
+                                        : ", with " + ch + " charges" + cite(only(s, {"rappe1991", "gasteiger1980"}))) + ".";
     } else if (e.rfind("relax.", 0) == 0) {
       t = "The structure was minimised with " + param(s, "minimiser") + cite(only(s, {"liu1989", "polak1969", "bitzek2006"})) + " to a largest atomic force of " + param(s, "|F|max") +
           (param(s, "push-off") == "on" ? ", after capped-force push-off stages" + cite({"auhl2003"}) : std::string()) + ".";
@@ -560,8 +623,9 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
           (param(s, "phases") != "1" && param(s, "mode") != "pawley" ? ", phase fractions from the scale factors" + cite({"hill1987"}) : std::string()) + ".";
     } else if (e == "analysis.zmelt") {
       t = "The melting temperature was estimated by the Z method" + cite({"belonoshko2006"}) + ": " + param(s, "runs") + " NVE runs (" + param(s, "steps") +
-          ") from the perfect crystal at rising total energy, melting detected by the loss of Bragg order, gave a superheating limit of " + param(s, "T_LS") +
-          " and a melting temperature of " + param(s, "T_m") + ".";
+          ") from the perfect crystal at rising total energy, melting detected by the loss of Bragg order, " +
+          (param(s, "T_m").rfind("none", 0) == 0 ? std::string("showed no Z, so no melting temperature was assigned")
+                                                 : "gave a superheating limit of " + param(s, "T_LS") + " and a melting temperature of " + param(s, "T_m")) + ".";
     } else if (e == "analysis.domains") {
       t = "Domains of the mass-density field of " + param(s, "group") + " (Gaussian atoms) were found at a level of " + param(s, "level") +
           " by labelling connected regions across the periodic boundaries (" + param(s, "domains") + " domains).";
@@ -612,6 +676,46 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
     } else if (e == "nano.build" || e == "surface.build") {
       t = std::string(e == "surface.build" ? "The surface slab" : "The nanostructure") + " was built with " + version + ".";
       built = true;
+    } else if (e == "dft.sheet") {
+      const std::string preset = param(s, "preset"), from = param(s, "from"), a = param(s, "a");
+      const std::string what = s.summary.rfind("2D sheet ", 0) == 0 ? "The 2D sheet " + s.summary.substr(9) : std::string("The 2D sheet");
+      t = what + (!from.empty() ? " was isolated as one layer of " + from + " with " + version
+                                : " was built from the " + version + " preset " + (preset.empty() ? std::string("sheet") : preset) + (a.empty() ? std::string() : " with a = " + a + " Å")) + ".";
+      built = true;
+    } else if (e == "dft.terminate") {
+      // "O:0.5,OH:0.25,F:0.25" → "O (0.5), OH (0.25) and F (0.25)"
+      std::vector<std::string> parts;
+      bool fractions = false;
+      std::stringstream ss(param(s, "top"));
+      for (std::string x; std::getline(ss, x, ',');) {
+        if (x.empty()) continue;
+        const size_t c = x.find(':');
+        fractions |= c != std::string::npos;
+        parts.push_back(c == std::string::npos ? x : x.substr(0, c) + " (" + x.substr(c + 1) + ")");
+      }
+      std::string top;
+      for (size_t k = 0; k < parts.size(); ++k) top += (k == 0 ? "" : k + 1 == parts.size() ? " and " : ", ") + parts[k];
+      const std::string site = param(s, "site"), cell = param(s, "supercell"), vac = param(s, "vacuum");
+      const std::string formula = s.summary.rfind("terminated ", 0) == 0 ? s.summary.substr(11) : std::string();
+      t = "The sheet's surfaces were terminated" + (top.empty() ? std::string() : " with " + top) + (site.empty() ? std::string() : " on its " + site + " sites") +
+          (cell.empty() ? std::string() : " in a " + cell + " supercell") + (vac.empty() ? std::string() : " with " + vac + " Å of vacuum") +
+          (fractions && !s.rng.empty() ? ", the sites drawn at random to these fractions (" + s.rng + ")" : std::string()) +
+          (formula.empty() ? std::string() : ", giving " + formula) + ".";
+    } else if (e == "dft.adsorb") {
+      const std::string mol = !param(s, "molecule").empty() ? param(s, "molecule") : param(s, "smiles");
+      const size_t colon = s.summary.find(": ");
+      t = "Adsorption complexes" + (mol.empty() ? std::string() : " of " + mol) + " on the slab were generated with " + version +
+          (colon == std::string::npos ? std::string() : " (" + s.summary.substr(colon + 2) + ")") +
+          (param(s, "dmin").empty() ? std::string() : ", with minimum contact distances of " + param(s, "dmin") + " Å" + (param(s, "dheavy").empty() ? std::string() : " (" + param(s, "dheavy") + " Å between heavy atoms)")) + ".";
+    } else if (e == "dft.vasp_set") {
+      const std::string st = param(s, "stages"), kd = param(s, "kdens");
+      t = "VASP" + cite({"kresse1996"}) + " input files" + (s.summary.rfind("VASP set ", 0) == 0 ? " (" + s.summary.substr(9) + ")" : std::string()) + " were written with " + version +
+          (st.empty() && kd.empty() ? std::string() : " (" + (st.empty() ? std::string() : "stages " + st) + (st.empty() || kd.empty() ? "" : ", ") + (kd.empty() ? std::string() : "k-point density " + kd + " Å") + ")") + ".";
+    } else if (!e.empty() || !s.summary.empty()) {
+      // a step with no sentence of its own is still named, so none is dropped from the text
+      std::string sum = s.summary;
+      while (!sum.empty() && (sum.back() == '.' || sum.back() == ' ')) sum.pop_back();
+      t = "Step " + (e.empty() ? std::string("(unnamed)") : e) + " (" + version + ")" + (sum.empty() ? std::string() : ": " + sum) + cite(s.cites) + ".";
     }
     if (!t.empty()) sentences.push_back(t);
   }

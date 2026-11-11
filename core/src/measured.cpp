@@ -388,6 +388,7 @@ MeasuredCurve parse_gsas(const std::string& text) {
   } else {
     throw std::invalid_argument("GSAS: TYPE " + type + " is not read (STD, ESD, FXY and FXYE are)");
   }
+  if (r.y.empty()) throw std::invalid_argument("GSAS: the BANK record says " + std::to_string(nchan) + " points, none read");
   if (long(r.y.size()) != nchan) r.notes.push_back("the BANK record says " + std::to_string(nchan) + " points, " + std::to_string(r.y.size()) + " read");
   r.yunits = "counts";
   return r;
@@ -480,23 +481,132 @@ MeasuredCurve parse_rigaku(const std::string& text) {
 
 // ---------------------------------------------------------------- columns
 
+// The numbers at the start of a delimited line (commas, semicolons, tabs and blanks separate), up to the first word.
+std::vector<double> leading_numbers(const std::string& raw) {
+  std::string line = raw;
+  for (char& c : line) if (c == ',' || c == ';' || c == '\t') c = ' ';
+  std::istringstream is(line);
+  std::vector<double> v;
+  for (double a; is >> a;) v.push_back(a);
+  return v;
+}
+
+// A header line's column names: split on commas, semicolons or tabs when it has any, else on blanks.
+std::vector<std::string> header_names(std::string line) {
+  while (!line.empty() && (line[0] == '#' || line[0] == '!')) line.erase(0, 1);
+  const bool delimited = line.find_first_of(",;\t") != std::string::npos;
+  std::vector<std::string> out;
+  std::string cur;
+  auto flush = [&] { if (const std::string t = trim(cur); !t.empty()) out.push_back(t); cur.clear(); };
+  for (char c : line) {
+    if (c == ',' || c == ';' || c == '\t' || (!delimited && c == ' ')) flush();
+    else cur += c;
+  }
+  flush();
+  if (!delimited) {   // a unit in brackets after a blank belongs to the name before it: "2theta (deg) intensity (counts)"
+    std::vector<std::string> merged;
+    for (auto& t : out)
+      if (!merged.empty() && (t[0] == '(' || t[0] == '[')) merged.back() += " " + t;
+      else merged.push_back(std::move(t));
+    out = std::move(merged);
+  }
+  return out;
+}
+
+// What a column name stands for: 'x' an abscissa (2θ and the like), 'y' an intensity, 's' its σ, 'q' a scattering
+// vector (never taken as the intensity), 0 not known.
+char column_role(const std::string& name) {
+  std::string s = name;
+  if (const auto p = s.find_first_of("(["); p != std::string::npos && p > 0) s = s.substr(0, p);   // "2θ (°)" → "2θ"
+  for (const char* th : {"\xce\xb8", "\xce\x98"})   // θ, Θ
+    for (size_t p; (p = s.find(th)) != std::string::npos;) s.replace(p, 2, "theta");
+  std::string k;
+  for (char c : s)
+    if (std::isalnum(static_cast<unsigned char>(c))) k += char(std::tolower(static_cast<unsigned char>(c)));
+  static const char* const X[] = {"x", "twotheta", "twothetadeg", "twothetadegrees", "2theta", "2thetadeg", "2thetadegrees", "tth", "2th",
+                                  "angle", "wavenumber", "wavenumbers", "energy", "wavelength", "ramanshift", "shift", "ppm", "time"};
+  static const char* const Y[] = {"y", "yobs", "yo", "iobs", "i", "int", "intensity", "intensities", "counts", "count", "cps",
+                                  "absorbance", "transmittance", "reflectance", "signal"};
+  static const char* const S[] = {"sigma", "sig", "sigy", "esd", "err", "error", "yerr", "dy", "e", "uncertainty", "stderr", "std", "u"};
+  static const char* const Q[] = {"q", "qinvangstrom", "qinva", "qa", "qnm", "qinvnm"};
+  for (const char* n : X) if (k == n) return 'x';
+  for (const char* n : Y) if (k == n) return 'y';
+  for (const char* n : S) if (k == n) return 's';
+  for (const char* n : Q) if (k == n) return 'q';
+  return 0;
+}
+
+// Delimited text. A header line (the last comment or word line before the data) whose names match the data's columns
+// picks x, y and σ by name, so "two_theta_deg,q_inv_angstrom,intensity" (caps powder --csv) reads 2θ and intensity;
+// without one the columns are x, y[, σ] in order.
 MeasuredCurve parse_columns(const std::string& text) {
   MeasuredCurve r;
   r.format = "columns";
-  bool sig = true;
-  for (const auto& raw : lines_of(text)) {
-    if (raw.empty() || raw[0] == '#' || raw[0] == '!') continue;
-    std::string line = raw;
-    for (char& c : line) if (c == ',' || c == ';' || c == '\t') c = ' ';
-    std::istringstream is(line);
-    double a, b, s;
-    if (!(is >> a >> b)) continue;
-    r.x.push_back(a), r.y.push_back(b);
-    if (is >> s) r.sigma.push_back(s);
+  const auto L = lines_of(text);
+  std::string header;
+  size_t first = L.size();
+  for (size_t k = 0; k < L.size(); ++k) {
+    if (trim(L[k]).empty()) continue;
+    if (L[k][0] != '#' && L[k][0] != '!' && leading_numbers(L[k]).size() >= 2) { first = k; break; }
+    header = L[k];
+  }
+  if (first == L.size()) throw std::invalid_argument("columns: no x y columns found");
+  const size_t ncol = leading_numbers(L[first]).size();
+  size_t xi = 0, yi = 1, si = 2;
+  if (!header.empty()) {
+    const auto names = header_names(header);
+    std::vector<char> role;
+    bool known = false;
+    for (const auto& n : names) role.push_back(column_role(n)), known = known || role.back() != 0;
+    std::string listed;
+    for (const auto& n : names) listed += (listed.empty() ? "" : ", ") + n;
+    if (known && names.size() != ncol)
+      r.notes.push_back("the header names " + std::to_string(names.size()) + " columns (" + listed + "), the data have " + std::to_string(ncol) + ": read as x, y[, σ] in order");
+    else if (known) {
+      const size_t none = names.size();
+      auto find = [&](char want, size_t from) { for (size_t c = from; c < none; ++c) if (role[c] == want) return c; return none; };
+      yi = find('y', 0);
+      if (yi == none) {   // no intensity name: the one column with no known role, if there is exactly one
+        size_t unknown = none, count = 0;
+        for (size_t c = 0; c < none; ++c) if (role[c] == 0) unknown = c, ++count;
+        if (count != 1)
+          throw std::invalid_argument("columns: the header names " + listed + ", and none of them is an intensity column; name it intensity, counts or y, "
+                                      "or remove the header to read x, y[, σ] in order");
+        yi = unknown;
+      }
+      si = find('s', yi + 1);   // a σ follows its intensity
+      xi = find('x', 0);
+      if (xi == yi) xi = none;
+      if (xi == none)   // the first other column that is not the σ (a q column, or an "E" before the intensity, may serve)
+        for (size_t c = 0; c < none && xi == none; ++c) if (c != yi && c != si) xi = c;
+      if (xi == none) throw std::invalid_argument("columns: the header names " + listed + ", and none of them is an x column");
+      std::string skipped;
+      for (size_t c = 0; c < none; ++c)
+        if (c != xi && c != yi && c != si) skipped += (skipped.empty() ? "" : ", ") + names[c];
+      if (xi != 0 || yi != 1 || (si != 2 && none > 2) || !skipped.empty())   // say so when the order is not x, y[, σ]
+        r.notes.push_back("columns by the header: x " + names[xi] + ", y " + names[yi] + (si < none ? ", σ " + names[si] : "") +
+                          (skipped.empty() ? "" : "; not read: " + skipped));
+      if (role[xi] == 'x') {
+        std::string kx;
+        for (char c : names[xi]) kx += char(std::tolower(static_cast<unsigned char>(c)));
+        if (kx.find("theta") != std::string::npos || kx.find("\xce\xb8") != std::string::npos || kx == "tth" || kx == "2th") r.xunits = "2θ (°)";
+      }
+      if (role[yi] == 'y' && names[yi] != "y" && names[yi] != "Y") r.yunits = names[yi];
+      if (si == none) si = std::string::npos;
+    }
+  }
+  bool sig = si != std::string::npos;
+  const size_t need = std::max(xi, yi) + 1;
+  for (size_t k = first; k < L.size(); ++k) {
+    if (L[k].empty() || L[k][0] == '#' || L[k][0] == '!') continue;
+    const auto v = leading_numbers(L[k]);
+    if (v.size() < need || v.size() < 2) continue;
+    r.x.push_back(v[xi]), r.y.push_back(v[yi]);
+    if (sig && si < v.size()) r.sigma.push_back(v[si]);
     else sig = false;
   }
   if (!sig || r.sigma.size() != r.y.size()) r.sigma.clear();
-  if (r.x.empty()) throw std::invalid_argument("no x y columns found");
+  if (r.x.empty()) throw std::invalid_argument("columns: no x y columns found");
   return r;
 }
 
@@ -524,6 +634,7 @@ MeasuredCurve parse_measured(const std::string& text, const std::string& name) {
   else if (lead.rfind("*TYPE", 0) == 0) r = parse_rigaku(text);
   else if (bank || ext == "GSA" || ext == "GSS" || ext == "FXYE" || ext == "GSAS") r = parse_gsas(text);
   else r = parse_columns(text);
+  if (r.x.empty() || r.y.empty()) throw std::invalid_argument(r.format + ": no data points");
   if (r.x.size() != r.y.size()) throw std::invalid_argument(r.format + ": " + std::to_string(r.x.size()) + " abscissae for " + std::to_string(r.y.size()) + " ordinates");
   return r;
 }

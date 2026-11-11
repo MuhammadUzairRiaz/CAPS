@@ -59,22 +59,27 @@ std::vector<int> hungarian(const std::vector<std::vector<double>>& c) {
   return out;
 }
 
+using Adjacency = std::vector<std::vector<uint32_t>>;
+
+// Each atom's bonded neighbours: the structure's bonds, or bonds perceived from the distances when it has none.
+Adjacency adjacency(const System& s) {
+  Adjacency nb(s.atoms.size());
+  const auto bonds = s.bonds.empty() ? perceive_bonds(s) : s.bonds;
+  for (const auto& bd : bonds) nb[bd.i].push_back(bd.j), nb[bd.j].push_back(bd.i);
+  return nb;
+}
+
+bool bonded(const Adjacency& nb, uint32_t x, uint32_t y) { return std::find(nb[x].begin(), nb[x].end(), y) != nb[x].end(); }
+
 // Bonded-environment labels of both structures from one dictionary (element, then the sorted neighbours' labels, three
 // rounds), so equal environments get equal numbers in A and in B.
-void environment_labels(const System& a, const System& b, std::vector<int>& la, std::vector<int>& lb) {
+void environment_labels(const System& a, const System& b, const Adjacency& na, const Adjacency& nb, std::vector<int>& la, std::vector<int>& lb) {
   std::map<std::string, int> dict;
-  auto neighbours = [](const System& s) {
-    std::vector<std::vector<uint32_t>> nb(s.atoms.size());
-    const auto bonds = s.bonds.empty() ? perceive_bonds(s) : s.bonds;
-    for (const auto& bd : bonds) nb[bd.i].push_back(bd.j), nb[bd.j].push_back(bd.i);
-    return nb;
-  };
-  const auto na = neighbours(a), nb = neighbours(b);
   la.resize(a.atoms.size()), lb.resize(b.atoms.size());
   for (size_t i = 0; i < a.atoms.size(); ++i) la[i] = a.atoms[i].element;
   for (size_t i = 0; i < b.atoms.size(); ++i) lb[i] = b.atoms[i].element;
   for (int round = 0; round < 3; ++round) {
-    auto step = [&](const std::vector<int>& l, const std::vector<std::vector<uint32_t>>& nbr) {
+    auto step = [&](const std::vector<int>& l, const Adjacency& nbr) {
       std::vector<int> out(l.size());
       for (size_t i = 0; i < l.size(); ++i) {
         std::vector<int> ns;
@@ -90,6 +95,129 @@ void environment_labels(const System& a, const System& b, std::vector<int>& la, 
   }
 }
 
+// Does the map send every atom to one of its own environment and every bond of A onto a bond of B? (With equal bond
+// counts, that makes it a graph isomorphism.)
+bool keeps_bonds(const Adjacency& na, const Adjacency& nb, const std::vector<int>& la, const std::vector<int>& lb, const std::vector<int>& map) {
+  for (size_t i = 0; i < map.size(); ++i) {
+    if (map[i] < 0 || la[i] != lb[size_t(map[i])]) return false;
+    for (uint32_t j : na[i])
+      if (!bonded(nb, uint32_t(map[i]), uint32_t(map[j]))) return false;
+  }
+  return true;
+}
+
+// The bond-preserving map nearest the preferred one: A's atoms are visited breadth-first through each molecule (from
+// its atom of the rarest environment), each given a free atom of B with its environment that is bonded to the
+// partners of its already placed neighbours, the preferred partner first, then the nearest. Chronological backtracking
+// within `budget` tries; empty when no such map is found.
+std::vector<int> graph_map(const Adjacency& na, const Adjacency& nb, const std::vector<int>& la, const std::vector<int>& lb,
+                           const std::vector<int>& pref, const std::function<double(size_t, size_t)>& d2, long budget, bool& over_budget) {
+  const size_t n = na.size();
+  long tries = 0;
+  std::map<int, std::vector<uint32_t>> class_b;
+  for (size_t y = 0; y < n; ++y) class_b[lb[y]].push_back(uint32_t(y));
+  auto class_size = [&](uint32_t i) {
+    const auto it = class_b.find(la[i]);
+    return it == class_b.end() ? size_t(0) : it->second.size();
+  };
+  std::vector<uint32_t> order;
+  order.reserve(n);
+  std::vector<int> parent(n, -1);   // the earlier visited neighbour whose partner's neighbours are the candidates
+  std::vector<char> seen(n, 0);
+  for (size_t s = 0; s < n; ++s) {
+    if (seen[s]) continue;
+    std::vector<uint32_t> comp{uint32_t(s)};
+    seen[s] = 1;
+    for (size_t q = 0; q < comp.size(); ++q)
+      for (uint32_t j : na[comp[q]])
+        if (!seen[j]) seen[j] = 1, comp.push_back(j);
+    uint32_t root = comp[0];
+    for (uint32_t x : comp)
+      if (class_size(x) < class_size(root)) root = x;
+    if (class_size(root) == 0) return {};
+    const size_t start = order.size();
+    order.push_back(root), seen[root] = 2;
+    for (size_t q = start; q < order.size(); ++q)
+      for (uint32_t j : na[order[q]])
+        if (seen[j] != 2) seen[j] = 2, parent[j] = int(order[q]), order.push_back(j);
+  }
+  std::vector<int> map(n, -1), inv(n, -1);
+  std::vector<std::vector<uint32_t>> cand(n);
+  std::vector<size_t> next(n, 0);
+  std::vector<char> full(n, 0);   // a molecule's first atom tries its preferred partner alone before the whole class
+  auto sort_cand = [&](size_t k) {
+    const uint32_t i = order[k];
+    std::sort(cand[k].begin(), cand[k].end(), [&](uint32_t x, uint32_t y) {
+      const bool px = int(x) == pref[i], py = int(y) == pref[i];
+      if (px != py) return px;
+      return d2(i, x) < d2(i, y);
+    });
+  };
+  auto whole_class = [&](size_t k, int skip) {
+    const uint32_t i = order[k];
+    cand[k].clear(), next[k] = 0, full[k] = 1;
+    for (uint32_t y : class_b.at(la[i]))
+      if (inv[y] < 0 && int(y) != skip) cand[k].push_back(y);
+    sort_cand(k);
+  };
+  auto fill = [&](size_t k) {
+    const uint32_t i = order[k];
+    cand[k].clear(), next[k] = 0;
+    if (parent[i] >= 0) {
+      for (uint32_t y : nb[size_t(map[size_t(parent[i])])])
+        if (inv[y] < 0 && lb[y] == la[i]) cand[k].push_back(y);
+      full[k] = 1;
+      sort_cand(k);
+    } else if (pref[i] >= 0 && inv[size_t(pref[i])] < 0 && lb[size_t(pref[i])] == la[i]) {
+      cand[k].push_back(uint32_t(pref[i]));
+      full[k] = 0;
+    } else {
+      whole_class(k, -1);
+    }
+  };
+  auto fits = [&](uint32_t i, uint32_t y) {
+    if (inv[y] >= 0 || lb[y] != la[i]) return false;
+    int placed = 0, used = 0;
+    for (uint32_t j : na[i])
+      if (map[j] >= 0) {
+        ++placed;
+        if (!bonded(nb, y, uint32_t(map[j]))) return false;
+      }
+    for (uint32_t z : nb[y]) used += inv[z] >= 0;
+    return placed == used;   // no bond of B among placed atoms that A lacks
+  };
+  size_t k = 0;
+  if (n) fill(0);
+  while (k < n) {
+    const uint32_t i = order[k];
+    if (map[i] >= 0) inv[size_t(map[i])] = -1, map[i] = -1;   // back here: the last choice failed further on
+    bool placed = false;
+    for (;;) {
+      if (next[k] == cand[k].size()) {
+        if (full[k]) break;
+        whole_class(k, pref[i]);   // the preferred partner was tried; now the rest of the class
+        continue;
+      }
+      const uint32_t y = cand[k][next[k]++];
+      if (++tries > budget) {
+        over_budget = true;
+        return {};
+      }
+      if (fits(i, y)) {
+        map[i] = int(y), inv[y] = int(i), placed = true;
+        break;
+      }
+    }
+    if (placed) {
+      if (++k < n) fill(k);
+    } else {
+      if (k == 0) return {};
+      --k;
+    }
+  }
+  return map;
+}
+
 Vec3 rotate(const std::array<std::array<double, 3>, 3>& R, const Vec3& x) {
   return {R[0][0] * x[0] + R[0][1] * x[1] + R[0][2] * x[2], R[1][0] * x[0] + R[1][1] * x[1] + R[1][2] * x[2], R[2][0] * x[0] + R[2][1] * x[1] + R[2][2] * x[2]};
 }
@@ -103,7 +231,8 @@ AtomMatch match_atoms(const System& a, const System& b) {
   AtomMatch R;
   // the classes: environments when both structures have the same ones, elements otherwise
   std::vector<int> la, lb;
-  environment_labels(a, b, la, lb);
+  const Adjacency na = adjacency(a), nb = adjacency(b);
+  environment_labels(a, b, na, nb, la, lb);
   auto counts = [](const std::vector<int>& l) { std::map<int, int> c; for (int x : l) ++c[x]; return c; };
   R.by_graph = counts(la) == counts(lb);
   if (!R.by_graph) {
@@ -148,11 +277,26 @@ AtomMatch match_atoms(const System& a, const System& b) {
     }
     return map;
   };
+  // When the environments agree, the map must also keep every bond: a position-only assignment within one class can
+  // give a hydrogen of one carbon the partner of a hydrogen on the next (butane turned end to end), and B in that
+  // order has bonds two angstroms long. graph_map turns the assignment into the nearest map that keeps the bonds.
+  const long budget = 200 * long(n) + 100000;
+  bool over_budget = false, graph_failed = false;
+  auto keep_bonds = [&](std::vector<int> m, const std::function<double(size_t, size_t)>& d2) {
+    // an exhausted search proves no such map exists, and a spent budget is not spent again on every iteration
+    if (!R.by_graph || graph_failed) return m;
+    auto g = graph_map(na, nb, la, lb, m, d2, budget, over_budget);
+    if (g.empty()) graph_failed = true;
+    return g.empty() ? m : g;
+  };
+  bool best_valid = false;
   if (periodic) {
-    R.map = assign([&](size_t i, size_t j) {
+    const auto d2 = [&](size_t i, size_t j) {
       const Vec3 d = a.cell.minimum_image(b.atoms[j].pos - a.atoms[i].pos);
       return dot(d, d);
-    });
+    };
+    R.map = keep_bonds(assign(d2), d2);
+    best_valid = R.by_graph && keeps_bonds(na, nb, la, lb, R.map);
     double s = 0;
     for (size_t i = 0; i < n; ++i) {
       const Vec3 d = a.cell.minimum_image(b.atoms[size_t(R.map[i])].pos - a.atoms[i].pos);
@@ -177,6 +321,15 @@ AtomMatch match_atoms(const System& a, const System& b) {
     double VA[3][3], VB[3][3];
     axes(a, ca, VA), axes(b, cb, VB);
     double best = std::numeric_limits<double>::infinity();
+    if (R.by_graph && n >= 3) {   // B in its file order, when that keeps the bonds, wins a tie
+      std::vector<int> id(n);
+      for (size_t i = 0; i < n; ++i) id[i] = int(i);
+      if (keeps_bonds(na, nb, la, lb, id)) {
+        std::vector<Vec3> ref(n), mov(n);
+        for (size_t i = 0; i < n; ++i) ref[i] = a.atoms[i].pos, mov[i] = b.atoms[i].pos;
+        best = superpose(ref, mov).rmsd, R.map = id, best_valid = true;
+      }
+    }
     const int signs[4][3] = {{1, 1, 1}, {1, -1, -1}, {-1, 1, -1}, {-1, -1, 1}};
     for (const auto& sg : signs) {
       std::array<std::array<double, 3>, 3> Rm{};
@@ -192,11 +345,12 @@ AtomMatch match_atoms(const System& a, const System& b) {
       for (size_t j = 0; j < n; ++j) pb[j] = rotate(Rm, b.atoms[j].pos - cb) + ca;
       std::vector<int> map;
       double rmsd = std::numeric_limits<double>::infinity();
+      const auto d2 = [&](size_t i, size_t j) {
+        const Vec3 d = pb[j] - a.atoms[i].pos;
+        return dot(d, d);
+      };
       for (int it = 0; it < 30; ++it) {
-        auto next = assign([&](size_t i, size_t j) {
-          const Vec3 d = pb[j] - a.atoms[i].pos;
-          return dot(d, d);
-        });
+        auto next = keep_bonds(assign(d2), d2);
         std::vector<Vec3> ref(n), mov(n);
         for (size_t i = 0; i < n; ++i) ref[i] = a.atoms[i].pos, mov[i] = b.atoms[size_t(next[i])].pos;
         if (n >= 3) {
@@ -212,9 +366,38 @@ AtomMatch match_atoms(const System& a, const System& b) {
         map = std::move(next);
         if (same) break;
       }
-      if (rmsd < best - 1e-9) best = rmsd, R.map = map;
+      const bool valid = R.by_graph && keeps_bonds(na, nb, la, lb, map);
+      if ((valid && !best_valid) || (valid == best_valid && rmsd < best - 1e-9)) best = rmsd, R.map = map, best_valid = valid;
     }
     R.rmsd = best;
+  }
+  // A's bonds that B, in the matched order, stretches past 1.5 times: expected where a reaction breaks bonds, a wrong
+  // match otherwise (an energy on A's bonds then sees them as huge strains).
+  {
+    int stretched = 0;
+    std::string first;
+    for (size_t i = 0; i < n; ++i)
+      for (uint32_t j : na[i]) {
+        if (j <= i) continue;
+        Vec3 da = a.atoms[j].pos - a.atoms[i].pos, db = b.atoms[size_t(R.map[j])].pos - b.atoms[size_t(R.map[i])].pos;
+        if (periodic) da = a.cell.minimum_image(da), db = b.cell.minimum_image(db);
+        const double ra = norm(da), rb = norm(db);
+        if (rb > 1.5 * ra) {
+          if (++stretched <= 3) {
+            char e[96];
+            std::snprintf(e, sizeof e, "%s%zu-%u %.3f → %.3f Å", first.empty() ? "" : ", ", i + 1, j + 1, ra, rb);
+            first += e;
+          }
+        }
+      }
+    if (R.by_graph && !best_valid) {
+      R.notes.push_back(over_budget
+                            ? "no atom map that keeps every bond was found within " + std::to_string(budget) + " tries: the closest map by position is used"
+                            : "no atom map keeps every bond (the bond graphs differ): the closest map by position is used");
+    }
+    if (stretched > 0)
+      R.notes.push_back(std::to_string(stretched) + " of A's bonds are over 1.5 times longer in B as matched (" + first +
+                        (stretched > 3 ? ", ..." : "") + (R.by_graph ? "): check the match, or keep B's file order" : "): bonds the reaction breaks, or atoms matched to the wrong partner"));
   }
   for (size_t i = 0; i < n; ++i) R.reordered += R.map[i] != int(i);
   char buf[160];

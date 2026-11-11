@@ -240,11 +240,24 @@ CgTargets cg_targets(const CgRdfAccumulator& acc, double temperature, const std:
   CgTargets t;
   t.r = acc.r();
   t.temperature = temperature;
+  t.exclude = acc.options().exclude;
   for (int s = 0; s < acc.systems(); ++s) {
     t.systems.push_back(acc.name(s));
     t.weights.push_back(acc.weight(s));
     t.rdf.push_back(acc.rdf(s));
     t.pressure.push_back(size_t(s) < pressure.size() ? pressure[size_t(s)] : 1.0);
+  }
+  // only the bins the frames were counted in (rmax, or half the narrowest cell width when that is less): the rest are not
+  // measured, and a g of 0 there would read as a wall of −kT ln(1e-6) in the IBI start
+  const double dr = acc.options().dr;
+  const size_t nuse = std::min(t.r.size(), size_t(acc.rmax_used() / dr + 1e-6));
+  if (acc.rmax_used() > 0 && nuse >= 2 && nuse < t.r.size()) {
+    t.r.resize(nuse);
+    for (auto& sys : t.rdf)
+      for (auto& R : sys) {
+        if (R.g.size() > nuse) R.g.resize(nuse);
+        if (R.counts.size() > nuse) R.counts.resize(nuse);
+      }
   }
   trim_unresolved(t);
   return t;
@@ -255,6 +268,7 @@ Json cg_targets_json(const CgTargets& t) {
   j["format"] = "caps-cg-targets";
   j["version"] = 1;
   j["temperature"] = t.temperature;
+  if (t.exclude > 0) j["exclude"] = t.exclude;   // the exclusion g(r) was measured with: ibi-start / ibi-step / ibi-run use it
   j["r"] = arr(t.r);
   Json sys = Json::array();
   for (size_t s = 0; s < t.systems.size(); ++s) {
@@ -284,6 +298,8 @@ CgTargets cg_targets_from_json(const Json& j) {
   if (j.text("format") != "caps-cg-targets") throw std::invalid_argument("not CAPS g(r) targets (format caps-cg-targets)");
   CgTargets t;
   t.temperature = j.num("temperature", 300);
+  t.exclude = j.has("exclude") ? int(j.num("exclude", 3)) : 0;   // 0: not recorded (files before the key; read as 3)
+  if (j.has("exclude") && t.exclude < 1) throw std::invalid_argument("targets: exclude must be 1 or more");
   t.r = vec(j["r"]);
   for (const auto& e : j["systems"].items()) {
     t.systems.push_back(e.text("name"));
@@ -355,8 +371,14 @@ std::vector<double> potential_of(const std::vector<double>& r, const std::vector
   size_t k0 = 0;
   while (k0 < n && g[k0] < 0.02) ++k0;
   if (k0 + 5 >= n || r[k0] >= rc) throw std::invalid_argument("a target g(r) is not resolved inside the cut-off");
+  // the last bin with any count: past it nothing was measured (not a g of 0), so the potential stays at its last value
+  // there instead of jumping to −kT ln(1e-6) and leaving a cliff once the table is shifted to zero at the cut-off
+  size_t kend = n - 1;
+  while (kend > k0 && !(g[kend] > 0)) --kend;
+  if (kend < k0 + 5) throw std::invalid_argument("a target g(r) is not resolved inside the cut-off");
   std::vector<double> U(n, 0.0);
-  for (size_t k = k0; k < n; ++k) U[k] = -kT * std::log(std::max(g[k], 1e-6));
+  for (size_t k = k0; k <= kend; ++k) U[k] = -kT * std::log(std::max(g[k], 1e-6));
+  for (size_t k = kend + 1; k < n; ++k) U[k] = U[kend];
   const double dr = r[1] - r[0];
   // below the first resolved point (distances the target never reaches): its slope, at least 5 kT/Å, plus a quadratic wall
   // (10 kcal/mol/Å²) so beads cannot pass through each other under load
@@ -576,7 +598,7 @@ std::vector<std::string> write_pairs(const CgPairSet& p, const CgTypes& types, c
         const std::string key = cg_key({types.beads[i], types.beads[j]});
         const bool have = std::any_of(p.pairs.begin(), p.pairs.end(), [&](const CgPairTable& t) { return t.key == key; });
         if (!have) {
-          std::snprintf(line, sizeof line, "pair_coeff %zu %zu ${PAIR}/pairs.table ZERO_%s %.6f  # no system has both types: zero, unused here — give it a potential before mixing them\n",
+          std::snprintf(line, sizeof line, "pair_coeff %zu %zu ${PAIR}/pairs.table ZERO_%s %.6f  # no table for this pair (no system has both types, or its fit was refused): zero, give it a potential before using it\n",
                         i + 1, j + 1, key.c_str(), p.r0 + double(std::max<size_t>(2, p.points()) - 1) * p.dr);
           f << line;
           continue;
@@ -626,18 +648,23 @@ std::vector<CgPairFit> fit_pairs(const CgPairSet& p, const std::string& form, do
     f.lo = x.front(), f.hi = x.back();
     const size_t imin = size_t(std::min_element(y.begin(), y.end()) - y.begin());
     const double depth = std::max(0.05 * kT, -y[imin]), rmin = x[imin];
-    // parameters (log scale for the positive ones)
-    std::vector<double> q;
-    if (form == "lj126") q = {std::log(depth), std::log(rmin / std::pow(2.0, 1.0 / 6))};
-    else if (form == "lj96") q = {std::log(depth), std::log(rmin)};
-    else if (form == "morse") q = {std::log(depth), std::log(rmin), std::log(1.0)};
-    else q = {std::log(depth), std::log(rmin / std::pow(2.0, 1.0 / 6)), std::log(12.0 - 6.0)};
+    // Bounds, kept by the parametrisation: ε (Morse D0) at least 1e-3 kT; σ (Morse r0) between half the closest fitted
+    // distance and the end of the fitted range; the Mie repulsion n between m + 1 and 50 (its prefactor n/(n − m) is
+    // singular at n = m). Unbounded, a table with a soft wall and a shallow well drives LJ 12-6 to σ ≫ r_c with ε → 0
+    // (a pair.in of zeros) and Mie to n → m.
+    const double eps_floor = 1e-3 * kT, s_lo = 0.5 * x.front(), s_hi = x.back(), m_exp = 6.0, n_lo = m_exp + 1, n_hi = 50;
+    auto logistic = [](double v) { return 1.0 / (1.0 + std::exp(-v)); };
+    auto logit = [](double u) { u = std::clamp(u, 1e-6, 1 - 1e-6); return std::log(u / (1 - u)); };
+    const double sig0 = form == "lj126" || form == "mie" ? rmin / std::pow(2.0, 1.0 / 6) : rmin;
+    std::vector<double> q = {std::log(depth - eps_floor), logit((sig0 - s_lo) / (s_hi - s_lo))};
+    if (form == "morse") q.push_back(std::log(1.0));
+    else if (form == "mie") q.push_back(logit((12.0 - n_lo) / (n_hi - n_lo)));
     const double rc = p.rc;
     auto make = [&](const std::vector<double>& v) {
       CgPairFit g = f;
-      g.epsilon = std::exp(v[0]), g.sigma = std::exp(v[1]);
+      g.epsilon = eps_floor + std::exp(v[0]), g.sigma = s_lo + (s_hi - s_lo) * logistic(v[1]);
       if (form == "morse") g.a = std::exp(v[2]);
-      if (form == "mie") g.n = 6.0 + std::exp(v[2]), g.m = 6.0;
+      if (form == "mie") g.n = n_lo + (n_hi - n_lo) * logistic(v[2]), g.m = m_exp;
       return g;
     };
     auto resid = [&](const std::vector<double>& v) {
@@ -702,6 +729,24 @@ std::vector<CgPairFit> fit_pairs(const CgPairSet& p, const std::string& form, do
     f = make(q);
     f.lo = x.front(), f.hi = x.back();
     f.rms = std::sqrt(c0 / double(x.size()));
+    // a fit that ends on a bound is the form failing to follow the table, not a parameter set: said, and kept out of pair.in
+    char why[256] = "";
+    const char* sname = form == "morse" ? "r0" : "sigma";
+    const char* ename = form == "morse" ? "D0" : "epsilon";
+    const double us = logistic(q[1]);
+    if (std::exp(q[0]) < 1e-2 * eps_floor)
+      std::snprintf(why, sizeof why, "%s ran down to its floor (%.2e kcal/mol, 1e-3 kT): the table has no well this form can follow", ename, eps_floor);
+    else if (us > 1 - 1e-3)
+      std::snprintf(why, sizeof why, "%s ran up to the end of the fitted range (%.2f Å): the table is repulsion only for this form", sname, s_hi);
+    else if (us < 1e-3)
+      std::snprintf(why, sizeof why, "%s ran down to half the closest fitted distance (%.2f Å)", sname, s_lo);
+    else if (form == "mie" && logistic(q[2]) < 1e-3)
+      std::snprintf(why, sizeof why, "the repulsion exponent n ran down to m + 1 (%.0f): the Mie form degenerates as n approaches m", n_lo);
+    else if (form == "mie" && logistic(q[2]) > 1 - 1e-3)
+      std::snprintf(why, sizeof why, "the repulsion exponent n ran up to its cap (%.0f)", n_hi);
+    else if (!std::isfinite(f.rms) || !std::isfinite(f.epsilon) || !std::isfinite(f.sigma))
+      std::snprintf(why, sizeof why, "the fit did not converge to finite parameters");
+    f.rejected = why;
     out.push_back(f);
   }
   return out;
@@ -712,7 +757,7 @@ CgPairSet tables_of_fits(const std::vector<CgPairFit>& fits, const CgPairSet& gr
   p.pairs.clear();
   p.source = fits.empty() ? "fit" : fits.front().form + " fit";
   for (const auto& f : fits) {
-    if (!std::isfinite(f.rms)) continue;
+    if (!std::isfinite(f.rms) || !f.rejected.empty()) continue;
     CgPairTable t;
     t.key = f.key;
     const size_t n = grid.points() ? grid.points() : size_t(std::lround((grid.rc - grid.r0) / grid.dr)) + 1;
@@ -737,8 +782,12 @@ std::string lammps_pair_lines(const std::vector<CgPairFit>& fits, const CgTypes&
       const std::string key = cg_key({types.beads[i], types.beads[j]});
       const auto it = std::find_if(fits.begin(), fits.end(), [&](const CgPairFit& f) { return f.key == key && std::isfinite(f.rms); });
       if (it == fits.end()) { out += "# no fit for " + key + "\n"; continue; }
+      if (!it->rejected.empty()) {
+        out += "# no usable " + form + " fit for " + key + " (" + it->rejected + "): use the tables (the IBI pair.in) or another --form\n";
+        continue;
+      }
       if (form == "morse") std::snprintf(b, sizeof b, "pair_coeff %zu %zu %.6f %.6f %.6f  # %s, rms %.3f kcal/mol\n", i + 1, j + 1, it->epsilon, it->a, it->sigma, key.c_str(), it->rms);
-      else if (form == "mie") std::snprintf(b, sizeof b, "pair_coeff %zu %zu %.6f %.6f %.4f %.4f  # %s, rms %.3f kcal/mol\n", i + 1, j + 1, it->epsilon, it->sigma, it->n, it->m, key.c_str(), it->rms);
+      else if (form == "mie") std::snprintf(b, sizeof b, "pair_coeff %zu %zu %.6f %.6f %.6f %.6f  # %s, rms %.3f kcal/mol\n", i + 1, j + 1, it->epsilon, it->sigma, it->n, it->m, key.c_str(), it->rms);
       else std::snprintf(b, sizeof b, "pair_coeff %zu %zu %.6f %.6f  # %s, rms %.3f kcal/mol\n", i + 1, j + 1, it->epsilon, it->sigma, key.c_str(), it->rms);
       out += b;
     }

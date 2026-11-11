@@ -44,6 +44,14 @@ caps render ps_md.data -o ps.png --style sticks --colour molecule</code></pre></
 <div class="code" data-lang="shell"><pre><code># steps.yaml: a pipeline saved from the Studio, or written by hand
 caps pipeline ps_md.data --steps steps.yaml --out out
 caps run steps.yaml --input &#x27;runs/*/traj.lammpstrj&#x27; --csv results.csv</code></pre></div>
+<p>A pipeline file written by hand starts with the line <code>caps_pipeline: 1</code> and lists its steps under <code>steps:</code>, one a line, each a step name followed by its settings in braces (<code>{}</code> for none):</p>
+<div class="code" data-lang="recipe (YAML)"><pre><code>caps_pipeline: 1
+name: PS melt structure report
+steps:
+  - unwrap: {}
+  - cluster: {mode: cutoff, cutoff: 3.3, unit: molecules}
+  - wrap: {}</code></pre></div>
+<p><code>--steps</code> also takes a JSON list of steps, in a file or on the command line.</p>
 <h2 id="next">Next</h2>
 <ul><li><a href="../theory/analysis.html">Theory: Analysis</a> gives every property's definition, defaults and tests.</li><li><a href="../python.html">Python</a>: <code>Document.analyze()</code> returns the same numbers as a dictionary.</li></ul><nav class="pager"><a href="dft-surfaces.html"><small>Previous</small>A DFT surface study</a><a class="next" href="cluster.html"><small>Next</small>Running CAPS on your own cluster</a></nav>
 </main>

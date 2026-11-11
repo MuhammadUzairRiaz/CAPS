@@ -30,6 +30,8 @@ caps relax ps.data -o ps_min.data --iterations 500 --quiet
 
 With no force field named, CAPS uses its default (GAFF for C and H, UFF otherwise) and writes it into the `.data` file, so LAMMPS can read the result directly.
 
+`--iterations 500` keeps this step short, and on this cell it usually stops there before the 0.5 kcal/mol/Å tolerance. `ps_min.data` is still written and fine to run MD from, but `caps relax` then exits with code 3 (not converged) rather than 0. In a script run with `set -e`, accept it with `caps relax ... || [ $? -eq 3 ]`, or leave out `--iterations` so the default of 5000 lets the cell converge. `--quiet` hides only the live progress line, not the summary.
+
 ## 3. Run molecular dynamics
 
 ```bash

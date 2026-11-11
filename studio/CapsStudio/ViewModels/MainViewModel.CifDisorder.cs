@@ -53,7 +53,9 @@ public sealed partial class MainViewModel
     {
         if (_cifPath.Length == 0) return;
         var mode = _cifMode == 0 ? "major" : _cifMode == 1 ? "group" : "random";
-        var o = new JsonObject { ["mode"] = mode, ["group"] = _cifGroup, ["supercell"] = new JsonArray((int)_cifNa, (int)_cifNb, (int)_cifNc), ["seed"] = (int)_cifSeed };
+        // the supercell boxes show for the random fill only: the other modes read one cell (the core repeats any mode)
+        var cells = mode == "random" ? new JsonArray((int)_cifNa, (int)_cifNb, (int)_cifNc) : new JsonArray(1, 1, 1);
+        var o = new JsonObject { ["mode"] = mode, ["group"] = _cifGroup, ["supercell"] = cells, ["seed"] = (int)_cifSeed };
         try
         {
             var label = Path.GetFileNameWithoutExtension(_cifPath) + (mode == "random" ? $" (random {(int)_cifNa}×{(int)_cifNb}×{(int)_cifNc})" : mode == "group" ? $" (group {_cifGroup})" : " (major)");

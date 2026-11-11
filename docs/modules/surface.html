@@ -30,7 +30,7 @@
 <div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button></div>
 <div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code>caps surface quartz.cif -o slab.data --hkl 0,0,1 --layers 3 --vacuum 15 --list
 caps interface quartz.cif -o film.data --units &#x27;*CC(C)=CC*&#x27; --film 30 \
-    --film-density 0.9 --chains 8 --dp 10
+    --film-density 0.9 --supercell 6,4 --dp 10
 caps md film.data -o film_md.data --slab 3 --steps 5000</code></pre></div></div>
 <h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="force-field.html"><img src="../manual/img/06_field.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-prepare"></i>Prepare</span><b>Force field</b><span>Type every atom from SMARTS rules, set charges, fill any missing term and give each part of a composite its own force field.</span></a><a class="card shot-card" href="minimise.html"><img src="../manual/img/07_relax.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-prepare"></i>Prepare</span><b>Minimise</b><span>Remove close contacts, compress a low-density cell to its target and relax the box.</span></a></div>
 <h2 id="read">Read more</h2><div class="cards minis"><a class="card mini" href="../tutorials/dft-surfaces.html"><span class="num">Tutorial</span><b>DFT surfaces</b></a></div>

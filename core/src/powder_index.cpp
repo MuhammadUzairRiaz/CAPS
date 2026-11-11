@@ -83,50 +83,151 @@ std::vector<Peak> find_peaks(const MeasuredPattern& p, const PeakOptions& o) {
 // ---------------------------------------------------------------- indexing
 namespace {
 struct Box { double lo[4], hi[4]; };   // a, b, c (Å), β (degrees)
+enum class Sys { cubic, tetragonal, hexagonal, orthorhombic, monoclinic };
+
+Sys system_of(const std::string& s) {
+  if (s == "cubic") return Sys::cubic;
+  if (s == "tetragonal") return Sys::tetragonal;
+  if (s == "hexagonal") return Sys::hexagonal;
+  if (s == "orthorhombic") return Sys::orthorhombic;
+  if (s == "monoclinic") return Sys::monoclinic;
+  throw std::invalid_argument("index: crystal system '" + s + "' not known (cubic, tetragonal, hexagonal, orthorhombic or monoclinic)");
+}
+
+// A box is handed to least squares once no free dimension moves the top line's Q by more than this many tolerances
+// across it: the box centre is then within a few tolerances of the cell (less on the lower lines, which lie further
+// apart), so the nearest-index assignment converges; finer leaves only multiply the least-squares runs.
+constexpr double kLeafTolerances = 8.0;
+// a cell indexing every line with at least this M20 ends the search of the systems with more free parameters
+constexpr double kStrongM20 = 100.0;
 
 struct Indexer {
   const IndexOptions& o;
-  std::string sys;
+  std::string name;
+  Sys sys = Sys::cubic;
+  int m = 1;                            // reciprocal metric parameters (linear in Q)
+  std::vector<int> free_dims;           // the box dimensions searched: a; a, c; a, b, c; a, b, c, β
   std::vector<double> Q, tol;           // observed Q (1/Å²) and their tolerances
+  double qmax = 0;                      // the top line's Q plus its tolerance
   std::vector<I3> hkl;                  // the indices to try
+  std::vector<std::array<double, 4>> co;   // per index: Q = Σ co[k] x[k] with the system's metric parameters x
+  int H = 0;
+  std::vector<int> lookup;              // (h + H, k, l) → index into hkl, or −1
   std::vector<IndexSolution> found;
-  int dims = 0;                         // free parameters
   long tests = 0;
+  double vol_limit = 0;                 // once a cell is found: boxes beyond about twice its volume hold only its supercells
+  bool stopped = false;                 // the box budget ran out
+  double frac = 0;                      // progress through the start boxes
+  std::vector<std::pair<double, double>> rr;   // scratch: the Q ranges of the kept indices
 
-  // the Q range of reflection h over the box
-  std::pair<double, double> qrange(const I3& h, const Box& b) const {
-    const double h2 = double(h[0]) * h[0], k2 = double(h[1]) * h[1], l2 = double(h[2]) * h[2];
-    if (sys == "cubic") {
-      const double N = h2 + k2 + l2;
-      return {N / (b.hi[0] * b.hi[0]), N / (b.lo[0] * b.lo[0])};
-    }
-    if (sys == "tetragonal") return {(h2 + k2) / (b.hi[0] * b.hi[0]) + l2 / (b.hi[2] * b.hi[2]), (h2 + k2) / (b.lo[0] * b.lo[0]) + l2 / (b.lo[2] * b.lo[2])};
-    if (sys == "hexagonal") {
-      const double M = 4.0 / 3.0 * (h2 + double(h[0]) * h[1] + k2);
-      return {M / (b.hi[0] * b.hi[0]) + l2 / (b.hi[2] * b.hi[2]), M / (b.lo[0] * b.lo[0]) + l2 / (b.lo[2] * b.lo[2])};
-    }
-    if (sys == "orthorhombic")
-      return {h2 / (b.hi[0] * b.hi[0]) + k2 / (b.hi[1] * b.hi[1]) + l2 / (b.hi[2] * b.hi[2]), h2 / (b.lo[0] * b.lo[0]) + k2 / (b.lo[1] * b.lo[1]) + l2 / (b.lo[2] * b.lo[2])};
-    // monoclinic (b unique): A = 1/(a² sin²β), B = 1/b², C = 1/(c² sin²β), D = −2 cos β / (a c sin²β) ≥ 0 for β ≥ 90°
-    const double s1 = std::sin(b.lo[3] / kDeg), s2 = std::sin(b.hi[3] / kDeg);
-    const double smax2 = std::max(s1, s2) * std::max(s1, s2), smin2 = std::min(s1, s2) * std::min(s1, s2);
-    const double c1 = std::fabs(std::cos(b.lo[3] / kDeg)), c2 = std::fabs(std::cos(b.hi[3] / kDeg));
-    const double Alo = 1 / (b.hi[0] * b.hi[0] * smax2), Ahi = 1 / (b.lo[0] * b.lo[0] * smin2);
-    const double Clo = 1 / (b.hi[2] * b.hi[2] * smax2), Chi = 1 / (b.lo[2] * b.lo[2] * smin2);
-    const double Dlo = 2 * std::min(c1, c2) / (b.hi[0] * b.hi[2] * smax2), Dhi = 2 * std::max(c1, c2) / (b.lo[0] * b.lo[2] * smin2);
-    const double hl = double(h[0]) * h[2];
-    double lo = h2 * Alo + k2 / (b.hi[1] * b.hi[1]) + l2 * Clo, hi = h2 * Ahi + k2 / (b.lo[1] * b.lo[1]) + l2 * Chi;
-    if (hl >= 0) lo += hl * Dlo, hi += hl * Dhi;
-    else lo += hl * Dhi, hi += hl * Dlo;
-    return {lo, hi};
+  Indexer(const IndexOptions& opt, const std::string& s) : o(opt), name(s), sys(system_of(s)) {
+    m = sys == Sys::cubic ? 1 : sys == Sys::orthorhombic ? 3 : sys == Sys::monoclinic ? 4 : 2;
+    free_dims = sys == Sys::cubic ? std::vector<int>{0} : sys == Sys::orthorhombic ? std::vector<int>{0, 1, 2}
+                : sys == Sys::monoclinic ? std::vector<int>{0, 1, 2, 3} : std::vector<int>{0, 2};
   }
-  bool passes(const Box& b) {
+
+  void add_indices() {
+    H = int(o.max_length * std::sqrt(qmax)) + 1;
+    lookup.assign(size_t(2 * H + 1) * size_t(H + 1) * size_t(H + 1), -1);
+    for (int h = (sys == Sys::monoclinic ? -H : 0); h <= H; ++h)
+      for (int k = 0; k <= H; ++k)
+        for (int l = 0; l <= H; ++l) {
+          if (!h && !k && !l) continue;
+          if (sys == Sys::cubic && !(h >= k && k >= l)) continue;
+          if ((sys == Sys::tetragonal || sys == Sys::hexagonal) && h < k) continue;
+          // the monoclinic h < 0 half with l = 0 repeats h > 0 (Q is even in h when l = 0)
+          if (sys == Sys::monoclinic && h < 0 && l == 0) continue;
+          const double h2 = double(h) * h, k2 = double(k) * k, l2 = double(l) * l;
+          std::array<double, 4> c{0, 0, 0, 0};
+          switch (sys) {
+            case Sys::cubic: c = {h2 + k2 + l2, 0, 0, 0}; break;
+            case Sys::tetragonal: c = {h2 + k2, l2, 0, 0}; break;
+            case Sys::hexagonal: c = {4.0 / 3.0 * (h2 + double(h) * k + k2), l2, 0, 0}; break;
+            case Sys::orthorhombic: c = {h2, k2, l2, 0}; break;
+            case Sys::monoclinic: c = {h2, k2, l2, double(h) * l}; break;
+          }
+          lookup[(size_t(h + H) * size_t(H + 1) + size_t(k)) * size_t(H + 1) + size_t(l)] = int(hkl.size());
+          hkl.push_back({h, k, l});
+          co.push_back(c);
+        }
+  }
+  // the indices that can fall below qmax somewhere in a start box: Q ≥ (h/a)² + (k/b)² + (l/c)² bounded by each index
+  // alone (for the monoclinic h·l term too: Q over β is never below max(|h|/a, |l|/c)²)
+  std::vector<int> start_candidates(const Box& b) const {
+    const double s = std::sqrt(qmax);
+    const double A = b.hi[0], B = sys == Sys::orthorhombic || sys == Sys::monoclinic ? b.hi[1] : b.hi[0],
+                 C = sys == Sys::cubic ? b.hi[0] : b.hi[2];
+    // the hexagonal metric 4/3 (h² + hk + k²) ≥ h² and ≥ k² (h, k ≥ 0)
+    const int Ha = std::min(H, int(A * s) + 1), Kb = std::min(H, int(B * s) + 1), Lc = std::min(H, int(C * s) + 1);
+    std::vector<int> out;
+    for (int h = (sys == Sys::monoclinic ? -Ha : 0); h <= Ha; ++h)
+      for (int k = 0; k <= Kb; ++k)
+        for (int l = 0; l <= Lc; ++l) {
+          const int id = lookup[(size_t(h + H) * size_t(H + 1) + size_t(k)) * size_t(H + 1) + size_t(l)];
+          if (id >= 0) out.push_back(id);
+        }
+    return out;
+  }
+
+  // the box's constants: reciprocal lengths at the box's ends, |cos β| and 1/sin² β at its ends
+  struct BoxK { double ilo[3], ihi[3], g0, g1, w0, w1; };
+  BoxK consts(const Box& b) const {
+    BoxK k{};
+    for (int d = 0; d < 3; ++d) k.ilo[d] = 1 / b.hi[d], k.ihi[d] = 1 / b.lo[d];
+    if (sys == Sys::monoclinic) {
+      // β in [90°, 180°): |cos β| grows with β
+      k.g0 = -std::cos(b.lo[3] / kDeg), k.g1 = -std::cos(b.hi[3] / kDeg);
+      k.w0 = 1 / (1 - k.g0 * k.g0), k.w1 = 1 / (1 - k.g1 * k.g1);
+    }
+    return k;
+  }
+  // the exact Q range of index id over the box
+  std::pair<double, double> qrange(int id, const BoxK& k) const {
+    const auto& c = co[size_t(id)];
+    switch (sys) {
+      case Sys::cubic: return {c[0] * k.ilo[0] * k.ilo[0], c[0] * k.ihi[0] * k.ihi[0]};
+      case Sys::tetragonal:
+      case Sys::hexagonal:
+        return {c[0] * k.ilo[0] * k.ilo[0] + c[1] * k.ilo[2] * k.ilo[2], c[0] * k.ihi[0] * k.ihi[0] + c[1] * k.ihi[2] * k.ihi[2]};
+      case Sys::orthorhombic:
+        return {c[0] * k.ilo[0] * k.ilo[0] + c[1] * k.ilo[1] * k.ilo[1] + c[2] * k.ilo[2] * k.ilo[2],
+                c[0] * k.ihi[0] * k.ihi[0] + c[1] * k.ihi[1] * k.ihi[1] + c[2] * k.ihi[2] * k.ihi[2]};
+      case Sys::monoclinic: break;
+    }
+    // monoclinic (b unique, β ≥ 90°): Q = k²/b² + (u² + v² + 2 s u v γ)/(1 − γ²), u = |h|/a, v = |l|/c, γ = |cos β|,
+    // s the sign of h·l. With s ≥ 0 Q grows with u, v and γ. With s < 0 Q is convex in (u, v) and, in γ, falls to
+    // max(u, v)² (at γ = min(u, v)/max(u, v)) and rises again: its maximum is at a corner, its minimum on a γ face's
+    // edges or, when that ratio can lie inside the box, no lower than max(u0, v0)².
+    const double kb_lo = c[1] * k.ilo[1] * k.ilo[1], kb_hi = c[1] * k.ihi[1] * k.ihi[1];
+    const double ah = std::sqrt(c[0]), al = std::sqrt(c[2]);
+    const double u0 = ah * k.ilo[0], u1 = ah * k.ihi[0], v0 = al * k.ilo[2], v1 = al * k.ihi[2];
+    if (c[3] >= 0) return {kb_lo + (u0 * u0 + v0 * v0 + 2 * u0 * v0 * k.g0) * k.w0, kb_hi + (u1 * u1 + v1 * v1 + 2 * u1 * v1 * k.g1) * k.w1};
+    auto g = [](double u, double v, double ga) { return u * u + v * v - 2 * u * v * ga; };
+    double hi = 0, lo = 1e300;
+    const double gs[2] = {k.g0, k.g1}, ws[2] = {k.w0, k.w1};
+    for (int e = 0; e < 2; ++e) {
+      const double ga = gs[e], w = ws[e];
+      hi = std::max({hi, g(u0, v0, ga) * w, g(u0, v1, ga) * w, g(u1, v0, ga) * w, g(u1, v1, ga) * w});
+      lo = std::min({lo, g(u0, std::clamp(u0 * ga, v0, v1), ga) * w, g(u1, std::clamp(u1 * ga, v0, v1), ga) * w,
+                     g(std::clamp(v0 * ga, u0, u1), v0, ga) * w, g(std::clamp(v1 * ga, u0, u1), v1, ga) * w});
+    }
+    const double t0 = u0 / v1, t1 = u1 / v0;   // the range of u/v
+    double rmin, rmax;
+    if (t0 <= 1 && t1 >= 1) rmax = 1, rmin = std::min(t0, 1 / t1);
+    else if (t1 < 1) rmin = t0, rmax = t1;
+    else rmin = 1 / t1, rmax = 1 / t0;
+    if (rmax >= k.g0 && rmin <= k.g1) lo = std::min(lo, std::max(u0, v0) * std::max(u0, v0));
+    return {kb_lo + lo, kb_hi + hi};
+  }
+  // every line within its tolerance of some index's Q range over the box (up to o.unindexed lines not); keep: the
+  // candidates that can still fall below qmax inside the box
+  bool passes(const Box& b, const std::vector<int>& cand, std::vector<int>& keep) {
     ++tests;
-    std::vector<std::pair<double, double>> rr;
-    const double qmax = Q.back() + tol.back();
-    for (const auto& h : hkl) {
-      const auto r = qrange(h, b);
-      if (r.first <= qmax) rr.push_back(r);
+    const BoxK k = consts(b);
+    rr.clear(), keep.clear();
+    for (int id : cand) {
+      const auto r = qrange(id, k);
+      if (r.first <= qmax) rr.push_back(r), keep.push_back(id);
     }
     int miss = 0;
     for (size_t i = 0; i < Q.size(); ++i) {
@@ -138,95 +239,108 @@ struct Indexer {
     return true;
   }
   double vol_min(const Box& b) const {
-    if (sys == "cubic") return b.lo[0] * b.lo[0] * b.lo[0];
-    if (sys == "tetragonal") return b.lo[0] * b.lo[0] * b.lo[2];
-    if (sys == "hexagonal") return std::sqrt(3.0) / 2 * b.lo[0] * b.lo[0] * b.lo[2];
-    if (sys == "orthorhombic") return b.lo[0] * b.lo[1] * b.lo[2];
+    switch (sys) {
+      case Sys::cubic: return b.lo[0] * b.lo[0] * b.lo[0];
+      case Sys::tetragonal: return b.lo[0] * b.lo[0] * b.lo[2];
+      case Sys::hexagonal: return std::sqrt(3.0) / 2 * b.lo[0] * b.lo[0] * b.lo[2];
+      case Sys::orthorhombic: return b.lo[0] * b.lo[1] * b.lo[2];
+      case Sys::monoclinic: break;
+    }
     return b.lo[0] * b.lo[1] * b.lo[2] * std::min(std::sin(b.lo[3] / kDeg), std::sin(b.hi[3] / kDeg));
   }
+  // how far the top line's Q can move across the box along each free dimension (an estimate for the split and the leaf)
+  void spreads(const Box& b, double s[4]) const {
+    const double qt = Q.back();
+    for (int d = 0; d < 3; ++d) {
+      const double r = b.hi[d] / b.lo[d];
+      s[d] = qt * (r * r - 1);
+    }
+    s[3] = 0;
+    if (sys == Sys::monoclinic) {
+      // |dQ/dβ| / Q is at most about 1/(1 − γ) + 2γ/(1 − γ²) (an h·l reflection and an h00 one), γ = |cos β|
+      const double g1 = -std::cos(b.hi[3] / kDeg);
+      s[3] = qt * (b.hi[3] - b.lo[3]) / kDeg * (1 / (1 - g1) + 2 * g1 / (1 - g1 * g1));
+    }
+  }
   // least squares on Q with the nearest indices; the cell, M20 and F_N
-  void refine_leaf(const Box& b) {
+  void refine_leaf(const Box& b, const std::vector<int>& cand) {
+    if (cand.empty()) return;
     double p[4];
     for (int k = 0; k < 4; ++k) p[k] = 0.5 * (b.lo[k] + b.hi[k]);
-    // the reciprocal metric parameters (linear in Q) for the system
-    auto coeffs = [&](const I3& h) -> std::vector<double> {
-      const double h2 = double(h[0]) * h[0], k2 = double(h[1]) * h[1], l2 = double(h[2]) * h[2];
-      if (sys == "cubic") return {h2 + k2 + l2};
-      if (sys == "tetragonal") return {h2 + k2, l2};
-      if (sys == "hexagonal") return {4.0 / 3.0 * (h2 + double(h[0]) * h[1] + k2), l2};
-      if (sys == "orthorhombic") return {h2, k2, l2};
-      return {h2, k2, l2, double(h[0]) * h[2]};
-    };
-    std::vector<double> x;   // parameters
+    double x[4] = {0, 0, 0, 0};   // the reciprocal metric parameters
     const double sb = std::sin(p[3] / kDeg), cb = std::cos(p[3] / kDeg);
-    if (sys == "cubic") x = {1 / (p[0] * p[0])};
-    else if (sys == "tetragonal" || sys == "hexagonal") x = {1 / (p[0] * p[0]), 1 / (p[2] * p[2])};
-    else if (sys == "orthorhombic") x = {1 / (p[0] * p[0]), 1 / (p[1] * p[1]), 1 / (p[2] * p[2])};
-    else x = {1 / (p[0] * p[0] * sb * sb), 1 / (p[1] * p[1]), 1 / (p[2] * p[2] * sb * sb), -2 * cb / (p[0] * p[2] * sb * sb)};
-    const size_t m = x.size();
-    auto qcalc = [&](const I3& h) {
-      const auto c = coeffs(h);
-      double q = 0;
-      for (size_t k = 0; k < m; ++k) q += c[k] * x[k];
-      return q;
+    switch (sys) {
+      case Sys::cubic: x[0] = 1 / (p[0] * p[0]); break;
+      case Sys::tetragonal:
+      case Sys::hexagonal: x[0] = 1 / (p[0] * p[0]), x[1] = 1 / (p[2] * p[2]); break;
+      case Sys::orthorhombic: x[0] = 1 / (p[0] * p[0]), x[1] = 1 / (p[1] * p[1]), x[2] = 1 / (p[2] * p[2]); break;
+      case Sys::monoclinic:
+        x[0] = 1 / (p[0] * p[0] * sb * sb), x[1] = 1 / (p[1] * p[1]), x[2] = 1 / (p[2] * p[2] * sb * sb), x[3] = -2 * cb / (p[0] * p[2] * sb * sb);
+        break;
+    }
+    const size_t mm = size_t(m);
+    auto qcalc = [&](int id) {
+      const auto& c = co[size_t(id)];
+      return c[0] * x[0] + c[1] * x[1] + c[2] * x[2] + c[3] * x[3];
     };
-    std::vector<I3> as(Q.size());
+    std::vector<int> as(Q.size(), -1);
     std::vector<char> ok(Q.size());
     for (int it = 0; it < 4; ++it) {
       for (size_t i = 0; i < Q.size(); ++i) {
         double best = 1e300;
-        for (const auto& h : hkl) {
-          const double d = std::fabs(qcalc(h) - Q[i]);
-          if (d < best) best = d, as[i] = h;
+        for (int id : cand) {
+          const double d = std::fabs(qcalc(id) - Q[i]);
+          if (d < best) best = d, as[i] = id;
         }
         // the box's centre can sit a few tolerances off: the first passes take every line's nearest reflection
         ok[i] = it < 2 || best <= tol[i];
       }
-      std::vector<double> A(m * m, 0.0), rhs(m, 0.0);
+      double A[16] = {0}, rhs[4] = {0};
       for (size_t i = 0; i < Q.size(); ++i) {
-        if (!ok[i]) continue;
-        const auto c = coeffs(as[i]);
-        for (size_t a = 0; a < m; ++a) {
+        if (!ok[i] || as[i] < 0) continue;
+        const auto& c = co[size_t(as[i])];
+        for (size_t a = 0; a < mm; ++a) {
           rhs[a] += c[a] * Q[i];
-          for (size_t bb = 0; bb < m; ++bb) A[a * m + bb] += c[a] * c[bb];
+          for (size_t bb = 0; bb < mm; ++bb) A[a * mm + bb] += c[a] * c[bb];
         }
       }
       // solve (Gauss–Jordan)
-      bool sing = false;
-      for (size_t c = 0; c < m && !sing; ++c) {
+      for (size_t c = 0; c < mm; ++c) {
         size_t piv = c;
-        for (size_t i = c + 1; i < m; ++i) if (std::fabs(A[i * m + c]) > std::fabs(A[piv * m + c])) piv = i;
-        if (std::fabs(A[piv * m + c]) < 1e-300) { sing = true; break; }
-        for (size_t j = 0; j < m; ++j) std::swap(A[c * m + j], A[piv * m + j]);
+        for (size_t i = c + 1; i < mm; ++i) if (std::fabs(A[i * mm + c]) > std::fabs(A[piv * mm + c])) piv = i;
+        if (std::fabs(A[piv * mm + c]) < 1e-300) return;
+        for (size_t j = 0; j < mm; ++j) std::swap(A[c * mm + j], A[piv * mm + j]);
         std::swap(rhs[c], rhs[piv]);
-        const double d = A[c * m + c];
-        for (size_t j = 0; j < m; ++j) A[c * m + j] /= d;
+        const double d = A[c * mm + c];
+        for (size_t j = 0; j < mm; ++j) A[c * mm + j] /= d;
         rhs[c] /= d;
-        for (size_t i = 0; i < m; ++i)
+        for (size_t i = 0; i < mm; ++i)
           if (i != c) {
-            const double f = A[i * m + c];
-            for (size_t j = 0; j < m; ++j) A[i * m + j] -= f * A[c * m + j];
+            const double f = A[i * mm + c];
+            for (size_t j = 0; j < mm; ++j) A[i * mm + j] -= f * A[c * mm + j];
             rhs[i] -= f * rhs[c];
           }
       }
-      if (sing) return;
-      x = rhs;
+      for (size_t k = 0; k < mm; ++k) x[k] = rhs[k];
     }
-    for (double v : x) if (!std::isfinite(v)) return;
+    for (size_t k = 0; k < mm; ++k) if (!std::isfinite(x[k])) return;
+    // only the monoclinic h·l term x[3] may be negative
+    for (size_t k = 0; k < std::min<size_t>(mm, 3); ++k) if (x[k] <= 0) return;
     IndexSolution s;
-    s.system = sys;
-    if (sys == "cubic") s.cell = {1 / std::sqrt(x[0]), 1 / std::sqrt(x[0]), 1 / std::sqrt(x[0]), 90, 90, 90};
-    else if (sys == "tetragonal") s.cell = {1 / std::sqrt(x[0]), 1 / std::sqrt(x[0]), 1 / std::sqrt(x[1]), 90, 90, 90};
-    else if (sys == "hexagonal") s.cell = {1 / std::sqrt(x[0]), 1 / std::sqrt(x[0]), 1 / std::sqrt(x[1]), 90, 90, 120};
-    else if (sys == "orthorhombic") s.cell = {1 / std::sqrt(x[0]), 1 / std::sqrt(x[1]), 1 / std::sqrt(x[2]), 90, 90, 90};
-    else {
-      if (x[0] <= 0 || x[1] <= 0 || x[2] <= 0) return;   // only the h*l term x[3] may be negative
-      const double cosb = -x[3] / (2 * std::sqrt(x[0] * x[2]));
-      if (std::fabs(cosb) >= 1) return;
-      const double beta = std::acos(cosb) * kDeg, sn = std::sin(beta / kDeg);
-      s.cell = {1 / (std::sqrt(x[0]) * sn), 1 / std::sqrt(x[1]), 1 / (std::sqrt(x[2]) * sn), 90, beta, 90};
+    s.system = name;
+    switch (sys) {
+      case Sys::cubic: s.cell = {1 / std::sqrt(x[0]), 1 / std::sqrt(x[0]), 1 / std::sqrt(x[0]), 90, 90, 90}; break;
+      case Sys::tetragonal: s.cell = {1 / std::sqrt(x[0]), 1 / std::sqrt(x[0]), 1 / std::sqrt(x[1]), 90, 90, 90}; break;
+      case Sys::hexagonal: s.cell = {1 / std::sqrt(x[0]), 1 / std::sqrt(x[0]), 1 / std::sqrt(x[1]), 90, 90, 120}; break;
+      case Sys::orthorhombic: s.cell = {1 / std::sqrt(x[0]), 1 / std::sqrt(x[1]), 1 / std::sqrt(x[2]), 90, 90, 90}; break;
+      case Sys::monoclinic: {
+        const double cosb = -x[3] / (2 * std::sqrt(x[0] * x[2]));
+        if (std::fabs(cosb) >= 1) return;
+        const double beta = std::acos(cosb) * kDeg, sn = std::sin(beta / kDeg);
+        s.cell = {1 / (std::sqrt(x[0]) * sn), 1 / std::sqrt(x[1]), 1 / (std::sqrt(x[2]) * sn), 90, beta, 90};
+        break;
+      }
     }
-    for (double v : x) if (v <= 0 && sys != "monoclinic") return;
     const auto& c = s.cell;
     const double ca = std::cos(c[3] / kDeg), cbb = std::cos(c[4] / kDeg), cg = std::cos(c[5] / kDeg);
     s.volume = c[0] * c[1] * c[2] * std::sqrt(std::max(0.0, 1 - ca * ca - cbb * cbb - cg * cg + 2 * ca * cbb * cg));
@@ -236,16 +350,16 @@ struct Indexer {
     int nind = 0;
     for (size_t i = 0; i < Q.size(); ++i) {
       double best = 1e300;
-      I3 bh{0, 0, 0};
-      for (const auto& h : hkl) {
-        const double d = std::fabs(qcalc(h) - Q[i]);
-        if (d < best) best = d, bh = h;
+      int bh = -1;
+      for (int id : cand) {
+        const double d = std::fabs(qcalc(id) - Q[i]);
+        if (d < best) best = d, bh = id;
       }
-      const bool in = best <= tol[i];
-      s.hkl.push_back(in ? bh : I3{0, 0, 0});
+      const bool in = bh >= 0 && best <= tol[i];
+      s.hkl.push_back(in ? hkl[size_t(bh)] : I3{0, 0, 0});
       const double sn2 = std::sqrt(std::max(0.0, Q[i])) * o.wavelength / 2;
       s.two_theta_obs.push_back(2 * std::asin(std::min(1.0, sn2)) * kDeg);
-      const double qc = qcalc(bh), snc = std::sqrt(std::max(0.0, qc)) * o.wavelength / 2;
+      const double qc = bh >= 0 ? qcalc(bh) : 0, snc = std::sqrt(std::max(0.0, qc)) * o.wavelength / 2;
       s.two_theta_calc.push_back(2 * std::asin(std::min(1.0, snc)) * kDeg);
       // each line's error floored at a tenth of its tolerance (what a peak search can place): exact data would otherwise
       // give any cell that indexes the lines an unbounded merit
@@ -253,9 +367,10 @@ struct Indexer {
     }
     if (nind < int(Q.size()) - o.unindexed || nind == 0) return;
     s.indexed = nind;
+    // N: the distinct calculated lines up to the last observed one, over every index (the refined cell may lie outside the box)
     std::set<long> distinct;
-    for (const auto& h : hkl) {
-      const double q = qcalc(h);
+    for (size_t id = 0; id < hkl.size(); ++id) {
+      const double q = qcalc(int(id));
       if (q > 0 && q <= Q.back() * (1 + 1e-9)) distinct.insert(std::lround(q * 1e7));
     }
     const double N = double(std::max<size_t>(1, distinct.size()));
@@ -273,43 +388,44 @@ struct Indexer {
       }
     found.push_back(s);
   }
-  double vol_limit = 0;   // once a cell is found: boxes beyond about twice its volume hold only its supercells
-  void search(const Box& b, int depth) {
+  void poll() {
+    if (o.progress && !o.progress(name, frac)) throw std::runtime_error("index stopped");
+    if (o.max_boxes > 0 && tests >= o.max_boxes) stopped = true;
+  }
+  void search(const Box& b, int depth, const std::vector<int>& cand) {
+    if (stopped) return;
+    if ((tests & 0xFFFF) == 0xFFFF) {
+      poll();
+      if (stopped) return;
+    }
     if (vol_min(b) > o.max_volume) return;
     if (vol_limit > 0 && vol_min(b) > vol_limit) return;
-    if (!passes(b)) return;
-    double wmax = 0;
-    for (int k = 0; k < 3; ++k) wmax = std::max(wmax, b.hi[k] - b.lo[k]);
-    const bool beta_wide = sys == "monoclinic" && b.hi[3] - b.lo[3] > 0.02;
-    if ((wmax < 0.02 && !beta_wide) || depth > 30) {
+    // monoclinic: only the reduced setting of the ac net, a ≤ c and c |cos β| ≤ a/2 (every lattice has one, with
+    // β ≤ 120°); the other settings are the same lattices again
+    if (sys == Sys::monoclinic && (b.lo[0] > b.hi[2] || -std::cos(b.lo[3] / kDeg) * b.lo[2] > 0.5 * b.hi[0])) return;
+    std::vector<int> keep;
+    if (!passes(b, cand, keep)) return;
+    double s[4];
+    spreads(b, s);
+    int dsplit = -1;
+    double smax = 0;
+    for (int d : free_dims)
+      if (s[d] > smax) smax = s[d], dsplit = d;
+    if (dsplit < 0 || smax <= kLeafTolerances * tol.back() || depth > 80) {
       const size_t before = found.size();
-      refine_leaf(b);
+      refine_leaf(b, keep);
       if (found.size() > before && found.back().M20 >= 5) {
         const double v = found.back().volume * 2.05;
         vol_limit = vol_limit > 0 ? std::min(vol_limit, v) : v;
       }
       return;
     }
-    // halve the widest free dimension(s)
-    std::vector<int> dimsplit;
-    if (sys == "cubic") dimsplit = {0};
-    else if (sys == "tetragonal" || sys == "hexagonal") dimsplit = {0, 2};
-    else if (sys == "orthorhombic") dimsplit = {0, 1, 2};
-    else dimsplit = {0, 1, 2, 3};
-    std::vector<Box> boxes{b};
-    for (int d : dimsplit) {
-      const double w = b.hi[d] - b.lo[d];
-      if ((d < 3 && w < 0.02) || (d == 3 && w < 0.02)) continue;
-      std::vector<Box> nb;
-      for (const auto& x : boxes) {
-        Box l = x, u = x;
-        const double mid = 0.5 * (x.lo[d] + x.hi[d]);
-        l.hi[d] = mid, u.lo[d] = mid;
-        nb.push_back(l), nb.push_back(u);
-      }
-      boxes.swap(nb);
-    }
-    for (const auto& x : boxes) search(x, depth + 1);
+    // halve the dimension that moves Q the most
+    Box l = b, u = b;
+    const double mid = 0.5 * (b.lo[dsplit] + b.hi[dsplit]);
+    l.hi[dsplit] = mid, u.lo[dsplit] = mid;
+    search(l, depth + 1, keep);
+    search(u, depth + 1, keep);
   }
 };
 }  // namespace
@@ -321,54 +437,87 @@ IndexResult index_pattern(const std::vector<double>& two_theta_in, const IndexOp
   std::sort(tt.begin(), tt.end());
   if (tt.size() > size_t(o.lines)) tt.resize(size_t(o.lines));
   if (tt.size() < 4) throw std::invalid_argument("index: four lines or more");
+  if (!(o.max_length > 2)) throw std::invalid_argument("index: the longest cell edge must be above 2 Å");
+  for (const auto& sys : o.systems) (void)system_of(sys);
   res.lines = tt;
+  // DICVOL's convention: a cell of higher symmetry that indexes every line bounds the volume searched in the lower
+  // systems that follow (beyond about twice its volume they only hold its supercells)
+  // and a cell that indexes every line with a high merit ends the search of systems with more free parameters (they
+  // would add only its supercells and pseudo-symmetric cells, and with few lines a family of cells that all fit)
+  double vol_cap = 0;
+  std::string cap_note, strong_note;
+  int strong_m = 0;
   for (const auto& sys : o.systems) {
     if (o.progress && !o.progress(sys, 0)) throw std::runtime_error("index stopped");
-    Indexer ix{o, sys, {}, {}, {}, {}, 0, 0};
+    Indexer ix(o, sys);
+    if (strong_m > 0 && ix.m > strong_m) {
+      res.notes.push_back(sys + ": not searched, " + strong_note + " (--systems " + sys + " alone searches it)");
+      continue;
+    }
     for (double t : tt) {
       const double th = t / 2 / kDeg, s = std::sin(th);
       ix.Q.push_back(4 * s * s / (o.wavelength * o.wavelength));
       ix.tol.push_back(4 / (o.wavelength * o.wavelength) * s * std::cos(th) * (o.tolerance / kDeg));
     }
-    const double qmax = ix.Q.back() + ix.tol.back();
-    const int H = int(o.max_length * std::sqrt(qmax)) + 1;
-    for (int h = (sys == "monoclinic" ? -H : 0); h <= H; ++h)
-      for (int k = 0; k <= H; ++k)
-        for (int l = 0; l <= H; ++l) {
-          if (!h && !k && !l) continue;
-          if (sys == "cubic" && !(h >= k && k >= l)) continue;
-          if ((sys == "tetragonal") && h < k) continue;
-          if (sys == "hexagonal" && h < k) continue;
-          ix.hkl.push_back({h, k, l});
-        }
+    ix.qmax = ix.Q.back() + ix.tol.back();
+    ix.add_indices();
+    if (vol_cap > 0) ix.vol_limit = vol_cap;
     const double lmin = 2.0, step = 0.5;
+    const double bmin = std::max(90.0, o.min_beta), bmax = std::min(179.0, o.max_beta);
     std::vector<Box> start;
     for (double a = lmin; a < o.max_length; a += step) {
-      if (sys == "cubic") { start.push_back({{a, a, a, 90}, {a + step, a + step, a + step, 90}}); continue; }
+      if (ix.sys == Sys::cubic) { start.push_back({{a, a, a, 90}, {a + step, a + step, a + step, 90}}); continue; }
       for (double c = lmin; c < o.max_length; c += step) {
-        if (sys == "tetragonal" || sys == "hexagonal") { start.push_back({{a, a, c, 90}, {a + step, a + step, c + step, 90}}); continue; }
-        for (double b = (sys == "orthorhombic" ? a : lmin); b < (sys == "orthorhombic" ? c + step : o.max_length); b += step) {
-          if (sys == "orthorhombic") {
+        if (ix.sys == Sys::tetragonal || ix.sys == Sys::hexagonal) { start.push_back({{a, a, c, 90}, {a + step, a + step, c + step, 90}}); continue; }
+        for (double b = (ix.sys == Sys::orthorhombic ? a : lmin); b < (ix.sys == Sys::orthorhombic ? c + step : o.max_length); b += step) {
+          if (ix.sys == Sys::orthorhombic) {
             if (b > c) continue;
             start.push_back({{a, b, c, 90}, {a + step, b + step, c + step, 90}});
           } else {
             if (a > c) continue;   // a ≤ c for the monoclinic setting (the other order is the same lattice)
-            for (double be = o.min_beta; be < o.max_beta; be += 5) start.push_back({{a, b, c, be}, {a + step, b + step, c + step, std::min(be + 5, o.max_beta)}});
+            for (double be = bmin; be < bmax; be += 5) start.push_back({{a, b, c, be}, {a + step, b + step, c + step, std::min(be + 5, bmax)}});
           }
         }
       }
     }
     // the smallest cells first (the indexing sought is the smallest cell that indexes the lines)
     std::sort(start.begin(), start.end(), [&](const Box& x, const Box& y) { return ix.vol_min(x) < ix.vol_min(y); });
-    for (size_t k = 0; k < start.size(); ++k) {
+    double reached = 0;
+    for (size_t k = 0; k < start.size() && !ix.stopped; ++k) {
       if (ix.vol_limit > 0 && ix.vol_min(start[k]) > ix.vol_limit) break;
-      if (o.progress && k % 200 == 0 && !o.progress(sys, double(k) / double(start.size()))) throw std::runtime_error("index stopped");
-      ix.search(start[k], 0);
+      if (ix.vol_min(start[k]) > o.max_volume) break;
+      ix.frac = double(k) / double(start.size());
+      if (k % 200 == 0) ix.poll();
+      if (ix.stopped) break;
+      reached = ix.vol_min(start[k]);
+      ix.search(start[k], 0, ix.start_candidates(start[k]));
     }
     for (auto& f : ix.found) res.solutions.push_back(f);
-    char b[160];
+    char b[320];
     std::snprintf(b, sizeof b, "%s: %zu cells (%ld boxes tested)", sys.c_str(), ix.found.size(), ix.tests);
     res.notes.push_back(b);
+    if (vol_cap > 0) {
+      std::snprintf(b, sizeof b, "%s: cells above %.1f Å³ not searched (%s)", sys.c_str(), vol_cap, cap_note.c_str());
+      res.notes.push_back(b);
+    }
+    if (ix.stopped) {
+      std::snprintf(b, sizeof b, "%s: search stopped after %ld boxes (the budget), cells up to about %.0f Å³ searched; give fewer systems, "
+                    "a smaller --max-length or more lines", sys.c_str(), ix.tests, reached);
+      res.notes.push_back(b);
+    }
+    for (const auto& f : ix.found)
+      if (f.indexed == int(tt.size()) && f.M20 >= kStrongM20 && strong_m == 0) {
+        strong_m = ix.m;
+        std::snprintf(b, sizeof b, "the %s cell %.4f %.4f %.4f indexes every line with M20 %.1f", f.system.c_str(), f.cell[0], f.cell[1], f.cell[2], f.M20);
+        strong_note = b;
+      }
+    for (const auto& f : ix.found)
+      if (f.indexed == int(tt.size()) && f.M20 >= 10 && (vol_cap <= 0 || 2.05 * f.volume < vol_cap)) {
+        vol_cap = 2.05 * f.volume;
+        std::snprintf(b, sizeof b, "about twice the volume of the %s cell %.4f %.4f %.4f that indexes every line, M20 %.1f", f.system.c_str(),
+                      f.cell[0], f.cell[1], f.cell[2], f.M20);
+        cap_note = b;
+      }
   }
   // ranked by lines indexed, then by M20 with the higher symmetry preferred when the merits are close (a factor of two per
   // step from monoclinic to cubic): a cell of lower symmetry with a free parameter more can always fit as well
@@ -435,6 +584,7 @@ Vec3 rotate(const Vec3& v, const Vec3& axis, double ang) {
 SolveResult solve_structure(const MeasuredPattern& data, const System& mol, const std::array<double, 6>& cp, const SolveOptions& o) {
   SolveResult res;
   if (mol.atoms.empty()) throw std::invalid_argument("solve: no molecule");
+  if (o.steps < 1) throw std::invalid_argument("solve: steps must be 1 or more");
   const SpaceGroupSetting* g = find_space_group(o.space_group);
   if (!g) throw std::invalid_argument("solve: space group '" + o.space_group + "' not known");
   const auto ops = hall_operations(g->hall);
@@ -448,6 +598,12 @@ SolveResult solve_structure(const MeasuredPattern& data, const System& mol, cons
   for (size_t i = 0; i < n; ++i) base[i] = mol.atoms[i].pos - c0;
   const std::vector<Torsion> tors = o.torsions ? torsions_of(mol) : std::vector<Torsion>{};
   res.torsions = int(tors.size());
+  std::vector<size_t> heavy;
+  for (size_t i = 0; i < n; ++i) if (mol.atoms[i].element != 1) heavy.push_back(i);
+  // the contact distance as a fraction of each lattice plane spacing: how many cells away an image can still touch
+  const double vol = cell.volume();
+  const double reach[3] = {o.contact * norm(cross(cell.b, cell.c)) / vol, o.contact * norm(cross(cell.c, cell.a)) / vol,
+                           o.contact * norm(cross(cell.a, cell.b)) / vol};
   struct St { Vec3 f; Vec3 axis; double ang; std::vector<double> tor; };
   auto geometry = [&](const St& s) {
     std::vector<Vec3> x = base;
@@ -467,7 +623,7 @@ SolveResult solve_structure(const MeasuredPattern& data, const System& mol, cons
   auto crystal = [&](const std::vector<Vec3>& x, bool* clash) {
     System cr;
     cr.cell = cell;
-    std::vector<std::vector<Vec3>> copies;
+    std::vector<std::vector<Vec3>> copies, fracs;
     for (const auto& op : ops) {
       std::vector<Vec3> f(n);
       Vec3 fc{0, 0, 0};
@@ -479,23 +635,31 @@ SolveResult solve_structure(const MeasuredPattern& data, const System& mol, cons
       fc = fc * (1.0 / double(n));
       const Vec3 sh{std::floor(fc[0]), std::floor(fc[1]), std::floor(fc[2])};
       std::vector<Vec3> cart(n);
-      for (size_t i = 0; i < n; ++i) cart[i] = cell.to_cartesian(f[i] - sh);
+      for (size_t i = 0; i < n; ++i) f[i] = f[i] - sh, cart[i] = cell.to_cartesian(f[i]);
       copies.push_back(cart);
+      fracs.push_back(f);
     }
     if (clash) {
+      // every pair of heavy atoms, over every lattice image within the contact distance: those of two copies, and a
+      // copy's atoms against its own images in the neighbouring cells (a short axis can bring a molecule onto itself)
       *clash = false;
       const double c2 = o.contact * o.contact;
-      for (size_t a = 0; a < copies.size() && !*clash; ++a)
-        for (size_t b = a; b < copies.size() && !*clash; ++b)
-          for (size_t i = 0; i < n && !*clash; ++i) {
-            if (mol.atoms[i].element == 1) continue;
-            for (size_t j = 0; j < n; ++j) {
-              if (mol.atoms[j].element == 1 || (a == b && i == j)) continue;
-              if (a == b) continue;   // the molecule's own atoms (images of itself are checked through other copies' cells)
-              const Vec3 d = cell.minimum_image(copies[b][j] - copies[a][i]);
-              if (dot(d, d) < c2) { *clash = true; break; }
+      for (size_t a = 0; a < fracs.size() && !*clash; ++a)
+        for (size_t b = a; b < fracs.size() && !*clash; ++b)
+          for (size_t ii = 0; ii < heavy.size() && !*clash; ++ii)
+            for (size_t jj = (a == b ? ii : 0); jj < heavy.size() && !*clash; ++jj) {
+              Vec3 d = fracs[b][heavy[jj]] - fracs[a][heavy[ii]];
+              for (int k = 0; k < 3; ++k) d[size_t(k)] -= std::round(d[size_t(k)]);
+              int lo[3], hi[3];
+              for (int k = 0; k < 3; ++k) lo[k] = int(std::ceil(-reach[k] - d[size_t(k)])), hi[k] = int(std::floor(reach[k] - d[size_t(k)]));
+              for (int l0 = lo[0]; l0 <= hi[0] && !*clash; ++l0)
+                for (int l1 = lo[1]; l1 <= hi[1] && !*clash; ++l1)
+                  for (int l2 = lo[2]; l2 <= hi[2]; ++l2) {
+                    if (a == b && !l0 && !l1 && !l2) continue;   // the molecule's own bonds and contacts
+                    const Vec3 v = cell.a * (d[0] + l0) + cell.b * (d[1] + l1) + cell.c * (d[2] + l2);
+                    if (dot(v, v) < c2) { *clash = true; break; }
+                  }
             }
-          }
     }
     for (const auto& cp2 : copies)
       for (size_t i = 0; i < n; ++i) {
@@ -505,7 +669,36 @@ SolveResult solve_structure(const MeasuredPattern& data, const System& mol, cons
       }
     return cr;
   };
+  // the peak profile: the trials are scored with a fixed profile, so it is fitted to the data first (Pawley, the given
+  // cell held); a profile far from the data's moves the minimum of Rwp away from the true structure
   RefineOptions ro = o.refine;
+  ro.progress = nullptr;
+  if (o.fit_profile) {
+    try {
+      RefineOptions po = ro;
+      po.mode = "pawley";
+      RefinePhase ph;
+      // any placement gives the cell and the space group's absences
+      ph.cell = crystal(geometry(St{{0.13, 0.27, 0.41}, {0, 0, 1}, 0.0, std::vector<double>(tors.size(), 0.0)}), nullptr), ph.lattice = false;
+      if (o.progress && !o.progress("profile", 0)) throw std::runtime_error("solve stopped");
+      const RefineResult pr = refine_pattern(data, {ph}, po);
+      if (std::isfinite(pr.U) && std::isfinite(pr.V) && std::isfinite(pr.W) && std::isfinite(pr.X) && std::isfinite(pr.Y) && std::isfinite(pr.zero)) {
+        ro.U = pr.U, ro.V = pr.V, ro.W = pr.W, ro.X = pr.X, ro.Y = pr.Y, ro.zero = pr.zero;
+        char b[240];
+        std::snprintf(b, sizeof b, "peak profile from a Pawley fit in the cell (Rwp %.4f): U %.6f V %.6f W %.6f X %.6f Y %.6f, zero %.4f°", pr.rwp, ro.U,
+                      ro.V, ro.W, ro.X, ro.Y, ro.zero);
+        res.notes.push_back(b);
+      } else {
+        res.notes.push_back("the Pawley fit of the peak profile did not converge: the given profile used");
+      }
+    } catch (const std::runtime_error& e) {
+      if (std::string(e.what()) == "solve stopped") throw;
+      res.notes.push_back(std::string("the peak profile could not be fitted (") + e.what() + "): the given profile used");
+    } catch (const std::exception& e) {
+      res.notes.push_back(std::string("the peak profile could not be fitted (") + e.what() + "): the given profile used");
+    }
+  }
+  res.profile = {ro.U, ro.V, ro.W, ro.X, ro.Y, ro.zero};
   ro.refine_U = ro.refine_V = ro.refine_W = ro.refine_X = ro.refine_Y = ro.refine_zero = false;
   auto rwp_of = [&](const System& cr) {
     RefinePhase ph;
@@ -519,24 +712,36 @@ SolveResult solve_structure(const MeasuredPattern& data, const System& mol, cons
     Vec3 a{N(rng), N(rng), N(rng)};
     return a * (1 / std::max(1e-12, norm(a)));
   };
-  double best = 1e300;
-  St best_s;
-  const int total = std::max(1, o.restarts) * o.steps;
-  int done = 0;
-  for (int rs = 0; rs < std::max(1, o.restarts); ++rs) {
+  auto rand_state = [&] {
     St s{{U(rng), U(rng), U(rng)}, rand_axis(), 2 * kPi * U(rng), std::vector<double>(tors.size(), 0.0)};
     for (auto& t : s.tor) t = 2 * kPi * U(rng);
+    return s;
+  };
+  // the best clash-free state (only such a state is ever a result)
+  bool found = false;
+  double best = 0;
+  St best_s;
+  auto consider = [&](double v, const St& s) {
+    if (!found || v < best || (std::isnan(best) && !std::isnan(v))) best = v, best_s = s, found = true;
+  };
+  // --steps counts every move: shared among the restarts
+  const int restarts = std::max(1, std::min(o.restarts, o.steps));
+  const int total = o.steps;
+  int done = 0;
+  for (int rs = 0; rs < restarts; ++rs) {
+    const int steps = total / restarts + (rs < total % restarts ? 1 : 0);
+    // a random start free of contacts (a few hundred tries; a crowded cell may have none, and the moves then look for one)
+    St s = rand_state();
     bool clash = false;
-    double cur = rwp_of(crystal(geometry(s), &clash));
-    if (clash) cur = 1e3;
-    // the starting state is a candidate too, so best_s is always a full state even when no move is accepted
-    // (rs == 0 also covers a NaN Rwp, e.g. an all-zero pattern, which no comparison would accept)
-    if (rs == 0 || cur < best) best = cur, best_s = s;
-    for (int it = 0; it < o.steps; ++it, ++done) {
+    System cr0 = crystal(geometry(s), &clash);
+    for (int tries = 0; clash && tries < 300; ++tries) s = rand_state(), cr0 = crystal(geometry(s), &clash);
+    double cur = 1e3;   // a clashing start: any free state below is taken
+    if (!clash) cur = rwp_of(cr0), consider(cur, s);
+    for (int it = 0; it < steps; ++it, ++done) {
       if (o.progress && it % 50 == 0 && !o.progress("annealing", double(done) / total)) throw std::runtime_error("solve stopped");
       // the last fifth: downhill only, with small moves (a polish of the best region)
-      const bool polish = it >= o.steps * 4 / 5;
-      const double T = polish ? 0 : o.t_start * std::pow(o.t_end / o.t_start, double(it) / std::max(1, o.steps * 4 / 5 - 1));
+      const bool polish = it >= steps * 4 / 5;
+      const double T = polish ? 0 : o.t_start * std::pow(o.t_end / o.t_start, double(it) / std::max(1, steps * 4 / 5 - 1));
       // moves shrink as it cools
       const double sc = polish ? 0.03 : std::max(0.05, std::sqrt(T / o.t_start));
       St t = s;
@@ -563,15 +768,25 @@ SolveResult solve_structure(const MeasuredPattern& data, const System& mol, cons
       const double v = rwp_of(cr);
       if (v < cur || (T > 0 && U(rng) < std::exp(-(v * v - cur * cur) / T))) {
         s = t, cur = v, ++res.accepted;
-        if (v < best) best = v, best_s = t;
+        consider(v, t);
       }
       if (it % 100 == 0) res.rwp_history.push_back(cur);
     }
   }
+  if (!found) {
+    char b[400];
+    std::snprintf(b, sizeof b,
+                  "solve: no placement of the molecule keeps the heavy atoms of its %zu symmetry copies in %s (and of their lattice images) "
+                  "%.2f Å apart in this cell (V = %.1f Å³, %.1f Å³ per molecule) within %d moves; the cell is likely too small for %zu molecules, "
+                  "or give more --steps or another --seed",
+                  ops.size(), g->hm.c_str(), o.contact, vol, vol / double(ops.size()), done, ops.size());
+    throw std::runtime_error(b);
+  }
   res.steps = done;
   res.rwp = best;
   res.crystal = crystal(geometry(best_s), nullptr);
-  res.notes.push_back(std::to_string(ops.size()) + " symmetry copies in " + g->hm + ", " + std::to_string(tors.size()) + " torsions, " + std::to_string(done) + " moves");
+  res.notes.push_back(std::to_string(ops.size()) + " symmetry copies in " + g->hm + ", " + std::to_string(tors.size()) + " torsions, " + std::to_string(done) +
+                      " moves (" + std::to_string(restarts) + (restarts == 1 ? " run)" : " runs)"));
   return res;
 }
 

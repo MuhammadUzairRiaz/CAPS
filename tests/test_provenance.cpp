@@ -90,6 +90,22 @@ TEST(Provenance, BibtexForEveryCitedMethod) {
     EXPECT_TRUE(known_citation(k)) << k;
 }
 
+// A force field's own papers are cited in the methods paragraph, and bond-increment charges read as English
+TEST(Provenance, ForceFieldCitedWithItsCharges) {
+  Manifest m;
+  ProvStep f;
+  f.engine = "field.assign";
+  f.params = {{"force field", "PCFF (pcff.frc, full class II)"}, {"charges", "from the force field's bond increments"}};
+  f.cites = {"sun1994", "sun1995"};
+  m.steps = {f};
+  std::vector<std::string> refs;
+  const std::string t = methods_text(m, &refs);
+  EXPECT_NE(t.find("assigned from PCFF (pcff.frc, full class II) [1, 2], with charges from the force field's bond increments."), std::string::npos) << t;
+  ASSERT_EQ(refs.size(), 2u);
+  EXPECT_NE(refs[0].find("Sun"), std::string::npos);
+  for (const char* k : {"jorgensen1996", "jorgensen2024", "sun1994", "sun1995", "sun1998", "dauberosguthorpe1988", "mayo1990"}) EXPECT_TRUE(known_citation(k)) << k;
+}
+
 // Neutron contrast by deuteration (design/boards/Scattering): PS has aliphatic backbone H and aromatic ring H.
 #include "caps/io.hpp"
 #include "caps/properties.hpp"
@@ -458,7 +474,7 @@ TEST(Recipe, FillGapsFromAnotherForceField) {
     if (r["name"].str() != "CM-CT-CT-CM") kept.push_back(r);
   ff["dihedrals"] = kept;
   ff["typing"] = std::string(CAPS_SOURCE_DIR) + "/data/typing/oplsaa2024.typing.json";
-  const std::string gap = (std::filesystem::temp_directory_path() / "caps_oplsaa2024_gap.json").string();
+  const std::string gap = (std::filesystem::temp_directory_path() / "caps_oplsaa2024_gap_recipe.json").string();   // its own name: ctest -j runs the Python test beside it
   std::ofstream(gap) << ff.dump_exact(1);
   auto yaml = [&](const std::string& fill) {
     return caps::yaml_parse("build:\n  polymer: { smiles: \"[*]C/C=C(C)\\\\C[*]\", dp: 6, chains: 1 }\ntype: { forcefield: " + gap + fill + " }\n");
@@ -512,6 +528,23 @@ TEST(Recipe, ExitCodes) {
   EXPECT_EQ(code("build: {molecule: CCO}\ngrow: {density: 0.5}\n"), 2);
   EXPECT_EQ(code("build: {polymer: {smiles: \"*CC*\", dp: 2, chains: 1}}\ntype: {forcefield: nothing-here.json}\n"), 2);
   EXPECT_EQ(code("build: {molecule: CCO}\ntype: {forcefield: uff}\nrelax: {fmax: 2}\n"), 0);
+  // a misspelt key inside a stage is refused before anything runs, with the nearest name; so are dp or chains below 1
+  auto message = [&](const std::string& y) {
+    try { caps::recipe_stages(caps::yaml_parse(y)); } catch (const caps::RecipeError& e) { return std::to_string(e.code) + " " + e.what(); }
+    return std::string("0");
+  };
+  EXPECT_EQ(message("build: {molecule: CCO}\nmd: {ps: 0.3, temprature: 500}\n"), "2 md: unknown key 'temprature' (did you mean temperature?)");
+  EXPECT_EQ(message("build: {polymer: {smiles: \"*CC*\", dpp: 5, chains: 2}}\n"), "2 build.polymer: unknown key 'dpp' (did you mean dp?)");
+  EXPECT_EQ(message("build: {polymer: {smiles: \"*CC*\", dp: 5}}\ngrow: {density: 0.5, region: {shape: slab, thicknes: 20}}\n"),
+            "2 grow.region: unknown key 'thicknes' (did you mean thickness?)");
+  EXPECT_EQ(message("build: {polymer: {smiles: \"*CC*\", dp: 0}}\n"), "2 build.polymer.dp must be a whole number of at least 1");
+  EXPECT_EQ(message("build: {polymer: {smiles: \"*CC*\", chains: 0}}\n"), "2 build.polymer.chains must be a whole number of at least 1");
+  EXPECT_EQ(message("mdd: {ps: 1}\nbuild: {molecule: CCO}\n"), "2 unknown key 'mdd' (did you mean md?)");
+  const auto checked = caps::check_recipe(caps::yaml_parse("build: {molecule: CCO}\nrelax: {fmx: 2}\n"));
+  EXPECT_EQ(checked.code, 2);
+  ASSERT_EQ(checked.stages.size(), 2u);
+  EXPECT_FALSE(checked.stages[1].ok);
+  EXPECT_EQ(checked.error, "relax: unknown key 'fmx' (did you mean fmax?)");
 }
 
 #include "caps/colourvision.hpp"

@@ -102,7 +102,17 @@ CellRelaxReport relax_cell(System& s, const std::function<ForceField(const Syste
     for (int k = 0; k < 3; ++k) off[g][size_t(k)] = int(std::lround(f[size_t(k)]));
   }
   if (ng > 1) rep.notes.push_back("evaluated as " + std::to_string(sc[0]) + "×" + std::to_string(sc[1]) + "×" + std::to_string(sc[2]) + " copies (the cut-off is wider than half the cell)");
-  Evaluator ev(ff, eo);
+  // The search runs on a continuous enthalpy. With the tail correction on, the Evaluator truncates the pair energy at
+  // the cut-off, so the energy steps by V(rc) whenever a pair crosses it, while the forces and the virial (which give
+  // the search direction) never see the step. A line search on that energy stalls as soon as a descent step pushes a
+  // pair out across rc. So the search evaluates with the pair energy shifted to zero at the cut-off (tail off, which
+  // leaves forces and virial unchanged) and adds the tail term itself: E_t = e_t / V with e_t fixed by the composition
+  // and the cut-off. The caller's options give the reported energies, enthalpy and stress.
+  Evaluator ev_report(ff, eo);
+  EnergyOptions eo_search = eo;
+  eo_search.tail = false;
+  Evaluator ev(ff, eo_search);
+  double tail_et = 0;   // E_t × V of the copies, from the first evaluation with the caller's options
   const double P = o.pressure * kAtmToKcalA3;
   const double L = std::cbrt(V0);
 
@@ -127,7 +137,7 @@ CellRelaxReport relax_cell(System& s, const std::function<ForceField(const Syste
     std::array<double, 6> W{};
     std::vector<Vec3> g;   // ∂E/∂x per atom of the cell
   };
-  auto evaluate = [&](const std::vector<double>& z, M3& h, std::vector<Vec3>& fr) {
+  auto evaluate = [&](const std::vector<double>& z, M3& h, std::vector<Vec3>& fr, bool report) {
     const auto p = params_of(z);
     h = h_of(p);
     fr = frac;
@@ -143,13 +153,21 @@ CellRelaxReport relax_cell(System& s, const std::function<ForceField(const Syste
     }
     M3 hs = h;
     for (int i = 0; i < 3; ++i) for (int j = 0; j < 3; ++j) hs[i][j] *= double(sc[size_t(j)]);
-    const EnergyTerms t = ev.compute(x, cell_of(hs, origin), f);
+    const Cell sup_cell = cell_of(hs, origin);
+    const EnergyTerms t = (report ? ev_report : ev).compute(x, sup_cell, f);
     Eval e;
-    e.E = t.total() / double(ng);
     for (int k = 0; k < 6; ++k) e.W[size_t(k)] = t.w[k] / double(ng);
     // the tail term: the virial has the fluid's tail pressure; the gradient of the energy needs E_t's own volume
     // derivative, a virial of E_t on each diagonal component
-    for (int k = 0; k < 3; ++k) e.W[size_t(k)] += (t.tail_energy - t.tail_virial / 3) / double(ng);
+    if (report) {
+      tail_et = t.tail_energy * sup_cell.volume();
+      e.E = t.total() / double(ng);
+      for (int k = 0; k < 3; ++k) e.W[size_t(k)] += (t.tail_energy - t.tail_virial / 3) / double(ng);
+    } else {
+      const double et = tail_et / sup_cell.volume();
+      e.E = (t.total() + et) / double(ng);
+      for (int k = 0; k < 3; ++k) e.W[size_t(k)] += et / double(ng);
+    }
     e.V = std::fabs(det(h));
     e.H = e.E + P * e.V;
     e.g.assign(N, Vec3{0, 0, 0});
@@ -186,8 +204,8 @@ CellRelaxReport relax_cell(System& s, const std::function<ForceField(const Syste
   };
   M3 h;
   std::vector<Vec3> fr;
-  auto value = [&](const std::vector<double>& z, std::vector<double>& gz, double& gmax, Eval* out) {
-    const Eval e = evaluate(z, h, fr);
+  auto value = [&](const std::vector<double>& z, std::vector<double>& gz, double& gmax, Eval* out, bool report = false) {
+    const Eval e = evaluate(z, h, fr, report);
     gz.assign(nv, 0.0);
     gmax = 0;
     for (size_t m = 0; m < mv.size(); ++m) {
@@ -211,8 +229,9 @@ CellRelaxReport relax_cell(System& s, const std::function<ForceField(const Syste
   for (size_t q = 0; q < free.size(); ++q) z[na + q] = free[q] < 3 ? p0[size_t(free[q])] : p0[size_t(free[q])] * kDeg * L;
   double gmax = 0;
   Eval e0;
-  double H = value(z, g, gmax, &e0);
+  value(z, g, gmax, &e0, true);   // the caller's energy, and the tail term's e_t
   rep.energy_before = e0.E, rep.volume_before = e0.V;
+  double H = value(z, g, gmax, nullptr);
   std::vector<std::vector<double>> S, Y;
   std::vector<double> rho;
   int it = 0;
@@ -275,7 +294,7 @@ CellRelaxReport relax_cell(System& s, const std::function<ForceField(const Syste
     done = gmax < o.ftol;
   }
   Eval ef;
-  value(z, g, gmax, &ef);
+  value(z, g, gmax, &ef, true);
   rep.steps = it, rep.converged = done;
   for (size_t i = 0; i < N; ++i) s.atoms[i].pos = origin + mul(h, fr[i]);
   s.cell = cell_of(h, origin);

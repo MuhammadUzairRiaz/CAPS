@@ -42,6 +42,8 @@ export: [lammps, gromacs]</code></pre></div>
 <h2 id="run-it">Run it</h2>
 <div class="code" data-lang="shell"><pre><code>caps run samples/ps_cell.yaml --out rec</code></pre></div>
 <p>The folder gets the structure (<code>ps_cell.data</code>), the LAMMPS input, the GROMACS topology and coordinates, the properties (<code>ps_cell.properties.json</code>) and <code>ps_cell.data.provenance.json</code>. Exit codes tell a script what went wrong: 2 a bad recipe, 3 parameters missing from the force field, 4 a failed run.</p>
+<p>Every key is checked before anything runs, inside the stages too. A typo such as <code>temprature: 500</code> in <code>md</code> stops the run with exit 2 and <code>md: unknown key &#x27;temprature&#x27; (did you mean temperature?)</code>, so a setting is never dropped in favour of its default. <code>dp</code> and <code>chains</code> must be whole numbers of at least 1.</p>
+<p>To keep a trajectory, add <code>--dump traj.lammpstrj --log thermo.csv</code>. An <code>md</code> or <code>equilibrate</code> stage writes a frame every <code>frame_ps</code> picoseconds (or every <code>frame_every</code> steps in <code>md</code>); a stage that sets neither writes about 100 frames when <code>--dump</code> is given.</p>
 <h2 id="the-methods-paragraph">The methods paragraph</h2>
 <div class="code" data-lang="shell"><pre><code>caps provenance rec/ps_cell.data --methods
 caps provenance rec/ps_cell.data --bibtex &gt; refs.bib</code></pre></div>

@@ -278,11 +278,17 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
     return std::string();
   };
   if (fmt == "amber-prmtop") {
-    std::string crd = !topology_path.empty() && is_amber_coordinates_path(topology_path) ? topology_path : sibling(path, {".inpcrd", ".rst7", ".crd", ".restrt", ".rst"});
+    if (!topology_path.empty() && !is_amber_coordinates_path(topology_path))
+      throw ReadError(path + ": an AMBER topology takes its coordinates (.inpcrd / .rst7 / .ncrst) as the second file; " +
+                      std::filesystem::path(topology_path).filename().string() + " is not one");
+    std::string crd = !topology_path.empty() ? topology_path : sibling(path, {".inpcrd", ".rst7", ".crd", ".restrt", ".rst"});
     if (crd.empty()) throw ReadError(path + ": an AMBER topology holds no coordinates — open it with its restart (.inpcrd / .rst7), or keep one named like it beside it");
     tr = amber(path, crd);
   } else if (fmt == "amber-crd") {
-    std::string top = !topology_path.empty() && is_amber_topology_path(topology_path) ? topology_path : sibling(path, {".prmtop", ".parm7"});
+    if (!topology_path.empty() && !is_amber_topology_path(topology_path))
+      throw ReadError(path + ": AMBER coordinates take their topology (.prmtop / .parm7) as the second file; " +
+                      std::filesystem::path(topology_path).filename().string() + " is not one");
+    std::string top = !topology_path.empty() ? topology_path : sibling(path, {".prmtop", ".parm7"});
     if (top.empty()) throw ReadError(path + ": AMBER coordinates carry no atoms — open them with their topology (.prmtop / .parm7)");
     tr = amber(top, path);
   } else if (fmt == "lammps-data") {
@@ -405,9 +411,71 @@ Trajectory open_file(const std::string& path, const std::string& topology_path, 
                       std::to_string(T.topology->vsites.size()) + " virtual sites");
     tr.topology = std::move(T);
   }
-  if (!told) tell(tr, (fmt == "lammps-dump" || gmx_top || fmt.rfind("amber-", 0) == 0) && !topology_path.empty());
+  // a structure file with a topology from another file (a LAMMPS data file, an AMBER prmtop, another structure): the
+  // topology's atoms (types, charges, molecules), bonds and force field, the coordinates and cell from this file. The
+  // trajectory readers above already took theirs; the topology must hold the same atoms in the same order.
+  const bool consumed = fmt == "lammps-dump" || fmt == "xtc" || fmt == "trr" || fmt == "dcd" || fmt.rfind("amber-", 0) == 0;
+  bool joined = false;
+  if (!topology_path.empty() && !gmx_top && !consumed) {
+    std::error_code ec;
+    const bool same = std::filesystem::equivalent(path, topology_path, ec) && !ec;
+    if (!same) {
+      System T;
+      const std::string tfmt = is_amber_topology_path(topology_path) ? "amber-prmtop" : detect_format(topology_path);
+      if (tfmt == "amber-prmtop") {
+        AmberTopology A = read_amber_prmtop(topology_path);
+        T = std::move(A.system);
+        T.forcefield = A.ff;
+      } else if (tfmt == "lammps-data") {
+        T = read_lammps_data(topology_path);
+      } else if (tfmt == "xtc" || tfmt == "trr" || tfmt == "dcd" || tfmt == "amber-netcdf" || tfmt == "amber-mdcrd" || tfmt == "amber-crd") {
+        throw ReadError(topology_path + ": a " + format_name(tfmt) + " file holds coordinates only and cannot give " + path + " a topology");
+      } else {
+        const Trajectory st = open_file(topology_path);
+        T = st.frame(0);
+        T.bonds = st.topology.bonds;
+        T.bonds_from_file = st.topology.bonds_from_file;
+      }
+      const System& F = tr.topology;
+      if (T.atoms.size() != F.atoms.size())
+        throw ReadError(topology_path + " has " + std::to_string(T.atoms.size()) + " atoms, " + path + " " + std::to_string(F.atoms.size()));
+      for (size_t i = 0; i < T.atoms.size(); ++i) {
+        const int et = T.atoms[i].element, ef = F.atoms[i].element;
+        if (et != 0 && ef != 0 && et != ef)
+          throw ReadError(topology_path + ": atom " + std::to_string(i + 1) + " is " + element(et).symbol + ", but " + element(ef).symbol + " in " + path +
+                          " (the topology must list the same atoms in the same order)");
+        if (et == 0) T.atoms[i].element = ef;
+        T.atoms[i].pos = F.atoms[i].pos;
+        T.atoms[i].image = F.atoms[i].image;
+      }
+      if (F.cell.valid()) T.cell = F.cell;
+      else
+        for (auto& c : tr.cells)
+          if (!c.valid()) c = T.cell;
+      T.title = F.title.empty() ? T.title : F.title;
+      T.source_format = F.source_format.empty() ? T.source_format : F.source_format;
+      T.timestep = F.timestep;
+      T.velocities = F.velocities;
+      T.unwrapped = F.unwrapped;
+      T.symmetry = F.symmetry;
+      T.bonds_from_file = T.bonds_from_file || !T.bonds.empty();
+      std::vector<std::string> notes = F.notes;
+      for (const auto& n : T.notes) notes.push_back(std::filesystem::path(topology_path).filename().string() + ": " + n);
+      notes.push_back("topology from " + std::filesystem::path(topology_path).filename().string() + ": " + std::to_string(T.bonds.size()) + " bonds, " +
+                      std::to_string(T.types.size()) + " atom types; coordinates from " + std::filesystem::path(path).filename().string());
+      T.notes = std::move(notes);
+      tr.topology = std::move(T);
+      joined = true;
+    }
+  }
+  if (!told) tell(tr, ((fmt == "lammps-dump" || gmx_top || fmt.rfind("amber-", 0) == 0) && !topology_path.empty()) || joined);
   report(3, 1, std::to_string(tr.frames()) + " frames");
-  if (tr.topology.bonds.empty() && !tr.topology.bonds_from_file) {   // a file that declares its bonds (0 too) keeps them
+  // atoms with no element at all (a LAMMPS dump without element or mass columns): a covalent radius means nothing for
+  // them, and distance bonds would join hydrogens and neighbouring chains, so none are perceived
+  const bool no_elements = std::none_of(tr.topology.atoms.begin(), tr.topology.atoms.end(), [](const Atom& a) { return a.element > 0; });
+  if (tr.topology.bonds.empty() && !tr.topology.bonds_from_file && no_elements) {
+    tr.topology.notes.push_back("no elements, so no bonds from distances; give a topology (--topology DATA) for elements, masses and bonds");
+  } else if (tr.topology.bonds.empty() && !tr.topology.bonds_from_file) {   // a file that declares its bonds (0 too) keeps them
     System f0 = tr.frame(0);
     tr.topology.bonds = perceive_bonds(f0);
     tr.topology.notes.push_back(std::to_string(tr.topology.bonds.size()) + " bonds perceived from distances (none in file)");

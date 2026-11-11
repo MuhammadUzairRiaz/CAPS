@@ -61,6 +61,19 @@ caps pipeline ps_md.data --steps steps.yaml --out out
 caps run steps.yaml --input 'runs/*/traj.lammpstrj' --csv results.csv
 ```
 
+A pipeline file written by hand starts with the line `caps_pipeline: 1` and lists its steps under `steps:`, one a line, each a step name followed by its settings in braces (`{}` for none):
+
+```yaml
+caps_pipeline: 1
+name: PS melt structure report
+steps:
+  - unwrap: {}
+  - cluster: {mode: cutoff, cutoff: 3.3, unit: molecules}
+  - wrap: {}
+```
+
+`--steps` also takes a JSON list of steps, in a file or on the command line.
+
 ## Next
 
 - [Theory: Analysis](../theory/analysis.html) gives every property's definition, defaults and tests.

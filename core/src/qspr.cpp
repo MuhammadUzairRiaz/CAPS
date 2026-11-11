@@ -13,6 +13,7 @@
 #include <stdexcept>
 
 #include "caps/charges.hpp"
+#include "caps/edit.hpp"
 #include "caps/elements.hpp"
 #include "caps/molinfo.hpp"
 #include "caps/normal_modes.hpp"
@@ -1091,11 +1092,42 @@ std::vector<Descriptor> molecular_descriptors(const System& s, std::string* char
   add("Rg", mi.rg, "Å", "mass-weighted radius of gyration");
   for (int k = 0; k < 3; ++k) add("I" + std::to_string(k + 1), mi.inertia[k], "amu·Å²", "principal moment of inertia (ascending)");
   // ---- 3D: van der Waals volume (grid), area, shadows
-  std::vector<double> rad(N);
+  // A repeat unit's [*] attachment points (element 0) are not atoms. Each one bonded to exactly one real atom becomes a
+  // hydrogen cap at that atom's X-H length (the usual convention for repeat-unit descriptors), and any other one is
+  // left out, so volume, areas, shadows and charges describe the H-capped fragment. Mass, Rg and the graph indices
+  // above stay on the structure as given.
+  System sc = s;
+  sc.cell = Cell{};
+  size_t capped = 0;
+  {
+    std::vector<char> drop(N, 0);
+    bool any_drop = false;
+    for (size_t i = 0; i < N; ++i) {
+      if (s.atoms[i].element != 0) continue;
+      const bool cap = pc.nb[i].size() == 1 && s.atoms[pc.nb[i][0]].element > 0;
+      if (!cap) { drop[i] = 1, any_drop = true; continue; }
+      const size_t j = pc.nb[i][0];
+      const int zj = s.atoms[j].element;
+      const double len = zj == 6 ? 1.09 : zj == 7 ? 1.01 : zj == 8 ? 0.96 : zj == 16 ? 1.34 : element(zj).covalent + element(1).covalent;
+      Atom& a = sc.atoms[i];
+      const Vec3 r = s.atoms[i].pos - s.atoms[j].pos;
+      const double L = std::sqrt(dot(r, r));
+      if (L > 1e-6) a.pos = s.atoms[j].pos + r * (len / L);
+      a.element = 1, a.type = 0, a.name = "H";
+      ++capped;
+    }
+    if (any_drop) {
+      size_t left = 0;
+      for (size_t i = 0; i < N; ++i) left += !drop[i];
+      if (left > 0) delete_atoms(sc, drop);
+    }
+  }
+  const size_t Nc = sc.atoms.size();
+  std::vector<double> rad(Nc);
   Vec3 lo{1e300, 1e300, 1e300}, hi{-1e300, -1e300, -1e300};
-  for (size_t i = 0; i < N; ++i) {
-    rad[i] = element(s.atoms[i].element).vdw;
-    for (int k = 0; k < 3; ++k) lo[size_t(k)] = std::min(lo[size_t(k)], s.atoms[i].pos[size_t(k)] - rad[i]), hi[size_t(k)] = std::max(hi[size_t(k)], s.atoms[i].pos[size_t(k)] + rad[i]);
+  for (size_t i = 0; i < Nc; ++i) {
+    rad[i] = sc.atoms[i].element == 0 ? 0.0 : element(sc.atoms[i].element).vdw;
+    for (int k = 0; k < 3; ++k) lo[size_t(k)] = std::min(lo[size_t(k)], sc.atoms[i].pos[size_t(k)] - rad[i]), hi[size_t(k)] = std::max(hi[size_t(k)], sc.atoms[i].pos[size_t(k)] + rad[i]);
   }
   {
     const double h = 0.1;
@@ -1106,16 +1138,16 @@ std::vector<Descriptor> molecular_descriptors(const System& s, std::string* char
       for (int ix = 0; ix < nx; ++ix) {
         const double x = lo[0] + (ix + 0.5) * h;
         std::vector<size_t> near;
-        for (size_t i = 0; i < N; ++i) if (std::fabs(s.atoms[i].pos[0] - x) < rad[i]) near.push_back(i);
+        for (size_t i = 0; i < Nc; ++i) if (std::fabs(sc.atoms[i].pos[0] - x) < rad[i]) near.push_back(i);
         for (int iy = 0; iy < ny; ++iy) {
           const double y = lo[1] + (iy + 0.5) * h;
           std::vector<size_t> near2;
-          for (size_t i : near) if (std::fabs(s.atoms[i].pos[1] - y) < rad[i]) near2.push_back(i);
+          for (size_t i : near) if (std::fabs(sc.atoms[i].pos[1] - y) < rad[i]) near2.push_back(i);
           if (near2.empty()) continue;
           for (int iz = 0; iz < nz; ++iz) {
             const double z = lo[2] + (iz + 0.5) * h;
             for (size_t i : near2) {
-              const double dx = s.atoms[i].pos[0] - x, dy = s.atoms[i].pos[1] - y, dz = s.atoms[i].pos[2] - z;
+              const double dx = sc.atoms[i].pos[0] - x, dy = sc.atoms[i].pos[1] - y, dz = sc.atoms[i].pos[2] - z;
               if (dx * dx + dy * dy + dz * dz < rad[i] * rad[i]) { ++inside; break; }
             }
           }
@@ -1125,33 +1157,31 @@ std::vector<Descriptor> molecular_descriptors(const System& s, std::string* char
     }
     add("vdw_volume", vol, "Å³", "van der Waals volume (Bondi radii, 0.1 Å grid)");
   }
-  System sn = s;
-  sn.cell = Cell{};
-  const SasaResult vdw = sasa(sn, 0.0, 960);
+  const SasaResult vdw = sasa(sc, 0.0, 960);
   add("vdw_area", vdw.total, "Å²", "van der Waals surface area");
   {
     // principal axes (mass-weighted), longest first; shadows on XY, YZ, XZ
     Vec3 c{0, 0, 0};
     double m = 0;
-    for (const auto& a : s.atoms) { const double w = s.mass_of(a); c = c + a.pos * w, m += w; }
+    for (const auto& a : sc.atoms) { const double w = sc.mass_of(a); c = c + a.pos * w, m += w; }
     c = c * (1 / m);
     std::vector<double> I(9, 0.0), ev;
-    for (const auto& a : s.atoms) {
-      const double w = s.mass_of(a);
+    for (const auto& a : sc.atoms) {
+      const double w = sc.mass_of(a);
       const Vec3 r = a.pos - c;
       const double r2 = dot(r, r);
       for (int p = 0; p < 3; ++p)
         for (int q = 0; q < 3; ++q) I[size_t(3 * p + q)] += w * ((p == q ? r2 : 0) - r[size_t(p)] * r[size_t(q)]);
     }
     symmetric_eigen(I, 3, ev);   // ascending: column 0 the smallest moment = the longest axis
-    std::vector<Vec3> P2(N);
-    for (size_t i = 0; i < N; ++i) {
-      const Vec3 r = s.atoms[i].pos - c;
+    std::vector<Vec3> P2(Nc);
+    for (size_t i = 0; i < Nc; ++i) {
+      const Vec3 r = sc.atoms[i].pos - c;
       for (int k = 0; k < 3; ++k) P2[i][size_t(k)] = r[0] * I[size_t(0 * 3 + k)] + r[1] * I[size_t(1 * 3 + k)] + r[2] * I[size_t(2 * 3 + k)];
     }
     auto shadow = [&](int u, int v, double& area, double& rect) {
       double ulo = 1e300, uhi = -1e300, vlo = 1e300, vhi = -1e300;
-      for (size_t i = 0; i < N; ++i) {
+      for (size_t i = 0; i < Nc; ++i) {
         ulo = std::min(ulo, P2[i][size_t(u)] - rad[i]), uhi = std::max(uhi, P2[i][size_t(u)] + rad[i]);
         vlo = std::min(vlo, P2[i][size_t(v)] - rad[i]), vhi = std::max(vhi, P2[i][size_t(v)] + rad[i]);
       }
@@ -1162,7 +1192,7 @@ std::vector<Descriptor> molecular_descriptors(const System& s, std::string* char
         const double x = ulo + (a + 0.5) * h;
         for (int b = 0; b < nv; ++b) {
           const double y = vlo + (b + 0.5) * h;
-          for (size_t i = 0; i < N; ++i) {
+          for (size_t i = 0; i < Nc; ++i) {
             const double dx = P2[i][size_t(u)] - x, dy = P2[i][size_t(v)] - y;
             if (dx * dx + dy * dy < rad[i] * rad[i]) { ++cnt; break; }
           }
@@ -1181,25 +1211,28 @@ std::vector<Descriptor> molecular_descriptors(const System& s, std::string* char
     }
   }
   // ---- charged partial surface areas
-  std::vector<double> q(N, 0.0);
+  // on the capped fragment: a cap keeps the attachment point's own charge when the structure has charges
+  std::vector<double> q(Nc, 0.0);
   std::string used;
   if (s.has_charges) {
-    for (size_t i = 0; i < N; ++i) q[i] = s.atoms[i].charge;
+    for (size_t i = 0; i < Nc; ++i) q[i] = sc.atoms[i].charge;
     used = "the structure's own";
   } else {
     try {
-      q = compute_charges(s, "gasteiger").q;
+      q = compute_charges(sc, "gasteiger").q;
       used = "Gasteiger–Marsili";
-    } catch (const std::exception&) {
+    } catch (const std::exception& e) {
+      // the charged surface areas stay blank; say why, so the caller can pick charges the structure supports
       q.clear();
-      used = "none";
+      used = std::string("none (") + e.what() + ")";
     }
   }
+  if (capped) used += ", " + std::to_string(capped) + (capped == 1 ? " attachment point" : " attachment points") + " capped with H for the 3D descriptors";
   if (charges_used) *charges_used = used;
-  const SasaResult sa = sasa(sn, 1.4, 500);
+  const SasaResult sa = sasa(sc, 1.4, 500);
   double ppsa1 = 0, pnsa1 = 0, ppsa3 = 0, pnsa3 = 0, qp = 0, qn = 0;
   if (!q.empty())
-    for (size_t i = 0; i < N; ++i) {
+    for (size_t i = 0; i < Nc; ++i) {
       if (q[i] > 0) ppsa1 += sa.area[i], ppsa3 += q[i] * sa.area[i], qp += q[i];
       if (q[i] < 0) pnsa1 += sa.area[i], pnsa3 += q[i] * sa.area[i], qn += q[i];
     }

@@ -60,11 +60,11 @@ public sealed partial class MainViewModel
                 var al = L("alpha");
                 sb.AppendLine(string.Format(inv, "{0,5:0} {1,7:0.000} {2,7:0.000} {3,7:0.000} {4,8:0.00} {5,6:0} {6,5:0} {7,5:0} {8,7:0.00} {9,6:0.0}{10}",
                     D("T"), l[0], l[1], l[2], D("volume"), al[0] * 1e6, al[1] * 1e6, al[2] * 1e6, D("B"), D("Cp"),
-                    row!["extrapolated"]!.GetValue<bool>() ? " *" : ""));
+                    (row!["extrapolated"]!.GetValue<bool>() ? " *" : "") + (row!["unstable"]?.GetValue<bool>() == true ? " !" : "")));
             }
             QhaResult = sb.ToString().TrimEnd();
             var n = ((JsonArray)r["samples"]!).Count;
-            QhaNote = $"{n} strained cells · C_p in cal/mol/K per cell · * extrapolated · " + string.Join(" · ", ((JsonArray)r["notes"]!).Select(v => (string?)v ?? ""));
+            QhaNote = $"{n} strained cells · C_p in cal/mol/K per cell · * extrapolated · ! unstable · " + string.Join(" · ", ((JsonArray)r["notes"]!).Select(v => (string?)v ?? ""));
             Status = $"Thermal expansion: {n} strained cells done";
         }
         catch (Exception e) { QhaError = e.Message; }

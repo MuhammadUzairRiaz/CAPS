@@ -27,8 +27,9 @@ struct RepeatUnit {
 };
 
 // Homopolymer: unit A only. Alternating: A B C … A B C. Block: blocks of each unit in turn (lengths in `blocks`).
-// Random: each position drawn with `weights` (Bernoulli / multinomial). Gradient: the share of A falls linearly
-// from 1 at the head to 0 at the tail (two units; with more, the last unit rises). Pattern: `pattern` repeated
+// Random: each position drawn with `weights` (Bernoulli / multinomial). Gradient: the share of A falls from 1 at the
+// head to 0 at the tail, as 1 − x^q with q set so A's overall share is the first weight (½ without weights: linear);
+// the other units share the rest in their weights' ratio (equally without weights). Pattern: `pattern` repeated
 // ("AAB", letters A, B, C … for the units).
 enum class Sequence { Homopolymer, Alternating, Block, Random, Gradient, Pattern, Terminal, Shuffled, Markov, Penultimate };
 // homopolymer | alternating | block | random | gradient | pattern | terminal (the Mayo–Lewis terminal model: two units,
@@ -175,6 +176,7 @@ struct InterfaceOptions {
   double film = 30.0;        // film thickness, Å
   double density = 0.9;      // target film density, g/cm³
   int chains = 0;            // > 0: exactly this many chains
+  bool density_given = false;   // the density was asked for: with chains > 0 the count must give it (within 10 %)
   double gap = 1.0;          // Å between the slab's top atoms and the film's lower bound (contact limits keep the rest)
   double vacuum = 0.0;       // Å above the film; 0 = periodic interface
   bool auto_scale = true;    // lower the contact scale (0.85 … 0.6) when the film is too crowded at the first

@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <limits>
 #include <map>
 #include <memory>
 #include <set>
@@ -180,6 +181,10 @@ int relax_state(const Crystal& c, Evaluator& ev, State& s, bool cell, const std:
   std::vector<double> rho;
   int it = 0;
   bool done = gmax < ftol;
+  // a failed line search drops the history and retries steepest descent; at the force noise floor (Ewald grid, a
+  // low-symmetry cell) that cycle would repeat to max_it, so it ends after three resets that did not halve the gradient
+  double g_reset = std::numeric_limits<double>::infinity();
+  int stalls = 0;
   for (; it < max_it && !done; ++it) {
     // two-loop recursion
     std::vector<double> q = g, al(S.size());
@@ -213,6 +218,12 @@ int relax_state(const Crystal& c, Evaluator& ev, State& s, bool cell, const std:
     double step = pmax > 0.2 ? 0.2 / pmax : 1.0;
     bool ok = false;
     double En = E, gnmax = gmax;
+    // the first (largest) step whose gradients show it went downhill (a smaller largest gradient and a smaller slope
+    // along p): taken only when no step passes Armijo, as happens when pairs crossing the cut-off make the energy
+    // noisier than the decrease a small gradient promises (large cut-offs, many particles)
+    bool alt = false;
+    std::vector<double> z_alt, g_alt;
+    double E_alt = E, g_altmax = gmax;
     for (int ls = 0; ls < 30; ++ls) {
       zn = z;
       for (size_t v = 0; v < nv; ++v) zn[v] += step * p[v];
@@ -228,10 +239,22 @@ int relax_state(const Crystal& c, Evaluator& ev, State& s, bool cell, const std:
         ok = true;
         break;
       }
+      if (!alt && gnmax < gmax) {
+        double dn = 0;
+        for (size_t v = 0; v < nv; ++v) dn += gn[v] * p[v];
+        if (std::fabs(dn) < std::fabs(slope)) alt = true, z_alt = zn, g_alt = gn, E_alt = En, g_altmax = gnmax;
+      }
       step *= 0.5;
     }
+    if (!ok && alt) ok = true, zn.swap(z_alt), gn.swap(g_alt), En = E_alt, gnmax = g_altmax;
     if (!ok) {
       if (S.empty()) break;   // already steepest: nothing more to gain at this precision
+      if (gmax > 0.5 * g_reset) {
+        if (++stalls >= 3) break;
+      } else {
+        stalls = 0;
+      }
+      g_reset = std::min(g_reset, gmax);
       S.clear(), Y.clear(), rho.clear();
       continue;
     }
@@ -462,7 +485,8 @@ Props properties(const Crystal& c, const State& observed, const State& start, co
     for (int I = 0; I < 6; ++I)
       for (int J = 0; J < 6; ++J) er.C[size_t(I)][size_t(J)] = p.C[size_t(I)][size_t(J)];
     isotropic_averages(er);
-    p.K = er.K_hill, p.G = er.G_hill;
+    // an unstable trial crystal (C not positive definite) has no Hill average: the Voigt bound keeps the fit finite
+    p.K = std::isfinite(er.K_hill) ? er.K_hill : er.K_voigt, p.G = std::isfinite(er.G_hill) ? er.G_hill : er.G_voigt;
     p.elastic = true;
   }
   return p;

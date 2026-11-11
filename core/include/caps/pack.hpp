@@ -69,7 +69,7 @@ struct PackOptions {
 
 struct PackReport {
   bool success = false;
-  double dmin = 0;              // smallest distance between atoms of different molecules, Å
+  double dmin = 0;              // smallest distance between atoms of different molecules, Å (infinity: a single structure)
   int close_pairs = 0;          // pairs closer than the tolerance
   double region_violation = 0;  // largest distance of an atom outside its regions, Å
   int molecules = 0, atoms = 0;
@@ -124,7 +124,8 @@ System insert_molecules(const System& host, const System& guest, int count, cons
                         const std::vector<Region>& regions = {});   // every guest atom must satisfy these (a pore)
 
 // Smallest distance between atoms of different molecules (minimum image when the cell is periodic) and the number of
-// such pairs closer than `tolerance`. Uses a cell list.
+// such pairs closer than `tolerance`. Uses a cell list; the distance is the exact minimum however far apart the
+// molecules are, and infinity when there is only one molecule (no pair to measure).
 std::pair<double, int> intermolecular_contacts(const System& s, double tolerance, bool periodic);
 // The same between groups (one int per atom; pairs within a group are not counted), e.g. the structures Pack placed.
 std::pair<double, int> intermolecular_contacts(const System& s, double tolerance, bool periodic, const std::vector<int>& group);

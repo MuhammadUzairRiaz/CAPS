@@ -16,6 +16,7 @@
 #include "caps/elements.hpp"
 #include "caps/io.hpp"
 #include "caps/live.hpp"
+#include "caps/relax.hpp"
 #include "io_util.hpp"
 #include "lammps_read_ff.hpp"
 
@@ -166,7 +167,8 @@ System read_lammps_data(const std::string& path) {
   std::getline(in, line);
   s.title = trim(line);
 
-  size_t natoms = 0, nbonds = 0;
+  size_t natoms = 0, nbonds = 0, nangles = 0, ndihedrals = 0, nimpropers = 0;
+  bool atoms_declared = false, angles_declared = false, dihedrals_declared = false, impropers_declared = false;
   bool bonds_declared = false;   // a "N bonds" header line: the file says what is bonded, even when N is 0
   double xlo = 0, xhi = 0, ylo = 0, yhi = 0, zlo = 0, zhi = 0, xy = 0, xz = 0, yz = 0;
   std::string section, style_hint;
@@ -199,8 +201,11 @@ System read_lammps_data(const std::string& path) {
     if (is_header) continue;
 
     if (section.empty()) {
-      if (tok.size() >= 2 && tok[1] == "atoms") natoms = std::stoull(tok[0]);
+      if (tok.size() >= 2 && tok[1] == "atoms") { natoms = std::stoull(tok[0]); atoms_declared = true; }
       else if (tok.size() >= 2 && tok[1] == "bonds") { nbonds = std::stoull(tok[0]); bonds_declared = true; }
+      else if (tok.size() >= 2 && tok[1] == "angles") { nangles = std::stoull(tok[0]); angles_declared = true; }
+      else if (tok.size() >= 2 && tok[1] == "dihedrals") { ndihedrals = std::stoull(tok[0]); dihedrals_declared = true; }
+      else if (tok.size() >= 2 && tok[1] == "impropers") { nimpropers = std::stoull(tok[0]); impropers_declared = true; }
       else if (tok.size() >= 4 && tok[2] == "xlo") { xlo = std::stod(tok[0]); xhi = std::stod(tok[1]); }
       else if (tok.size() >= 4 && tok[2] == "ylo") { ylo = std::stod(tok[0]); yhi = std::stod(tok[1]); }
       else if (tok.size() >= 4 && tok[2] == "zlo") { zlo = std::stod(tok[0]); zhi = std::stod(tok[1]); }
@@ -261,10 +266,18 @@ System read_lammps_data(const std::string& path) {
       if (auto it = index.find(id); it != index.end()) { s.velocities[it->second] = v; ++found; }
     if (found != s.atoms.size()) s.notes.push_back("velocities given for " + std::to_string(found) + " of " + std::to_string(s.atoms.size()) + " atoms");
   }
-  if (natoms && s.atoms.size() != natoms)
-    s.notes.push_back("header says " + std::to_string(natoms) + " atoms, read " + std::to_string(s.atoms.size()));
-  if (nbonds && s.bonds.size() + skipped_bonds != nbonds)
-    s.notes.push_back("header says " + std::to_string(nbonds) + " bonds, read " + std::to_string(s.bonds.size()));
+  // Header counts against the section rows. LAMMPS read_data refuses a file where they differ, so each mismatch is
+  // kept as a note that starts "header says"; file checks report those notes as errors.
+  auto header_count = [&](bool declared, size_t said, size_t rows, const char* what, const char* sect) {
+    if (!declared || said == rows) return;
+    s.notes.push_back("header says " + std::to_string(said) + " " + what + " but the " + sect + " section has " + std::to_string(rows) +
+                      " rows; LAMMPS read_data will refuse this file");
+  };
+  header_count(atoms_declared, natoms, s.atoms.size(), "atoms", "Atoms");
+  header_count(bonds_declared, nbonds, s.bonds.size() + skipped_bonds, "bonds", "Bonds");
+  header_count(angles_declared, nangles, terms.angles.size(), "angles", "Angles");
+  header_count(dihedrals_declared, ndihedrals, terms.dihedrals.size(), "dihedrals", "Dihedrals");
+  header_count(impropers_declared, nimpropers, terms.impropers.size(), "impropers", "Impropers");
   if (skipped_bonds) s.notes.push_back(std::to_string(skipped_bonds) + " bonds refer to atoms that are not defined; skipped");
   s.bonds_from_file = !s.bonds.empty() || bonds_declared;
   s.cell = lammps_cell(xlo, xhi, ylo, yhi, zlo, zhi, xy, xz, yz);
@@ -457,7 +470,11 @@ Trajectory read_lammps_dump(const std::string& path, const System* topology, siz
           s.atoms = atoms;
           s.has_mol = cmol >= 0;
           s.has_charges = cq >= 0;
-          if (cel < 0) s.notes.push_back("no element column; elements guessed from type numbers are unknown — open with a data file for masses");
+          // type numbers alone say nothing about elements or masses: the atoms stay element 0 (mass 0), and analysis
+          // that needs masses or elements refuses such a file until a topology is given
+          if (cel < 0)
+            s.notes.push_back("no element column: elements and masses are unknown (type numbers only); give a topology (--topology DATA) "
+                              "for masses, density, chains and other analysis");
         }
         s.source_format = "lammps-dump";
         s.cell = cell;
@@ -510,7 +527,8 @@ void write_lammps_data(const System& s_in, const std::string& path) {
   const System& s = untyped ? retyped : s_in;
   std::ofstream out(path);
   if (!out) throw ReadError("cannot write " + path);
-  out << "CAPS 0.1 · " << (s.title.empty() ? "structure" : s.title) << " · atom_style full · units real\n\n";
+  // the description only: a title read back from a CAPS file already carries the program, style and units parts
+  out << "CAPS 0.1 · " << export_title(s.title, "") << " · atom_style full · units real\n\n";
   out << s.atoms.size() << " atoms\n" << s.bonds.size() << " bonds\n\n";
   int ntypes = 0;
   for (const auto& a : s.atoms) ntypes = std::max(ntypes, a.type);

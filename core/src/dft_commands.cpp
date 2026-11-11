@@ -66,7 +66,7 @@ const std::vector<Cmd>& table() {
        {{"top", "O", "species and fractions on the top face (O, OH, F, Cl, Br, I, S, Se, Te, NH, H; data/sheets/terminations.json)"},
         {"bottom", "", "the bottom face with --janus"},
         {"janus", "false", "different faces (a net dipole: the dipole correction is switched on)"},
-        {"site", "fcc", "fcc (above the third layer), hcp (above the second), top or bridge"},
+        {"site", "fcc", "fcc (above the third layer), hcp (above the second), top or bridge; one termination per surface atom on each (bridge: the bonds along a)"},
         {"site_bottom", "", "the bottom face's site with --janus"},
         {"supercell", "1x1", "in-plane repeat; a mixed face needs several sites (3x3)"},
         {"vacuum", "20", "Å between periodic images, centred along z (< 15 Å warns, < 10 Å fails)"},
@@ -106,14 +106,15 @@ const std::vector<Cmd>& table() {
         {"kdens", "45", "Å: N_i = ceil(kdens / |a_i|)"}},
        {"caps adsorb-dft structures/Ti3C2_OH/03_relax/CONTCAR --from-relaxed --supercell 5x5 --out adsorption/Ti3C2_OH_NBR"}},
       {"vasp-set", "caps vasp-set STRUCTURE --out DIR",
-       "One VASP case folder: POSCAR (species grouped), INCAR.cell / .relax / .static with a reason per tag, KPOINTS, job.slurm (stages, resume, backup, watchdog, storage), make_potcar.sh, POTCAR from your PAW directory, the validation report.",
+       "One VASP case folder for a 2D slab (k 1 along c, c fixed in the cell stages) or, with --gamma, a molecule in a box: POSCAR (species grouped), INCAR.cell / .relax / .static with a reason per tag, KPOINTS, job.slurm (stages, resume, backup, watchdog, storage), make_potcar.sh, POTCAR from your PAW directory, the validation report (the 2D slab check; with --gamma the molecule-in-a-box check: close contacts, fragments, distance to the periodic images). A structure without a vacuum gap along c (a bulk crystal) is refused: use caps vasp-relax. Exit code 1 when the validation fails (the set is still written).",
        {{"out", "", "the case folder"}, {"label", "", "SYSTEM and the job name (default: the folder name)"},
-        {"stages", "slab", "slab (01_cell 02_cell2 03_relax 04_static), fixed (03_relax 04_static) or a list"},
+        {"stages", "slab", "slab (01_cell 02_cell2 03_relax 04_static), fixed (03_relax 04_static) or a comma list of those names in that order"},
         {"static_out", "pot", "04_static outputs: none (energy + DOS), pot (+ LOCPOT), all (+ CHGCAR, AECCAR)"},
-        {"encut", "", "eV (default 1.3 × the largest ENMAX of the POTCARs; 520 without them)"},
+        {"encut", "", "eV (default 1.3 × the largest ENMAX of the POTCARs, else of data/dft/enmax.json; 520 when an element is in neither)"},
         {"kdens", "45", "Å"}, {"ivdw", "12", "D3-BJ"}, {"ispin", "1", "non-magnetic"},
-        {"dipole", "auto", "auto (when the faces differ), on, off — energy-only, no LDIPOL"},
-        {"gamma", "false", "Γ only (a molecule in a box)"},
+        {"dipole", "auto", "auto (when the faces differ), on, off (energy only, no LDIPOL)"},
+        {"gamma", "false", "Γ only (a molecule in a box): checked as a molecule, not as a slab"},
+        {"force", "false", "accept a set whose validation fails (exit code 0)"},
         {"pp_dir", "", "your licensed PAW directory"}, {"profile", "slurm-workspace", "cluster profile"}},
        {"caps vasp-set Ti3C2_O.vasp --out structures/Ti3C2_O --pp-dir $PP_DIR"}},
       {"vasp-relax", "caps vasp-relax CRYSTAL --out DIR [--dimensionality 3d|2d] | caps vasp-relax report DIR",
@@ -249,8 +250,9 @@ void write_any(const System& s, const std::string& p, const std::string& comment
 }
 
 void provenance(const std::string& path, const std::string& engine, const std::string& summary, const KeyValues& params, const std::string& rng = "",
-                const std::vector<std::string>& cites = {}) {
-  Manifest m;
+                const std::vector<std::string>& cites = {}, const std::vector<std::string>& inputs = {}) {
+  // the chain follows the file: the inputs' own steps first, then the inputs by name and sha256, then this step
+  Manifest m = manifest_from_inputs(inputs);
   ProvStep st;
   st.engine = engine;
   st.summary = summary;
@@ -275,9 +277,14 @@ System crystal_input(const std::string& in, const std::string& data_dir, std::st
     std::stringstream ss;
     ss << f.rdbuf();
     const Json cat = Json::parse(ss.str());
-    for (const auto& e : cat["crystals"].items())
-      if (e.text("id") == in) { if (label) *label = in; return read_cif(data_dir + "/crystals/" + e.text("file")); }
-    throw std::invalid_argument(in + ": no such file or crystal of data/crystals/catalogue.json");
+    for (const auto& e : cat["crystals"].items()) {   // its id (pe-orthorhombic), its file or that file's name (pe-orthorhombic.cif)
+      const std::string file = e.text("file");
+      if (e.text("id") == in || (!file.empty() && (file == in || fs::path(file).filename().string() == in))) {
+        if (label) *label = e.text("id");
+        return read_cif(data_dir + "/crystals/" + file);
+      }
+    }
+    throw std::invalid_argument(in + ": no such file, nor a crystal of data/crystals/catalogue.json");
   }
   if (label) *label = p.stem().string();
   return read_any(in);
@@ -308,11 +315,122 @@ VaspSetOptions set_options(const Json& a, const std::string& data_dir) {
   o.settings.ivdw = int(N(a, "ivdw", 12));
   o.settings.ispin = int(N(a, "ispin", 1));
   o.settings.static_out = S(a, "static_out", "pot");
+  if (o.settings.static_out != "none" && o.settings.static_out != "pot" && o.settings.static_out != "all")
+    throw std::invalid_argument("--static-out is none, pot or all, not '" + o.settings.static_out + "'");
   const std::string dip = S(a, "dipole", "auto");
+  if (dip != "auto" && dip != "on" && dip != "off" && dip != "true" && dip != "false")
+    throw std::invalid_argument("--dipole is auto, on or off, not '" + dip + "'");
   o.settings.dipole = dip == "on" || dip == "true" ? 1 : dip == "off" || dip == "false" ? 0 : -1;
   o.gamma_only = B(a, "gamma");
   return o;
 }
+
+namespace {
+
+std::string num_text(const char* f, double v) { char b[64]; std::snprintf(b, sizeof b, f, v); return b; }
+
+// --stages: slab, fixed or a comma list of the set's stage names (each known, none twice, in the set's order: every
+// stage starts from the previous one's CONTCAR)
+std::vector<std::string> stages_of(const Json& a) {
+  const std::string st = S(a, "stages", "slab");
+  if (st == "slab") return stages_slab();
+  if (st == "fixed") return stages_fixed();
+  const std::vector<std::string> known = stages_slab();
+  const auto list = L(a, "stages");
+  const std::string help = "--stages is slab, fixed or a list of 01_cell, 02_cell2, 03_relax, 04_static";
+  if (list.empty()) throw std::invalid_argument(help);
+  long last = -1;
+  for (size_t i = 0; i < list.size(); ++i) {
+    const auto it = std::find(known.begin(), known.end(), list[i]);
+    if (it == known.end()) throw std::invalid_argument(help + ", not '" + list[i] + "'");
+    if (std::find(list.begin(), list.begin() + long(i), list[i]) != list.begin() + long(i)) throw std::invalid_argument("--stages names " + list[i] + " twice");
+    if (long(it - known.begin()) < last) throw std::invalid_argument("--stages runs in the order 01_cell, 02_cell2, 03_relax, 04_static (each stage starts from the previous one's CONTCAR)");
+    last = long(it - known.begin());
+  }
+  return list;
+}
+
+// A molecule in a box (vasp-set --gamma): composition, atoms too close for a bond (< 0.7 x the covalent radii sum),
+// separate fragments, and the closest distance from the molecule (made whole along its bonds) to its periodic images
+// along a, b and c (< 10 Å an error, < 15 Å a warning, as the vacuum rule of the slab check).
+Validation2D molecule_box_check(const System& s) {
+  Validation2D R;
+  const size_t n = s.atoms.size();
+  {
+    std::map<std::string, int> comp;
+    for (const auto& at : s.atoms) ++comp[element(at.element).symbol];
+    Json c = Json::object();
+    for (const auto& [e, k] : comp) c[e] = k;
+    R.info["composition"] = c;
+  }
+  R.info["mode"] = "molecule";
+  R.info["asymmetric"] = false;
+  if (n == 0) { R.findings.push_back({"ERROR", "no atoms", {}}); R.status = "FAIL"; return R; }
+  auto rc = [&](size_t i) { const double r = element(s.atoms[i].element).covalent; return r > 0 ? r : 0.75; };
+  // whole along bonds (1.2 x the covalent radii sum, minimum image)
+  std::vector<Vec3> m(n);
+  std::vector<int> frag(n, -1);
+  int nfrag = 0;
+  double dmin = 1e300;
+  for (size_t i = 0; i < n; ++i)
+    for (size_t j = i + 1; j < n; ++j) {
+      const double d = norm(s.cell.minimum_image(s.atoms[j].pos - s.atoms[i].pos));
+      dmin = std::min(dmin, d);
+      if (d < 0.7 * (rc(i) + rc(j)))
+        R.findings.push_back({"ERROR", std::string(element(s.atoms[i].element).symbol) + " #" + std::to_string(i + 1) + " and " + element(s.atoms[j].element).symbol + " #" +
+                                           std::to_string(j + 1) + " only " + num_text("%.2f", d) + " A apart", {int(i), int(j)}});
+    }
+  for (size_t s0 = 0; s0 < n; ++s0) {
+    if (frag[s0] >= 0) continue;
+    frag[s0] = nfrag;
+    m[s0] = s.atoms[s0].pos;
+    std::vector<size_t> q{s0};
+    while (!q.empty()) {
+      const size_t i = q.back();
+      q.pop_back();
+      for (size_t j = 0; j < n; ++j) {
+        if (frag[j] >= 0) continue;
+        const Vec3 D = s.cell.minimum_image(s.atoms[j].pos - s.atoms[i].pos);
+        if (norm(D) < 1.2 * (rc(i) + rc(j))) { frag[j] = nfrag; m[j] = m[i] + D; q.push_back(j); }
+      }
+    }
+    ++nfrag;
+  }
+  if (nfrag > 1) R.findings.push_back({"WARN", std::to_string(nfrag) + " separate fragments in the box (one molecule expected)", {}});
+  // the closest periodic image of the whole molecule
+  double image = 1e300;
+  for (int i1 = -1; i1 <= 1; ++i1)
+    for (int i2 = -1; i2 <= 1; ++i2)
+      for (int i3 = -1; i3 <= 1; ++i3) {
+        if (i1 == 0 && i2 == 0 && i3 == 0) continue;
+        const Vec3 T = s.cell.a * double(i1) + s.cell.b * double(i2) + s.cell.c * double(i3);
+        for (size_t i = 0; i < n; ++i)
+          for (size_t j = 0; j < n; ++j) image = std::min(image, norm(m[j] + T - m[i]));
+      }
+  R.info["image_distance"] = image;
+  R.info["min_distance"] = n > 1 ? dmin : 0.0;
+  R.info["fragments"] = nfrag;
+  if (image < 10.0) R.findings.push_back({"ERROR", "molecule only " + num_text("%.1f", image) + " A from its periodic image (10 A at least, 15 A recommended): use a larger box", {}});
+  else if (image < 15.0) R.findings.push_back({"WARN", "molecule " + num_text("%.1f", image) + " A from its periodic image (< 15 A recommended)", {}});
+  for (const auto& f : R.findings) if (f.level == "ERROR") R.status = "FAIL";
+  return R;
+}
+
+std::string molecule_box_text(const Validation2D& v, const std::string& name) {
+  std::ostringstream o;
+  o << "=== " << name << " : " << v.status << " ===   (molecule in a box: --gamma)\n";
+  o << "composition : " << v.info["composition"].dump(0) << "\n";
+  o << "image gap   : " << num_text("%.1f", v.info.num("image_distance", 0)) << " A    min distance: " << num_text("%.2f", v.info.num("min_distance", 0))
+    << " A    fragments: " << v.info["fragments"].dump(0) << "\n";
+  if (v.findings.empty()) o << "findings: none\n";
+  else {
+    o << "findings:\n";
+    for (const auto& f : v.findings) o << "   [" << f.level << "] " << f.text << "\n";
+  }
+  return o.str();
+}
+
+}  // namespace
 
 Json set_result(const VaspSetResult& r) {
   Json j = Json::object();
@@ -354,6 +472,29 @@ bool dft_is_switch(const std::string& c, std::string name) {
   if (name == "json" || name == "help" || name == "force" || name == "yes" || name == "run") return true;
   for (const auto& x : table())
     if (c == x.name) for (const auto& o : x.opts) if (name == o.name) return std::string(o.def) == "false";
+  return false;
+}
+
+std::vector<std::string> dft_option_names(const std::string& c) {
+  std::vector<std::string> out;
+  for (const auto& p : cmd_of(c).opts) {
+    std::string n = p.name;
+    std::replace(n.begin(), n.end(), '_', '-');
+    out.push_back((n.size() == 1 ? "-" : "--") + n);
+  }
+  return out;
+}
+
+bool dft_known_option(std::string name) {
+  while (!name.empty() && name[0] == '-') name.erase(0, 1);
+  std::replace(name.begin(), name.end(), '-', '_');
+  // the switches every command takes, and keys read beside a command's own table (the VASP set options, --order,
+  // --seed, --slab-poscar)
+  static const char* shared[] = {"json", "help", "force", "yes", "run", "output", "o", "order", "seed", "slab_poscar",
+                                 "encut", "gamma", "ispin", "ivdw", "kdens", "pp_dir", "profile", "dipole", "static_out", "stages"};
+  for (const char* k : shared) if (name == k) return true;
+  for (const auto& x : table())
+    for (const auto& o : x.opts) if (name == o.name) return true;
   return false;
 }
 
@@ -427,12 +568,16 @@ Json dft_run(const std::string& c, const Json& a, const std::string& data_dir) {
       r["layers_along_z"] = rep.layers, r["complete"] = rep.complete;
       notes = rep.notes;
     } else {
+      if (!in.empty())   // a word the preset would not use (a mistyped option) is said, not dropped
+        throw std::invalid_argument("--preset builds the sheet itself, so '" + in[0] + "' is not used (read a layer from a file with --from)");
       s = sheet_from_layers(sheet_preset(data_dir, S(a, "preset", "Ti3C2"), N(a, "a", 0), &notes));
     }
     s = group_by_species(s, order_of(a));
     const std::string out = S(a, "o", "sheet.vasp");
     write_any(s, out, formula_ordered(s) + " CAPS sheet");
-    provenance(out, "dft.sheet", "2D sheet " + formula_ordered(s), {{"preset", S(a, "preset")}, {"from", S(a, "from")}, {"a", S(a, "a")}});
+    const bool isolated = !S(a, "from").empty() || (!in.empty() && S(a, "preset").empty());
+    const std::string src = isolated ? S(a, "from", in.empty() ? "" : in[0]) : "";
+    provenance(out, "dft.sheet", "2D sheet " + formula_ordered(s), {{"preset", isolated ? "" : S(a, "preset", "Ti3C2")}, {"from", src}, {"a", S(a, "a")}}, "", {}, {src});
     r["wrote"] = out, r["formula"] = formula_ordered(s), r["atoms"] = int(s.atoms.size()), r["a"] = norm(s.cell.a);
     Json n = Json::array();
     for (const auto& x : notes) n.push_back(x);
@@ -464,7 +609,7 @@ Json dft_run(const std::string& c, const Json& a, const std::string& data_dir) {
     const std::string label = fs::path(out).stem().string();
     write_any(s, out, formula_ordered(s, o.order) + " CAPS " + label);
     provenance(out, "dft.terminate", "terminated " + formula_ordered(s, o.order), {{"top", S(a, "top", "O")}, {"site", o.top.site}, {"supercell", std::to_string(o.na) + "x" + std::to_string(o.nb)}, {"vacuum", S(a, "vacuum", "20")}},
-               "numpy default_rng (PCG64) · seed " + std::to_string(o.seed));
+               "numpy default_rng (PCG64) · seed " + std::to_string(o.seed), {}, {in[0]});
     r["wrote"] = out, r["formula"] = formula_ordered(s, o.order), r["atoms"] = int(s.atoms.size()), r["r_site"] = rep.r;
     r["validation"] = v.json();
     r["report"] = v.text(label);
@@ -615,18 +760,32 @@ Json dft_run(const std::string& c, const Json& a, const std::string& data_dir) {
         const std::string p = (fs::path(root) / c2.name / "POSCAR").string();
         if (fs::exists(p)) cxs.push_back({c2.name, read_vasp_poscar(p)});
       }
+      // checked against the limits the generator used (the user's --dmin / --dheavy with its 0.1 Å tolerance, the image
+      // distance at its error level); an image distance below the warning level is reported, not failed
       Json au = Json::array();
       bool all_ok = true;
-      for (const auto& row : audit_complexes(read_vasp_poscar((fs::path(root) / "slab" / "POSCAR").string()), read_vasp_poscar((fs::path(root) / "molecule" / "POSCAR").string()), cxs)) {
+      for (const auto& row : audit_complexes(read_vasp_poscar((fs::path(root) / "slab" / "POSCAR").string()), read_vasp_poscar((fs::path(root) / "molecule" / "POSCAR").string()), cxs,
+                                             ao.dmin - 0.1, ao.dheavy - 0.1, ao.image_error)) {
         Json x = Json::object();
         x["name"] = row.name, x["n_mol"] = row.n_mol, x["any"] = row.any, x["heavy"] = row.heavy, x["image"] = row.image, x["intact"] = row.intact, x["ok"] = row.ok;
+        x["image_warn"] = row.image < ao.image_warn;
         au.push_back(x);
         all_ok = all_ok && row.ok;
       }
       r["audit"] = au;
-      r["ok"] = all_ok;
-      provenance((fs::path(root) / "slab" / "POSCAR").string(), "dft.adsorb", "adsorption set: " + std::to_string(set.complexes.size()) + " complexes",
-                 {{"smiles", S(a, "smiles", "C/C=C/CCC(C#N)C/C=C/C")}, {"dmin", S(a, "dmin", "2.3")}, {"dheavy", S(a, "dheavy", "3.0")}});
+      // a set without a single complex is unusable
+      r["ok"] = all_ok && !cxs.empty();
+      if (cxs.empty()) {
+        int suggest = 0;
+        for (const auto& c2 : set.complexes) suggest = std::max(suggest, c2.suggested_supercell);
+        r["error"] = set.complexes.empty() ? std::string("no complex was generated (no anchor or mode applies)")
+                                           : "no complex passed its checks, so none was written (see complexes[].issues)" +
+                                                 (suggest > 0 ? "; the molecule overlaps its periodic image: use --supercell " + std::to_string(suggest * na) + "x" + std::to_string(suggest * nb) + " or larger"
+                                                              : std::string("; --force writes them anyway"));
+      }
+      provenance((fs::path(root) / "slab" / "POSCAR").string(), "dft.adsorb", "adsorption set: " + std::to_string(cxs.size()) + " of " + std::to_string(set.complexes.size()) + " complexes written",
+                 {{"smiles", S(a, "molecule").empty() ? S(a, "smiles", "C/C=C/CCC(C#N)C/C=C/C") : ""}, {"molecule", S(a, "molecule")}, {"dmin", num_text("%g", ao.dmin)}, {"dheavy", num_text("%g", ao.dheavy)}},
+                 "", {}, {in[0], S(a, "molecule")});
     }
     return r;
   }
@@ -641,17 +800,33 @@ Json dft_run(const std::string& c, const Json& a, const std::string& data_dir) {
     if (out.empty()) throw std::invalid_argument("vasp-set: --out DIR");
     o.label = S(a, "label", fs::path(out).filename().string());
     const std::string st = S(a, "stages", "slab");
-    o.stages = st == "slab" ? stages_slab() : st == "fixed" ? stages_fixed() : L(a, "stages");
-    ValidateOptions vo;
-    vo.data_dir = data_dir;
-    vo.bad_labels = labels;
-    const auto v = validate_2d(s, vo);
-    o.asymmetric = v.info.has("asymmetric") && v.info["asymmetric"].boolean();
-    o.report_text = v.text(o.label);
+    o.stages = stages_of(a);
+    Validation2D v;
+    if (o.gamma_only) {
+      // a molecule in a box: its own check, not the 2D slab rules
+      v = molecule_box_check(s);
+      o.asymmetric = false;
+      o.report_text = molecule_box_text(v, o.label);
+    } else {
+      // the set is a 2D slab set (k 1 along c, c fixed in the cell stages): a bulk crystal has no vacuum gap along c
+      const auto h = dimensionality_hint(s);
+      if (h.guess != "2d")
+        throw std::invalid_argument("vasp-set writes 2D slab sets (k 1 along c, c fixed); " + in[0] + " has no vacuum gap along c (its largest gap is " + num_text("%.1f", h.gap) +
+                                    " A, a sheet needs 8 A at least): for a bulk crystal use caps vasp-relax, for a molecule in a box add --gamma");
+      ValidateOptions vo;
+      vo.data_dir = data_dir;
+      vo.bad_labels = labels;
+      v = validate_2d(s, vo);
+      o.asymmetric = v.info.has("asymmetric") && v.info["asymmetric"].boolean();
+      o.report_text = v.text(o.label);
+    }
     o.report_json = v.json();
     r["set"] = set_result(write_vasp_set(s, out, o));
     r["validation"] = v.status;
-    provenance((fs::path(out) / "POSCAR").string(), "dft.vasp_set", "VASP set " + o.label, {{"stages", st}, {"kdens", S(a, "kdens", "45")}, {"profile", o.profile}});
+    // the set is written either way (its report.txt says why); a FAIL is not ok unless --force
+    r["ok"] = v.status != "FAIL" || B(a, "force");
+    if (v.status == "FAIL" && !B(a, "force")) r["error"] = "validation FAIL (see " + (fs::path(out) / "report.txt").string() + "); --force accepts it";
+    provenance((fs::path(out) / "POSCAR").string(), "dft.vasp_set", "VASP set " + o.label, {{"stages", st}, {"kdens", S(a, "kdens", "45")}, {"profile", o.profile}}, "", {"kresse1996"}, {in[0]});
     return r;
   }
   if (c == "vasp-relax") {
@@ -705,7 +880,7 @@ Json dft_run(const std::string& c, const Json& a, const std::string& data_dir) {
     r["chain"] = j;
     r["text"] = t;
     provenance((fs::path(out) / "POSCAR").string(), "dft.vasp_relax", "VASP relaxation chain " + o.label, {{"crystal", in[0]}, {"dimensionality", res.dimensionality}, {"profile", o.profile}}, "",
-               {"kresse1996", "blochl1994", "kresse1999", "perdew1996", "grimme2010", "grimme2011"});
+               {"kresse1996", "blochl1994", "kresse1999", "perdew1996", "grimme2010", "grimme2011"}, {in[0]});
     return r;
   }
   if (c == "phono3py") {

@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cmath>
+#include <stdexcept>
 
 #include "caps/polymer.hpp"
 #include "caps/polystats.hpp"
@@ -20,6 +21,26 @@ TEST(Copolymer, TerminalModelIsMayoLewis) {
         EXPECT_NEAR(m.run_length[0], c.run_a, 1e-9 * c.run_a);
         EXPECT_NEAR(m.run_length[1], c.run_b, 1e-9 * c.run_b);
       }
+}
+
+// r = 0 is a valid ratio (the unit never adds itself): r1 = r2 = 0 alternates strictly, one zero still follows Mayo–Lewis,
+// and a negative ratio is refused
+TEST(Copolymer, TerminalModelZeroRatios) {
+  const auto alt = terminal_model({0.5, 0.5}, {1, 0, 0, 1});
+  EXPECT_NEAR(alt.composition[0], 0.5, 1e-12);
+  EXPECT_NEAR(alt.dyads[0], 0.0, 1e-12);
+  EXPECT_NEAR(alt.dyads[1], 0.5, 1e-12);
+  EXPECT_NEAR(alt.dyads[2], 0.5, 1e-12);
+  EXPECT_NEAR(alt.dyads[3], 0.0, 1e-12);
+  EXPECT_NEAR(alt.run_length[0], 1.0, 1e-12);
+  EXPECT_NEAR(alt.run_length[1], 1.0, 1e-12);
+  for (double f1 : {0.3, 0.5, 0.8}) {
+    const auto m = terminal_model({f1, 1 - f1}, {1, 0, 0.5, 1});
+    EXPECT_NEAR(m.composition[0], mayo_lewis(0, 0.5, f1), 1e-12);
+    EXPECT_NEAR(m.P[0], 0.0, 1e-15);
+  }
+  EXPECT_NO_THROW(composition_drift({0.5, 0.5}, {1, 0, 0, 1}, 0.9, 5));
+  EXPECT_THROW(terminal_model({0.5, 0.5}, {1, -0.1, 0.5, 1}), std::invalid_argument);
 }
 
 // Three units: the composition equals the Alfrey–Goldfinger equation (J. Chem. Phys. 12, 322 (1944))

@@ -402,8 +402,19 @@ System map_to_beads(const System& s, const std::vector<BeadRule>& rules, const s
     } else {
       for (const auto& lv : st) choose(lv.cand, -1);
       for (uint32_t a : members[size_t(c)]) rep.uncovered.push_back(a);
+      ++rep.molecules_unmapped;
+      if (budget < 0) ++rep.searches_exhausted;
+      // the atoms no fragment matches at all (with their hydrogens): the ones a new fragment has to cover
+      for (uint32_t a : hv)
+        if (of[a].empty()) {
+          rep.unmatched.push_back(a);
+          for (uint32_t v : p.nb[a])
+            if (!heavy(v)) rep.unmatched.push_back(v);
+        }
     }
   }
+  std::sort(rep.unmatched.begin(), rep.unmatched.end());
+  rep.unmatched.erase(std::unique(rep.unmatched.begin(), rep.unmatched.end()), rep.unmatched.end());
 
   // beads: fragment heavy atoms plus their hydrogens, at the centre of mass
   System out;
@@ -530,8 +541,13 @@ System map_to_beads(const System& s, const std::vector<BeadRule>& rules, const s
   out.has_mol = s.has_mol;
   rep.beads = int(btype.size());
   rep.molecules_mapped = mapped_mols;
-  if (!rep.uncovered.empty())
+  if (!rep.uncovered.empty()) {
     rep.notes.push_back(std::to_string(rep.uncovered.size()) + " atoms in molecules the fragments cannot cover are left as atoms");
+    if (!rep.unmatched.empty())
+      rep.notes.push_back(std::to_string(rep.unmatched.size()) + " of them match no fragment (first: atom " + std::to_string(rep.unmatched.front() + 1) + ")");
+    if (rep.searches_exhausted)
+      rep.notes.push_back(std::to_string(rep.searches_exhausted) + (rep.searches_exhausted == 1 ? " molecule gave up" : " molecules gave up") + " after 2,000,000 cover search steps");
+  }
   if (rep_out) *rep_out = std::move(rep);
   return out;
 }

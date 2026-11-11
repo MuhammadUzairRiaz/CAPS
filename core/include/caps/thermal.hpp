@@ -85,7 +85,7 @@ struct ThermalOptions {
   int blocks = 5;
   // NEMD (Müller-Plathe)
   int axis = 2;                     // 0 x, 1 y, 2 z: the flux direction (gk: reported for all three)
-  int slabs = 20;                   // even; slab 0 cold, slab slabs/2 hot
+  int slabs = 20;                   // even, at least 10 (odd rounded up); slab 0 cold, slab slabs/2 hot
   int swap_every = 100;             // steps between exchanges
   double transient = 0.3;           // fraction of the NEMD run before the profile and flux are averaged
   uint64_t seed = 1;

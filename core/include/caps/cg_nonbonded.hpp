@@ -63,6 +63,7 @@ class CgRdfAccumulator {
   double weight(int s) const { return sys_.at(size_t(s)).weight; }
   const std::vector<std::string>& keys() const { return keys_; }
   const CgPairOptions& options() const { return o_; }
+  double rmax_used() const { return rmax_used_; }                           // Å, the range counted: rmax or less (half the narrowest cell width); 0 before a frame
 
  private:
   struct Sys { CgTopology t; double weight = 1; std::string name; std::vector<int> tix; std::vector<std::vector<int>> excl;
@@ -82,6 +83,7 @@ struct CgTargets {
   std::vector<std::vector<CgRdf>> rdf;   // [system][pair]
   std::vector<double> pressure;          // atm, the AA pressure of each system (the IBI target pressure)
   double temperature = 300;
+  int exclude = 0;                       // the exclusion g(r) was measured with (CgPairOptions::exclude); 0: not recorded (older files, read as 3)
 };
 Json cg_targets_json(const CgTargets& t);
 CgTargets cg_targets_from_json(const Json& j);
@@ -139,8 +141,11 @@ struct CgPairFit {
   double a = 0, n = 12, m = 6;           // Morse α (1/Å); Mie exponents
   double rms = 0;                        // kcal/mol over the fitted range
   double lo = 0, hi = 0;                 // the fitted range
+  std::string rejected;                  // why the fit is not usable (it ran into a bound: no well this form can follow); empty when usable
 };
-// fits each pair of a table set; the range: from where U falls below `repulsion` k_B T to the cut-off
+// fits each pair of a table set; the range: from where U falls below `repulsion` k_B T to the cut-off. Bounded: ε ≥ 1e-3 k_B T,
+// σ (Morse r0) in [lo/2, hi], Mie n in [m + 1, 50]; a fit that ends on a bound gets `rejected` and is left out of the
+// tables and the pair_coeff lines
 std::vector<CgPairFit> fit_pairs(const CgPairSet& p, const std::string& form, double repulsion = 4.0);
 double pair_energy(const CgPairFit& f, double r);
 // the analytic set as tables on p's grid (for runs or a further IBI) and its LAMMPS lines

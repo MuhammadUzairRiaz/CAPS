@@ -35,10 +35,13 @@ std::vector<std::vector<uint32_t>> neighbours(const System& s) {
   return nb;
 }
 
+// A bond's share of an atom's valence: aromatic 1.5, coordinate none
+double order_weight(int order) { return order == kBondDative ? 0 : order == 2 ? 2 : order == 3 ? 3 : order == 4 ? 1.5 : 1; }
+
 double bond_order_sum(const System& s, uint32_t a) {
   double v = 0;
   for (const auto& b : s.bonds)
-    if (b.i == a || b.j == a) v += b.order == kBondDative ? 0 : b.order == 2 ? 2 : b.order == 3 ? 3 : b.order == 4 ? 1.5 : 1;
+    if (b.i == a || b.j == a) v += order_weight(b.order);
   return v;
 }
 
@@ -46,6 +49,38 @@ bool has_multiple_bond(const System& s, uint32_t a) {
   for (const auto& b : s.bonds)
     if ((b.i == a || b.j == a) && (b.order == 2 || b.order == 3 || b.order == 4)) return true;
   return false;
+}
+
+// The most bonds an uncharged atom takes, the limit the Studio sketch uses: S and P counted as in sulfones and
+// phosphates (not the usual valence, which would refuse them); 0 = no limit (metals and the rest)
+int max_valence(int z) {
+  switch (z) {
+    case 1: case 9: case 17: case 35: case 53: return 1;
+    case 8: return 2;
+    case 5: case 7: return 3;
+    case 6: case 14: case 32: case 50: return 4;
+    case 15: case 33: return 5;
+    case 16: case 34: case 52: return 6;
+    default: return 0;
+  }
+}
+
+// Refuses an edit that takes atom a's bond-order sum from `now` to `after` above what its element holds. Atoms with a
+// formal charge (N+, O-) and aromatic atoms are not checked, nor an edit that lowers the sum.
+void check_valence(const System& s, uint32_t a, double now, double after, const std::string& what) {
+  const int z = s.atoms[a].element;
+  const int most = max_valence(z);
+  if (most == 0 || after <= now + 1e-9 || after <= most + 1e-9) return;
+  const double q = s.atoms[a].charge;
+  const long fq = std::lround(q);
+  if (fq != 0 && std::fabs(q - double(fq)) < 0.05) return;
+  for (const auto& b : s.bonds)
+    if ((b.i == a || b.j == a) && b.order == 4) return;
+  const double r = std::round(after * 2) / 2;
+  std::string sum = std::to_string(int(r));
+  if (std::fabs(r - std::floor(r)) > 1e-9) sum += ".5";
+  throw EditError("atom " + std::to_string(a + 1) + " (" + element(z).symbol + ") takes " + std::to_string(most) +
+                  (most == 1 ? " bond; " : " bonds; ") + what + " would give it " + sum);
 }
 
 int type_for(System& s, int z) {
@@ -205,8 +240,19 @@ uint32_t add_atom(System& s, int bonded_to, int z, int order, int geometry, Vec3
   return id;
 }
 
-void add_bond(System& s, uint32_t i, uint32_t j, int order) {
+void add_bond(System& s, uint32_t i, uint32_t j, int order, bool check_valence_limits) {
   if (i >= s.atoms.size() || j >= s.atoms.size() || i == j) throw EditError("a bond needs two different atoms");
+  if (check_valence_limits) {
+    // what each atom would hold: an existing bond's order replaced, a new bond added
+    double old = 0;
+    for (const auto& b : s.bonds)
+      if ((b.i == i && b.j == j) || (b.i == j && b.j == i)) { old = order_weight(b.order); break; }
+    const std::string what = "bond " + std::to_string(i + 1) + "–" + std::to_string(j + 1);
+    for (uint32_t a : {i, j}) {
+      const double now = bond_order_sum(s, a);
+      check_valence(s, a, now, now - old + order_weight(order), what);
+    }
+  }
   for (auto& b : s.bonds)
     if ((b.i == i && b.j == j) || (b.i == j && b.j == i)) { b.order = order; return; }   // an existing bond: its order
   s.bonds.push_back({i, j, order});
@@ -258,7 +304,7 @@ int missing_h(const System& s, uint32_t i, const std::vector<double>& order_sum)
 std::vector<double> order_sums(const System& s) {
   std::vector<double> v(s.atoms.size(), 0.0);
   for (const auto& b : s.bonds) {
-    const double o = b.order == kBondDative ? 0 : b.order == 2 ? 2 : b.order == 3 ? 3 : b.order == 4 ? 1.5 : 1;   // coordinate: no valence
+    const double o = order_weight(b.order);   // coordinate: no valence
     v[b.i] += o, v[b.j] += o;
   }
   return v;
@@ -992,8 +1038,32 @@ std::vector<uint32_t> attach_fragment(System& s, uint32_t target, const std::str
   const auto nb = neighbours(s);
   // where the fragment's attaching atom goes: in place of one of the target's hydrogens, or in its free direction
   int h = -1;
-  if (replace_h)
+  if (s.atoms[target].element == 1) {
+    // a picked hydrogen: the fragment takes its place on the atom it is bonded to
+    std::vector<uint32_t> parent;
+    for (const auto& b : s.bonds)
+      if (b.order != kBondDative && (b.i == target || b.j == target)) parent.push_back(b.i == target ? b.j : b.i);
+    const std::string n = std::to_string(target + 1);
+    if (!replace_h) {
+      if (!parent.empty()) throw EditError("atom " + n + " is a hydrogen with its bond already: attach to the atom it is bonded to");
+    } else {
+      if (parent.empty()) throw EditError("atom " + n + " is a lone hydrogen: nothing to attach to");
+      if (parent.size() > 1) throw EditError("atom " + n + " is a hydrogen bonded to " + std::to_string(parent.size()) + " atoms: pick the atom to attach to");
+      h = int(target);
+      target = parent[0];
+    }
+  } else if (replace_h) {
     for (uint32_t q : nb[target]) if (s.atoms[q].element == 1) { h = int(q); break; }
+  }
+  if (replace_h) {
+    // the new single bond, less the hydrogen it replaces, must fit the target's valence
+    const double now = bond_order_sum(s, target);
+    double after = now + 1;
+    if (h >= 0)
+      for (const auto& b : s.bonds)
+        if ((b.i == target && b.j == uint32_t(h)) || (b.j == target && b.i == uint32_t(h))) after -= order_weight(b.order);
+    check_valence(s, target, now, after, "attaching " + smiles + " to it");
+  }
   Vec3 dir;
   if (h >= 0) dir = unitv(rel(s, target, uint32_t(h)));
   else if (direction && norm(*direction) > 1e-9) dir = unitv(*direction);

@@ -55,9 +55,9 @@ struct ZPoint {
 
 struct ZResult {
   std::vector<ZPoint> points;         // by increasing energy
-  double t_melt = 0;                  // K (0: no run melted)
+  double t_melt = 0;                  // K (0: no Z found, i.e. no melted run colder than the hottest crystal)
   double t_superheat = 0, e_superheat = 0;   // the hottest crystal run below the first melted energy
-  double e_melt = 0;                  // energy of the lowest melted run
+  double e_melt = 0;                  // energy of the lowest melted run (0: no Z found)
   std::vector<std::array<double, 3>> g;   // the reciprocal vectors of the order parameter, 1/Å
   double order0 = 0;                  // ρ(G) of the perfect cell
   std::vector<std::string> notes;

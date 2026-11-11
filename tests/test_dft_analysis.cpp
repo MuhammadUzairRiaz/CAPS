@@ -9,6 +9,7 @@
 
 #include "caps/dft_analysis.hpp"
 #include "caps/slab2d.hpp"
+#include "caps/vasp_out.hpp"
 
 using namespace caps;
 namespace fs = std::filesystem;
@@ -147,4 +148,30 @@ TEST(DftAnalysis, AimdStaysAdsorbed) {
   EXPECT_EQ(int(r["frames"].number()), 12);
   EXPECT_NEAR(r["T_mean"].number(), 300.0, 1.0);
   EXPECT_EQ(int(r["broken_bonds_max"].number()), 0);
+}
+
+TEST(DftAnalysis, ChargeDensityDifferenceHydrogenAdsorbate) {
+  // H2 3 Å above Ti3C2O2: the molecule has no heavy atom, so its lowest atom is taken from the H atoms (no sentinel z)
+  const auto d = tmpdir("caps_cdd_h2");
+  const System slab = read_vasp_poscar(kRef + "Ti3C2_O.POSCAR");
+  System cx = slab;
+  double top = -1e9;
+  for (const auto& a : slab.atoms) top = std::max(top, a.pos[2]);
+  for (double x : {0.0, 0.74}) { Atom a; a.element = 1; a.pos = {1.0 + x, 1.0, top + 3.0}; cx.atoms.push_back(a); }
+  write_vasp_poscar(slab, (d / "slab.vasp").string(), "slab");
+  VaspGrid g;
+  g.system = cx;
+  g.n = {2, 2, 40};
+  g.values.assign(2 * 2 * 40, 0.0);
+  for (const char* sub : {"charge", "cdd_slab", "cdd_mol"}) {
+    fs::create_directories(d / sub / "04_static");
+    write_chgcar(g, (d / sub / "04_static" / "CHGCAR").string());
+  }
+  const Json r = charge_density_difference(d.string(), (d / "slab.vasp").string());
+  EXPECT_NEAR(r["z_molecule_min"].number(), top + 3.0, 1e-3);
+  EXPECT_LT(r["z_mid"].number(), slab.cell.c[2]);
+  EXPECT_GT(r["z_mid"].number(), top);
+  // the slab itself as the complex: no adsorbate atoms, a clear error instead of sentinel values
+  write_vasp_poscar(cx, (d / "cx.vasp").string(), "complex");
+  EXPECT_THROW(charge_density_difference(d.string(), (d / "cx.vasp").string()), std::runtime_error);
 }

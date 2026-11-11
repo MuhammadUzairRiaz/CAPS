@@ -13,7 +13,9 @@
 //  Solution     simulated annealing (Kirkpatrick et al., Science 220, 671 (1983)) of a molecule's position, orientation and
 //               torsions in a cell and space group against the measured pattern in direct space (David, Shankland &
 //               Shankland, Chem. Commun. 931 (1998)): the profile Rwp with the scale and background solved at every trial
-//               (refine.hpp), moves that bring atoms of different molecules within a contact distance refused.
+//               (refine.hpp), moves that bring heavy atoms of different molecules (or a molecule and its own lattice
+//               images) within a contact distance refused; the peak profile first fitted to the data (Pawley, cell fixed).
+//               Throws when no packing free of such contacts is found.
 #pragma once
 
 #include <array>
@@ -46,6 +48,7 @@ struct IndexOptions {
   double min_beta = 90, max_beta = 125;   // monoclinic angle range, degrees
   std::vector<std::string> systems{"cubic", "tetragonal", "hexagonal", "orthorhombic", "monoclinic"};
   int solutions = 10;
+  long max_boxes = 20000000;         // boxes tested per crystal system before its search stops with a note (0: no limit)
   std::function<bool(const std::string&, double)> progress;
 };
 
@@ -69,11 +72,14 @@ IndexResult index_pattern(const std::vector<double>& two_theta, const IndexOptio
 struct SolveOptions {
   std::string space_group = "P 1";   // symbol or number (spacegroup.hpp find_space_group)
   RefineOptions refine;              // radiation, wavelength, profile (U V W X Y, zero), background, range
-  int steps = 6000;                  // annealing moves
+  int steps = 6000;                  // annealing moves in all, shared among the restarts
   double t_start = 0.05, t_end = 1e-4;   // Rwp² "temperatures"
-  double contact = 2.0;              // Å, the closest two atoms of different molecules may come
+  double contact = 2.0;              // Å, the closest two heavy atoms of different molecules (or lattice images) may come
   bool torsions = true;
   int restarts = 2;
+  // the peak profile (refine's U V W X Y and zero shift) fitted to the data by a Pawley fit in the cell before the
+  // annealing, which then holds it fixed; false: refine's values as given
+  bool fit_profile = true;
   uint64_t seed = 1;
   std::function<bool(const std::string&, double)> progress;
 };
@@ -82,6 +88,7 @@ struct SolveResult {
   double rwp = 0;
   int accepted = 0, steps = 0, torsions = 0;
   std::vector<double> rwp_history;
+  std::array<double, 6> profile{};   // U V W X Y zero used
   std::vector<std::string> notes;
 };
 // molecule: one molecule (bonds given); cell: a b c α β γ.

@@ -139,4 +139,43 @@ std::string cell_fit_message(const System& s, const ForceField* field) {
   return t;
 }
 
+TypingResult assign_types_fitted(const System& s, const FFDef& ff, std::array<int, 3>* copies) {
+  if (copies) *copies = {1, 1, 1};
+  if (cell_fit(s).fits) return assign_types(s, ff);
+  std::array<int, 3> n{1, 1, 1};
+  try {
+    n = copies_to_fit(s);
+  } catch (const std::invalid_argument&) {
+    throw std::invalid_argument(cell_fit_message(s));
+  }
+  if (copies) *copies = n;
+  const size_t na = s.atoms.size();
+  TypingResult big = assign_types(supercell(s, n[0], n[1], n[2]), ff);
+  TypingResult r;
+  r.notes = std::move(big.notes);
+  // the copies are translations of one another: an atom typed differently in another copy is worth saying
+  size_t differ = 0;
+  for (size_t i = 0; i < na; ++i)
+    for (size_t k = i + na; k < big.types.size(); k += na)
+      if (big.types[k] != big.types[i]) { ++differ; break; }
+  auto first = [na](auto& v) {
+    if (v.size() > na) v.resize(na);
+    return std::move(v);
+  };
+  r.types = first(big.types);
+  r.why = first(big.why);
+  r.rule = first(big.rule);
+  r.candidates = first(big.candidates);
+  for (size_t i = 0; i < r.types.size(); ++i) {
+    if (r.types[i].empty()) ++r.untyped;
+    if (i < r.why.size() && r.why[i].find("(also matched") != std::string::npos) ++r.ambiguous;   // as assign_types marks a tie
+  }
+  r.notes.push_back("this cell is too small for its bonds (its bond list would give an atom the wrong neighbours), so it was typed as " +
+                    std::to_string(n[0]) + "×" + std::to_string(n[1]) + "×" + std::to_string(n[2]) +
+                    " copies and each atom given the type of its first copy");
+  if (differ)
+    r.notes.push_back(std::to_string(differ) + " atoms are typed differently in another copy; the first copy's types are kept");
+  return r;
+}
+
 }  // namespace caps

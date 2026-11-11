@@ -65,6 +65,9 @@ struct RecipeOptions {
   // frame_ps), into frames_path (opened at the first frame, appended by every later stage)
   LiveOutput* live = nullptr;
   std::string frames_path;
+  // the caller asked for frames (caps run --dump): an md or equilibrate stage that sets no frame_every / frame_ps
+  // writes about 100 frames instead of none
+  bool frames_requested = false;
   // stage checkpoints (a cluster job stopped by its time limit): after each stage that changes the structure, the
   // structure, its force field and the provenance so far go to checkpoint_dir (recipe.state.json and beside it); resume
   // runs build and type again (cheap set-up), takes the checkpoint's state and goes on with the next stage (analyze and

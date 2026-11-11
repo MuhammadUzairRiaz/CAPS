@@ -49,9 +49,9 @@ System read_sdf(const std::string& path);
 // direct or Cartesian positions, selective dynamics skipped.
 System read_poscar(const std::string& path);
 Trajectory read_pdb(const std::string& path);
-// Tripos mol2: atoms with their type (Atom::name: SYBYL "C.ar" or a force-field type such as GAFF "ca"), atom
-// name kept in Atom::resname's companion field label, charges, substructures as molecules, bonds with orders,
-// and the CRYSIN cell. Several MOLECULE records are read as one system.
+// Tripos mol2: atoms with their type (Atom::name: SYBYL "C.ar" or a force-field type such as GAFF "ca"; from the
+// atom name column instead in a record that write_mol2 marked), charges, substructures as residues, bonds with
+// orders, and the CRYSIN cell. Several MOLECULE records are read as one system.
 System read_mol2(const std::string& path);
 // Materials Studio .car (coordinates, cell, force-field types, charges; molecules) with the bonds of the .mdf beside it
 // (bonds across the cell included). Each atom's name is its force-field type.
@@ -114,14 +114,20 @@ void write_xyz(const System& s, const std::string& path);
 // GROMACS .gro: one residue per molecule (its residue name, else MOL), positions and box in nm.
 void write_gro(const System& s, const std::string& path);
 void write_pdb(const System& s, const std::string& path);
-// Tripos mol2 with Atom::name as the atom type (force-field types or SYBYL), charges and bond orders.
+// Tripos mol2 with SYBYL atom types (Atom::name where it already is one, otherwise worked out from the elements,
+// bond orders and aromaticity), Atom::name in the atom name column (a COMMENT record tells read_mol2), charges and
+// bond orders.
 void write_mol2(const System& s, const std::string& path);
 // MDL SD file (V2000; V3000 above 999 atoms or bonds), the formal charges perceived from the structure
 void write_sdf(const System& s, const std::string& path);
 // One SD-file record onto a stream: the connection table, then the data items >  <name> / value / blank line, then $$$$.
 void write_sdf_record(const System& s, std::ostream& out, const std::vector<std::pair<std::string, std::string>>& data);
-// CIF in P 1: the cell, formula and volume, and every atom's fractional coordinates (throws without a periodic cell)
+// CIF: the cell, formula and volume, and the atoms' fractional coordinates (throws without a periodic cell). A space
+// group kept with the structure is written (its operations and the asymmetric unit) while every operation still maps
+// the atoms onto themselves; otherwise the file is P 1 with every atom.
 void write_cif(const System& s, const std::string& path);
+// A CIF 1.1 data block code from a title: printable ASCII only, at most 75 characters, "caps" when nothing is left.
+std::string cif_block_name(const std::string& title);
 // VASP POSCAR (VASP 5: species and counts lines, Direct coordinates wrapped into the cell). Atoms are written grouped by
 // element in the order each element first appears, as VASP needs; `order` (when given) receives, for each written line,
 // the atom's index in s. A non-empty `fixed` mask adds Selective dynamics: F F F for the held atoms, T T T for the rest.

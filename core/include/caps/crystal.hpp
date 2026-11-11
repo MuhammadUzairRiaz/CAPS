@@ -47,7 +47,7 @@ System read_cif(const std::string& path);
 struct CifDisorder {
   std::string mode = "major";              // major | group | random
   std::string group;                       // mode group: the group label kept
-  std::array<int, 3> supercell{1, 1, 1};   // mode random
+  std::array<int, 3> supercell{1, 1, 1};   // copies of the cell (every mode; random draws each copy)
   uint64_t seed = 1;
 };
 struct CifDisorderReport {
@@ -107,8 +107,9 @@ std::vector<Termination> slab_terminations(const System& bulk, int h, int k, int
 System cleave(const System& bulk, const SlabOptions& o, SlabReport* rep = nullptr);
 
 // Adds O–H to under-coordinated oxygens (S, Se), M–OH to cations bonded to oxygen in the bulk and H to under-coordinated
-// covalent network atoms (B, C, N, Si, P, Ge) of `s`, up to each element's coordination in `bulk`, pointing along
-// outward_of(position) where it can. Metals keep bare surfaces. Returns (H added, OH added).
+// covalent network atoms (B, C, N, Si, P, Ge) of `s`, on the free vertices of the atom's bulk polyhedron (from `bulk`)
+// fitted to its surviving bonds, outward_of(position) breaking ties. An O site lost by two surface cations is put back
+// once, bridging them. Metals keep bare surfaces. Returns (H added, OH added).
 std::pair<int, int> passivate_surface(System& s, const System& bulk, const std::function<Vec3(const Vec3&)>& outward_of);
 
 // The bonds of a periodic structure from covalent radii, counting every periodic image (no metal–metal bonds in

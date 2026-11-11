@@ -14,6 +14,7 @@
 #include <stdexcept>
 #include <tuple>
 
+#include "caps/normal_modes.hpp"
 #include "caps/relax.hpp"
 
 namespace caps {
@@ -181,6 +182,29 @@ void isotropic_averages(ElasticResult& r) {
   r.E_hill = 9 * K * G / (3 * K + G);
   r.nu_hill = (3 * K - 2 * G) / (2 * (3 * K + G));
   r.lambda_hill = K - 2 * G / 3;
+  // Born stability: C (symmetrised) must be positive definite. An indefinite C still inverts, but its Reuss bounds come
+  // out negative or meaningless and so do the Hill means built on them: withhold those and keep the Voigt bounds only
+  bool finite = true;
+  for (int i = 0; i < 6; ++i)
+    for (int j = 0; j < 6; ++j) finite = finite && std::isfinite(C[i][j]);
+  if (!finite) {
+    r.min_eigenvalue = NaN;
+    r.positive_definite = false;
+    return;
+  }
+  std::vector<double> m(36), w;
+  for (int i = 0; i < 6; ++i)
+    for (int j = 0; j < 6; ++j) m[size_t(i * 6 + j)] = 0.5 * (C[i][j] + C[j][i]);
+  symmetric_eigen(m, 6, w);
+  r.min_eigenvalue = w[0];
+  r.positive_definite = w[0] > 1e-9 * std::fabs(w[5]) && w[0] > 0;
+  if (!r.positive_definite && !singular) {
+    r.K_reuss = r.G_reuss = r.K_hill = r.G_hill = r.E_hill = r.nu_hill = r.lambda_hill = NaN;
+    r.notes.push_back("C is not positive definite (smallest eigenvalue " + fmt(w[0], 3) +
+                      " GPa): the cell is mechanically unstable or not at a minimum. Relax the box first, average more configurations or use a "
+                      "larger cell. The Reuss and Hill averages (Young's, bulk and shear moduli, Poisson's ratio), the axis moduli 1/S_ii "
+                      "and the sound speeds are withheld; only the Voigt bounds are given");
+  }
 }
 
 // ---------------------------------------------------------------- stress helpers
@@ -317,7 +341,7 @@ ElasticResult static_elastic(const std::vector<System>& configs, const StaticEla
                         "force tolerance limits the precision; try 1e-4 to 1e-3");
   double pmax = 0;
   for (double p : pre) pmax = std::max(pmax, std::fabs(p));
-  if (pmax > 0.05 * std::max(1e-9, res.K_hill))
+  if (pmax > 0.05 * std::max(1e-9, std::isfinite(res.K_hill) ? res.K_hill : res.K_voigt))
     res.notes.push_back("the minimised cell is under stress (largest component " + fmt(pmax, 3) + " GPa); relax the box first for zero-pressure constants");
   if (n == 1) res.notes.push_back("one configuration: amorphous cells vary; average several (frames of an equilibrated trajectory) for an error estimate");
   return res;
@@ -957,6 +981,7 @@ void analyse_tensile(TensileResult& r, double fit_strain, bool lateral) {
     if (p.strain <= fit_strain) { e.push_back(p.strain); s.push_back(p.stress); l.push_back(0.5 * (p.lateral1 + p.lateral2)); }
   double a, b, be;
   linfit(e, s, a, b, be);
+  const double s0 = a;   // the fitted stress at zero strain (residual stress, MPa): the offset line runs through it
   r.modulus = b / 1000;
   r.modulus_err = std::isnan(be) ? NaN : be / 1000;
   if (lateral) {
@@ -970,14 +995,36 @@ void analyse_tensile(TensileResult& r, double fit_strain, bool lateral) {
   for (size_t i = 0; i < c.size(); ++i)
     if (r.smooth[i] > r.peak_stress) { r.peak_stress = r.smooth[i]; r.peak_strain = c[i].strain; }
   r.yield_stress = r.yield_strain = 0;
+  if (c.empty()) return;
+  // 0.2 % offset yield: the first point where the smoothed curve falls to the line of slope E through the fitted
+  // stress at zero strain, shifted by 0.002, and stays at or below it for the next two points (noise near the end of
+  // the fit window is not a yield). Only with a modulus that is positive and larger than its error, and only at a
+  // tensile stress above both zero and the starting stress
   const double E = r.modulus * 1000;
-  if (E > 0)
-    for (size_t i = 0; i < c.size(); ++i)
-      if (c[i].strain > std::max(0.004, fit_strain) && r.smooth[i] <= E * (c[i].strain - 0.002)) {
-        r.yield_stress = r.smooth[i];
-        r.yield_strain = c[i].strain;
-        break;
-      }
+  const bool significant = E > 0 && std::isfinite(s0) && !(r.modulus_err >= r.modulus);
+  if (!significant) {
+    r.notes.push_back("no 0.2 % offset yield point: the tensile modulus (" + fmt(r.modulus, 3) + " ± " + fmt(r.modulus_err, 2) +
+                      " GPa) is not positive or not larger than its error, so the curve is dominated by noise or residual stress "
+                      "(equilibrate longer, use a larger cell, or pull further or more slowly)");
+    return;
+  }
+  auto below = [&](size_t i) { return r.smooth[i] <= s0 + E * (c[i].strain - 0.002); };
+  for (size_t i = 0; i < c.size(); ++i) {
+    if (!(c[i].strain > std::max(0.004, fit_strain)) || !below(i)) continue;
+    bool held = true;
+    for (size_t j = i + 1; j < std::min(c.size(), i + 3); ++j) held = held && below(j);
+    if (!held) continue;
+    if (r.smooth[i] > 0 && r.smooth[i] > s0) {
+      r.yield_stress = r.smooth[i];
+      r.yield_strain = c[i].strain;
+    } else {
+      r.notes.push_back("no 0.2 % offset yield point: the smoothed curve falls below the offset line at strain " + fmt(c[i].strain, 3) +
+                        " with a stress of " + fmt(r.smooth[i], 4) + " MPa, but a yield stress must be positive and above the fitted starting stress (" + fmt(s0, 4) +
+                        " MPa); the curve is dominated by noise or residual stress");
+    }
+    return;
+  }
+  r.notes.push_back("no yield point (0.2 % offset) within the deformation");
 }
 
 namespace {
@@ -1031,7 +1078,13 @@ TensileResult run_tensile_averaged(System& s, const TensileOptions& o) {
   if (!std::isfinite(res.yield_strain)) res.yield_stress = 0, res.yield_strain = 0;
   res.peak_stress = field([](const TensileResult& x) { return x.peak_stress; }).first;
   res.peak_strain = field([](const TensileResult& x) { return x.peak_strain; }).first;
-  res.method = r[0].method + "; along x, y and z from the same start, averaged (± s.d. over the three directions)";
+  for (const auto& x : r) {
+    res.equilibrate_steps += x.equilibrate_steps, res.pull_steps += x.pull_steps;
+    res.equilibrate_seconds += x.equilibrate_seconds, res.pull_seconds += x.pull_seconds;
+  }
+  res.method = r[0].method + "; along x, y and z from the same start, averaged (± s.d. over the three directions), each with its own " +
+               (res.equilibrate_steps > 0 ? "NPT prelude and pull (" : "pull (") +
+               std::to_string(res.equilibrate_steps + res.pull_steps) + " steps in all for the three)";
   char b[256];
   std::snprintf(b, sizeof b, "E by axis: x %.3f, y %.3f, z %.3f GPa; ν: x %.3f, y %.3f, z %.3f", r[0].modulus, r[1].modulus, r[2].modulus,
                 r[0].poisson, r[1].poisson, r[2].poisson);
@@ -1088,7 +1141,10 @@ TensileResult run_tensile(System& s, const TensileOptions& o) {
     e.frame_every = 0;
     e.frame = nullptr;
     e.progress = nullptr;
-    run_dynamics(s, e);
+    DynamicsReport erep;
+    run_dynamics(s, e, &erep);
+    res.equilibrate_steps = erep.steps > 0 ? erep.steps : e.steps;
+    res.equilibrate_seconds = erep.seconds;
     d.new_velocities = false;
   }
   double L0[3] = {0, 0, 0};
@@ -1120,16 +1176,25 @@ TensileResult run_tensile(System& s, const TensileOptions& o) {
   };
   DynamicsReport rep;
   run_dynamics(s, d, &rep);
+  res.pull_steps = rep.steps > 0 ? rep.steps : d.steps;
+  res.pull_seconds = rep.seconds;
   analyse_tensile(res, o.fit_strain, o.lateral_pressure);
   const char* ax = o.axis == 0 ? "x" : o.axis == 1 ? "y" : "z";
+  // the NPT prelude: its own steps and time, as the pull's are below (it is often the longer part of the run)
+  const std::string prelude = res.equilibrate_steps > 0
+      ? fmt(o.equilibrate_ps, 4) + " ps NPT first (each axis at the target pressure; " + std::to_string(res.equilibrate_steps) + " steps of " +
+            fmt(o.dt, 3) + " fs in " + fmt(res.equilibrate_seconds, 3) + " s)"
+      : rs ? std::string("no NPT prelude (continued from a checkpoint)") : std::string("no NPT prelude");
   res.method = std::string("uniaxial deformation along ") + ax + " at " + fmt(o.rate * 1e12, 3) + " s⁻¹ (engineering) to " +
                fmt(100 * o.max_strain, 3) + " %, " + fmt(o.temperature, 4) + " K (" + to_string(o.thermostat) + "), lateral axes " +
                (o.lateral_pressure ? "at " + fmt(o.pressure, 3) + " atm (Berendsen per axis)" : std::string("fixed")) +
-               "; " + fmt(o.equilibrate_ps, 4) + " ps NPT first (each axis at the target pressure); stress −P_" + ax + ax + "; modulus and Poisson ratio fitted from 0 to " + fmt(100 * o.fit_strain, 2) + " % strain";
+               "; " + prelude + "; stress −P_" + ax + ax + "; modulus and Poisson ratio fitted from 0 to " + fmt(100 * o.fit_strain, 2) + " % strain";
   // the run log (steps, speed, typing) is not a warning; only the first line (speed) goes into the method
-  if (!rep.notes.empty()) res.method += "; " + rep.notes.front();
+  if (!rep.notes.empty()) res.method += "; pull " + rep.notes.front();
+  if (res.equilibrate_steps > 0)
+    res.method += "; " + std::to_string(res.equilibrate_steps + res.pull_steps) + " steps in all (" + fmt(res.equilibrate_seconds + res.pull_seconds, 3) + " s)";
   if (o.rate > 5e-3) res.notes.push_back("strain rates above ~10⁹ s⁻¹ raise the modulus and yield stress of glassy polymers; experiments are 10⁻³–10⁰ s⁻¹");
-  if (!res.curve.empty() && res.yield_strain == 0) res.notes.push_back("no yield point (0.2 % offset) within the deformation");
+  // analyse_tensile has already said why there is no yield point, when there is none
   return res;
 }
 

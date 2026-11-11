@@ -49,8 +49,9 @@ br = caps.polymer("[*]C/C=C\\C[*]", dp=6)
 _gap = json.load(open(os.path.join(root, "data", "forcefields", "oplsaa2024.json")))
 _gap["dihedrals"] = [r for r in _gap["dihedrals"] if r["name"] != "CM-CT-CT-CM"]
 _gap["typing"] = os.path.join(root, "data", "typing", "oplsaa2024.typing.json")
-_gap_path = os.path.join(tempfile.gettempdir(), "caps_oplsaa2024_gap.json")
-json.dump(_gap, open(_gap_path, "w"))
+_gap_path = os.path.join(tempfile.gettempdir(), f"caps_oplsaa2024_gap_py{os.getpid()}.json")   # its own name: ctest -j runs the C++ tests beside it
+with open(_gap_path, "w") as _f:
+    json.dump(_gap, _f)
 before = br.field.assign(_gap_path)["complete"]
 filled = br.field.import_params(os.path.join(root, "tests", "data", "fitted_cm_ct_ct_cm.json"), fill_gaps=True)
 check(not before and filled["complete"] and filled["filled_terms"] == ["dihedral filled: CM-CT-CT-CM × 5"],
@@ -480,7 +481,7 @@ rx.react("cc_crosslink", cycles=30, per_cycle=2, between_chains=True, crosslinks
 rs = rx.react_summary()
 check(rs["chains"] == 8 and rs["crosslinks"] == rs["target"] == 4 and rs["byproducts"] == 4 and rs["field"].startswith("PCFF")
       and rs["field_after"].endswith("complete") and rx.field.report()["complete"],
-      f"react with PCFF: {rs['crosslinks']}/{rs['target']} links · ν {rs['density']:.0f} mol/m³ · Mc {rs['mc']:.0f} g/mol · after: {rs['field_after']}")
+      f"react with PCFF: {rs['crosslinks']}/{rs['target']} links · ν {rs['density']:.0f} mol/m³ · Mc {rs['mc'] or 0:.0f} g/mol · after: {rs['field_after']}")
 # the CLI's options through the same core path (ABI 70): unreacted sulfur donors removed in the core, the sulfur census
 # in the summary, overlays on an assignment, precision on md
 sr = caps.polymer("[*]C/C=C(C)\\C[*]", dp=8, chains=3, density=0.6, seed=2)

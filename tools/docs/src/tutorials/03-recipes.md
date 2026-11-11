@@ -35,6 +35,10 @@ caps run samples/ps_cell.yaml --out rec
 
 The folder gets the structure (`ps_cell.data`), the LAMMPS input, the GROMACS topology and coordinates, the properties (`ps_cell.properties.json`) and `ps_cell.data.provenance.json`. Exit codes tell a script what went wrong: 2 a bad recipe, 3 parameters missing from the force field, 4 a failed run.
 
+Every key is checked before anything runs, inside the stages too. A typo such as `temprature: 500` in `md` stops the run with exit 2 and `md: unknown key 'temprature' (did you mean temperature?)`, so a setting is never dropped in favour of its default. `dp` and `chains` must be whole numbers of at least 1.
+
+To keep a trajectory, add `--dump traj.lammpstrj --log thermo.csv`. An `md` or `equilibrate` stage writes a frame every `frame_ps` picoseconds (or every `frame_every` steps in `md`); a stage that sets neither writes about 100 frames when `--dump` is given.
+
 ## The methods paragraph
 
 ```bash

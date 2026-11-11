@@ -17,7 +17,8 @@ namespace caps {
 
 // ---------------------------------------------------------------- settings shared by every run that is compared
 struct VaspSettings {
-  double encut = 0;               // eV; 0 = 1.3 × the largest ENMAX of the POTCARs (520 without POTCARs)
+  double encut = 0;               // eV; 0 = 1.3 × the largest ENMAX of the POTCARs, else of data/dft/enmax.json (520 when an element is in neither)
+  std::string encut_note;         // where ENCUT came from (its INCAR comment); "" with encut > 0: given by the user
   std::string prec = "Accurate", algo = "Normal";
   int nelm = 120;
   int ismear = 0;

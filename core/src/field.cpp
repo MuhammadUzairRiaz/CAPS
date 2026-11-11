@@ -2154,7 +2154,9 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
           double dEdr = 0;
           if (t.form == 3) {   // FENE (LAMMPS bond fene): −½ K R0² ln(1 − (r/R0)²), plus WCA below 2^(1/6) σ when ε > 0
             const double q = r / t.b;
-            if (q >= 1) throw FieldError("a FENE bond is stretched past R0 (" + std::to_string(r) + " Å)");
+            if (q >= 1)
+              throw FieldError("a FENE bond is stretched to r = " + std::to_string(r) + " Å, past R0 = " + std::to_string(t.b) +
+                               " Å; lower --dt or relax the structure first");
             o.e = -0.5 * t.a * t.b * t.b * std::log(1 - q * q);
             dEdr = t.a * r / (1 - q * q);
             if (t.c > 0 && r < std::pow(2.0, 1.0 / 6) * t.d) {

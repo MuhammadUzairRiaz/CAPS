@@ -33,7 +33,9 @@ void set_element(System& s, uint32_t atom, int z);
 // Returns the new atom's index. bonded_to < 0: an isolated atom at `at`.
 // geometry: 0 from the parent's neighbours (sp³ unless it has a double or triple bond), 3 sp³, 2 sp², 1 sp.
 uint32_t add_atom(System& s, int bonded_to, int z, int order = 1, int geometry = 0, Vec3 at = {0, 0, 0});
-void add_bond(System& s, uint32_t i, uint32_t j, int order = 1);
+// Throws EditError when the bond would give an uncharged, non-aromatic atom more bonds than its element takes (H 1,
+// O 2, N 3, C 4, P 5, S 6); check_valence_limits = false skips that check.
+void add_bond(System& s, uint32_t i, uint32_t j, int order = 1, bool check_valence_limits = true);
 bool remove_bond(System& s, uint32_t i, uint32_t j);
 // Removes the flagged atoms and their bonds; the rest keep their order.
 void delete_atoms(System& s, const std::vector<char>& remove);
@@ -108,10 +110,12 @@ TacticityReport tacticity(const System& s);
 int set_tacticity(System& s, bool iso);
 
 // Attaches a fragment written as SMILES with * attachment points ("*C(=O)O*"): its `which`-th attachment point goes on
-// the target (replacing one of the target's hydrogens when it has one, else in its free direction); the fragment is
+// the target (replacing one of the target's hydrogens when it has one, else in its free direction; a hydrogen picked as
+// the target is replaced on the atom it is bonded to); the fragment is
 // rolled about the new bond to keep clear of the structure; other attachment points become hydrogens. Returns the
 // fragment's atoms in the structure.
 // direction: where the attaching atom goes from the target (a site's outward normal) when no hydrogen is replaced.
+// With replace_h, throws EditError when the new bond would overfill the target's valence (see add_bond).
 std::vector<uint32_t> attach_fragment(System& s, uint32_t target, const std::string& smiles, int which = 0, bool replace_h = true, const Vec3* direction = nullptr);
 
 // Silane coupling agents grafted onto surface silanols (silica fillers in rubber: TESPT / Si69 couples silica to the

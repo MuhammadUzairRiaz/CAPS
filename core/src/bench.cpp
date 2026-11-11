@@ -33,6 +33,7 @@
 #include "caps/recipe.hpp"
 #include "caps/render.hpp"
 #include "caps/typing.hpp"
+#include "parallel.hpp"
 
 namespace caps {
 namespace {
@@ -305,7 +306,9 @@ void t2(BenchTable& t, const BenchOptions& o) {
 // ---- T4: throughput
 void t4(BenchTable& t, const BenchOptions& o) {
   const System base = relaxed_sample(o);
-  const int threads = max_threads() > 0 ? max_threads() : std::min(16, int(std::max(1u, std::thread::hardware_concurrency())));
+  // the same count every command uses (set_max_threads, CAPS_THREADS / SLURM_CPUS_PER_TASK, else the hardware threads
+  // up to 16), passed to the runs so the Threads column is the count the ns/day was measured with
+  const int threads = default_threads();
   for (int big = 0; big < 2; ++big) {
     System s = big ? replicate(base, 2) : base;
     std::vector<double> nsd;
@@ -317,6 +320,7 @@ void t4(BenchTable& t, const BenchOptions& o) {
       d.thermo_every = int(d.steps);
       d.frame_every = 0;
       d.seed = uint64_t(r + 1);
+      d.energy.threads = threads;
       DynamicsReport rep;
       run_dynamics(run, d, &rep);
       nsd.push_back(rep.ns_per_day);
@@ -335,6 +339,7 @@ void t4(BenchTable& t, const BenchOptions& o) {
       d.frame_every = 0;
       d.seed = uint64_t(r + 1);
       d.energy.electrostatics = EnergyOptions::Electrostatics::PME;
+      d.energy.threads = threads;
       DynamicsReport rep;
       run_dynamics(run, d, &rep);
       nsd.push_back(rep.ns_per_day);
@@ -436,7 +441,7 @@ void t9(BenchTable& t, const BenchOptions& o) {
     for (size_t i = 0; i < a.atoms.size(); ++i) m = std::max(m, norm(a.atoms[i].pos - b.atoms[i].pos));
     return m;
   };
-  const int hw = std::min(16, int(std::max(1u, std::thread::hardware_concurrency())));
+  const int hw = default_threads();   // honours set_max_threads, CAPS_THREADS and SLURM_CPUS_PER_TASK
   step(o, "T9", "first run", 0.1);
   const System a = run(hw);
   step(o, "T9", "second run", 0.4);
@@ -445,10 +450,14 @@ void t9(BenchTable& t, const BenchOptions& o) {
   const int64_t steps = o.quick ? 200 : 1000;
   t.rows.push_back({{"Same seed, same threads (" + std::to_string(hw) + ")", std::to_string(steps), d1 == 0 ? "0 (bit-identical)" : num(d1, 2), d1 == 0 ? "pass" : "fail"},
                     d1 == 0 ? "pass" : "fail"});
-  step(o, "T9", "one thread", 0.7);
-  const System c = run(1);
-  const double d2 = maxdiff(a, c);
-  t.rows.push_back({{"Same seed, 1 vs " + std::to_string(hw) + " threads", std::to_string(steps), d2 == 0 ? "0 (bit-identical)" : num(d2, 2), "info"}, "info"});
+  if (hw > 1) {
+    step(o, "T9", "one thread", 0.7);
+    const System c = run(1);
+    const double d2 = maxdiff(a, c);
+    t.rows.push_back({{"Same seed, 1 vs " + std::to_string(hw) + " threads", std::to_string(steps), d2 == 0 ? "0 (bit-identical)" : num(d2, 2), "info"}, "info"});
+  } else {
+    t.rows.push_back({{"Same seed, 1 vs N threads", std::to_string(steps), "n/a (one thread given)", "info"}, "info"});
+  }
   t.note = "NVT with Bussi, seed 7. Each worker owns a fixed share of the pairs and results are reduced in worker order, so a run repeats exactly "
            "for a given thread count; another thread count sums in another order and differs in the last bits, which dynamics amplifies.";
 }
@@ -972,7 +981,26 @@ std::string bench_markdown(const std::vector<BenchTable>& tables) {
 }
 
 std::string bench_csv(const BenchTable& t) {
-  auto q = [](const std::string& s) {
+  // the display cells carry thousands separators ("1,000"); a CSV wants the plain number, so a cell that is exactly a
+  // separated integer loses its commas, and text cells ("Water box, 1.0 g/cm³") are left alone
+  auto plain = [](const std::string& s) {
+    size_t i = s.size() > 0 && s[0] == '-' ? 1 : 0;
+    const size_t comma = s.find(',', i);
+    if (comma == std::string::npos || comma == i || comma - i > 3) return s;
+    for (size_t k = i; k < comma; ++k)
+      if (s[k] < '0' || s[k] > '9') return s;
+    for (size_t k = comma; k < s.size(); k += 4) {
+      if (s[k] != ',' || k + 4 > s.size()) return s;
+      for (size_t j = k + 1; j < k + 4; ++j)
+        if (s[j] < '0' || s[j] > '9') return s;
+    }
+    std::string r;
+    for (char c : s)
+      if (c != ',') r += c;
+    return r;
+  };
+  auto q = [&plain](const std::string& cell) {
+    const std::string s = plain(cell);
     if (s.find_first_of(",\"\n") == std::string::npos) return s;
     std::string r = "\"";
     for (char c : s) r += c == '"' ? std::string("\"\"") : std::string(1, c);

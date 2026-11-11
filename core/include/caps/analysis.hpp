@@ -44,6 +44,8 @@ double measure(const System& s, const std::vector<uint32_t>& idx);
 
 // Backbone of each molecule with at least `min_atoms` heavy atoms: the longest path through heavy atoms that are not
 // in rings (vinyl polymers), or through all heavy atoms when rings are part of the main chain. Atom indices in order.
+// Bonded pieces that share a molecule ID get a backbone each; a chain bonded to itself through the periodic cell (a
+// crystal's infinite chain, side groups allowed off it) is walked in bond order and cut once.
 std::vector<std::vector<uint32_t>> backbones(const System& s, int min_atoms = 4);
 
 // Mean-square internal distances along the backbones (Theodorou and Suter, Macromolecules 1985): for each separation n,
@@ -54,6 +56,7 @@ struct InternalDistances {
   double b2 = 0;                // mean squared backbone bond length, Å²
   double r2_end = 0;            // mean squared end-to-end distance of the backbones, Å²
   int chains = 0;
+  int periodic = 0;             // backbones that are infinite chains bonded through the cell (cut once at a bond)
 };
 InternalDistances internal_distances(const System& s);
 

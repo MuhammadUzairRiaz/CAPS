@@ -43,6 +43,12 @@ Manifest manifest_from_json(const Json& j);
 std::string sidecar_path(const std::string& data_path);   // data_path + ".provenance.json"
 void write_manifest(const Manifest& m, const std::string& data_path);
 std::optional<Manifest> read_manifest(const std::string& data_path);
+// The same, saying why there is none in *error: "no X" (no sidecar), "X is not valid JSON (…)" or "X is not a
+// caps-manifest/1.0 file (…)", so a sidecar that is there but unreadable is not reported as missing.
+std::optional<Manifest> read_manifest(const std::string& data_path, std::string* error);
+// The chain a file made from these inputs starts from: each input's own manifest carried forward (its steps, its inputs,
+// whether it was deterministic), then the input itself by file name and sha256. Paths that are not files are skipped.
+Manifest manifest_from_inputs(const std::vector<std::string>& input_paths);
 
 KeyValues approximations(const Manifest& m);
 

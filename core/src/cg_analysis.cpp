@@ -307,7 +307,21 @@ CgTensionAnalysis analyse_tension(const CgStressStrain& c, double fit_strain, do
   // modulus: linear fit from 0 to fit_strain
   std::vector<double> x, y;
   for (size_t i = 0; i < n; ++i) if (c.strain[i] <= fit_strain) x.push_back(c.strain[i]), y.push_back(c.stress[i]);
-  if (x.size() >= 3) a.modulus = lin_slope(x, y);
+  {
+    char w[160];
+    a.modulus = x.size() >= 2 ? lin_slope(x, y) : kNaN;
+    if (!std::isfinite(a.modulus)) {
+      a.modulus = kNaN;
+      if (x.size() < 2)
+        std::snprintf(w, sizeof w, "modulus window 0-%g %% strain holds %zu stress point%s, too few for a fit; widen --fit-strain", 100 * fit_strain, x.size(), x.size() == 1 ? "" : "s");
+      else
+        std::snprintf(w, sizeof w, "modulus window 0-%g %% strain has no spread in strain, so no fit; widen --fit-strain", 100 * fit_strain);
+      a.note = w;
+    } else if (x.size() == 2) {
+      std::snprintf(w, sizeof w, "modulus from only 2 points in 0-%g %% strain", 100 * fit_strain);
+      a.note = w;
+    }
+  }
   // smoothed stress: ±0.5 % strain (as CAPS's own tensile analysis), at least one neighbour each side
   std::vector<double> sm(n);
   for (size_t i = 0; i < n; ++i) {
@@ -334,7 +348,7 @@ CgTensionAnalysis analyse_tension(const CgStressStrain& c, double fit_strain, do
     }
     a.softening = a.yield_stress - sm[imin];
     a.min_strain = c.strain[imin];
-  } else a.note = "no stress maximum (no yield) in the range";
+  } else a.note += (a.note.empty() ? "" : "; ") + std::string("no stress maximum (no yield) in the range");
   // hardening: σ against λ² − 1/λ past the softening minimum (or from the strain given)
   const double from = hardening_from >= 0 ? hardening_from : (iy ? a.min_strain : 0.3);
   std::vector<double> gx, gy;

@@ -8,6 +8,7 @@
 #include <numeric>
 #include <set>
 #include <stdexcept>
+#include <tuple>
 
 #include "caps/spacegroup.hpp"
 
@@ -485,7 +486,8 @@ HabitResult crystal_habit(const System& cell, const HabitOptions& o) {
     const SymmetryFound sf = find_symmetry(cell, o.symmetry_tolerance);
     if (const SpaceGroupSetting* g = find_space_group(sf.key); g && sf.number > 0) {
       r.space_group = sf.hm;
-      for (const auto& so : hall_operations(g->hall)) {
+      // the operations in the cell's own axes (a supercell's with every translation of the cell it repeats)
+      for (const auto& so : sf.ops.empty() ? hall_operations(g->hall) : sf.ops) {
         Op op;
         bool integral = true;
         for (int i = 0; i < 3; ++i)
@@ -676,8 +678,11 @@ System carve_particle(const System& cell, const std::vector<Vec3>& normals, cons
   const double scale = radius / rmax;
   const Topology topo = topology_of(cell);
   const std::vector<Unit>& units = topo.units;
-  for (const auto& u : units)
-    if (!u.periods.empty()) throw std::invalid_argument("particle: the crystal has an endless chain or network; carve it with the nano builder instead");
+  // A molecule (or an ion with its shell) goes in or out whole. An endless unit (a chain, layer, 3D network or metal) has
+  // no whole to keep, so its atoms are cut one by one at the planes and the bonds between kept atoms are kept: the surface
+  // then carries the cut bonds and, for an ionic network, whatever charge the cut leaves.
+  bool endless = false;
+  for (const auto& u : units) endless = endless || !u.periods.empty();
   // lattice translations whose cell can hold a unit within the radius
   Vec3 rc[3];
   reciprocal(cell.cell, rc);
@@ -688,19 +693,54 @@ System carve_particle(const System& cell, const std::vector<Vec3>& normals, cons
   out.has_charges = cell.has_charges;
   out.types = cell.types;
   out.bonds_from_file = true;
-  // the shape's centre at the cell's centre of mass of units
+  // the shape's centre: the centre of the cell's units, or of the cell's atoms when a unit is endless (its unwrapped centre
+  // of mass can lie far from the cell)
   Vec3 c0{0, 0, 0};
-  for (const auto& u : units) c0 = c0 + cell.cell.to_cartesian(u.com);
-  c0 = c0 * (1.0 / double(units.size()));
+  if (endless) {
+    for (const Vec3& f : topo.f) c0 = c0 + cell.cell.to_cartesian(f);
+    c0 = c0 * (1.0 / double(topo.f.size()));
+  } else {
+    for (const auto& u : units) c0 = c0 + cell.cell.to_cartesian(u.com);
+    c0 = c0 * (1.0 / double(units.size()));
+  }
+  auto inside = [&](const Vec3& x) {
+    for (size_t p = 0; p < normals.size(); ++p)
+      if (dot(normals[p], x) > distances[p] * scale + 1e-9) return false;
+    return true;
+  };
+  auto too_big = [&] {
+    if (out.atoms.size() > 15000) throw std::invalid_argument("particle: more than 15,000 atoms; choose a smaller size");
+  };
+  // an atom with a single bond (a hydrogen, a terminal oxygen) goes with its partner, so the cut leaves no lone end atoms
+  auto anchor = [&](size_t a, const Vec3& L) {
+    if (topo.out[a].size() == 1) {
+      const Edge& e = topo.edges[topo.out[a][0]];
+      if (topo.out[e.j].size() > 1) return topo.f[e.j] + L + Vec3{double(e.L[0]), double(e.L[1]), double(e.L[2])};
+    }
+    return topo.f[a] + L;
+  };
   int64_t mol = 0;
+  std::map<std::tuple<size_t, int, int, int>, size_t> kept;   // (cell atom, translation) of an endless unit's atom -> its index
   for (int i = -n[0]; i <= n[0]; ++i)
     for (int j = -n[1]; j <= n[1]; ++j)
       for (int k = -n[2]; k <= n[2]; ++k)
         for (const auto& u : units) {
-          const Vec3 c = cell.cell.to_cartesian(u.com + Vec3{double(i), double(j), double(k)}) - c0;
-          bool in = true;
-          for (size_t p = 0; p < normals.size() && in; ++p) in = dot(normals[p], c) <= distances[p] * scale + 1e-9;
-          if (!in) continue;
+          const Vec3 L{double(i), double(j), double(k)};
+          if (!u.periods.empty()) {
+            for (size_t a : u.atoms) {
+              if (!inside(cell.cell.to_cartesian(anchor(a, L)) - c0)) continue;
+              Atom at = cell.atoms[a];
+              at.pos = cell.cell.to_cartesian(topo.f[a] + L) - c0;
+              at.id = int64_t(out.atoms.size() + 1);
+              at.image = {0, 0, 0};
+              kept[{a, i, j, k}] = out.atoms.size();
+              out.atoms.push_back(at);
+              too_big();
+            }
+            continue;
+          }
+          const Vec3 c = cell.cell.to_cartesian(u.com + L) - c0;
+          if (!inside(c)) continue;
           const size_t base = out.atoms.size();
           std::map<size_t, size_t> local;
           ++mol;
@@ -717,8 +757,36 @@ System carve_particle(const System& cell, const std::vector<Vec3>& normals, cons
             for (size_t k : topo.out[q])
               if (topo.edges[k].i < topo.edges[k].j && local.count(topo.edges[k].j))
                 out.bonds.push_back({uint32_t(local[topo.edges[k].i]), uint32_t(local[topo.edges[k].j]), 1});
-          if (out.atoms.size() > 15000) throw std::invalid_argument("particle: more than 15,000 atoms; choose a smaller size");
+          too_big();
         }
+  // the bonds of the endless units between atoms both kept (the edges come in both directions, so each bond once); each
+  // connected piece of what was kept is one molecule (a chain, a layer, the particle's network)
+  std::vector<size_t> root(out.atoms.size());
+  std::iota(root.begin(), root.end(), size_t(0));
+  auto find = [&](size_t x) {
+    while (root[x] != x) x = root[x] = root[root[x]];
+    return x;
+  };
+  for (const auto& [key, at] : kept) {
+    const auto& [a, i, j, k] = key;
+    for (size_t q : topo.out[a]) {
+      const Edge& e = topo.edges[q];
+      const auto it = kept.find({e.j, i + e.L[0], j + e.L[1], k + e.L[2]});
+      if (it == kept.end() || at >= it->second) continue;
+      out.bonds.push_back({uint32_t(at), uint32_t(it->second), 1});
+      root[find(it->second)] = find(at);
+    }
+  }
+  std::map<size_t, int64_t> piece;
+  std::vector<size_t> endless_atoms;
+  for (const auto& kv : kept) endless_atoms.push_back(kv.second);
+  std::sort(endless_atoms.begin(), endless_atoms.end());
+  for (size_t x : endless_atoms) {
+    auto [it, fresh] = piece.try_emplace(find(x), mol + 1);
+    if (fresh) ++mol;
+    out.atoms[x].mol = it->second;
+  }
+  if (out.atoms.empty()) throw std::invalid_argument("particle: no atom falls inside the shape; choose a larger size");
   return out;
 }
 

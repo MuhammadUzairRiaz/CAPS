@@ -138,7 +138,7 @@ struct CycleRow {
   int cycle = 0, reactions = 0, total = 0;
   double conversion = 0;        // reactions so far / initial counted sites
   ClusterStats clusters;
-  double energy = 0;            // after relaxation, kcal/mol
+  double energy = 0;            // after relaxation or dynamics, kcal/mol; a cycle with no reaction keeps the previous one's (0: not evaluated)
   double max_force = 0;         // largest force after the cycle's relaxation, kcal/mol/Å (0: not relaxed)
   int atoms = 0;
   int crosslinks = 0;           // links between different chains so far

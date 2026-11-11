@@ -201,7 +201,8 @@ TEST(Exchange, InterfaceBondsAndCrossingProfile) {
   EXPECT_EQ(side[3], 0);
   const auto r = interface_bonds(s, side, 2, 0.5, 1.0);
   EXPECT_EQ(r.bonds, 3u);
-  EXPECT_EQ(r.bridges, 2u);
+  EXPECT_EQ(r.bridges, 1u);            // across the cut
+  EXPECT_EQ(r.through_boundary, 1u);   // through the periodic face, which a cut leaves intact
   EXPECT_EQ(r.crossing_plane, 1u);
   ASSERT_EQ(r.crossings.size(), 20u);
   EXPECT_DOUBLE_EQ(r.crossings[0], 1.0);    // z = 0
@@ -212,7 +213,9 @@ TEST(Exchange, InterfaceBondsAndCrossingProfile) {
   // an atom left out takes no part in bridges
   auto side2 = side;
   side2[1] = -1;
-  EXPECT_EQ(interface_bonds(s, side2, 2, 0.5, 1.0).bridges, 1u);
+  const auto r2 = interface_bonds(s, side2, 2, 0.5, 1.0);
+  EXPECT_EQ(r2.bridges, 0u);
+  EXPECT_EQ(r2.through_boundary, 1u);
 }
 
 TEST(Exchange, HealingEfficiencyDefinitions) {

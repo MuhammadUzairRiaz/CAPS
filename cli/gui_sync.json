@@ -142,7 +142,19 @@
     "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
     "--charges": "page",
     "--csv": "page",
-    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl"
+    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl",
+    "--equilibrate": "Views/MainWindow.axaml|Analyze.EqPsD",
+    "--eq-ps": "cli: the same as --equilibrate, the name caps pull uses",
+    "--dt": "cli: not on the Mechanics page; the Studio pull uses the default 1 fs",
+    "--pressure": "cli: not on the Mechanics page; the Studio pull uses the default 1 atm",
+    "--tau-p": "cli: not on the Mechanics page; the Studio pull uses the default 1000 fs",
+    "--fit": "cli: not on the Mechanics page; the Studio fits from 0 to the default 2 % strain",
+    "--seed": "cli: not on the Mechanics page; the Studio pull uses the default seed",
+    "--new-velocities": "cli: the Studio keeps the frame's velocities when it has them",
+    "--dump": "cli: a trajectory of the pull for viewing elsewhere",
+    "--every": "cli: steps between the frames --dump writes",
+    "--checkpoint-every": "cli: checkpoints for a cluster job that may be stopped",
+    "--resume-curve": "cli: continues a stopped cluster job from its checkpoint"
    }
   },
   "tg": {
@@ -259,7 +271,8 @@
     "caps_save"
    ],
    "options": {
-    "--topology": "page"
+    "--topology": "page",
+    "--supercell": "partial: the Studio makes the copies with its supercell editing tool before saving; auto (the copies a cell needs for its bonds) is the command line's"
    }
   },
   "edit": {
@@ -301,7 +314,9 @@
     "--repeats": "page",
     "--quick": "page",
     "--out": "page",
-    "--samples": "page"
+    "--samples": "page",
+    "--cells": "cli: the Studio reads the cells from CAPS_BENCH_CELLS, else ~/.caps/bench/cells",
+    "--reference": "cli: the Studio uses data/reference/polymers.json beside the force-field library"
    }
   },
   "build": {
@@ -750,7 +765,8 @@
     "--input": "ViewModels/MainViewModel.Batch.cs|Glob(",
     "--frame": "page",
     "--csv": "page",
-    "--branch": "page"
+    "--branch": "page",
+    "--topology": "cli: one topology for every input of a pipeline run (without it, the pipeline's source: topology:)"
    }
   },
   "crystal": {
@@ -996,7 +1012,11 @@
    ],
    "options": {
     "--topology": "page",
-    "--forces": "cli: per-atom forces written to a text file (a check for developers); the Studio shows the energy by term"
+    "--forces": "cli: per-atom forces written to a text file (a check for developers); the Studio shows the energy by term",
+    "--ff": "partial: the Typing report shows the force field assigned on the Force field page",
+    "--overlay": "partial: the Typing report uses the overlays set on the Force field page",
+    "--charges": "partial: the Typing report uses the charges chosen on the Force field page",
+    "--cutoff": "cli: the energy by term at another cut-off than the force field's own"
    }
   },
   "relax": {
@@ -1318,7 +1338,8 @@
     "--moltemplate": "partial: the Export center writes LAMMPS, GROMACS and DL_POLY; moltemplate output is the command line's",
     "--complete": "ViewModels/FieldViewModel.cs|CompleteMl",
     "--model": "partial: the Studio uses CAPS's model where the core finds it (find_ml_model: beside the force-field library, CAPS_HOME, the app)",
-    "--restraints": "partial: the Export center writes the restraints set on the Minimise page"
+    "--restraints": "partial: the Export center writes the restraints set on the Minimise page",
+    "--supercell": "partial: the Field page names the copies a cell too small for its bonds needs; the Crystal builder makes the supercell"
    }
   },
   "ff overlays": {
@@ -1387,7 +1408,9 @@
     "--ff": "partial: the Studio uses the force field assigned on the Force field page",
     "--json": "partial: the Studio shows the result on the page",
     "--lammps-input": "Views/Pages/ThermalPage.axaml|Write LAMMPS inputs",
-    "--long": "cli: quiets the note that a run is longer than a short local check"
+    "--long": "cli: quiets the note that a run is longer than a short local check",
+    "--lammps-eq-ps": "cli: the Studio's LAMMPS inputs use 100 ps of equilibration",
+    "--lammps-ps": "cli: the Studio's LAMMPS inputs sample 2000 ps"
    }
   },
   "--check-update": {
@@ -1626,7 +1649,8 @@
     "--max-length": "cli: the page searches cells up to 15 Å",
     "--lines": "cli: the page uses the first 20 lines",
     "--unindexed": "cli: the page indexes every line",
-    "--json": "partial: the page lists the cells"
+    "--json": "partial: the page lists the cells",
+    "--max-boxes": "cli: a cap on the dichotomy's search boxes for a long run from the command line"
    }
   },
   "solve": {
@@ -1641,7 +1665,11 @@
     "--steps": "cli: structure solution runs from the command line and Python",
     "--seed": "cli: structure solution runs from the command line and Python",
     "--out": "cli: structure solution runs from the command line and Python",
-    "--quiet": "cli: structure solution runs from the command line and Python"
+    "--quiet": "cli: structure solution runs from the command line and Python",
+    "--restarts": "cli: structure solution runs from the command line and Python",
+    "--uvw": "cli: structure solution runs from the command line and Python",
+    "--xy": "cli: structure solution runs from the command line and Python",
+    "--zero": "cli: structure solution runs from the command line and Python"
    }
   },
   "sqs": {
@@ -1840,13 +1868,15 @@
    "options": {
     "--kernel": "page",
     "--ewald": "page",
+    "--no-ewald": "page",
     "--hydrogen": "page",
     "--bounds": "page",
     "--cutoff": "page",
     "--lambda": "cli: the page uses λ = 0.4913",
     "--accuracy": "cli: the page uses an Ewald accuracy of 1e-7",
     "--total": "cli: the page equalises to a neutral total, then Adjust sets the total",
-    "--chg": "partial: the page applies the charges to the structure or exports them as .mol2"
+    "--chg": "partial: the page applies the charges to the structure or exports them as .mol2",
+    "--allow-unconverged": "cli: an override for scripts that must write charges that did not converge"
    }
   },
   "pores": {
@@ -1906,6 +1936,8 @@
     "--relax-ends": "page",
     "--fmax": "page",
     "--ff": "partial: the Studio uses the force field assigned in Field, else UFF",
+    "--overlay": "partial: the Studio uses the overlays of the force field assigned in Field",
+    "--charges": "partial: the Studio uses the charges of the force field assigned in Field",
     "--spring": "cli: the page uses 5 kcal/mol/Å²",
     "--no-climb": "cli: the page always lets the highest image climb",
     "--steps": "cli: the page allows 2000 steps",

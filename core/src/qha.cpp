@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <stdexcept>
 
 #include "caps/cell_relax.hpp"
@@ -120,6 +121,23 @@ Fit fit_poly(const std::vector<std::array<double, 3>>& x, const std::vector<doub
   return f;
 }
 
+// true when the cells at x fix every coefficient of the basis (the normal equations are not singular)
+bool determines(const std::vector<std::array<double, 3>>& x, const std::vector<Exp>& basis, double scale) {
+  const size_t m = basis.size();
+  std::vector<std::vector<double>> A(m, std::vector<double>(m, 0.0));
+  std::vector<double> row(m), z;
+  for (const auto& p : x) {
+    for (size_t k = 0; k < m; ++k) {
+      double t = 1;
+      for (int d = 0; d < 3; ++d) t *= std::pow(p[size_t(d)] / scale, basis[k][size_t(d)]);
+      row[k] = t;
+    }
+    for (size_t i = 0; i < m; ++i)
+      for (size_t j = 0; j < m; ++j) A[i][j] += row[i] * row[j];
+  }
+  return solve(A, std::vector<double>(m, 0.0), z);
+}
+
 }  // namespace
 
 double qha_step(double T) { return T >= 2 ? 1.0 : T > 0 ? T / 2 : 1.0; }
@@ -138,41 +156,87 @@ QhaResult qha_analyze(const std::vector<QhaSample>& samples, const std::vector<d
   if (vol) free = {0};
   else for (int k = 0; k < 3; ++k) if (variable[size_t(k)]) free.push_back(k);
   if (free.empty()) throw std::invalid_argument("quasi-harmonic: no axis is free to change");
-  std::vector<std::array<double, 3>> X;
-  double lo[3] = {1e300, 1e300, 1e300}, hi[3] = {-1e300, -1e300, -1e300}, span = 0;
-  for (const auto& s : samples) {
-    std::array<double, 3> x{0, 0, 0};
-    if (vol) x[0] = s.volume / volume0 - 1;
-    else for (int k : free) x[size_t(k)] = s.strain[size_t(k)];
-    for (int k = 0; k < 3; ++k) lo[k] = std::min(lo[k], x[size_t(k)]), hi[k] = std::max(hi[k], x[size_t(k)]), span = std::max(span, std::fabs(x[size_t(k)]));
-    X.push_back(x);
-  }
-  if (span <= 0) throw std::invalid_argument("quasi-harmonic: the strained cells are all the same");
-  std::vector<Exp> basis{{0, 0, 0}};
-  if (vol) {
-    const int deg = std::min(4, int(samples.size()) - 1);
-    if (deg < 2) throw std::invalid_argument("quasi-harmonic: at least three volumes");
-    for (int e = 1; e <= deg; ++e) basis.push_back({e, 0, 0});
-  } else {
-    // every term up to third order, with x_i⁴ and x_i²x_j² (crystals are strongly anharmonic over a few per cent)
-    const size_t n = free.size();
-    auto term = [&](int a, int b, int c) {   // exponents of the free variables, in order
+  // The cells the fit uses: those with no imaginary mesh mode. An unstable mode is left out of F_vib, where its soft
+  // neighbours at the next strain add a large negative k T ln(h nu / k T): F_vib at that cell jumps up by an amount that
+  // grows with T, steepens G there and holds the minimum inside the grid (PE at +2 % strain: B_T rising from 37 to
+  // 100 GPa on heating, alpha falling). Only when too few stable cells remain for any fit are all cells used, and then
+  // every row is marked unstable.
+  auto coords = [&](const std::vector<size_t>& idx) {
+    std::vector<std::array<double, 3>> out;
+    for (size_t s : idx) {
+      std::array<double, 3> x{0, 0, 0};
+      if (vol) x[0] = samples[s].volume / volume0 - 1;
+      else for (int k : free) x[size_t(k)] = samples[s].strain[size_t(k)];
+      out.push_back(x);
+    }
+    return out;
+  };
+  // A least-squares basis for the cells at x, with at least one more cell than terms: a polynomial through every point
+  // carries any noise in F_vib straight into the curvature (and so into B_T). Empty when no fit is possible.
+  auto basis_for = [&](const std::vector<std::array<double, 3>>& x, double scale) {
+    std::vector<Exp> b{{0, 0, 0}};
+    const int n = int(x.size());
+    if (vol) {
+      // G as a polynomial in V/V0 - 1, degree up to 4: 4 cells a quadratic, 6 a cubic, 7 and more a quartic
+      if (n < 4) return std::vector<Exp>{};
+      const int deg = std::max(2, std::min(4, n - 3));
+      for (int e = 1; e <= deg; ++e) b.push_back({e, 0, 0});
+      return determines(x, b, scale) ? b : std::vector<Exp>{};
+    }
+    // every term up to third order, with x_i^4 and x_i^2 x_j^2 (crystals are strongly anharmonic over a few per cent);
+    // when the cells cannot carry them, the x_i^2 x_j^2, then the x_i^4, then the mixed and then the pure cubic terms go,
+    // each set whole so no axis is favoured; the quadratic surface always stays
+    const size_t nf = free.size();
+    std::vector<std::pair<int, Exp>> terms;   // (the order they go in, 4 = kept), exponents
+    auto term = [&](int a, int bb, int c) {   // exponents of the free variables, in order
       Exp e{0, 0, 0};
       e[size_t(free[0])] = a;
-      if (n > 1) e[size_t(free[1])] = b;
-      if (n > 2) e[size_t(free[2])] = c;
-      basis.push_back(e);
+      if (nf > 1) e[size_t(free[1])] = bb;
+      if (nf > 2) e[size_t(free[2])] = c;
+      const int tot = a + bb + c, nz = (a > 0) + (bb > 0) + (c > 0);
+      const int cls = tot == 4 ? (nz > 1 ? 0 : 1) : tot == 3 ? (nz > 1 ? 2 : 3) : 4;
+      terms.push_back({cls, e});
     };
     for (int a = 0; a <= 4; ++a)
-      for (int b = 0; b <= (n > 1 ? 4 : 0); ++b)
-        for (int c = 0; c <= (n > 2 ? 4 : 0); ++c) {
-          const int tot = a + b + c;
+      for (int bb = 0; bb <= (nf > 1 ? 4 : 0); ++bb)
+        for (int c = 0; c <= (nf > 2 ? 4 : 0); ++c) {
+          const int tot = a + bb + c;
           if (tot == 0) continue;
-          const bool quartic = tot == 4 && ((a == 4 || b == 4 || c == 4) || (a == 2 && b == 2) || (a == 2 && c == 2) || (b == 2 && c == 2));
-          if (tot <= 3 || quartic) term(a, b, c);
+          const bool quartic = tot == 4 && ((a == 4 || bb == 4 || c == 4) || (a == 2 && bb == 2) || (a == 2 && c == 2) || (bb == 2 && c == 2));
+          if (tot <= 3 || quartic) term(a, bb, c);
         }
-    if (samples.size() < basis.size()) throw std::invalid_argument("quasi-harmonic: too few strained cells for the fit");
+    for (int drop = 0; drop <= 4; ++drop) {   // drop: the classes below it are left out
+      b.assign(1, Exp{0, 0, 0});
+      for (const auto& t : terms) if (t.first >= drop) b.push_back(t.second);
+      if (int(b.size()) < n && determines(x, b, scale)) return b;
+    }
+    return std::vector<Exp>{};
+  };
+  auto span_of = [](const std::vector<std::array<double, 3>>& x) {
+    double v = 0;
+    for (const auto& p : x) for (double c : p) v = std::max(v, std::fabs(c));
+    return v;
+  };
+  std::vector<size_t> use, every;
+  for (size_t s = 0; s < samples.size(); ++s) {
+    every.push_back(s);
+    if (samples[s].imaginary == 0) use.push_back(s);
   }
+  std::vector<std::array<double, 3>> X = coords(use);
+  double span = span_of(X);
+  std::vector<Exp> basis = span > 0 ? basis_for(X, span) : std::vector<Exp>{};
+  const size_t left_out = samples.size() - use.size();
+  const bool fallback = basis.empty() && left_out > 0;   // too few stable cells: all of them, every row marked
+  if (fallback) {
+    use = every, X = coords(use), span = span_of(X);
+    if (span > 0) basis = basis_for(X, span);
+  }
+  if (span <= 0) throw std::invalid_argument("quasi-harmonic: the strained cells are all the same");
+  if (basis.empty())
+    throw std::invalid_argument(vol ? "quasi-harmonic: at least four volumes" : "quasi-harmonic: too few strained cells for the fit");
+  double lo[3] = {1e300, 1e300, 1e300}, hi[3] = {-1e300, -1e300, -1e300};
+  for (const auto& x : X)
+    for (int k = 0; k < 3; ++k) lo[k] = std::min(lo[k], x[size_t(k)]), hi[k] = std::max(hi[k], x[size_t(k)]);
   const double P = pressure_atm * kAtmToKcalA3;
   auto volume_at = [&](const std::array<double, 3>& x) {
     if (vol) return volume0 * (1 + x[0]);
@@ -183,9 +247,10 @@ QhaResult qha_analyze(const std::vector<QhaSample>& samples, const std::vector<d
   auto minimum = [&](size_t it, int j) {
     std::vector<double> y;
     size_t best = 0;
-    for (size_t s = 0; s < samples.size(); ++s) {
-      y.push_back(samples[s].energy + samples[s].F[it][size_t(j)] + P * samples[s].volume);
-      if (y[s] < y[best]) best = s;
+    for (size_t u = 0; u < use.size(); ++u) {
+      const QhaSample& s = samples[use[u]];
+      y.push_back(s.energy + s.F[it][size_t(j)] + P * s.volume);
+      if (y[u] < y[best]) best = u;
     }
     double rms = 0;
     const Fit f = fit_poly(X, y, basis, span, &rms);
@@ -221,6 +286,11 @@ QhaResult qha_analyze(const std::vector<QhaSample>& samples, const std::vector<d
     return L;
   };
   bool any_out = false, unstable = false;
+  const double margin = 0.05 * span;
+  auto outside = [&](const std::array<double, 3>& x) {
+    for (int k : free) if (x[size_t(k)] < lo[k] - margin || x[size_t(k)] > hi[k] + margin) return true;
+    return false;
+  };
   for (size_t it = 0; it < temperatures.size(); ++it) {
     const double T = temperatures[it], dT = qha_step(T);
     QhaRow row;
@@ -229,17 +299,18 @@ QhaResult qha_analyze(const std::vector<QhaSample>& samples, const std::vector<d
     row.volume = m.V, row.G = m.G, row.length = lengths_of(m.x);
     if (vol) { const double q = std::cbrt(1 + m.x[0]) - 1; row.strain = {q, q, q}; }
     else row.strain = m.x;
-    const double margin = 0.05 * span;
-    for (int k : free) if (m.x[size_t(k)] < lo[k] - margin || m.x[size_t(k)] > hi[k] + margin) row.extrapolated = true;
-    any_out = any_out || row.extrapolated;
+    row.extrapolated = outside(m.x);
     // the curvature must be a minimum along every free variable
-    for (int k : free) if (m.H[size_t(k)][size_t(k)] <= 0) unstable = true;
+    for (int k : free) if (m.H[size_t(k)][size_t(k)] <= 0) row.unstable = true;
+    if (fallback) row.unstable = true;
     if (T > 0) {
       const Min a = minimum(it, 0), b = minimum(it, 2);
+      if (outside(a.x) || outside(b.x)) row.extrapolated = true;   // alpha leans on the minima at T +/- dT too
       row.alpha_V = (b.V - a.V) / (2 * dT * m.V);
       const auto La = lengths_of(a.x), Lb = lengths_of(b.x);
       for (int k = 0; k < 3; ++k) row.alpha[size_t(k)] = (Lb[size_t(k)] - La[size_t(k)]) / (2 * dT * row.length[size_t(k)]);
     }
+    any_out = any_out || row.extrapolated;
     // B_T = V / (vᵀ H⁻¹ v), v = ∂V/∂x
     {
       const size_t n = free.size();
@@ -253,21 +324,42 @@ QhaResult qha_analyze(const std::vector<QhaSample>& samples, const std::vector<d
         double q = 0;
         for (size_t i = 0; i < n; ++i) q += v[i] * z[i];
         if (q > 0) row.B = m.V / q * kKcalA3ToGPa;
+        else row.unstable = true;   // G curves down along some combination of the strains
+      } else {
+        row.unstable = true;
       }
     }
+    unstable = unstable || row.unstable;
     // C_v and S at the minimum, from fits of their own over the strained cells
     std::vector<double> yc, ys;
-    for (const auto& s : samples) yc.push_back(s.Cv[it][T > 0 ? 1 : 0]), ys.push_back(s.S[it][T > 0 ? 1 : 0]);
+    for (size_t u : use) yc.push_back(samples[u].Cv[it][T > 0 ? 1 : 0]), ys.push_back(samples[u].S[it][T > 0 ? 1 : 0]);
     row.Cv = fit_poly(X, yc, basis, span).value(m.x);
     row.S = fit_poly(X, ys, basis, span).value(m.x);
     row.Cp = row.Cv + T * m.V * (row.B / kKcalA3ToGPa) * row.alpha_V * row.alpha_V * 1000;   // cal/mol/K
     r.rows.push_back(row);
   }
-  if (any_out) r.notes.push_back("a minimum lies outside the strains sampled: the cell there is extrapolated; widen the range");
-  if (unstable) r.notes.push_back("the fitted free energy is not a minimum along every axis at some temperature: check the range and the imaginary modes");
   int imag = 0;
-  for (const auto& s : samples) imag = std::max(imag, s.imaginary);
-  if (imag > 0) r.notes.push_back("up to " + std::to_string(imag) + " mesh modes are imaginary at some strain and leave F_vib: treat those cells with care");
+  double wmin = 0;
+  for (const auto& q : samples) imag = std::max(imag, q.imaginary), wmin = std::min(wmin, q.imaginary > 0 ? q.min_wavenumber : 0.0);
+  char b[400];
+  if (left_out > 0 && !fallback) {
+    std::snprintf(b, sizeof b, "%zu of %zu strained cells have imaginary mesh modes (up to %d, down to %.1f cm⁻¹) and are left out of the fit: "
+                  "their F_vib lacks those modes", left_out, samples.size(), imag, wmin);
+    r.notes.push_back(b);
+  }
+  if (fallback) {
+    std::snprintf(b, sizeof b, "%zu of %zu strained cells have imaginary mesh modes (up to %d, down to %.1f cm⁻¹) and too few stable cells "
+                  "remain for a fit: all cells are used and every row is marked unstable", left_out, samples.size(), imag, wmin);
+    r.notes.push_back(b);
+  }
+  if (any_out) {
+    if (left_out > 0 && !fallback)
+      r.notes.push_back("a minimum lies beyond the cells without imaginary modes: the lattice is not stable there along this strain path, so "
+                        "the rows marked extrapolated are not a stable state" + std::string(vol ? " (for an anisotropic crystal try the axes mode)" : ""));
+    else
+      r.notes.push_back("a minimum lies outside the strains sampled: the cell there is extrapolated; widen the range");
+  }
+  if (unstable) r.notes.push_back("the fitted free energy is not a minimum along every axis at some temperature, or rests on unstable cells: rows marked unstable");
   return r;
 }
 
@@ -341,6 +433,10 @@ QhaResult quasi_harmonic(const System& cell0, const QhaOptions& o) {
           }
     if (fr.size() == 3)
       for (double e : {-2 * d, -d, d, 2 * d}) grid.push_back({e, e, e});   // the hydrostatic path
+    // the cell count is fixed by that design; the points option only spaces the volume grid
+    if (o.points != QhaOptions{}.points)
+      notes.push_back("the points option applies to the volume mode only: the axes mode uses its own grid of " + std::to_string(grid.size()) +
+                      " cells (the centre, 4 along each free axis, 4 for each pair of free axes, 4 along the diagonal when all three are free)");
   }
   // three temperatures about each requested one (0 K: 0, ΔT, 2ΔT)
   std::vector<double> temps;

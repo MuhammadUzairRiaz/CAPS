@@ -14,7 +14,8 @@
 //   bond_memory          the fraction of exchangeable sites still bonded to their time-zero partner, all time origins; a
 //                        KWW fit, the 1/e time, and the two-step form f = ½[1 + e^(−t/τ)] exp[−(t/τ_d)^β] of Branham-Ferrari
 //                        et al. (Eq. 3), where bonds come back to old partners before diffusion carries them apart
-//   interface_bonds      bonds joining atoms that started on different sides of a cut, and the number of bonds crossing
+//   interface_bonds      bonds joining atoms that started on different sides of a cut, across the cut plane (bonds that
+//                        join the sides through the periodic cell face are counted apart), and the number of bonds crossing
 //                        each plane along an axis, B(z) (Ciarella & Ellenbroek, Coatings 9, 114, 2019; Stukalin et al.,
 //                        Macromolecules 46, 7525, 2013)
 //   healing_efficiency   a healed or welded sample's stress–strain curve against the intact one's: toughness (area) ratio
@@ -144,7 +145,8 @@ std::vector<Property> bond_memory_properties(const BondMemory& r, const std::str
 
 struct InterfaceBonds {
   size_t bonds = 0;              // bonds in the structure
-  size_t bridges = 0;            // bonds between an atom of side 0 and one of side 1
+  size_t bridges = 0;            // bonds between an atom of side 0 and one of side 1 across the cut plane
+  size_t through_boundary = 0;   // bonds between the two sides through the periodic cell face (left intact by a cut)
   size_t crossing_plane = 0;     // bonds crossing the plane at `plane` (fraction of the cell along the axis)
   std::vector<double> z, crossings;   // B(z): bonds crossing the plane at each bin edge (Å along the axis)
 };

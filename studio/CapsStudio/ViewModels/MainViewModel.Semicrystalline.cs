@@ -259,7 +259,7 @@ public sealed partial class MainViewModel
     public decimal ThDt { get => _thDt; set => Set(ref _thDt, Math.Clamp(value, 0.1m, 5)); }
     public decimal ThEvery { get => _thEvery; set => Set(ref _thEvery, Math.Clamp(Math.Round(value), 1, 1000)); }
     public decimal ThCorr { get => _thCorr; set => Set(ref _thCorr, Math.Clamp(value, 0.01m, 1000)); }
-    public decimal ThSlabs { get => _thSlabs; set => Set(ref _thSlabs, Math.Clamp(Math.Round(value / 2) * 2, 6, 200)); }
+    public decimal ThSlabs { get => _thSlabs; set => Set(ref _thSlabs, Math.Clamp(Math.Round(value / 2) * 2, 10, 200)); }
     public decimal ThSwap { get => _thSwap; set => Set(ref _thSwap, Math.Clamp(Math.Round(value), 1, 100000)); }
     public decimal ThThick { get => _thThick; set => Set(ref _thThick, Math.Clamp(value, 0, 100)); }
     public decimal ThLmpPs { get => _thLmpPs; set => Set(ref _thLmpPs, Math.Clamp(value, 1, 1000000)); }

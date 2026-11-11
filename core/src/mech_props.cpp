@@ -55,6 +55,14 @@ std::vector<Property> elastic_properties(const ElasticResult& r, const std::stri
   // along i, stretched along i), G_yz = 1/S44 …; the universal anisotropy index A^U = 5 G_V/G_R + K_V/K_R − 6 (0: isotropic;
   // Ranganathan & Ostoja-Starzewski 2008)
   const bool hasS = r.S[0][0] != 0;
+  // C not positive definite (isotropic_averages withheld the Reuss and Hill values): S = C⁻¹ exists but the axis
+  // moduli and Poisson ratios read from it mean nothing, so only S itself is listed
+  const bool unstable = hasS && !r.positive_definite;
+  std::vector<std::string> stability;
+  if (!r.positive_definite)
+    for (const auto& n : r.notes)
+      if (n.rfind("C is not positive definite", 0) == 0) stability.push_back(n);
+  if (std::isfinite(r.min_eigenvalue) && r.min_eigenvalue != 0) c.extra["smallest eigenvalue of C (GPa)"] = r.min_eigenvalue;
   if (hasS) {
     for (int I = 0; I < 6; ++I)
       for (int J = I; J < 6; ++J) {
@@ -63,13 +71,15 @@ std::vector<Property> elastic_properties(const ElasticResult& r, const std::stri
         c.extra[k] = r.S[I][J];
       }
     const char* ax[3] = {"x", "y", "z"};
-    for (int i = 0; i < 3; ++i) c.extra[std::string("E") + ax[i] + " = 1/S" + std::to_string(i + 1) + std::to_string(i + 1) + " (GPa)"] = 1 / r.S[i][i];
-    for (int i = 0; i < 3; ++i)
-      for (int j = 0; j < 3; ++j)
-        if (i != j) c.extra[std::string("ν") + ax[i] + ax[j] + " = −S" + std::to_string(i + 1) + std::to_string(j + 1) + "/S" + std::to_string(i + 1) + std::to_string(i + 1)] = -r.S[i][j] / r.S[i][i];
-    const char* sh[3] = {"yz", "xz", "xy"};
-    for (int i = 0; i < 3; ++i) c.extra[std::string("G") + sh[i] + " = 1/S" + std::to_string(i + 4) + std::to_string(i + 4) + " (GPa)"] = 1 / r.S[i + 3][i + 3];
-    if (r.G_reuss > 0 && r.K_reuss > 0) c.extra["anisotropy index A^U"] = 5 * r.G_voigt / r.G_reuss + r.K_voigt / r.K_reuss - 6;
+    if (!unstable) {
+      for (int i = 0; i < 3; ++i) c.extra[std::string("E") + ax[i] + " = 1/S" + std::to_string(i + 1) + std::to_string(i + 1) + " (GPa)"] = 1 / r.S[i][i];
+      for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+          if (i != j) c.extra[std::string("ν") + ax[i] + ax[j] + " = −S" + std::to_string(i + 1) + std::to_string(j + 1) + "/S" + std::to_string(i + 1) + std::to_string(i + 1)] = -r.S[i][j] / r.S[i][i];
+      const char* sh[3] = {"yz", "xz", "xy"};
+      for (int i = 0; i < 3; ++i) c.extra[std::string("G") + sh[i] + " = 1/S" + std::to_string(i + 4) + std::to_string(i + 4) + " (GPa)"] = 1 / r.S[i + 3][i + 3];
+      if (r.G_reuss > 0 && r.K_reuss > 0) c.extra["anisotropy index A^U"] = 5 * r.G_voigt / r.G_reuss + r.K_voigt / r.K_reuss - 6;
+    }
   }
   c.notes = r.notes;
   out.push_back(c);
@@ -77,15 +87,22 @@ std::vector<Property> elastic_properties(const ElasticResult& r, const std::stri
   Property E = prop("youngs" + suffix, "Young's modulus" + how, "GPa", avg, r.E_hill);
   E.extra["Voigt bound K (GPa)"] = r.K_voigt;
   E.extra["Reuss bound K (GPa)"] = r.K_reuss;
+  E.notes = stability;
   out.push_back(E);
-  out.push_back(prop("bulk" + suffix, "Bulk modulus" + how, "GPa", avg, r.K_hill));
+  Property K = prop("bulk" + suffix, "Bulk modulus" + how, "GPa", avg, r.K_hill);
+  K.extra["Voigt bound (GPa)"] = r.K_voigt;
+  K.extra["Reuss bound (GPa)"] = r.K_reuss;
+  K.notes = stability;
+  out.push_back(K);
   Property G = prop("shear" + suffix, "Shear modulus" + how, "GPa", avg, r.G_hill);
   G.extra["Voigt bound (GPa)"] = r.G_voigt;
   G.extra["Reuss bound (GPa)"] = r.G_reuss;
+  G.notes = stability;
   out.push_back(G);
   Property nu = prop("poisson" + suffix, "Poisson's ratio" + how, "", avg, r.nu_hill);
   nu.extra["Lamé λ (GPa)"] = r.lambda_hill;
   nu.extra["Lamé μ = G (GPa)"] = r.G_hill;
+  nu.notes = stability;
   out.push_back(nu);
   // sound speeds of the isotropic (Hill) solid: v_L = √((K + 4G/3)/ρ), v_T = √(G/ρ), and the Debye mean
   // v_m = [(2/v_T³ + 1/v_L³)/3]^(−1/3) (Anderson 1963); GPa over g/cm³ is 10⁶ m²/s²
@@ -124,7 +141,8 @@ std::vector<Property> tensile_properties(const TensileResult& r) {
   }
   m.series = {sm, raw, lat};
   out.push_back(m);
-  Property y = prop("yield", "Yield stress (0.2 % offset)", "MPa", "first point of the smoothed curve below E (ε − 0.002)",
+  Property y = prop("yield", "Yield stress (0.2 % offset)", "MPa", "first point of the smoothed curve at or below σ0 + E (ε − 0.002), σ0 the fitted stress at zero strain, "
+                    "staying there for two more points; positive stress only",
                     r.yield_strain > 0 ? r.yield_stress : NaN);
   if (r.yield_strain > 0) y.extra["yield strain"] = r.yield_strain;
   else y.notes.push_back("not reached within the deformation");

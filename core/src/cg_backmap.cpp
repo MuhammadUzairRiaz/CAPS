@@ -158,6 +158,34 @@ std::pair<int, int> orienting(size_t p, size_t L) {
   if (p == 0) return {1, L > 2 ? 2 : -1};
   return {int(p) - 1, p >= 2 ? int(p) - 2 : -1};
 }
+
+// a bond, angle or dihedral read either way is the same term: the smaller of the two directions names it
+template <class T>
+std::vector<T> either_way(const std::vector<T>& v) {
+  std::vector<T> r(v.rbegin(), v.rend());
+  return r < v ? r : v;
+}
+
+// every angle (kind 1: i, j, k) and dihedral (kind 2: i, j, k, l) of a bond graph over n atoms, each once
+template <class F>
+void graph_terms(size_t n, const std::vector<std::pair<uint32_t, uint32_t>>& bonds, F&& f) {
+  std::vector<std::vector<uint32_t>> nb(n);
+  for (const auto& [i, j] : bonds)
+    if (i != j && i < n && j < n) nb[i].push_back(j), nb[j].push_back(i);
+  for (auto& v : nb) std::sort(v.begin(), v.end()), v.erase(std::unique(v.begin(), v.end()), v.end());
+  for (uint32_t j = 0; j < n; ++j)
+    for (size_t a = 0; a < nb[j].size(); ++a)
+      for (size_t c = a + 1; c < nb[j].size(); ++c) f(1, std::vector<uint32_t>{nb[j][a], j, nb[j][c]});
+  for (uint32_t j = 0; j < n; ++j)
+    for (uint32_t k : nb[j]) {
+      if (k < j) continue;
+      for (uint32_t i : nb[j]) {
+        if (i == k) continue;
+        for (uint32_t l : nb[k])
+          if (l != j && l != i) f(2, std::vector<uint32_t>{i, j, k, l});
+      }
+    }
+}
 }  // namespace
 
 BackmapLibrary backmap_library(const LammpsFull& aa, const Json& mj, int conformers) {
@@ -270,10 +298,13 @@ BackmapLibrary backmap_library(const LammpsFull& aa, const Json& mj, int conform
       const uint32_t a = idx.at(t.ids[k]);
       tp.atoms.push_back({pos_of[size_t(bead_of[a])] - pmin, role[a]});
     }
+    // keyed by the term read either way (a reference may list one angle i-j-k in one window and k-j-i in the next, and
+    // both would place the same angle twice); impropers keep their order (the central atom's place depends on the style).
+    // The template keeps the reference's own order, which its coefficients (class II cross terms) are written for.
     std::string key = std::to_string(kind) + ":" + std::to_string(tp.type) + ":";
     for (int c : tp.classes) key += std::to_string(c) + ",";
     key += ":";
-    for (const auto& [o, r] : tp.atoms) key += std::to_string(o) + "." + std::to_string(r) + ",";
+    for (const auto& [o, r] : kind <= 2 ? either_way(tp.atoms) : tp.atoms) key += std::to_string(o) + "." + std::to_string(r) + ",";
     if (seen.insert(key).second) lib.templates.push_back(std::move(tp));
   };
   for (const auto& t : aa.bonds) add(0, t);
@@ -281,6 +312,40 @@ BackmapLibrary backmap_library(const LammpsFull& aa, const Json& mj, int conform
   for (const auto& t : aa.dihedrals) add(2, t);
   for (const auto& t : aa.impropers) add(3, t);
   if (across_chains) lib.notes.push_back(std::to_string(across_chains) + " terms join two chains (crosslinks): not templated");
+  // the class runs the reference has, up to the widest template
+  {
+    size_t maxw = 1;
+    for (const auto& tp : lib.templates) maxw = std::max(maxw, tp.classes.size());
+    for (const auto& ch : m.chains)
+      for (size_t p0 = 0; p0 < ch.size(); ++p0) {
+        std::vector<int> w;
+        for (size_t p = p0; p < ch.size() && p - p0 < maxw; ++p) {
+          w.push_back(cls[size_t(ch[p])]);
+          lib.windows.insert(w);
+        }
+      }
+  }
+  // angles and dihedrals by the atom types they join (the most common term type per tuple), and the tuples the
+  // reference's own bond graph has without a term
+  {
+    std::map<std::pair<int, std::vector<int>>, std::map<std::pair<int, std::vector<int>>, int>> votes2;
+    auto vote = [&](int kind, const LammpsFull::Term& t) {
+      std::vector<int> ty;
+      for (int64_t id : t.ids) ty.push_back(s.atoms[idx.at(id)].type);
+      votes2[{kind, either_way(ty)}][{t.type, ty}]++;
+    };
+    for (const auto& t : aa.angles) vote(1, t);
+    for (const auto& t : aa.dihedrals) vote(2, t);
+    for (const auto& [k, v] : votes2) lib.by_types[k] = std::max_element(v.begin(), v.end(), [](auto& x, auto& y) { return x.second < y.second; })->first;
+    std::vector<std::pair<uint32_t, uint32_t>> bp;
+    for (const auto& b : s.bonds) bp.push_back({b.i, b.j});
+    graph_terms(s.atoms.size(), bp, [&](int kind, const std::vector<uint32_t>& a) {
+      std::vector<int> ty;
+      for (uint32_t x : a) ty.push_back(s.atoms[x].type);
+      std::pair<int, std::vector<int>> key{kind, either_way(ty)};
+      if (!lib.by_types.count(key)) lib.no_term.insert(std::move(key));
+    });
+  }
   lib.reference = aa;
   lib.reference.atoms.clear(), lib.reference.bonds.clear(), lib.reference.angles.clear(), lib.reference.dihedrals.clear(), lib.reference.impropers.clear();
   return lib;
@@ -297,6 +362,12 @@ BackmapResult backmap_fragments(const BackmapLibrary& lib, const CgTopology& t, 
   auto unit01 = [&]() { return double(g() >> 11) * (1.0 / 9007199254740992.0); };
   int64_t next_id = 1;
   std::vector<double> cut;
+  // the terms written so far, by kind (bonds, angles and dihedrals read either way, impropers as written): two templates
+  // that place one term (from a reference listing it in both directions or with two types) write it once
+  std::array<std::set<std::vector<int64_t>>, 4> emitted;
+  // each placed atom's bead position in its chain, and each chain's classes (in the order placed)
+  std::vector<int> at_pos;
+  std::vector<std::vector<int>> chain_cls(t.chains.size());
   // per chain: the classes (reversed when the ends only match that way)
   for (size_t c = 0; c < t.chains.size(); ++c) {
     std::vector<int> chain = t.chains[c];
@@ -319,6 +390,7 @@ BackmapResult backmap_fragments(const BackmapLibrary& lib, const CgTopology& t, 
       }
       ++R.reversed_chains;
     }
+    chain_cls[c] = cls;
     // atoms of each bead
     std::vector<std::vector<int64_t>> ids(L);
     for (size_t p = 0; p < L; ++p) {
@@ -390,6 +462,7 @@ BackmapResult backmap_fragments(const BackmapLibrary& lib, const CgTopology& t, 
         R.charge += a.q;
         ids[p].push_back(a.id);
         R.data.atoms.push_back(a);
+        at_pos.push_back(int(p));
       }
     }
     // chains made whole (the beads may be wrapped): each bead's atoms follow the minimum image from the one before
@@ -414,6 +487,7 @@ BackmapResult backmap_fragments(const BackmapLibrary& lib, const CgTopology& t, 
         LammpsFull::Term term;
         term.type = tp.type;
         for (const auto& [o, r] : tp.atoms) term.ids.push_back(ids[p0 + size_t(o)][size_t(r)]);
+        if (!emitted[size_t(tp.kind)].insert(tp.kind <= 2 ? either_way(term.ids) : term.ids).second) continue;
         if (tp.kind == 0) {
           R.data.bonds.push_back(term);
           if (tp.atoms[0].first != tp.atoms[1].first) {
@@ -427,6 +501,54 @@ BackmapResult backmap_fragments(const BackmapLibrary& lib, const CgTopology& t, 
       }
     }
     for (char l : linked) R.terms_unmatched += !l;
+  }
+  // angles and dihedrals of the placed bond graph that no template gave (a short chain whose class window the reference
+  // never has, e.g. the C-C-C-C dihedral of a 4-bead chain cut from long ones): typed by the atom types they join
+  {
+    std::vector<std::pair<uint32_t, uint32_t>> bp;
+    for (const auto& b : R.data.bonds) bp.push_back({uint32_t(b.ids[0] - 1), uint32_t(b.ids[1] - 1)});
+    std::array<int, 3> filled{0, 0, 0}, untyped{0, 0, 0};
+    graph_terms(R.data.atoms.size(), bp, [&](int kind, const std::vector<uint32_t>& a) {
+      std::vector<int64_t> tid;
+      std::vector<int> ty;
+      for (uint32_t x : a) tid.push_back(int64_t(x) + 1), ty.push_back(R.data.atoms[x].type);
+      if (emitted[size_t(kind)].count(either_way(tid))) return;
+      // over a class run the reference has, no template means the reference leaves this term out: so does the copy
+      {
+        const int64_t mol = R.data.atoms[a[0]].mol;
+        int pmin = at_pos[a[0]], pmax = pmin;
+        bool one_chain = true;
+        for (uint32_t x : a) {
+          one_chain = one_chain && R.data.atoms[x].mol == mol;
+          pmin = std::min(pmin, at_pos[x]), pmax = std::max(pmax, at_pos[x]);
+        }
+        if (one_chain && mol >= 1 && size_t(mol) <= chain_cls.size()) {
+          const auto& cc = chain_cls[size_t(mol - 1)];
+          if (lib.windows.count(std::vector<int>(cc.begin() + pmin, cc.begin() + pmax + 1))) return;
+        }
+      }
+      const std::pair<int, std::vector<int>> key{kind, either_way(ty)};
+      const auto it = lib.by_types.find(key);
+      if (it == lib.by_types.end()) {
+        if (!lib.no_term.count(key)) ++untyped[size_t(kind)];
+        return;
+      }
+      // in the reference's own order of the atom types (class II cross terms are written for that order)
+      if (ty != it->second.second) std::reverse(tid.begin(), tid.end());
+      emitted[size_t(kind)].insert(either_way(tid));
+      LammpsFull::Term term;
+      term.type = it->second.first, term.ids = std::move(tid);
+      (kind == 1 ? R.data.angles : R.data.dihedrals).push_back(std::move(term));
+      ++filled[size_t(kind)];
+    });
+    R.terms_by_types = filled[1] + filled[2];
+    R.terms_untyped = untyped[1] + untyped[2];
+    if (R.terms_by_types)
+      R.notes.push_back(std::to_string(filled[1]) + " angles and " + std::to_string(filled[2]) +
+                        " dihedrals span a class sequence the reference does not have: typed by their atom types from the reference");
+    if (R.terms_untyped)
+      R.notes.push_back(std::to_string(untyped[1]) + " angles and " + std::to_string(untyped[2]) +
+                        " dihedrals of the restored bonds have no template and no term in the reference for their atom types: left out");
   }
   R.beads = int(t.beads());
   if (!cut.empty()) {

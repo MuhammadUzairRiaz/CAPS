@@ -132,8 +132,10 @@ System read_sdf(const std::string& path) {
   for (const auto& a : s.atoms)
     if (a.element == 0) throw ReadError(path + ": unknown element '" + a.name + "'");
   s.bonds_from_file = true;
-  s.has_mol = true;
-  if (records > 1) s.notes.push_back(std::to_string(records) + " molecules from the SD file, one molecule each");
+  // molecules follow the bonds, which never cross records: a record that holds a whole cell (as write_sdf writes
+  // one) splits into its chains, and a record never merges with the next
+  s.has_mol = false;
+  if (records > 1) s.notes.push_back(std::to_string(records) + " records from the SD file");
   return s;
 }
 
@@ -151,7 +153,17 @@ void write_sdf_record(const System& s, std::ostream& out, const std::vector<std:
   auto order = [](int o) { return o >= 1 && o <= 4 ? o : 1; };   // V2000 has no coordination type: a single bond
   auto order3 = [](int o) { return o >= 1 && o <= 4 ? o : o == kBondDative ? 9 : 1; };   // V3000: 9 coordination
   const bool v3000 = na > 999 || nb > 999;
-  out << (s.title.empty() ? std::string("CAPS") : s.title.substr(0, 80)) << "\n  CAPS      3D\n\n";
+  // the header block: the name (at most 80 bytes, cut at a whole UTF-8 character), then the program line in the MDL
+  // columns: initials (1-2), program (3-10), date and time (11-20, left blank so the file is reproducible) and the
+  // dimensional code (21-22)
+  std::string head = s.title.empty() ? std::string("CAPS") : s.title;
+  for (char& ch : head) if (ch == '\n' || ch == '\r') ch = ' ';
+  if (head.size() > 80) {
+    size_t cut = 80;
+    while (cut > 0 && (static_cast<unsigned char>(head[cut]) & 0xC0) == 0x80) --cut;
+    head.resize(cut);
+  }
+  out << head << "\n  CAPS" << std::string(14, ' ') << "3D\n\n";   // 2 + 8 (CAPS padded) + 10 blank columns
   char b[160];
   if (!v3000) {
     std::snprintf(b, sizeof b, "%3zu%3zu  0  0  0  0  0  0  0  0999 V2000\n", na, nb);
@@ -199,7 +211,25 @@ void write_sdf_record(const System& s, std::ostream& out, const std::vector<std:
   out << "$$$$\n";
 }
 
-// CIF (P 1): the cell, every atom at its fractional coordinates, with its element as type symbol
+// a CIF 1.1 data block code from a title: printable ASCII only (every other byte, whitespace and each byte of a
+// multi-byte UTF-8 character, becomes '_'), runs of '_' collapsed, trimmed, at most 75 characters; "caps" when empty
+std::string cif_block_name(const std::string& title) {
+  std::string name;
+  for (char ch : title) {
+    const unsigned char u = static_cast<unsigned char>(ch);
+    const char c = u >= 0x21 && u <= 0x7E ? ch : '_';
+    if (c == '_' && !name.empty() && name.back() == '_') continue;
+    name += c;
+  }
+  while (!name.empty() && name.front() == '_') name.erase(name.begin());
+  if (name.size() > 75) name.resize(75);
+  while (!name.empty() && name.back() == '_') name.pop_back();
+  return name.empty() ? std::string("caps") : name;
+}
+
+// CIF: the cell and the atoms at their fractional coordinates, with the element as type symbol. The space group kept
+// with the structure is written (its operations and the asymmetric unit) when every operation still maps the atoms
+// onto themselves; otherwise the file is P 1 with every atom.
 void write_cif(const System& s, const std::string& path) {
   if (!s.cell.valid()) throw std::runtime_error("a CIF needs a periodic cell: this structure has none");
   std::ofstream out(path);
@@ -207,8 +237,7 @@ void write_cif(const System& s, const std::string& path) {
   const Cell& c = s.cell;
   const double la = norm(c.a), lb = norm(c.b), lc = norm(c.c);
   auto ang = [](const Vec3& u, const Vec3& v) { return std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180 / M_PI; };
-  std::string name = s.title.empty() ? std::string("caps") : s.title;
-  for (char& ch : name) if (std::isspace(static_cast<unsigned char>(ch))) ch = '_';
+  const std::string name = cif_block_name(s.title);
   char b[200];
   // the formula in Hill order (C, H, then alphabetical; alphabetical without carbon)
   std::map<std::string, int> nel;
@@ -225,7 +254,39 @@ void write_cif(const System& s, const std::string& path) {
   const bool keep_sym = s.symmetry.ops.size() > 1 && symmetry_holds(s, s.symmetry, 0.05);
   const std::string hm = keep_sym && !s.symmetry.name.empty() ? s.symmetry.name : keep_sym ? std::string("?") : std::string("P 1");
   const int itn = keep_sym ? s.symmetry.number : 1;
-  out << "# written by CAPS\ndata_" << name << "\n_chemical_formula_sum '" << formula << "'\n"
+  out << "# written by CAPS\ndata_" << name << "\n";
+  // the full title (the block code keeps only its ASCII part), quoted so that the reader takes it back as the name
+  // CIF 1.1 allows printable ASCII only: the common non-ASCII characters of a CAPS title in an ASCII form, any other
+  // character as '?'
+  std::string title;
+  {
+    static const std::pair<const char*, const char*> kAscii[] = {
+        {"\u00B7", "."}, {"\u00D7", "x"}, {"\u00C5", "A"}, {"\u212B", "A"}, {"\u00B0", " deg"}, {"\u2013", "-"}, {"\u2014", "-"}, {"\u2212", "-"},
+        {"\u03B1", "alpha"}, {"\u03B2", "beta"}, {"\u03B3", "gamma"}, {"\u03B4", "delta"}, {"\u03B5", "epsilon"}, {"\u03BB", "lambda"},
+        {"\u03BC", "mu"}, {"\u03C0", "pi"}, {"\u03C3", "sigma"}, {"\u2192", "->"}, {"\u2018", "'"}, {"\u2019", "'"}, {"\u201C", "\""}, {"\u201D", "\""},
+        {"\u00B2", "2"}, {"\u00B3", "3"}, {"\u2070", "0"}, {"\u00B9", "1"}, {"\u2080", "0"}, {"\u2081", "1"}, {"\u2082", "2"}, {"\u2083", "3"}, {"\u2084", "4"}};
+    for (size_t i = 0; i < s.title.size();) {
+      const unsigned char u = static_cast<unsigned char>(s.title[i]);
+      if (u < 0x80) {
+        title += (u == '\n' || u == '\r' || u == '\t') ? ' ' : (u >= 0x20 && u < 0x7F ? char(u) : '?');
+        ++i;
+        continue;
+      }
+      const size_t len = u >= 0xF0 ? 4 : u >= 0xE0 ? 3 : u >= 0xC0 ? 2 : 1;
+      const std::string ch = s.title.substr(i, len);
+      const char* rep = "?";
+      for (const auto& [from, to] : kAscii)
+        if (ch == from) { rep = to; break; }
+      title += rep;
+      i += len;
+    }
+  }
+  if (!title.empty() && title.find_first_not_of(' ') != std::string::npos) {
+    if (title.find('\'') == std::string::npos) out << "_chemical_name_common '" << title << "'\n";
+    else if (title.find('"') == std::string::npos) out << "_chemical_name_common \"" << title << "\"\n";
+    else out << "_chemical_name_common\n;" << title << "\n;\n";
+  }
+  out << "_chemical_formula_sum '" << formula << "'\n"
       << "_space_group_name_H-M_alt '" << hm << "'\n";
   if (itn > 0) out << "_space_group_IT_number " << itn << "\n";
   out << "_symmetry_space_group_name_H-M '" << hm << "'\n";

@@ -43,8 +43,9 @@ std::vector<BundleFile> bundle_files(const Trajectory& traj, const Pipeline& pip
                                      const RenderOptions& render);
 void write_bundle(const std::string& path, const std::vector<BundleFile>& files);
 
-// Rebuilds the data files from the bundle's input and pipeline and compares their sha256 with the provenance record.
-// Returns true when every data file matches; report lists each file as "match" or "differs".
+// Checks every shipped file (and pipeline.json) against the sha256 in the provenance record, then rebuilds the data
+// files from the bundle's input and pipeline and compares their sha256 too. Returns true when every file matches;
+// report lists each data file as "match", or each failure as "differs: ..." or "missing from the bundle".
 bool reproduce_bundle(const std::string& path, std::vector<std::string>& report);
 
 // The CSV of a data table, as the bundle writes it.

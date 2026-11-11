@@ -12,7 +12,10 @@
 //    UXD          Bruker / Siemens text: a range's _START and _STEPSIZE with single-column _COUNTS / _CPS data, or the
 //                 two-column _2THETACOUNTS / _2THETACPS / _2THETACOUNTSTIME data. The first range is read.
 //    Rigaku       the *TYPE text format (.asc, .dat): a group's *START, *STEP and *COUNT values. The first group is read.
-//    columns      two or three columns (x, y[, σ]); lines starting with # or ! and non-numeric lines skipped.
+//    columns      delimited text. A header line whose names match the columns picks x (2θ, x, ...), y (intensity,
+//                 counts, y, ...) and σ (sigma, esd, ...) by name; a q column is never the intensity, and a header with
+//                 no intensity column is refused. Without a header, two or three columns (x, y[, σ]) in order. Lines
+//                 starting with # or ! and other non-numeric lines skipped.
 //  Grids (read_cube)
 //    .cube        Gaussian cube: origin, three voxel vectors (bohr, or Å for a negative count), the atoms, the values
 //                 with the third index fastest; an orbital list (negative atom count) skipped, the first value of each

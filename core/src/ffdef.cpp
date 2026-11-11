@@ -19,6 +19,7 @@
 #include <map>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <mutex>
 #include <unordered_map>
 #include <zlib.h>
@@ -632,8 +633,33 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   out << j.dump(1) << "\n";
 }
 
+namespace {
+// Charges from a force field's own bond increments (PCFF, COMPASS, CVFF, IFF) on the types given: the increments of
+// every bond summed onto its atoms. A bond without an increment is an error here (the charges would not balance).
+std::vector<double> own_increment_charges(const System& s, const FFDef& def, const std::vector<std::string>& types, std::string* note) {
+  ParamReport rep;
+  const ForceField ff = parameterize(s, def, types, "types", &rep, true);
+  for (const auto& m : rep.missing)
+    if (m.rfind("bond increment", 0) == 0) throw FFError(def.name + " has no " + m + ", so its bond increments give no charges for this structure");
+  if (note) *note = "charges: the bond increments of " + def.name;
+  return ff.charge;
+}
+
+std::invalid_argument no_increments(const FFDef& def) {
+  return std::invalid_argument("charges \"increments\": " + def.name +
+                               " has no bond increments and names no force field that has them; use charges auto, types, gasteiger or qeq, "
+                               "or a force field with bond increments (PCFF, COMPASS, CVFF)");
+}
+}  // namespace
+
 std::vector<double> companion_charges(const System& s, const FFDef& def, const std::string& ff_path, std::string* note) {
-  if (def.charge_increments_from.empty()) throw FFError(def.name + " names no force field for bond-increment charges");
+  if (def.charge_increments_from.empty()) {
+    // no companion: the force field's own increments, on its own typing of the structure
+    if (def.bond_increments.empty()) throw no_increments(def);
+    const TypingResult tr = assign_types(s, def);
+    if (tr.untyped) throw FFError(def.name + " cannot type " + std::to_string(tr.untyped) + " atoms of this structure, so it gives no charges for it");
+    return own_increment_charges(s, def, tr.types, note);
+  }
   const std::filesystem::path src = std::filesystem::path(ff_path).parent_path() / def.charge_increments_from;
   // a companion that is not installed beside the force field is no companion (CAPS ships no library it does not own)
   if (!std::filesystem::exists(src)) throw FFError(def.name + "'s companion " + def.charge_increments_from + " is not installed");
@@ -887,6 +913,7 @@ FFDef load_forcefield(const std::string& path) {
       });
       if (!listed) ff.typing.push_back({t.name, t.smarts, t.description, t.overrides, t.priority});
     }
+  ff.loaded_from = path;
   return ff;
 }
 
@@ -906,12 +933,32 @@ std::string ml_source(const std::string& model_path, double rms_kcal) {
 }
 
 void merge_overlays(FFDef& def, const std::string& list) {
+  namespace fs = std::filesystem;
+  // a file here, else a library overlay by the name caps ff overlays lists (with or without .json): beside the force
+  // field's own file (the library folder), then in $CAPS_HOME/data/forcefields
+  auto resolve = [&](const std::string& p) {
+    std::error_code ec;
+    if (fs::is_regular_file(p, ec)) return p;
+    std::vector<fs::path> dirs;
+    if (!def.loaded_from.empty()) dirs.push_back(fs::path(def.loaded_from).parent_path());
+    if (const char* h = std::getenv("CAPS_HOME"); h && *h) dirs.push_back(fs::path(h) / "data" / "forcefields");
+    const fs::path name(p);
+    if (!name.is_absolute() && !name.has_parent_path())
+      for (const auto& d : dirs)
+        for (const std::string& f : {p, p + ".json"})
+          if (fs::is_regular_file(d / f, ec)) return (d / f).string();
+    throw std::invalid_argument("overlay " + p + ": no such file" +
+                                (name.is_absolute() || name.has_parent_path() ? std::string()
+                                                                              : ", and no library overlay of that name" +
+                                                                                    (def.name.empty() ? std::string() : " beside " + def.name) +
+                                                                                    " (caps ff overlays lists them)"));
+  };
   for (std::stringstream ss(list); ss.good();) {
     std::string p;
     std::getline(ss, p, ',');
     while (!p.empty() && std::isspace(static_cast<unsigned char>(p.back()))) p.pop_back();
     while (!p.empty() && std::isspace(static_cast<unsigned char>(p.front()))) p.erase(p.begin());
-    if (!p.empty()) merge_forcefield(def, load_forcefield(p));
+    if (!p.empty()) merge_forcefield(def, load_forcefield(resolve(p)));
   }
 }
 
@@ -920,9 +967,11 @@ ForceField parameterize_charges(System& s, const FFDef& ff, const std::vector<st
   ParamReport rep;
   auto say = [&](const std::string& t) { if (said) said->push_back(t); };
   std::string charges = charges_in;
-  if (charges == "increments") {   // the companion force field's bond-increment charges, always
+  if (charges == "increments") {   // bond-increment charges, always: the companion force field's, else this one's own
     std::string note;
-    const auto q = companion_charges(s, ff, ff_path, &note);
+    if (ff.charge_increments_from.empty() && ff.bond_increments.empty()) throw no_increments(ff);
+    // own increments on the types this assignment uses (overrides and --types included), not a fresh typing
+    const auto q = ff.charge_increments_from.empty() ? own_increment_charges(s, ff, types, &note) : companion_charges(s, ff, ff_path, &note);
     for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].charge = q[i];
     s.has_charges = true;
     ForceField f = parameterize(s, ff, types, "keep", &rep, allow_missing);
@@ -959,7 +1008,7 @@ ForceField parameterize_charges(System& s, const FFDef& ff, const std::vector<st
     f = parameterize(s, ff, types, charges, &rep, allow_missing);
   }
   // per-type charges that miss the formal charge give way to the companion force field's bond-increment charges when it
-  // names one (OPLS-AA 2024 -> OPLS 2005), as a recipe and the Studio do
+  // names one ("charge_increments_from"; no library CAPS ships names one at present), as a recipe and the Studio do
   if (charges == "types" && !ff.charge_increments_from.empty()) {
     double net = 0;
     for (double q : f.charge) net += q;
@@ -1094,6 +1143,12 @@ FFDef import_moltemplate(const std::string& path) {
   if (!in) throw FFError("cannot open " + path);
   FFDef ff;
   ff.source = "moltemplate: " + path;
+  // what LAMMPS runs when the file sets nothing: pair_modify mix geometric, special_bonds lj/coul 0 0 0 (the lines below
+  // replace these; a note says which were assumed)
+  ff.mixing = "geometric";
+  for (int k = 0; k < 3; ++k) ff.special_lj[k] = 0, ff.special_coul[k] = 0;
+  bool said_mix = false, said_special = false;
+  std::string header_title;   // "# moltemplate system written by CAPS: <name>": the name when no object gives one
   std::string line, section, top;
   int depth = 0;
   std::map<std::string, std::string> alias;              // short → full
@@ -1102,6 +1157,10 @@ FFDef import_moltemplate(const std::string& path) {
   std::map<std::string, FFRule> coeff[5];                 // bond, angle, dihedral, improper; [4] unused
   std::vector<std::pair<std::string, std::vector<std::string>>> bytype[4];
   std::vector<std::pair<std::string, std::vector<std::string>>> pair_lines;   // "a b" → params (with style)
+  // a system file's explicit topology: each atom's type ($atom → @atom, "Data Atoms") and each interaction's type and
+  // atoms ("Data Bonds" … "$bond:x @bond:NAME $atom:a $atom:b"), for coefficients no "By Type" rule names
+  std::map<std::string, std::string> atom_type_of;
+  std::vector<std::pair<std::string, std::vector<std::string>>> topo[4];   // [3], impropers, stays empty
   std::map<std::string, std::string> pair_comment;
   std::string improper_plugin;
   std::vector<FFRule> increments;
@@ -1114,6 +1173,15 @@ FFDef import_moltemplate(const std::string& path) {
     if (auto h = line.find('#'); h != std::string::npos) {
       comment = line.substr(h + 1);
       line = line.substr(0, h);
+    }
+    if (depth == 0 && header_title.empty() && line.find_first_not_of(" \t\r") == std::string::npos) {
+      static const std::string mark = "moltemplate system written by CAPS:";
+      if (const auto m = comment.find(mark); m != std::string::npos) {
+        std::string t = comment.substr(m + mark.size());
+        while (!t.empty() && std::isspace(static_cast<unsigned char>(t.back()))) t.pop_back();
+        while (!t.empty() && std::isspace(static_cast<unsigned char>(t.front()))) t.erase(t.begin());
+        header_title = t;
+      }
     }
     // type descriptions in header comments, e.g. "#  @atom:c3a  C  "aromatic carbon" (ver=1.0, ref=1)"
     if (line.find_first_not_of(" \t") == std::string::npos && comment.find("@atom:") != std::string::npos && depth <= 1) {
@@ -1181,10 +1249,14 @@ FFDef import_moltemplate(const std::string& path) {
         (t[0] == "bond_style" ? ff.bond_style : t[0] == "angle_style" ? ff.angle_style : t[0] == "dihedral_style" ? ff.dihedral_style
                                                                                                    : ff.improper_style) = st;
       } else if (t[0] == "special_bonds") {
+        said_special = true;
+        auto set3 = [&](double* v, double a, double b, double c) { v[0] = a, v[1] = b, v[2] = c; };
         for (size_t i = 1; i < t.size(); ++i) {
-          if (t[i] == "amber") { ff.special_lj[2] = 0.5; ff.special_coul[2] = 0.8333333333; }
-          else if (t[i] == "charmm") { ff.special_lj[2] = 0; ff.special_coul[2] = 0; }
-          else if (t[i] == "dreiding") { ff.special_lj[2] = 1; ff.special_coul[2] = 1; }
+          // the keywords set all three factors (LAMMPS special_bonds)
+          if (t[i] == "amber") { set3(ff.special_lj, 0, 0, 0.5); set3(ff.special_coul, 0, 0, 0.8333333333); }
+          else if (t[i] == "charmm") { set3(ff.special_lj, 0, 0, 0); set3(ff.special_coul, 0, 0, 0); }
+          else if (t[i] == "dreiding") { set3(ff.special_lj, 0, 0, 1); set3(ff.special_coul, 0, 0, 1); }
+          else if (t[i] == "fene") { set3(ff.special_lj, 0, 1, 1); set3(ff.special_coul, 0, 1, 1); }
           else if ((t[i] == "lj/coul" || t[i] == "lj" || t[i] == "coul") && i + 3 < t.size()) {
             for (int k = 0; k < 3; ++k) {
               const double v = std::stod(t[i + 1 + k]);
@@ -1196,7 +1268,7 @@ FFDef import_moltemplate(const std::string& path) {
         }
       } else if (t[0] == "pair_modify") {
         for (size_t i = 1; i + 1 < t.size(); ++i)
-          if (t[i] == "mix") ff.mixing = t[i + 1];
+          if (t[i] == "mix") ff.mixing = t[i + 1], said_mix = true;
       }
     } else if (section == "Data Masses") {
       if (t.size() >= 2 && t[0].rfind("@atom:", 0) == 0) {
@@ -1249,6 +1321,26 @@ FFDef import_moltemplate(const std::string& path) {
         r.comment = cmt;
         increments.push_back(r);
       }
+    } else if (section == "Data Atoms") {
+      // $atom:ID … @atom:TYPE … (any atom style: the first of each)
+      std::string id, ty;
+      for (const auto& w : t) {
+        if (id.empty() && w.rfind("$atom:", 0) == 0) id = w;
+        else if (ty.empty() && w.rfind("@atom:", 0) == 0) ty = strip_prefix(w, "@atom:");
+      }
+      if (!id.empty() && !ty.empty()) atom_type_of[id] = ty;
+    } else if (section == "Data Bonds" || section == "Data Angles" || section == "Data Dihedrals") {
+      // impropers are not read this way: which atom is the centre depends on the writer's convention, and a rule in the
+      // wrong order would match the wrong improper (their coefficients are reported as not imported instead)
+      const int kind = section == "Data Bonds" ? 0 : section == "Data Angles" ? 1 : 2;
+      const char* pre = kind == 0 ? "@bond:" : kind == 1 ? "@angle:" : "@dihedral:";
+      std::string name;
+      std::vector<std::string> atoms;
+      for (const auto& w : t) {
+        if (name.empty() && w.rfind(pre, 0) == 0) name = strip_prefix(w, pre);
+        else if (w.rfind("$atom:", 0) == 0) atoms.push_back(w);
+      }
+      if (!name.empty() && atoms.size() == size_t(kind + 2)) topo[kind].push_back({name, atoms});
     } else if (section.find("By Type") != std::string::npos) {
       const int kind = section.find("Bonds") == 5 ? 0 : section.find("Angles") == 5 ? 1 : section.find("Dihedrals") == 5 ? 2
                        : section.find("Impropers") == 5 ? 3 : -1;
@@ -1315,6 +1407,51 @@ FFDef import_moltemplate(const std::string& path) {
       out[k]->push_back(r);
     }
     if (missing) ff.notes.push_back(std::to_string(missing) + " " + kinds[k] + " rules without coefficients were skipped");
+    // coefficients no "By Type" rule names: a system file (CAPS's --moltemplate writes one) gives each interaction's atoms
+    // in its topology, so each distinct type tuple used with an interaction type becomes a rule with its coefficients
+    std::set<std::string> named;
+    for (const auto& bt : bytype[k]) named.insert(bt.first);
+    std::map<std::vector<std::string>, std::string> first_of;
+    std::set<std::string> from_topology;
+    int clashes = 0, untyped = 0;
+    for (const auto& [name, atoms] : topo[k]) {
+      if (named.count(name)) continue;
+      auto it = coeff[k].find(name);
+      if (it == coeff[k].end()) continue;
+      std::vector<std::string> tuple;
+      for (const auto& a : atoms) {
+        auto at = atom_type_of.find(a);
+        if (at == atom_type_of.end()) break;
+        tuple.push_back(full(at->second));
+      }
+      if (tuple.size() != atoms.size()) { ++untyped; continue; }
+      // a bond, angle or dihedral reads the same both ways
+      std::vector<std::string> key = tuple;
+      if (std::vector<std::string> rev(tuple.rbegin(), tuple.rend()); rev < key) key = rev;
+      if (const auto f = first_of.find(key); f != first_of.end()) {
+        if (f->second != name) ++clashes;   // the same atom types under two interaction types: the first is kept
+        continue;
+      }
+      first_of[key] = name;
+      FFRule r = it->second;
+      r.match = tuple;
+      if (r.comment.empty()) r.comment = std::string("from the file's Data ") + (k == 0 ? "Bonds" : k == 1 ? "Angles" : "Dihedrals");
+      out[k]->push_back(r);
+      from_topology.insert(name);
+    }
+    if (!from_topology.empty())
+      ff.notes.push_back(std::to_string(from_topology.size()) + " " + kinds[k] + " types without a 'By Type' rule matched by the atom types of the file's own " +
+                         kinds[k] + "s (" + std::to_string(first_of.size()) + " rules)");
+    if (clashes)
+      ff.notes.push_back(std::to_string(clashes) + " " + kinds[k] + "s whose atom types another " + kinds[k] +
+                         " type already covers: the first type's coefficients are used for them");
+    if (untyped) ff.notes.push_back(std::to_string(untyped) + " " + kinds[k] + "s name atoms with no type in Data Atoms and were not used");
+    int unused = 0;
+    for (const auto& [name, r] : coeff[k])
+      if (!named.count(name) && !from_topology.count(name)) ++unused;
+    if (unused)
+      ff.notes.push_back("warning: " + std::to_string(unused) + " " + kinds[k] + "_coeff types have no 'By Type' rule" +
+                         (k < 3 ? std::string(" and no ") + kinds[k] + " in the file's topology" : std::string()) + ", so they were not imported");
   }
   for (auto& r : increments)
     for (auto& m : r.match) m = full(m);
@@ -1324,6 +1461,9 @@ FFDef import_moltemplate(const std::string& path) {
   else if (improper_plugin == "gaff_imp.py" || improper_plugin == "gaff_imp" || improper_plugin.empty()) ff.improper_order = "center3_sorted";
   else ff.notes.push_back("improper plugin '" + improper_plugin + "' is treated as centre-third, sorted");
   ff.notes.push_back("converted from moltemplate by CAPS; rules keep moltemplate's order (the last matching rule wins)");
+  if (!said_mix) ff.notes.push_back("no pair_modify mix in the file: LAMMPS's default, geometric mixing, used");
+  if (!said_special) ff.notes.push_back("no special_bonds in the file: LAMMPS's default, lj/coul 0 0 0, used");
+  if (ff.name.empty()) ff.name = !header_title.empty() ? header_title : std::filesystem::path(path).stem().string();
   if (ff.types.empty()) throw FFError(path + ": no atom types (Data Masses) found");
   return ff;
 }

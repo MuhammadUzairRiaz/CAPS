@@ -85,7 +85,8 @@ HabitResult crystal_habit(const System& cell, const HabitOptions& o);
 WulffShape wulff_shape(const std::vector<Vec3>& normals, const std::vector<double>& distances);
 
 // A particle of the crystal in a shape (planes n_i·x ≤ h_i scaled so the farthest vertex is `radius` Å from the centre):
-// every growth unit of the bulk whose centre of mass lies inside, kept whole. No cell.
+// every growth unit of the bulk whose centre of mass lies inside, kept whole. An endless unit (a network, a metal, polymer
+// chains) is cut atom by atom, an end atom going with its partner; each connected piece kept is one molecule. No cell.
 System carve_particle(const System& cell, const std::vector<Vec3>& normals, const std::vector<double>& distances, double radius);
 
 // The planes of a result's shape ("bfdh", "growth", "equilibrium"): unit Cartesian normals, distances, the face of each.

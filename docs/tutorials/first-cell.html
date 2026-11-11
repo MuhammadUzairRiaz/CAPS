@@ -33,6 +33,7 @@
 <p>Grown cells have strained bonds and close contacts. <code>caps relax</code> pushes overlapping atoms apart with capped forces, then minimises with L-BFGS until the largest force is below 0.5 kcal/mol/Å.</p>
 <div class="code" data-lang="shell"><pre><code>caps relax ps.data -o ps_min.data --iterations 500 --quiet</code></pre></div>
 <p>With no force field named, CAPS uses its default (GAFF for C and H, UFF otherwise) and writes it into the <code>.data</code> file, so LAMMPS can read the result directly.</p>
+<p><code>--iterations 500</code> keeps this step short, and on this cell it usually stops there before the 0.5 kcal/mol/Å tolerance. <code>ps_min.data</code> is still written and fine to run MD from, but <code>caps relax</code> then exits with code 3 (not converged) rather than 0. In a script run with <code>set -e</code>, accept it with <code>caps relax ... || [ $? -eq 3 ]</code>, or leave out <code>--iterations</code> so the default of 5000 lets the cell converge. <code>--quiet</code> hides only the live progress line, not the summary.</p>
 <h2 id="3-run-molecular-dynamics">3. Run molecular dynamics</h2>
 <div class="code" data-lang="shell"><pre><code>caps md ps_min.data -o ps_md.data --steps 2000 --dt 1 --temp 300 --barostat berendsen \
   --dump ps.lammpstrj --every 200 --quiet</code></pre></div>

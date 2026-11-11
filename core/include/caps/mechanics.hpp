@@ -30,11 +30,15 @@ struct ElasticResult {
   double density = 0;            // g/cm³ of the cell the constants are for (sound speeds); 0: unknown
   double asymmetry = 0;          // max |C_IJ − C_JI| / max |C|, before symmetrising (static method)
   int configurations = 0;
+  // Born stability: the smallest eigenvalue of the symmetrised C (GPa) and whether it is positive. When it is not, the
+  // cell is unstable or not at a minimum: the Reuss and Hill fields are NaN (only the Voigt bounds are kept) and a note says so
+  double min_eigenvalue = 0;
+  bool positive_definite = true;
   std::string method;
   std::vector<std::string> notes;
 };
 
-// Voigt, Reuss and Hill averages of C (sets the isotropic fields).
+// Voigt, Reuss and Hill averages of C (sets the isotropic fields; checks that C is positive definite, see above).
 void isotropic_averages(ElasticResult& r);
 
 // Static elastic constants (Theodorou and Suter, Macromolecules 19, 139 (1986)): each configuration is minimised at
@@ -224,7 +228,8 @@ struct TensileOptions {
   Thermostat thermostat = Thermostat::Bussi;
   bool lateral_pressure = true;  // false: lateral axes fixed (uniaxial strain)
   double pressure = 1.0, tau_p = 1000.0, compressibility = 4.5e-5;
-  double equilibrate_ps = 20;    // NPT first (each axis at `pressure`, Berendsen per axis), so the pull starts stress-free
+  double equilibrate_ps = 20;    // NPT first (each axis at `pressure`, Berendsen per axis), so the pull starts stress-free;
+                                 // 0: none (an equilibrated cell). The default is 20000 steps at 1 fs; not run on a resume
   int sample_every = 50;         // steps between stress samples
   double fit_strain = 0.02;      // modulus and Poisson ratio from 0 to this strain
   uint64_t seed = 1;
@@ -244,6 +249,9 @@ struct TensileResult {
   double poisson = 0, poisson_err = 0;
   double yield_stress = 0, yield_strain = 0;   // 0.2 % offset on the smoothed curve (0 when not reached)
   double peak_stress = 0, peak_strain = 0;
+  // the NPT prelude (equilibrate_ps) and the pull: MD steps and wall time of each (0 steps: no prelude)
+  int64_t equilibrate_steps = 0, pull_steps = 0;
+  double equilibrate_seconds = 0, pull_seconds = 0;
   std::string method;
   std::vector<std::string> notes;
 };

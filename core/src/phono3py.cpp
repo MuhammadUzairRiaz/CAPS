@@ -345,18 +345,30 @@ DisplacementCount count_displacements(const System& unit, const std::array<int, 
 }
 
 // ---------------------------------------------------------------- the plan
-int valence_electrons(const System& s, const std::string& data_dir) {
-  std::map<std::string, int> zv;
+int valence_electrons(const System& s, const std::string& data_dir, const std::string& pp_dir, std::vector<std::string>* all_electron) {
+  std::map<std::string, double> zv;
   try {
     const Json j = read_json_file(data_dir + "/dft/enmax.json");
-    if (j.has("zval")) for (const auto& [k, v] : j["zval"].members()) zv[k] = int(v.number());
+    if (j.has("zval")) for (const auto& [k, v] : j["zval"].members()) zv[k] = v.number();
   } catch (...) {}
-  int n = 0;
-  for (const auto& a : s.atoms) {
-    const auto it = zv.find(element(a.element).symbol);
-    n += it != zv.end() ? it->second : a.element;   // unknown: all electrons (an upper bound)
+  // the POTCAR's own ZVAL comes first (it is the dataset the run will use)
+  if (!pp_dir.empty()) {
+    std::vector<std::string> uniq;   // each element once: an ungrouped cell repeats species in species_of
+    for (const auto& e : species_of(s)) if (std::find(uniq.begin(), uniq.end(), e) == uniq.end()) uniq.push_back(e);
+    const auto p = assemble_potcar(uniq, pp_dir, potcar_map(data_dir));
+    for (size_t i = 0; i < p.species.size() && i < p.zval.size(); ++i)
+      if (p.zval[i] > 0) zv[p.species[i]] = p.zval[i];
   }
-  return n;
+  double n = 0;
+  std::set<std::string> missing;
+  for (const auto& a : s.atoms) {
+    const std::string el = element(a.element).symbol;
+    const auto it = zv.find(el);
+    if (it != zv.end()) n += it->second;
+    else n += a.element, missing.insert(el);   // unknown: all electrons (an upper bound)
+  }
+  if (all_electron) all_electron->assign(missing.begin(), missing.end());
+  return int(std::lround(n));
 }
 
 double single_point_core_hours(int electrons) { const double x = electrons / 288.0; return 4.33 * x * x; }
@@ -404,7 +416,13 @@ Phono3pyPlan plan_phono3py(const System& unit, const Phono3pyOptions& o, const s
   for (int k = 0; k < 3; ++k)
     p.mesh[size_t(k)] = o.mesh[0] > 0 ? o.mesh[size_t(k)] : std::max(1, int(std::lround((k == p.chain_axis ? 405.0 : 74.0) / len[k])));
   if (two_d) p.mesh[2] = 1;
-  p.electrons = valence_electrons(unit, o.data_dir);
+  std::vector<std::string> all_electron;
+  p.electrons = valence_electrons(unit, o.data_dir, o.pp_dir, &all_electron);
+  if (!all_electron.empty()) {
+    std::string els;
+    for (const auto& e : all_electron) els += (els.empty() ? "" : ", ") + e;
+    p.notes.push_back("electrons for " + els + " counted as all-electron Z (no ZVAL in data/dft/enmax.json), so the cost is an upper bound; give --pp-dir (your PAW directory) for the POTCAR's ZVAL");
+  }
   p.core_h_fc3 = single_point_core_hours(p.electrons * n3);
   p.core_h_fc2 = single_point_core_hours(p.electrons * n2);
   p.core_h_total = p.fc3_supercells * p.core_h_fc3 + p.full.fc2 * p.core_h_fc2;

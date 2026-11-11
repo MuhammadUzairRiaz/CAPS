@@ -7,6 +7,11 @@
 
 namespace caps {
 
+// One bond per pair of atoms, at the nearest image. A Bond carries no image shift, so a crystal cell shorter than about
+// two bonds along an axis cannot hold its own topology: a polyethylene cell (c = 2.53 Å) bonds each backbone carbon to
+// two images of one neighbour and keeps 10 of its 12 bonds, a graphite cell 2 of its 6. That is not repaired here (a
+// duplicate {i, j} would read both bonds at the same image); cell_fit (caps/cell_fit.hpp) finds such a cell and
+// copies_to_fit names the supercell that holds every bond once, which is what typing, exports and engines must use.
 std::vector<Bond> perceive_bonds(const System& s, const BondOptions& opt) {
   double rmax = 0;
   for (const auto& a : s.atoms) rmax = std::max(rmax, element(a.element).covalent);

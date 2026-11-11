@@ -783,7 +783,9 @@ Sequence sequence_from_string(const std::string& s) {
   if (s == "shuffled") return Sequence::Shuffled;
   if (s == "markov") return Sequence::Markov;
   if (s == "penultimate") return Sequence::Penultimate;
-  return Sequence::Homopolymer;
+  if (s.empty() || s == "homopolymer") return Sequence::Homopolymer;
+  throw std::invalid_argument("unknown sequence '" + s +
+                              "' (homopolymer, alternating, block, random, gradient, terminal, pattern, shuffled, markov, penultimate)");
 }
 
 Architecture architecture_from_string(const std::string& s) {
@@ -793,7 +795,7 @@ Architecture architecture_from_string(const std::string& s) {
   if (s == "branched") return Architecture::Branched;
   if (s == "dendrimer") return Architecture::Dendrimer;
   if (s == "graft") return Architecture::Graft;
-  throw std::invalid_argument("unknown architecture '" + s + "' (linear, star, comb, branched)");
+  throw std::invalid_argument("unknown architecture '" + s + "' (linear, star, comb, branched, dendrimer, graft)");
 }
 
 const char* to_string(Architecture a) {
@@ -1033,10 +1035,12 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
       break;
     case Sequence::Block: {
       std::vector<int> b = spec.blocks;
+      for (int x : b)
+        if (x < 1) throw std::invalid_argument("block lengths are whole numbers of at least 1 (got " + std::to_string(x) + ")");
       if (b.empty()) b.assign(size_t(nu), std::max(1, n / nu));
       int i = 0, k = 0;
       while (i < n) {
-        for (int j = 0; j < std::max(1, b[size_t(k % int(b.size()))]) && i < n; ++j) s[size_t(i++)] = k % nu;
+        for (int j = 0; j < b[size_t(k % int(b.size()))] && i < n; ++j) s[size_t(i++)] = k % nu;
         ++k;
       }
       break;
@@ -1075,10 +1079,29 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
       break;
     }
     case Sequence::Gradient: {
+      // the share of A falls from 1 at the head to 0 at the tail as p0(x) = 1 − x^q (x = i / (n − 1)), whose mean over
+      // the chain is q / (q + 1): q = fA / (1 − fA) gives A's share fA (the first weight over their sum; without weights
+      // fA = ½ and the fall is linear); the rest goes to the other units in their weights' ratio (equal without weights)
+      std::vector<double> w = spec.weights;
+      w.resize(size_t(nu), w.empty() ? 1.0 : 0.0);
+      for (double& x : w) x = std::max(0.0, x);
+      if (spec.weights.empty() || std::accumulate(w.begin(), w.end(), 0.0) <= 0) {
+        w.assign(size_t(nu), 1.0);
+        if (nu > 1) w[0] = double(nu - 1);   // A half, the others sharing the other half
+      }
+      const double wsum = std::accumulate(w.begin(), w.end(), 0.0), rest = wsum - w[0];
+      const double fA = nu > 1 && rest > 0 ? w[0] / wsum : 1.0;
+      const double q = fA < 1 - 1e-12 ? fA / (1 - fA) : 0.0;
       caps::UniformReal<double> U(0, 1);
       for (int i = 0; i < n; ++i) {
-        const double f = n > 1 ? double(i) / (n - 1) : 0.0;   // 0 at the head, 1 at the tail
-        s[size_t(i)] = U(rng) < f ? nu - 1 : 0;
+        const double x = n > 1 ? double(i) / (n - 1) : 0.5;   // 0 at the head, 1 at the tail
+        const double p0 = fA >= 1 - 1e-12 ? 1.0 : fA <= 1e-12 ? 0.0 : 1 - std::pow(x, q);
+        double u = U(rng);
+        if (u < p0 || rest <= 0) { s[size_t(i)] = 0; continue; }
+        u = (u - p0) / std::max(1e-300, 1 - p0) * rest;   // which of the other units, by their weights
+        int k = 1;
+        while (k + 1 < nu && (u -= w[size_t(k)]) >= 0) ++k;
+        s[size_t(i)] = k;
       }
       break;
     }
@@ -1098,10 +1121,15 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
     case Sequence::Penultimate: break;   // handled above
     case Sequence::Pattern: {
       std::vector<int> p;
-      for (char c : spec.pattern)
-        if (c >= 'A' && c <= 'Z' && c - 'A' < nu) p.push_back(c - 'A');
-        else if (c >= 'a' && c <= 'z' && c - 'a' < nu) p.push_back(c - 'a');
-      if (p.empty()) p.push_back(0);
+      for (char c : spec.pattern) {
+        if (c == ' ' || c == '\t' || c == ',') continue;
+        const int k = c >= 'A' && c <= 'Z' ? c - 'A' : c >= 'a' && c <= 'z' ? c - 'a' : -1;
+        if (k < 0 || k >= nu)
+          throw std::invalid_argument("pattern '" + spec.pattern + "': '" + std::string(1, c) + "' has no unit (" + std::to_string(nu) +
+                                      (nu == 1 ? " unit given: A)" : " units given: A to " + std::string(1, char('A' + std::min(nu, 26) - 1)) + ")"));
+        p.push_back(k);
+      }
+      if (p.empty()) throw std::invalid_argument("a pattern sequence needs the pattern (letters A, B, … for the units in order)");
       for (int i = 0; i < n; ++i) s[size_t(i)] = p[size_t(i) % p.size()];
       break;
     }
@@ -1265,6 +1293,28 @@ int replace_end_caps(System& s, const std::vector<uint32_t>& heads, const std::s
   return int(jobs.size());
 }
 
+// A block sequence's units that a chain of n units never reaches: unit k starts after the k blocks before it
+std::vector<int> units_past_blocks(const ChainSpec& spec, int n) {
+  std::vector<int> out;
+  if (spec.sequence != Sequence::Block || spec.blocks.empty()) return out;
+  long start = 0;
+  for (size_t k = 0; k < spec.units.size(); ++k) {
+    if (start >= n) out.push_back(int(k));
+    start += std::max(1, spec.blocks[k % spec.blocks.size()]);
+  }
+  return out;
+}
+std::string block_lengths_text(const ChainSpec& spec) {
+  std::string b;
+  for (size_t k = 0; k < spec.blocks.size(); ++k) b += (k ? "," : "") + std::to_string(spec.blocks[k]);
+  return b;
+}
+std::string unit_letters(const std::vector<int>& units) {
+  std::string u;
+  for (size_t k = 0; k < units.size(); ++k) u += (k ? ", " : "") + std::string(1, char('A' + std::min(units[k], 25)));
+  return u;
+}
+
 System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport* report) {
   if (spec.units.empty()) throw GrowError("no repeat unit");
   GrowReport rep;
@@ -1363,6 +1413,17 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   for (int c = 0; c < nchains; ++c) {
     C[size_t(c)].mol = c;
     make_sequence(C[size_t(c)], c, size_t(c) < spec.chain_dp.size() ? spec.chain_dp[size_t(c)] : 0);
+  }
+  if (!spec.chain_dp.empty()) {   // drawn lengths: the short chains a block sequence ends inside its first blocks
+    int cut = 0;
+    std::set<int> missing;
+    for (int c = 0; c < nchains; ++c) {
+      const auto m = units_past_blocks(spec, int(C[size_t(c)].seq.size()));
+      if (!m.empty()) ++cut, missing.insert(m.begin(), m.end());
+    }
+    if (cut > 0)
+      rep.notes.push_back(std::to_string(cut) + " of " + std::to_string(nchains) + " chains end inside the blocks " + block_lengths_text(spec) +
+                          " and hold no unit " + unit_letters(std::vector<int>(missing.begin(), missing.end())));
   }
   if (!o.anchors.empty()) {
     if (!o.substrate) throw GrowError("grafted chains need the substrate they are grafted to");
@@ -1517,7 +1578,9 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   for (int a = -118; a <= 118; ++a)
     for (int b = -118; b <= 118; ++b) limitc(a, b);
   auto limit_row = [&](int a) { return &limit_cache[size_t((a + 128) & 255) * 256]; };
-  const int nthreads = o.threads > 0 ? o.threads : std::min(8, int(std::max(1u, std::thread::hardware_concurrency())));
+  // threads: as asked, else the CAPS-wide setting or the job's (CAPS_THREADS, SLURM_CPUS_PER_TASK), else up to 8
+  int nthreads = o.threads > 0 ? o.threads : max_threads() > 0 ? max_threads() : env_threads();
+  if (nthreads <= 0) nthreads = std::min(8, int(std::max(1u, std::thread::hardware_concurrency())));
   std::unique_ptr<ThreadPool> pool;
   if (nthreads > 1 && o.trials >= 32) pool = std::make_unique<ThreadPool>(nthreads);
   Cell3 cell;
@@ -1903,6 +1966,12 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   long units_total = 0;
   for (const auto& ch : C) units_total += long(ch.seq.size());
   long floor_fails = 0;   // failed steps at the lowest open eased limits, all chains
+  // without eased limits (a contact scale fixed by the caller, or the whole cell tried at a lower one) nothing above ends
+  // a cell the chains cannot fill, and the per-chain restarts (400 starts of up to 40 × DP failed steps each, chain
+  // after chain) run for hours: a budget of failed steps for the whole cell, well past what a cell that fills needs
+  // (PE, 4 × 20 units at 0.9 g/cm³ and scale 0.9: 1 900–11 000 over nine seeds)
+  long cell_fails = 0;
+  const long cell_budget = 20000 + 100 * units_total;
   // eased levels open to the chains: down to 0.6 at first, all of them for a ring backbone (its rigid units need them)
   int open_levels = int(std::count_if(ease_levels.begin(), ease_levels.end(), [](double x) { return x >= 0.6 - 1e-9; }));
   for (const auto& tp : T)
@@ -2501,6 +2570,14 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     if (best_m < o.accept) {
       ++ch.fails;
       ++rep.backtracks;
+      if (ease_levels.empty() && ++cell_fails > cell_budget) {
+        char b[400];
+        std::snprintf(b, sizeof b,
+                      "the chains could not be placed at contact scale %.2f (%ld failed steps, %.3f g/cm³): lower the density or the contact "
+                      "scale, %sor let the contact scale ease automatically",
+                      scale, cell_fails - 1, rep.density, o.curve ? "" : "allow gauche torsions (not trans only), ");
+        throw GrowError(b);
+      }
       // eased limits: a chain stuck at one spot (or that cannot start) tries the same step with its contact limits a
       // step lower, rather than backing up into the same jam again and again; in a dilute cell only after its escapes
       // (backing up 2, 4 units) failed too, in a dense one sooner; a ring backbone, whose rigid units often need it
@@ -2612,7 +2689,8 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     p.cell.a = {Lv[0], 0, 0}, p.cell.b = {0, Lv[1], 0}, p.cell.c = {0, 0, Lv[2]};
     p.has_mol = true;
     GrowOptions::Live live;
-    live.chains = nchains, live.units_total = units_total, live.restarts = rep.restarts, live.worst_margin = rep.worst_margin;
+    live.chains = nchains, live.units_total = units_total, live.restarts = rep.restarts;
+    live.worst_margin = rep.worst_margin < 1e8 ? rep.worst_margin : std::numeric_limits<double>::quiet_NaN();   // NaN: no pair checked yet
     double placed = 0;
     std::vector<std::vector<uint32_t>> at(C.size());
     for (int c = 0; c < nstates; ++c) {
@@ -2820,6 +2898,13 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     for (const auto& ch : C) lo = std::min(lo, int(ch.seq.size())), hi = std::max(hi, int(ch.seq.size())), total += long(ch.seq.size());
     units_text = std::to_string(nchains) + " chains, " + std::to_string(lo) + "–" + std::to_string(hi) + " units (Σ " + std::to_string(total) + ")";
   }
+  // the density reported is the cell's as written: the fixed substrate's atoms (a host, filler or earlier component)
+  // count too where the chains fill the whole cell (a film's or a cylinder's is the chains' own, in their region)
+  if (o.substrate && !film && !cyl) {
+    double ms = 0;
+    for (const auto& a : o.substrate->atoms) ms += o.substrate->mass_of(a);
+    rep.density = (mass + ms) / (0.602214076 * vol);
+  }
   rep.notes.insert(rep.notes.begin(), units_text + " · " + std::to_string(s.atoms.size()) + " atoms · " + cb +
                                           " · " + std::to_string(rep.density).substr(0, 5) + " g/cm³" + (film ? " in the film" : ""));
   if (o.substrate) rep.notes.push_back(std::to_string(o.substrate->atoms.size()) + " substrate atoms kept fixed while growing (molecule 1)");
@@ -2892,6 +2977,8 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     std::snprintf(b, sizeof b, "%s linkage: %zu of %zu units reversed (%.1f %%)", to_string(spec.linkage), n_inverted, n_linked, 100.0 * double(n_inverted) / double(n_linked));
     rep.notes.push_back(b);
   }
+  // no non-bonded pair was ever checked (one chain of one unit): no margin, rather than the starting value
+  if (!(rep.worst_margin < 1e8)) rep.worst_margin = std::numeric_limits<double>::quiet_NaN();
   if (report) *report = rep;
   return s;
 }
@@ -2920,6 +3007,12 @@ const std::vector<std::string>& chain_end_names() {
 }
 
 System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* report) {
+  if (spec.chain_dp.empty()) {   // one length for all: blocks that end the chain before a unit appears are a mistake
+    const auto m = units_past_blocks(spec, std::max(1, spec.dp));
+    if (!m.empty())
+      throw std::invalid_argument("the blocks " + block_lengths_text(spec) + " fill the chain of " + std::to_string(std::max(1, spec.dp)) +
+                                  " units before unit " + unit_letters(m) + " appears: shorten the blocks or raise the DP");
+  }
   if (!o.auto_scale) return grow_chains_once(spec, o, report);
   std::vector<double> scales = {o.contact_scale > 0 ? o.contact_scale : 1.0};
   // a backbone through a ring (2,3-linked norbornenes, ENB): growth holds the link angles rigid where the real chain

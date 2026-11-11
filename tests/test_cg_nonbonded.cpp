@@ -201,3 +201,59 @@ TEST(CgNonbonded, ShortJointIbiReducesTheError) {
               pressure_gap.back(), r0.pressure);
   EXPECT_LT(residual.back(), 0.05) << "−kT ln g plus one update lands close to a simple fluid's g(r)";
 }
+
+TEST(CgNonbonded, FitsOfARepulsionOnlyTableAreRefusedNotZeroed) {
+  // a soft wall and a very shallow well (as IBI tables of a polyester melt): LJ 12-6 and Mie cannot follow it. Unbounded,
+  // the fit ran to σ ≫ r_c with ε → 0 (pair_coeff … 0.000000) and Mie to n → m (a singular prefactor).
+  CgPairSet p;
+  p.r0 = 0.05, p.dr = 0.05, p.rc = 11.95, p.temperature = 450;
+  CgPairTable t;
+  t.key = "A-A";
+  for (double r = p.r0; r <= p.rc + 1e-9; r += p.dr) t.U.push_back(r < 3.5 ? 20.0 : 3.6 * std::exp(-(r - 3.95) / 0.45) - 0.3 * std::exp(-(r - 6.35) * (r - 6.35)));
+  const double end = t.U.back();
+  for (auto& u : t.U) u -= end;
+  p.pairs = {t};
+  for (const char* form : {"lj126", "mie"}) {
+    const auto fits = fit_pairs(p, form, 4.0);
+    ASSERT_EQ(fits.size(), 1u);
+    const auto& f = fits[0];
+    if (f.rejected.empty()) {   // a bounded, usable fit is fine too
+      EXPECT_GT(f.epsilon, 1e-3 * kB * 450) << form;
+      EXPECT_LE(f.sigma, f.hi) << form;
+      if (std::string(form) == "mie") EXPECT_GE(f.n, f.m + 1) << form;
+    }
+    const std::string lines = lammps_pair_lines(fits, {{"A"}, {}, {}, {}}, p.rc);
+    EXPECT_EQ(lines.find("pair_coeff 1 1 0.000000"), std::string::npos) << lines;
+    EXPECT_EQ(lines.find("6.000000 6.000000"), std::string::npos) << lines;
+    if (!f.rejected.empty()) {
+      EXPECT_NE(lines.find("# no usable"), std::string::npos) << lines;
+      EXPECT_TRUE(tables_of_fits(fits, p).pairs.empty());
+    }
+  }
+}
+
+TEST(CgNonbonded, TargetsStopAtTheCountedRangeAndKeepTheirExclusion) {
+  // --rmax 15 in a 25.8 Å box: frames are counted to half the box, so the targets end there (no g = 0 bins past it)
+  CgTopology t;
+  const System s = fluid(400, 25.8, 11, &t);
+  CgPairOptions o;
+  o.rmax = 15, o.exclude = 2;
+  CgRdfAccumulator acc(two_types(), o);
+  const int si = acc.add_system(t, 1, "x");
+  std::vector<Vec3> p;
+  for (const auto& a : s.atoms) p.push_back(a.pos);
+  acc.add_frame(si, p, s.cell);
+  const CgTargets tg = cg_targets(acc, 300, {1});
+  EXPECT_LT(tg.r.back(), 0.5 * 25.8);
+  EXPECT_EQ(tg.rdf[0][0].g.size(), tg.r.size());
+  EXPECT_GT(tg.rdf[0][0].g.back(), 0);
+  EXPECT_EQ(tg.exclude, 2);
+  const CgTargets back = cg_targets_from_json(cg_targets_json(tg));
+  EXPECT_EQ(back.exclude, 2);
+  EXPECT_EQ(back.r.size(), tg.r.size());
+  // the IBI start ends there too, without a step at the end
+  CgIbiOptions io;
+  io.rc = 15;
+  const CgPairSet ps = ibi_start(tg, io);
+  EXPECT_LE(ps.rc, tg.r.back() + 1e-9);
+}

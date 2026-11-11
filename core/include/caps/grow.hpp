@@ -96,7 +96,7 @@ struct GrowOptions {
     int chains_done = 0, chains = 0;
     long units = 0, units_total = 0;
     int restarts = 0;
-    double worst_margin = 0;   // smallest (distance − limit) over accepted pairs so far, Å
+    double worst_margin = 0;   // smallest (distance − limit) over accepted pairs so far, Å (grow_chains: NaN before any pair)
     double density = 0;        // of the atoms placed so far, g/cm³
     double acceptance = 1;     // growth steps placed at the first attempt / all attempts (a backtrack counts as a failed one)
     double ln_w = std::nan(""); // Rosenbluth methods: mean ln W of the chains finished so far
@@ -109,7 +109,7 @@ struct GrowReport {
   int chains_placed = 0;
   int restarts = 0;
   int backtracks = 0;
-  double worst_margin = 0.0;             // smallest (distance − limit) over accepted non-bonded pairs, Å
+  double worst_margin = 0.0;             // smallest (distance − limit) over accepted non-bonded pairs, Å (grow_chains: NaN when there were none)
   double box = 0.0;
   double density = 0.0;
   double ln_rosenbluth = 0.0;            // Rosenbluth methods: mean over chains of ln W (W = Π_steps Σ w / k)

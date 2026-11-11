@@ -146,8 +146,12 @@ std::string json_dict(const std::map<std::string, int>& m) {
   return s + "}";
 }
 
-// three-fold hollows of one outer layer (caps_mxene hollow_candidates): sorted by rounded fractional coordinates
-std::vector<Vec3> hollows(const System& sup, const std::vector<uint32_t>& idxs, double* dnn_out, std::vector<Vec3>* bridges = nullptr) {
+// three-fold hollows of one outer layer (caps_mxene hollow_candidates): sorted by rounded fractional coordinates.
+// `bridges`: the midpoint of every in-plane bond (all bridge sites, three per atom on a hexagonal layer).
+// `bridges_one`: the bridges of one bond direction only (the one closest to the cell's a), one per surface atom,
+// so that a bridge termination puts one atom per surface site and neighbouring terminations stay a lattice spacing apart.
+std::vector<Vec3> hollows(const System& sup, const std::vector<uint32_t>& idxs, double* dnn_out, std::vector<Vec3>* bridges = nullptr,
+                          std::vector<Vec3>* bridges_one = nullptr) {
   System lay;
   lay.cell = sup.cell;
   lay.cell.c = {0, 0, 50.0};
@@ -173,11 +177,32 @@ std::vector<Vec3> hollows(const System& sup, const std::vector<uint32_t>& idxs, 
     }
     return k;
   };
-  std::map<std::array<double, 2>, Vec3> found, mids;
+  // the bond direction for bridges_one: of all in-plane bond vectors, the one most nearly parallel to a, pointing along +a
+  // (along +b when it is perpendicular to a, as for a chain running along b)
+  Vec3 u{0, 0, 0};
+  if (bridges_one) {
+    const double la = norm(lay.cell.a), lb = norm(lay.cell.b);
+    const Vec3 ah = la > 0 ? lay.cell.a * (1.0 / la) : Vec3{1, 0, 0}, bh = lb > 0 ? lay.cell.b * (1.0 / lb) : Vec3{0, 1, 0};
+    double best = -1;
+    for (const auto& D : nb)
+      for (const Vec3& d : D) {
+        const double l = norm(d);
+        if (!(l > 0)) continue;
+        const double c = std::fabs(dot(d, ah)) / l;
+        if (c > best + 1e-9) best = c, u = d * (1.0 / l);
+      }
+    const double s = std::fabs(dot(u, ah)) > 1e-6 ? dot(u, ah) : dot(u, bh);
+    if (s < 0) u = u * -1.0;
+  }
+  std::map<std::array<double, 2>, Vec3> found, mids, mids_one;
   for (size_t a = 0; a < lay.atoms.size(); ++a) {
     const auto& D = nb[a];
     for (size_t p = 0; p < D.size(); ++p) {
       if (bridges) { const Vec3 m = lay.atoms[a].pos + D[p] * 0.5; mids[key_of(m)] = m; }
+      if (bridges_one) {
+        const double l = norm(D[p]);
+        if (l > 0 && norm(cross(D[p], u)) < 0.1 * dnn && dot(D[p], u) > 0) { const Vec3 m = lay.atoms[a].pos + D[p] * 0.5; mids_one[key_of(m)] = m; }
+      }
       for (size_t q = p + 1; q < D.size(); ++q)
         if (std::fabs(norm(D[p] - D[q]) - dnn) < 0.15 * dnn) {
           const Vec3 c = lay.atoms[a].pos + (D[p] + D[q]) * (1.0 / 3.0);
@@ -188,6 +213,7 @@ std::vector<Vec3> hollows(const System& sup, const std::vector<uint32_t>& idxs, 
   std::vector<Vec3> out;
   for (const auto& [k, c] : found) out.push_back(c);
   if (bridges) { bridges->clear(); for (const auto& [k, m] : mids) bridges->push_back(m); }
+  if (bridges_one) { bridges_one->clear(); for (const auto& [k, m] : mids_one) bridges_one->push_back(m); }
   return out;
 }
 
@@ -213,7 +239,25 @@ std::pair<std::string, std::string> classify(const System& bare, const Vec3& xy,
     if (face == "top" ? z > zref + 0.1 : z < zref - 0.1) continue;
     if (pick < 0 || (face == "top" ? z > bare.atoms[size_t(pick)].pos[2] : z < bare.atoms[size_t(pick)].pos[2])) pick = int(k);
   }
-  if (pick < 0) return {"other", ""};
+  if (pick < 0) {
+    // between two outer-layer atoms, on the line joining them, with no third one as near: a bridge
+    std::vector<std::pair<double, Vec3>> outer;
+    for (const auto& a : bare.atoms) {
+      if (std::fabs(a.pos[2] - zref) >= 0.2) continue;
+      const Vec3 d0 = mic_ab(bare.cell, Vec3{a.pos[0] - xy[0], a.pos[1] - xy[1], 0.0});
+      for (int i = -1; i <= 1; ++i)   // the neighbouring images too: in a 1 x 1 cell both ends of a bond are one atom
+        for (int j = -1; j <= 1; ++j) {
+          Vec3 d = d0 + bare.cell.a * double(i) + bare.cell.b * double(j);
+          d[2] = 0.0;
+          outer.push_back({std::hypot(d[0], d[1]), d});
+        }
+    }
+    std::sort(outer.begin(), outer.end(), [](const auto& x, const auto& y) { return x.first < y.first; });
+    if (outer.size() >= 2 && (outer.size() == 2 || outer[2].first > outer[0].first + 0.15) && outer[1].first < outer[0].first + 0.15 &&
+        norm(outer[0].second + outer[1].second) < tol)
+      return {"bridge", ""};
+    return {"other", ""};
+  }
   const double zp = bare.atoms[size_t(pick)].pos[2];
   const std::string el = sym(bare.atoms[size_t(pick)].element);
   if (std::fabs(zp - zref) < 0.2) return {"top", el};
@@ -489,7 +533,9 @@ System terminate_slab(const System& slab, const TerminateOptions& o, TerminateRe
     for (uint32_t i = 0; i < sup.atoms.size(); ++i) if (sup.atoms[i].element == zsurf && std::fabs(sup.atoms[i].pos[2] - zref) < 0.2) idx.push_back(i);
     double dnn = 0;
     std::vector<Vec3> br;
-    const auto cands = hollows(sup, idx, &dnn, fs.site == "bridge" ? &br : nullptr);
+    // bridge: one bridge per surface atom (the bonds of one direction), not one per bond; filling every bond
+    // midpoint of a hexagonal layer puts three terminations per surface atom only dnn/2 apart
+    const auto cands = hollows(sup, idx, &dnn, nullptr, fs.site == "bridge" ? &br : nullptr);
     std::vector<Vec3> sites;
     double r = 0;
     if (fs.site == "top") { for (uint32_t i : idx) sites.push_back(sup.atoms[i].pos); }
@@ -745,28 +791,87 @@ Validation2D validate_2d(const System& s, const ValidateOptions& o) {
     if (!ok) add("ERROR", "composition " + json_dict(comp) + " does not match expected " + o.expect + " x N");
   }
   // blocks (z clusters), fragments, floaters
-  const auto cl = z_clusters(s, 2.0);
+  auto cl = z_clusters(s, 2.0);
+  // an N carrying an H (an NH or NH2 termination) is not part of the sheet's formula; a nitride's own N (no H) is
+  std::vector<bool> nh(n, false);
+  for (const auto& p : neighbours_pbc(s, 1.3)) if (el[p.i] == "N" && el[p.j] == "H") nh[p.i] = true;
+  auto core_comp = [&](const std::vector<uint32_t>& idx) {
+    std::map<std::string, int> c;
+    for (uint32_t i : idx) if (!nh[i]) ++c[el[i]];
+    return c;
+  };
   if (core.empty()) {
     // the largest block's elements other than terminations, reduced by their gcd
     const Cluster* big = nullptr;
     for (const auto& c : cl) if (!big || c.idx.size() > big->idx.size()) big = &c;
     if (big) {
       int g = 0;
-      for (const auto& [e, k] : composition(s, &big->idx)) if (!kTermAtoms.count(e)) core[e] = k, g = std::gcd(g, k);
+      for (const auto& [e, k] : core_comp(big->idx)) if (!kTermAtoms.count(e)) core[e] = k, g = std::gcd(g, k);
       if (g > 1) for (auto& [e, k] : core) k /= g;
+    }
+  }
+  auto is_core_atom = [&](uint32_t i) { return core.count(el[i]) > 0 && !nh[i]; };
+  // a block with no sheet element that is bonded to a sheet atom belongs to that sheet: a termination more than 2 A
+  // above the surface plane (a large halogen or chalcogen over a hollow, anything on a top site) is not floating.
+  // Bonded: within 1.15 x the sum of covalent radii, or within the termination library's range for that surface element.
+  {
+    std::map<int, std::vector<TerminationKind>> libs;
+    auto bond_max = [&](uint32_t t, uint32_t c) {
+      double lim = 1.15 * (element(s.atoms[t].element).covalent + element(s.atoms[c].element).covalent);
+      if (!o.data_dir.empty()) {
+        const int zc = s.atoms[c].element;
+        if (!libs.count(zc)) {
+          try { libs[zc] = termination_library(o.data_dir, el[c]); } catch (...) { libs[zc] = {}; }
+        }
+        for (const auto& k : libs[zc]) if (k.atom == el[t]) lim = std::max(lim, k.hi + 0.05);
+      }
+      return lim;
+    };
+    const auto nbb = neighbours_pbc(s, 3.6);
+    std::vector<int> blk(n, -1);
+    std::vector<size_t> pos_in(n, 0);
+    auto index_blocks = [&] {
+      for (size_t b = 0; b < cl.size(); ++b)
+        for (size_t q = 0; q < cl[b].idx.size(); ++q) blk[cl[b].idx[q]] = int(b), pos_in[cl[b].idx[q]] = q;
+    };
+    auto block_has_core = [&](const Cluster& c) { return std::any_of(c.idx.begin(), c.idx.end(), [&](uint32_t i) { return is_core_atom(i); }); };
+    index_blocks();
+    for (bool changed = true; changed;) {
+      changed = false;
+      for (size_t b = 0; b < cl.size() && !changed; ++b) {
+        if (block_has_core(cl[b])) continue;
+        const Neighbour* best = nullptr;
+        for (const auto& p : nbb) {
+          if (blk[p.i] != int(b) || blk[p.j] == int(b) || !is_core_atom(p.j) || p.r > bond_max(p.i, p.j)) continue;
+          if (!best || p.r < best->r) best = &p;
+        }
+        if (!best) continue;
+        Cluster& T = cl[size_t(blk[best->j])];
+        // the bonded atom's z unwrapped next to its sheet partner; the whole block moves by that many cell heights
+        const double want = T.z[pos_in[best->j]] - best->d[2];
+        double shift = want - cl[b].z[pos_in[best->i]];
+        const double cz = s.cell.c[2];
+        shift = cz > 0 ? std::round(shift / cz) * cz : 0.0;
+        for (size_t q = 0; q < cl[b].idx.size(); ++q) T.idx.push_back(cl[b].idx[q]), T.z.push_back(cl[b].z[q] + shift);
+        cl.erase(cl.begin() + long(b));
+        index_blocks();
+        changed = true;
+      }
     }
   }
   const Cluster* sheet = nullptr;
   int nsheets = 0;
   for (const auto& c : cl) {
     const auto cc = composition(s, &c.idx);
+    const auto ccore = core_comp(c.idx);
     bool has_core = false;
-    for (const auto& [e, k] : core) has_core |= cc.count(e) > 0;
+    for (const auto& [e, k] : core) has_core |= ccore.count(e) > 0;
     std::vector<int> at(c.idx.begin(), c.idx.end());
     const double z0 = *std::min_element(c.z.begin(), c.z.end()), z1 = *std::max_element(c.z.begin(), c.z.end());
     if (!has_core)
-      add("ERROR", json_dict(cc) + " at z = " + fmt("%.2f", z0) + "-" + fmt("%.2f", z1) + " A are not attached to any sheet (> 2 A vertical gap): floating in vacuum", at);
-    else if (multiple_of(cc, core)) { ++nsheets; if (!sheet) sheet = &c; }
+      add("ERROR", json_dict(cc) + " at z = " + fmt("%.2f", z0) + "-" + fmt("%.2f", z1) +
+                       " A are not attached to any sheet (> 2 A vertical gap and no sheet atom within bonding distance): floating in vacuum", at);
+    else if (multiple_of(ccore, core)) { ++nsheets; if (!sheet) sheet = &c; }
     else
       add("ERROR", "incomplete sheet fragment " + json_dict(cc) + " at z = " + fmt("%.2f", z0) + "-" + fmt("%.2f", z1) + " A (a sheet must be a multiple of " + o.core +
                        (o.core.empty() ? std::string("its formula") : "") + " in one contiguous block)", at);
@@ -808,7 +913,7 @@ Validation2D validate_2d(const System& s, const ValidateOptions& o) {
     std::string have;
     for (const auto& [e, k] : core) {
       std::vector<double> zz;
-      for (size_t q = 0; q < sheet->idx.size(); ++q) if (el[sheet->idx[q]] == e) zz.push_back(sheet->z[q]);
+      for (size_t q = 0; q < sheet->idx.size(); ++q) if (el[sheet->idx[q]] == e && !nh[sheet->idx[q]]) zz.push_back(sheet->z[q]);
       std::sort(zz.begin(), zz.end());
       int d = zz.empty() ? 0 : 1;
       for (size_t q = 1; q < zz.size(); ++q) d += zz[q] - zz[q - 1] > 0.3;
@@ -823,7 +928,7 @@ Validation2D validate_2d(const System& s, const ValidateOptions& o) {
     sub.cell = s.cell;
     for (size_t q = 0; q < sheet->idx.size(); ++q) {
       const uint32_t i = sheet->idx[q];
-      if (!core.count(el[i])) continue;
+      if (!is_core_atom(i)) continue;
       Atom a = s.atoms[i];
       a.pos[2] = sheet->z[q];
       sub.atoms.push_back(a);
@@ -884,26 +989,50 @@ Validation2D validate_2d(const System& s, const ValidateOptions& o) {
   std::map<uint32_t, std::vector<std::pair<uint32_t, Vec3>>> hof;   // O/N → its H
   std::set<uint32_t> hbound;
   for (const auto& p : neighbours_pbc(s, 1.3))
-    if ((el[p.i] == "O" || el[p.i] == "N") && el[p.j] == "H" && !core.count(el[p.i])) hof[p.i].push_back({p.j, p.d}), hbound.insert(p.j);
+    if (((el[p.i] == "O" && !core.count("O")) || el[p.i] == "N") && el[p.j] == "H") hof[p.i].push_back({p.j, p.d}), hbound.insert(p.j);
+  // an H on the metal itself (an H termination): its nearest surface atom within the library's range for H
+  // (the sum of covalent radii when the library has no value for this surface element)
+  std::set<uint32_t> hsurf;
+  {
+    double hhi = range_of("H").second;
+    if (!(hhi > 0) && zsurf) hhi = element(zsurf).covalent + element(1).covalent + 0.3;
+    for (size_t k = 0; k < n; ++k) {
+      if (el[k] != "H" || hbound.count(uint32_t(k)) || near[k].empty()) continue;
+      if (*std::min_element(near[k].begin(), near[k].end()) <= hhi + 0.05) hsurf.insert(uint32_t(k));
+    }
+  }
   for (size_t k = 0; k < n; ++k) {
-    if (el[k] != "H" || hbound.count(uint32_t(k))) continue;
+    if (el[k] != "H" || hbound.count(uint32_t(k)) || hsurf.count(uint32_t(k))) continue;
     double best = 1e300;
     for (size_t o2 = 0; o2 < n; ++o2)
-      if (el[o2] == "O") best = std::min(best, norm(s.cell.minimum_image(s.atoms[o2].pos - s.atoms[k].pos)));
-    add("ERROR", best < 1e299 ? "H atom #" + std::to_string(k + 1) + " is not bonded to any O (nearest O at " + fmt("%.2f", best) + " A; an O-H bond is about 0.97 A)"
-                              : "H atom #" + std::to_string(k + 1) + " has no O", {int(k)});
+      if (el[o2] == "O" || el[o2] == "N") best = std::min(best, norm(s.cell.minimum_image(s.atoms[o2].pos - s.atoms[k].pos)));
+    add("ERROR", best < 1e299 ? "H atom #" + std::to_string(k + 1) + " is not bonded to any O or N (nearest at " + fmt("%.2f", best) +
+                                    " A; an O-H bond is about 0.97 A) nor to the " + (surf.empty() ? std::string("surface") : surf) + " surface"
+                              : "H atom #" + std::to_string(k + 1) + " has no O or N to bond to and is not bonded to the " + (surf.empty() ? std::string("surface") : surf) + " surface",
+        {int(k)});
   }
+  // a termination's head atom (the one bonded to the surface): O, F, a halogen, a chalcogen, the N of NH, or an H on the metal
+  auto is_term = [&](uint32_t k) {
+    if (el[k] == "H") return hsurf.count(k) > 0;
+    return !is_core_atom(k) && (kTermAtoms.count(el[k]) > 0 || el[k] == "N");
+  };
+  // z of each atom, unwrapped with the sheet (a slab across the cell's z boundary keeps its faces apart)
+  std::vector<double> zu(n);
+  for (size_t i = 0; i < n; ++i) zu[i] = s.atoms[i].pos[2];
+  if (sheet) for (size_t q = 0; q < sheet->idx.size(); ++q) zu[sheet->idx[q]] = sheet->z[q];
   double zc = 0;
   int nsurf = 0;
-  for (size_t i = 0; i < n; ++i) if (s.atoms[i].element == zsurf) zc += s.atoms[i].pos[2], ++nsurf;
+  for (size_t i = 0; i < n; ++i) if (s.atoms[i].element == zsurf) zc += zu[i], ++nsurf;
   zc = nsurf ? zc / nsurf : 0;
   std::map<std::string, std::map<std::string, int>> face_cnt{{"top", {}}, {"bottom", {}}}, site_cnt{{"top", {}}, {"bottom", {}}};
+  std::vector<bool> head(n, false);
   for (size_t k = 0; k < n; ++k) {
-    if (el[k] == "H" || core.count(el[k]) || !(kTermAtoms.count(el[k]) || el[k] == "N")) continue;
+    if (!is_term(uint32_t(k))) continue;
     const std::string kind = (el[k] == "O" || el[k] == "N") && hof.count(uint32_t(k)) ? el[k] + "H" : el[k];
     auto ds = near[k];
     std::sort(ds.begin(), ds.end());
     if (ds.empty()) { add("ERROR", kind + " atom #" + std::to_string(k + 1) + " has no " + surf + " within " + fmt("%.1f", std::max(2.8, hi_max + 0.45)) + " A: not bonded to the surface", {int(k)}); continue; }
+    head[k] = true;
     auto [lo, hi] = range_of(kind);
     if (hi > 0) {
       std::vector<double> bonded;
@@ -914,10 +1043,10 @@ Validation2D validate_2d(const System& s, const ValidateOptions& o) {
         for (double x : ds) l += (l.empty() ? "" : ", ") + fmt("%.2f", x);
         add("WARN", kind + " atom #" + std::to_string(k + 1) + ": " + surf + "-X distances [" + l + "] outside " + fmt("%.2f", lo) + "-" + fmt("%.2f", hi) + " A", {int(k)});
       }
-      if (bonded.size() != 1 && bonded.size() != 3)
-        add("WARN", kind + " atom #" + std::to_string(k + 1) + " has " + std::to_string(bonded.size()) + " " + surf + " neighbours (hollow=3, top=1)", {int(k)});
+      if (bonded.size() < 1 || bonded.size() > 3)
+        add("WARN", kind + " atom #" + std::to_string(k + 1) + " has " + std::to_string(bonded.size()) + " " + surf + " neighbours (top=1, bridge=2, hollow=3)", {int(k)});
     }
-    const std::string face = s.atoms[k].pos[2] > zc ? "top" : "bottom";
+    const std::string face = zu[k] > zc ? "top" : "bottom";
     ++face_cnt[face][kind];
     if (hof.count(uint32_t(k))) {
       const auto& hs = hof.at(uint32_t(k));
@@ -931,6 +1060,42 @@ Validation2D validate_2d(const System& s, const ValidateOptions& o) {
       }
     }
   }
+  // two terminations on neighbouring sites (every bridge, or fcc and hcp hollows both filled): their head atoms closer
+  // than 0.75 x the sum of their van der Waals radii (Bondi 1964); one termination per surface site keeps them a lattice spacing apart.
+  // The limit is capped at 0.8 x the surface layer's in-plane spacing: one termination per site sits a full spacing from the next
+  // (neighbouring bridges are 0.5 and fcc + hcp 0.58 spacings apart), so a large head (Te, I) on a small cell is not flagged.
+  {
+    double dsurf = 0;
+    if (!sub.atoms.empty() && zsurf) {
+      double ztop = -1e300;
+      for (const auto& a : sub.atoms) if (a.element == zsurf) ztop = std::max(ztop, a.pos[2]);
+      System lay;
+      lay.cell = s.cell;
+      lay.cell.c = {0, 0, 50.0};
+      for (const auto& a : sub.atoms)
+        if (a.element == zsurf && std::fabs(a.pos[2] - ztop) < 0.2) { Atom b = a; b.pos[2] = 0.0; lay.atoms.push_back(b); }
+      double dm = 1e300;
+      for (const auto& p : neighbours_pbc(lay, 4.5, {true, true, false})) dm = std::min(dm, p.r);
+      if (dm < 1e299) dsurf = dm;
+    }
+    std::vector<std::string> ex;
+    std::vector<int> at;
+    std::set<std::pair<uint32_t, uint32_t>> seen;   // each pair once, not once per periodic image
+    for (const auto& p : nb32) {
+      if (p.i >= p.j || !head[p.i] || !head[p.j]) continue;
+      double lim = 0.75 * (element(s.atoms[p.i].element).vdw + element(s.atoms[p.j].element).vdw);
+      if (dsurf > 0) lim = std::min(lim, 0.8 * dsurf);
+      if (p.r >= lim || !seen.insert({p.i, p.j}).second) continue;
+      if (ex.size() < 3) ex.push_back("(" + std::to_string(p.i + 1) + ", '" + el[p.i] + "', " + std::to_string(p.j + 1) + ", '" + el[p.j] + "', " + fmt("%.3f", p.r) + ")");
+      at.push_back(int(p.i)), at.push_back(int(p.j));
+    }
+    if (!at.empty()) {
+      std::string e;
+      for (const auto& x : ex) e += (e.empty() ? "" : ", ") + x;
+      add("ERROR", std::to_string(at.size() / 2) + " termination pairs too close (below 0.75 x the sum of van der Waals radii or 0.8 x the surface atoms' spacing), e.g. [" + e +
+                       "]: neighbouring sites are both filled; use one termination per surface site", at);
+    }
+  }
   if (!sub.atoms.empty()) {
     double zmid = 0, ztop = -1e300, zbot = 1e300;
     int ns = 0;
@@ -938,7 +1103,7 @@ Validation2D validate_2d(const System& s, const ValidateOptions& o) {
     zmid /= std::max(1, ns);
     for (size_t q = 0; q < sheet->idx.size(); ++q) {
       const uint32_t k = sheet->idx[q];
-      if (core.count(el[k]) || el[k] == "H" || !(kTermAtoms.count(el[k]) || el[k] == "N")) continue;
+      if (!head[k]) continue;
       const std::string face = sheet->z[q] > zmid ? "top" : "bottom";
       ++site_cnt[face][classify(sub, s.atoms[k].pos, face == "top" ? ztop : zbot, face).first];
     }

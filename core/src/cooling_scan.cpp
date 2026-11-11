@@ -115,8 +115,12 @@ bool table_file(const fs::path& path, bool volume, std::vector<CoolingPoint>& pt
     }
   }
   if (rows.empty() || kind == "fit" || kind == "potential") return false;
-  // no header: a density lies near 1 g/cm³ as a specific volume does; --volume says which, else density
-  const bool vol = volume || kind == "specific volume";
+  // a temperature is above 0 K: a zero or negative first column is not a cooling scan (a box line "0 30.5 xlo xhi")
+  for (const auto& r : rows)
+    if (!(r.first > 0)) return false;
+  // the header names the column; only without one (a density lies near 1 g/cm³ as a specific volume does) --volume
+  // says which, else density
+  const bool vol = kind == "specific volume" || (kind.empty() && volume);
   for (const auto& [T, y] : rows) pts.push_back(vol ? from_volume(T, y) : from_density(T, y));
   return true;
 }
@@ -190,30 +194,85 @@ void match_log(CoolingScan& sc, const fs::path& dir) {
   }
 }
 
-// the atom count of a LAMMPS data file in the folder (the potential energy is per cell; the fit takes it per atom)
-size_t data_atoms(const fs::path& dir) {
-  std::vector<fs::path> files;
-  std::error_code ec;
-  for (const auto& e : fs::directory_iterator(dir, ec))
-    if (e.is_regular_file() && lower(e.path().extension().string()) == ".data") files.push_back(e.path());
-  std::sort(files.begin(), files.end());
+bool ends_with(const std::string& s, const std::string& tail) {
+  return s.size() >= tail.size() && s.compare(s.size() - tail.size(), tail.size(), tail) == 0;
+}
+
+// the run name a file of caps tg -o OUT.data carries: OUT.data, OUT.restart.data, OUT.tg-points.json,
+// OUT.properties.json (a table OUT.csv: OUT)
+std::string run_stem(const fs::path& p) {
+  const std::string n = p.filename().string(), l = lower(n);
+  for (const char* tail : {".restart.data", ".tg-points.json", ".properties.json"})
+    if (ends_with(l, tail) && l.size() > std::string(tail).size()) return n.substr(0, n.size() - std::string(tail).size());
+  return p.stem().string();
+}
+
+// the "N atoms" header of a LAMMPS data file (0: not one)
+size_t header_atoms(const fs::path& f) {
   static const std::regex atoms(R"(^\s*(\d+)\s+atoms\s*$)");
-  for (const auto& f : files) {
-    std::ifstream in(f);
-    std::string line;
-    for (int k = 0; k < 40 && std::getline(in, line); ++k) {
-      std::smatch m;
-      if (std::regex_search(line, m, atoms)) return size_t(std::stoull(m[1]));
-    }
+  std::ifstream in(f);
+  std::string line;
+  for (int k = 0; k < 40 && std::getline(in, line); ++k) {
+    std::smatch m;
+    if (std::regex_search(line, m, atoms)) return size_t(std::stoull(m[1]));
   }
   return 0;
+}
+
+// the atom count of the run's own structure (the potential energy is per cell; the fit takes it per atom): OUT.data or
+// OUT.restart.data beside the source, named after it; for a csv folder of caps tg, the run's one points file beside it.
+// Never some other structure that happens to share the folder: 0 when the run's own is not there.
+size_t data_atoms(const fs::path& source, const fs::path& dir) {
+  std::error_code ec;
+  auto own = [&](const fs::path& d, const std::string& stem) -> size_t {
+    if (stem.empty()) return 0;
+    for (const char* ext : {".data", ".restart.data"})
+      if (const fs::path f = d / (stem + ext); fs::is_regular_file(f, ec))
+        if (const size_t n = header_atoms(f)) return n;
+    return 0;
+  };
+  if (const size_t n = own(source.parent_path(), run_stem(source))) return n;
+  // a csv folder inside the run folder (RUN/csv/tg_3.csv): the run is the one OUT.tg-points.json in RUN
+  if (source.parent_path() == dir) return 0;
+  std::vector<fs::path> points;
+  for (const auto& e : fs::directory_iterator(dir, ec))
+    if (e.is_regular_file() && ends_with(lower(e.path().filename().string()), ".tg-points.json")) points.push_back(e.path());
+  if (points.size() != 1 || points[0] == source) return 0;
+  try {
+    const Json j = Json::parse(slurp(points[0]));
+    if (const double n = j.is_object() ? j.num("atoms", 0) : 0; n > 0) return size_t(n);
+  } catch (const std::exception&) {}
+  return own(dir, run_stem(points[0]));
+}
+
+// a structure (a LAMMPS data file, a PDB, CIF, ...) rather than a table of cooling points: by its extension, or by a
+// LAMMPS header line "N atoms" or an "Atoms" / "Masses" section
+bool structure_file(const fs::path& p) {
+  static const std::vector<std::string> exts = {".data", ".lmp", ".lammps", ".pdb", ".cif", ".xyz", ".mol2", ".car", ".mdf",
+                                                ".gro", ".psf", ".sdf", ".mol", ".poscar", ".vasp"};
+  const std::string ext = lower(p.extension().string());
+  if (ext == ".json") return false;
+  if (std::find(exts.begin(), exts.end(), ext) != exts.end()) return true;
+  const std::string name = lower(p.filename().string());
+  if (name == "poscar" || name == "contcar") return true;
+  static const std::regex atoms(R"(^\s*\d+\s+atoms\s*$)"), section(R"(^\s*(Atoms|Masses)(\s+#.*)?\s*$)");
+  std::ifstream in(p);
+  std::string line;
+  for (int k = 0; k < 200 && std::getline(in, line); ++k)
+    if (std::regex_search(line, atoms) || std::regex_search(line, section)) return true;
+  return false;
 }
 
 bool read_file(const fs::path& p, bool volume, CoolingScan& sc) {
   if (lower(p.extension().string()) == ".json") {
     Json j;
     try { j = Json::parse(slurp(p)); } catch (const std::exception&) { return false; }
-    if (points_file(j, sc.points) || properties_file(j, sc.points)) { sc.source = p.string(); return true; }
+    if (points_file(j, sc.points)) {
+      sc.source = p.string();
+      if (const double n = j.num("atoms", 0); n > 0) sc.atoms = size_t(n);   // caps tg writes the cell's atom count
+      return true;
+    }
+    if (properties_file(j, sc.points)) { sc.source = p.string(); return true; }
     return false;
   }
   std::string kind;
@@ -226,7 +285,8 @@ bool read_file(const fs::path& p, bool volume, CoolingScan& sc) {
 CoolingScan read_cooling_scan(const std::string& path, bool volume) {
   CoolingScan sc;
   std::error_code ec;
-  const fs::path p = fs::absolute(fs::path(path), ec).lexically_normal();
+  fs::path p = fs::absolute(fs::path(path), ec).lexically_normal();
+  if (!p.has_filename() && p.has_parent_path()) p = p.parent_path();   // "RUN/csv/": the folder csv, as "RUN/csv"
   if (!fs::exists(p, ec)) throw std::runtime_error("no such file or folder: " + path);
   fs::path dir = p;
   if (fs::is_directory(p, ec)) {
@@ -250,13 +310,21 @@ CoolingScan read_cooling_scan(const std::string& path, bool volume) {
     if (!ok) ok = csv_folder(p, volume, sc.points, sc.source);
     if (!ok) throw std::runtime_error(path + ": no cooling scan here (OUT.tg-points.json, a csv folder of caps tg, or a properties file)");
   } else {
-    if (!read_file(p, volume, sc)) throw std::runtime_error(path + ": no cooling points in it (T against density or specific volume)");
-    dir = p.parent_path().empty() ? fs::path(".") : p.parent_path();
+    fs::path f = p;
+    if (structure_file(p)) {
+      // caps tg -o OUT.data: its points are OUT.tg-points.json beside it
+      f = p.parent_path() / (run_stem(p) + ".tg-points.json");
+      if (!fs::is_regular_file(f, ec))
+        throw std::runtime_error(path + " is a structure file, not a cooling scan: give OUT.tg-points.json of caps tg, the run folder, "
+                                        "a csv folder of caps tg or a table of T and density");
+    }
+    if (!read_file(f, volume, sc)) throw std::runtime_error(f.string() + ": no cooling points in it (T against density or specific volume)");
+    dir = f.parent_path().empty() ? fs::path(".") : f.parent_path();
   }
   if (dir.filename() == "csv") dir = dir.parent_path();
   if (sc.points.size() < 2) throw std::runtime_error(path + ": fewer than two temperatures");
   match_log(sc, dir);
-  sc.atoms = data_atoms(dir);
+  if (sc.atoms == 0) sc.atoms = data_atoms(fs::path(sc.source), dir);
   return sc;
 }
 

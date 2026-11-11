@@ -9,7 +9,8 @@
 //  build_crystal     Sites expanded by the operations; images closer than the tolerance merged (the site's multiplicity
 //                    is its number of distinct images); supercell repeats.
 //  find_symmetry     The highest-order setting whose operations map the structure onto itself (same elements, within the
-//                    tolerance), trying origin shifts; its asymmetric unit.
+//                    tolerance), its origin solved from the operations found; a supercell reduced to the cell it
+//                    repeats first; its asymmetric unit.
 //  primitive_cell    The primitive cell of a centred lattice (A B C I F, R in hexagonal axes).
 #pragma once
 #include <array>
@@ -67,16 +68,25 @@ Cell cell_parameters(double a, double b, double c, double alpha, double beta, do
 // (its site-symmetry group), so x = 0.333 in P 63 m c becomes 1/3. `moved` counts the sites that changed.
 CrystalSpec symmetrize_sites(const CrystalSpec& spec, double snap = 0.3, int* moved = nullptr);
 
+// find_symmetry first looks for pure translations: a supercell (the input repeats a smaller cell along its axes) is
+// searched in that smaller cell, and `supercell` says how many times the input repeats it. The origin of each setting
+// is solved from the operations found, (I − R) s ≡ w − t (mod 1), so a group is found whatever the input's origin;
+// of the settings of the highest order that fit, the one with the smallest origin shift is taken.
 struct SymmetryFound {
   std::string key, hm, system;
-  int number = 0, operations = 0;
-  Vec3 origin{0, 0, 0};              // fractional shift to the setting's origin
-  std::vector<CrystalSite> sites;    // asymmetric unit in the setting's origin
+  int number = 0, operations = 0;    // operations of the setting, in `cell`
+  Vec3 origin{0, 0, 0};              // fractional shift to the setting's origin, in `cell`
+  std::vector<CrystalSite> sites;    // asymmetric unit in the setting's origin, in `cell`
+  Cell cell;                         // the cell the group was found in: the input's, or the smaller cell it repeats
+  std::array<int, 3> supercell{1, 1, 1};   // the input is this many copies of `cell` along a, b, c
+  std::vector<SymOp> ops;            // every operation in the input's own coordinates (shifted, with the supercell's translations)
 };
 SymmetryFound find_symmetry(const System& crystal, double tolerance = 0.1);
 
 // The space group kept with a structure (System::symmetry):
-//  symmetry_of          find_symmetry's group as operations in the structure's own coordinates (t′ = t + (I − R) s).
+//  symmetry_of          find_symmetry's group as operations in the structure's own coordinates (t′ = t + (I − R) s; in a
+//                       supercell with every translation of the smaller cell, so a list of up to 6144 operations;
+//                       past that the group is searched in the supercell's own axes instead).
 //  symmetry_holds       every operation maps every atom onto an atom of the same element within `tolerance` Å; `worst`
 //                       gets the largest such distance.
 //  asymmetric_unit      one atom of every orbit, in the structure's order (what a CIF lists with the operations).

@@ -50,8 +50,11 @@ std::vector<FileCheck> file_checks(const Trajectory& t) {
     for (const auto& a : s.atoms) ids.push_back(a.id);
     std::sort(ids.begin(), ids.end());
     const bool contiguous = ids.front() == 1 && ids.back() == int64_t(n) && std::adjacent_find(ids.begin(), ids.end()) == ids.end();
+    const bool header_atoms = std::any_of(s.notes.begin(), s.notes.end(), [](const std::string& nt) {
+      return (nt.rfind("header says", 0) == 0 || nt.find(": header says") != std::string::npos) && nt.find(" atoms but ") != std::string::npos;
+    });   // reported as an error with the reader's notes below
     if (!frames_ok) out.push_back({"error", "Frames disagree on the atom count", "Some frames hold a different number of atoms than the topology; those frames cannot be shown.", ""});
-    else
+    else if (!header_atoms)
       out.push_back({"pass", "Atom counts agree",
                      num(n) + " atoms" + (t.frames() > 1 ? " in each of " + num(t.frames()) + " frames" : "") +
                          (contiguous ? " with ids 1–" + num(n) + "." : "; ids are not 1…N (kept as read)."),
@@ -249,10 +252,15 @@ std::vector<FileCheck> file_checks(const Trajectory& t) {
     else if (note.find("perceived") != std::string::npos) title = "Bonds perceived from distances";
     else if (note.find("occupancy") != std::string::npos) title = "Partly occupied sites left out";
     else if (note.find("symmetry operations") != std::string::npos) title = "Crystal expanded by its symmetry";
+    // a header count that disagrees with its section's rows (the LAMMPS data reader): read_data refuses such a file.
+    // A topology from a second file carries its notes prefixed with that file's name ("bad.data: header says …").
+    const bool header = note.rfind("header says", 0) == 0 || note.find(": header says") != std::string::npos;
+    if (header) title = "Header counts disagree with the file";
     std::string d = note;
     if (!d.empty()) d[0] = char(std::toupper(static_cast<unsigned char>(d[0])));
+    if (header) d += ". Fix the header or the section";
     if (d.back() != '.') d += ".";
-    out.push_back({skipped ? "warn" : "note", title, d, ""});
+    out.push_back({header ? "error" : skipped ? "warn" : "note", title, d, ""});
   }
   return out;
 }

@@ -206,6 +206,14 @@ std::vector<BundleFile> bundle_files(const Trajectory& traj, const Pipeline& pip
                                      const RenderOptions& render) {
   std::vector<BundleFile> files;
   const auto st = run_for_bundle(traj, pipeline, opt.frame);
+  // run_pipeline records a failed step as a status, not an exception; a bundle of a failed pipeline would ship
+  // its hash as if it were valid and miss the data files, so refuse it here for the CLI, Studio and C API alike
+  {
+    std::string bad;
+    for (const auto& s : st.steps)
+      if (s.level == "error") bad += (bad.empty() ? "" : "; ") + (s.title.empty() ? s.type : s.title) + ": " + s.summary;
+    if (!bad.empty()) throw std::runtime_error("pipeline step failed, no bundle written: " + bad);
+  }
   if (opt.include_figures) {
     RenderOptions r = render;
     r.width = opt.width;
@@ -280,15 +288,18 @@ std::vector<BundleFile> bundle_files(const Trajectory& traj, const Pipeline& pip
   files.push_back({"provenance.json", "inputs, pipeline and every file's sha256", prov.dump(2)});
   if (opt.include_readme) {
     std::string r = "CAPS figure bundle · " + opt.name + "\n\n";
-    r += "figure.png, figure.svg   the view of frame " + std::to_string(opt.frame) + " with the pipeline applied\n";
-    r += "data/*.csv               the data behind each plot, one file per table\n";
+    if (opt.include_figures)
+      r += "figure.png, figure.svg   the view of frame " + std::to_string(opt.frame) + " with the pipeline applied\n";
+    if (std::any_of(files.begin(), files.end(), [](const BundleFile& f) { return f.name.rfind("data/", 0) == 0; }))
+      r += "data/*.csv               the data behind each plot, one file per table\n";
     r += "pipeline.json            the steps as run (caps pipeline FILE --steps pipeline.json)\n";
     r += "input/                   the structure, when included\n";
     r += "provenance.json          CAPS version, input hash, pipeline hash and the sha256 of every file\n";
     if (!refs.empty()) r += "references.bib           the references of the methods the pipeline uses\n";
     r += "\n";
     r += "Reproduce: caps reproduce " + opt.name + ".caps-bundle.zip\n";
-    r += "  rebuilds the data files from input/ and pipeline.json and compares their sha256 with provenance.json.\n";
+    r += "  checks the sha256 of every shipped file against provenance.json, then rebuilds the data files\n";
+    r += "  from input/ and pipeline.json and compares their sha256 too.\n";
     files.push_back({"README.txt", "what is inside, how to reproduce it", r});
   }
   return files;
@@ -306,12 +317,17 @@ bool reproduce_bundle(const std::string& path, std::vector<std::string>& report)
   if (it == files.end()) throw std::runtime_error("no provenance.json in " + path);
   const Json prov = Json::parse(it->second);
   const Json& in = prov["input"];
-  if (!in.has("included") || !in["included"].boolean()) throw std::runtime_error("the bundle does not include its input structure");
+  if (!in.has("included") || !in["included"].boolean()) throw std::runtime_error("the bundle does not include its input structure (make it with caps bundle ... --include-input)");
   auto pit = files.find("pipeline.json");
   if (pit == files.end()) throw std::runtime_error("the bundle does not include its pipeline");
   // the input back on disk, beside its topology, so the readers see the same files
   const auto dir = std::filesystem::temp_directory_path() / ("caps_reproduce_" + std::to_string(std::hash<std::string>{}(path)));
   std::filesystem::create_directories(dir);
+  // removed on every way out, a reader or a step that throws included
+  struct RemoveDir {
+    std::filesystem::path p;
+    ~RemoveDir() { std::error_code ec; std::filesystem::remove_all(p, ec); }
+  } remove_dir{dir};
   auto extract = [&](const std::string& name) {
     // the name comes from the bundle, so it must be a bare file name that stays inside dir
     const std::filesystem::path np(name);
@@ -326,23 +342,59 @@ bool reproduce_bundle(const std::string& path, std::vector<std::string>& report)
     o.write(f->second.data(), std::streamsize(f->second.size()));
     return p.string();
   };
+  bool ok = true;
   const std::string input = extract(in["file"].str());
-  if (sha256_hex(files.at("input/" + in["file"].str())) != in["sha256"].str()) report.push_back("input differs from its recorded sha256");
+  if (sha256_hex(files.at("input/" + in["file"].str())) != in.text("sha256")) {
+    report.push_back("input differs from its recorded sha256");
+    ok = false;
+  }
+  // the pipeline that runs is the shipped pipeline.json: it must be the one the provenance recorded
+  if (!prov.has("pipeline") || !prov["pipeline"].has("sha256") || sha256_hex(pit->second) != prov["pipeline"].text("sha256")) {
+    report.push_back("pipeline.json differs from its recorded sha256");
+    ok = false;
+  }
   const std::string topo = in.has("topology") ? extract(in["topology"].str()) : "";
   const Trajectory traj = open_file(input, topo);
   const auto st = run_for_bundle(traj, pipeline_from_json(Json::parse(pit->second)), int(in.num("frame", 0)));
-  bool ok = true;
+  {
+    std::error_code ec;
+    std::filesystem::remove_all(dir, ec);
+  }
+  if (!prov.has("files") || !prov["files"].is_object()) throw std::runtime_error("provenance.json lists no file hashes");
+  const auto& recorded = prov["files"];
   size_t checked = 0;
-  for (const auto& [name, hash] : prov["files"].members()) {
-    if (name.rfind("data/", 0) != 0) continue;
+  for (const auto& [name, hash] : recorded.members()) {
+    if (name == "pipeline.json") continue;   // checked above against the pipeline's recorded sha256
+    const std::string want = hash.is_string() ? hash.str() : "";
+    // every file the provenance lists: the copy shipped in the bundle must carry the recorded hash
+    const auto sh = files.find(name);
+    const bool present = sh != files.end();
+    const bool shipped_ok = present && !want.empty() && sha256_hex(sh->second) == want;
+    if (name.rfind("data/", 0) != 0) {
+      if (!present) report.push_back(name + "  missing from the bundle");
+      else if (!shipped_ok) report.push_back(name + "  differs: the shipped file does not match provenance.json");
+      ok &= shipped_ok;
+      continue;
+    }
+    // a data file: rebuilt from input/ and pipeline.json, and compared with the recorded hash too
     std::string now;
     for (const auto& t : st.tables) if ("data/" + safe(t.name) + ".csv" == name) now = table_csv(t);
-    const bool same = !now.empty() && sha256_hex(now) == hash.str();
-    report.push_back(name + (same ? "  match" : "  differs"));
-    ok &= same;
+    const bool rebuilt_ok = !now.empty() && sha256_hex(now) == want;
+    if (!present) report.push_back(name + "  missing from the bundle");
+    else if (!shipped_ok) report.push_back(name + "  differs: the shipped file does not match provenance.json");
+    if (!rebuilt_ok) report.push_back(name + (now.empty() ? "  differs: the pipeline no longer writes this table" : "  differs: the rebuilt data does not match provenance.json"));
+    if (shipped_ok && rebuilt_ok) report.push_back(name + "  match");
+    ok &= shipped_ok && rebuilt_ok;
     ++checked;
   }
-  std::filesystem::remove_all(dir);
+  // data files in the bundle that the provenance never recorded
+  for (const auto& [name, bytes] : files) {
+    (void)bytes;
+    if (name.rfind("data/", 0) == 0 && name.size() > 5 && name.back() != '/' && !recorded.has(name)) {
+      report.push_back(name + "  differs: not listed in provenance.json");
+      ok = false;
+    }
+  }
   if (!checked) report.push_back("no data files to compare");
   return ok && checked > 0;
 }

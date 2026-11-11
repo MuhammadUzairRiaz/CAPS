@@ -488,7 +488,6 @@ InterfaceBonds interface_bonds(const System& s, const std::vector<int8_t>& side,
   for (const auto& b : s.bonds) {
     const size_t i = b.i, j = b.j;
     if (i >= s.atoms.size() || j >= s.atoms.size()) continue;
-    if (side[i] >= 0 && side[j] >= 0 && side[i] != side[j]) ++r.bridges;
     double fi, fj;
     if (periodic) {
       const Vec3 d = s.cell.minimum_image(s.atoms[j].pos - s.atoms[i].pos);
@@ -497,6 +496,19 @@ InterfaceBonds interface_bonds(const System& s, const std::vector<int8_t>& side,
       fj = fi + (s.cell.to_fractional(s.atoms[i].pos + d)[axis] - f0);
     } else {
       fi = (s.atoms[i].pos[axis] - lo) / length, fj = (s.atoms[j].pos[axis] - lo) / length;
+    }
+    if (side[i] >= 0 && side[j] >= 0 && side[i] != side[j]) {
+      // In a periodic cell the two sides meet twice: at the cut plane and at the cell face (0 ≡ 1 along the axis). A bond
+      // joining them is a bridge across the cut when its midpoint (minimum image) lies nearer the cut plane than the face;
+      // otherwise it joins the sides through the periodic boundary, which a cut leaves intact, and is counted apart.
+      if (periodic) {
+        const double m = 0.5 * (fi + fj);
+        auto dist = [](double x, double q) { return std::abs(x - q - std::round(x - q)); };
+        if (dist(m, plane) <= dist(m, 0.0)) ++r.bridges;
+        else ++r.through_boundary;
+      } else {
+        ++r.bridges;
+      }
     }
     const double a = std::min(fi, fj), c = std::max(fi, fj);
     for (int k = 0; k < nb; ++k) r.crossings[k] += crossed(a, c, planes[k]);
@@ -508,11 +520,14 @@ InterfaceBonds interface_bonds(const System& s, const std::vector<int8_t>& side,
 std::vector<Property> interface_properties(const InterfaceBonds& r, int axis) {
   const std::string ax = axis == 0 ? "x" : axis == 1 ? "y" : "z";
   Property p{"interface_bonds", "Bonds across the interface", "bonds", "", NaN, NaN, {}, {}, {}};
-  p.method = "bridges: bonds joining an atom that started on one side of the cut to one that started on the other; B(" + ax +
-             "): bonds crossing each plane normal to " + ax + " (minimum image)";
+  p.method = "bridges: bonds joining an atom that started on one side of the cut to one that started on the other, across the cut "
+             "plane (a bond whose midpoint lies nearer the periodic cell face joins the sides through the periodic boundary and is "
+             "counted apart); B(" + ax + "): bonds crossing each plane normal to " + ax + " (minimum image)";
   p.value = double(r.bridges);
   p.extra["bonds in the structure"] = double(r.bonds);
   p.extra["bonds crossing the cut plane"] = double(r.crossing_plane);
+  p.extra["bonds through the periodic boundary"] = double(r.through_boundary);
+  p.extra["bonds joining the two sides"] = double(r.bridges + r.through_boundary);
   p.series.push_back(Series{"B(" + ax + ")", ax + " (Å)", "bonds crossing", r.z, r.crossings});
   return {p};
 }

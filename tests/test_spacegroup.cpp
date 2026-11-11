@@ -152,6 +152,47 @@ TEST(SpaceGroup, FindsTheSymmetryOfLibraryCrystals) {
   EXPECT_EQ(salt.operations, 192);
 }
 
+// The origin is solved from the operations, not guessed: PLLA alpha has its standard P212121 origin at (1/4, 0, 0) of the
+// file, PTFE IV its P3112 origin at z = 11/30 on the chain axis; a group with two origin choices is named after the one
+// its written operations use; a supercell is searched in the cell it repeats
+TEST(SpaceGroup, FindsTheGroupWhateverTheOrigin) {
+  const auto plla = find_symmetry(read_cif(kCrystals + "polymers/plla-alpha.cif"), 0.05);
+  EXPECT_EQ(plla.number, 19);
+  EXPECT_EQ(plla.sites.size(), 45u);
+  EXPECT_EQ(find_symmetry(read_cif(kCrystals + "polymers/ptfe-iv.cif"), 0.01).number, 151);
+  for (const char* name : {"spinel.cif", "zeolite-nat.cif"}) {
+    const System s = read_cif(kCrystals + name);
+    const Symmetry g = symmetry_of(s, 0.05);
+    const auto* sg = find_space_group(g.name);
+    ASSERT_NE(sg, nullptr) << name;
+    EXPECT_EQ(sg->key.substr(sg->key.size() - 2), ":2") << name;
+    EXPECT_EQ(g.ops.size(), hall_operations(sg->hall).size()) << name;   // the named setting's own operations
+    EXPECT_TRUE(symmetry_holds(s, g, 0.05)) << name;
+  }
+  // every library crystal moved off its origin keeps its group
+  for (const char* name : {"alpha-quartz.cif", "rutile.cif", "zeolite-mfi.cif", "polymers/pom-orthorhombic.cif"}) {
+    System s = read_cif(kCrystals + name);
+    const int number = find_symmetry(s, 0.05).number;
+    const Vec3 shift = s.cell.a * 0.123 + s.cell.b * 0.377 + s.cell.c * 0.651;
+    for (auto& a : s.atoms) a.pos = a.pos + shift;
+    EXPECT_EQ(find_symmetry(s, 0.05).number, number) << name;
+  }
+  CrystalSpec rutile;
+  rutile.space_group = "P 42/m n m";
+  rutile.a = rutile.b = 4.594, rutile.c = 2.959;
+  rutile.sites = {{"Ti1", 22, {0, 0, 0}, 1}, {"O1", 8, {0.3048, 0.3048, 0}, 1}};
+  rutile.supercell = {2, 2, 2};
+  const System big = build_crystal(rutile);
+  const auto found = find_symmetry(big, 0.1);
+  EXPECT_EQ(found.number, 136);
+  EXPECT_EQ(found.supercell, (std::array<int, 3>{2, 2, 2}));
+  EXPECT_EQ(found.sites.size(), 2u);
+  const Symmetry g = symmetry_of(big, 0.1);
+  EXPECT_EQ(g.ops.size(), 128u);   // 16 operations with each of the 8 translations of the small cell
+  EXPECT_TRUE(symmetry_holds(big, g, 0.05));
+  EXPECT_EQ(asymmetric_unit(big, g, 0.05).size(), 2u);
+}
+
 TEST(SpaceGroup, BuiltCrystalRoundTripsThroughFindSymmetry) {
   CrystalSpec rutile;
   rutile.space_group = "P 42/m n m";

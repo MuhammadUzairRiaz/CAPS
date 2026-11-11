@@ -41,6 +41,44 @@ void add(System& s, int z, const Vec3& p, int64_t mol = 1) {
   s.atoms.push_back(a);
 }
 
+// Which atoms of a crystal cut stay (s.bonds must be set). An atom left without a bonded partner goes (a lone O at the
+// surface of an oxide), unless no atom has a bond at all (a metal). A heavy atom that lost every heavy neighbour goes
+// too, with its H, when its element is bonded to heavy atoms everywhere in the bulk: a chain carbon cut off from its
+// chain would otherwise stay as a detached CH that passivation turns into methane. Atoms marked in `whole` (molecules
+// kept whole by their centroids, a lone ion or a water) always stay.
+std::vector<char> cut_keep(const System& s, const System& bulk, const std::vector<char>& whole = {}) {
+  const size_t N = s.atoms.size();
+  std::vector<char> keep(N, 1);
+  if (s.bonds.empty()) return keep;
+  // elements whose every bulk atom has a heavy (non-H) neighbour
+  std::vector<int> bulk_heavy(bulk.atoms.size(), 0);
+  for (const auto& b : crystal_bonds(bulk))
+    if (bulk.atoms[b.i].element != 1 && bulk.atoms[b.j].element != 1) ++bulk_heavy[b.i], ++bulk_heavy[b.j];
+  std::vector<signed char> framework(130, -1);   // per element: -1 absent, 0 some atom has no heavy partner, 1 all have one
+  for (size_t i = 0; i < bulk.atoms.size(); ++i) {
+    const int z = bulk.atoms[i].element;
+    if (z < 0 || z >= int(framework.size())) continue;
+    framework[size_t(z)] = (framework[size_t(z)] != 0 && bulk_heavy[i] > 0) ? 1 : 0;
+  }
+  for (bool again = true; again;) {
+    again = false;
+    std::vector<int> deg(N, 0), heavy(N, 0);
+    for (const auto& b : s.bonds) {
+      if (!keep[b.i] || !keep[b.j]) continue;
+      ++deg[b.i], ++deg[b.j];
+      if (s.atoms[b.i].element != 1 && s.atoms[b.j].element != 1) ++heavy[b.i], ++heavy[b.j];
+    }
+    for (size_t i = 0; i < N; ++i) {
+      if (!keep[i] || (i < whole.size() && whole[i])) continue;
+      const int z = s.atoms[i].element;
+      bool drop = deg[i] == 0;
+      if (!drop && z != 1 && heavy[i] == 0 && z >= 0 && z < int(framework.size())) drop = framework[size_t(z)] == 1;
+      if (drop) keep[i] = 0, again = true;
+    }
+  }
+  return keep;
+}
+
 // A honeycomb: the elements of its two sublattices, bond length, interlayer spacing, stacking
 struct Honeycomb {
   int za, zb;
@@ -435,14 +473,14 @@ System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* re
           }
     if (s.atoms.empty()) throw std::invalid_argument("no atom inside the fibre: make it thicker");
     s.bonds = crystal_bonds(s);
-    std::vector<int> deg(s.atoms.size(), 0);
-    for (const auto& b : s.bonds) ++deg[b.i], ++deg[b.j];
-    if (std::any_of(deg.begin(), deg.end(), [](int d) { return d > 0; })) {
+    const std::vector<char> keep = cut_keep(s, bulk);
+    if (std::find(keep.begin(), keep.end(), 0) != keep.end()) {
       System t;
       t.cell = s.cell;
       for (size_t i = 0; i < s.atoms.size(); ++i)
-        if (deg[i] > 0) add(t, s.atoms[i].element, s.atoms[i].pos);
+        if (keep[i]) add(t, s.atoms[i].element, s.atoms[i].pos);
       s = std::move(t);
+      if (s.atoms.empty()) throw std::invalid_argument("no bonded atom left inside the fibre: make it thicker");
       s.bonds = crystal_bonds(s);
     }
     NanoReport r;
@@ -572,7 +610,10 @@ System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* re
       cen = cen * (1.0 / double(mols[m].size()));
       for (uint32_t i : mols[m]) mol_reach = std::max(mol_reach, norm(whole[i] - cen));
     }
-    if (std::any_of(network.begin(), network.end(), [](char x) { return x != 0; })) extra_notes.push_back("a periodic network in the crystal is cut atom by atom; its molecules are kept whole");
+    const bool any_net = std::any_of(network.begin(), network.end(), [](char x) { return x != 0; });
+    const bool all_net = std::all_of(network.begin(), network.end(), [](char x) { return x != 0; });
+    if (all_net) extra_notes.push_back("the crystal is one periodic network (its chains or framework bond across the cell): it is cut atom by atom, like a particle without whole molecules");
+    else if (any_net) extra_notes.push_back("a periodic network in the crystal is cut atom by atom; the other molecules are kept whole");
   }
   const double vac = std::max(0.0, o.vacuum), box = 2 * (reach + mol_reach) + 2 * vac + 4;
   for (int k = 0; k < 3; ++k) nrep[k] = int(std::ceil((reach + mol_reach + 3) / w[k])) + 1;
@@ -583,6 +624,8 @@ System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* re
   const Vec3 mid{box / 2, box / 2, box / 2};
   size_t kept_mols = 0;
   int64_t molid = 0;
+  std::vector<int64_t> net_mol(mols.size(), 0);   // one molecule id per periodic network
+  std::vector<char> whole_atom;                   // per atom of s: part of a molecule kept whole
   for (int i = -nrep[0]; i <= nrep[0]; ++i)
     for (int j = -nrep[1]; j <= nrep[1]; ++j)
       for (int k = -nrep[2]; k <= nrep[2]; ++k) {
@@ -592,7 +635,10 @@ System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* re
             if (network[m]) {
               for (uint32_t a : mols[m]) {
                 const Vec3 r = rot(bulk.atoms[a].pos + T - centre);
-                if (inside(o.shape, r, o.radius, o.height, o.top_ratio)) add(s, bulk.atoms[a].element, mid + r, ++molid);
+                if (!inside(o.shape, r, o.radius, o.height, o.top_ratio)) continue;
+                if (!net_mol[m]) net_mol[m] = ++molid;
+                add(s, bulk.atoms[a].element, mid + r, net_mol[m]);
+                whole_atom.push_back(0);
               }
               continue;
             }
@@ -601,7 +647,10 @@ System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* re
             cen = cen * (1.0 / double(mols[m].size()));
             if (!inside(o.shape, rot(cen + T - centre), o.radius, o.height, o.top_ratio)) continue;
             ++molid, ++kept_mols;
-            for (uint32_t a : mols[m]) add(s, bulk.atoms[a].element, mid + rot(whole[a] + T - centre), molid);
+            for (uint32_t a : mols[m]) {
+              add(s, bulk.atoms[a].element, mid + rot(whole[a] + T - centre), molid);
+              whole_atom.push_back(1);
+            }
           }
           continue;
         }
@@ -611,20 +660,21 @@ System nanoparticle(const System& bulk, const ParticleOptions& o, NanoReport* re
         }
       }
   if (s.atoms.empty()) throw std::invalid_argument("no atom inside the particle: make it larger");
-  if (o.whole_molecules) extra_notes.push_back(std::to_string(kept_mols) + " whole molecules, kept by their centroids");
+  if (o.whole_molecules && std::any_of(network.begin(), network.end(), [](char x) { return x == 0; }))
+    extra_notes.push_back(std::to_string(kept_mols) + " whole molecules, kept by their centroids");
   s.bonds = crystal_bonds(s);
-  // atoms left without a bonded partner (a lone O at the surface of an oxide) are dropped, unless the crystal is a metal
-  // or the molecules are kept whole (a lone ion or water is a molecule of its own)
-  if (!o.whole_molecules) {
-    std::vector<int> deg(s.atoms.size(), 0);
-    for (const auto& b : s.bonds) ++deg[b.i], ++deg[b.j];
-    const bool any_bond = std::any_of(deg.begin(), deg.end(), [](int d) { return d > 0; });
-    if (any_bond) {
+  // atoms the cut left without a bonded partner (a lone O at the surface of an oxide) and heavy atoms cut off from
+  // every heavy neighbour (a lone chain carbon with its H) are dropped, unless the crystal is a metal; atoms of
+  // molecules kept whole stay (a lone ion or water is a molecule of its own), the cut atoms of a periodic network do not
+  {
+    const std::vector<char> keep = cut_keep(s, bulk, whole_atom);
+    if (std::find(keep.begin(), keep.end(), 0) != keep.end()) {
       System t;
       t.cell = s.cell;
       for (size_t i = 0; i < s.atoms.size(); ++i)
-        if (deg[i] > 0) add(t, s.atoms[i].element, s.atoms[i].pos);
+        if (keep[i]) add(t, s.atoms[i].element, s.atoms[i].pos, s.atoms[i].mol);
       s = std::move(t);
+      if (s.atoms.empty()) throw std::invalid_argument("no bonded atom left inside the particle: make it larger");
       s.bonds = crystal_bonds(s);
     }
   }
@@ -928,14 +978,13 @@ System build_pore(const PoreOptions& o, PoreReport* rep) {
           }
     walls.bonds = crystal_bonds(walls);
     if (o.kind == PoreKind::Cylinder) {
-      // atoms the carving left without a neighbour go
-      std::vector<int> deg(walls.atoms.size(), 0);
-      for (const auto& b : walls.bonds) ++deg[b.i], ++deg[b.j];
-      if (std::any_of(deg.begin(), deg.end(), [](int x) { return x > 0; })) {
-        System t;
-        t.cell = walls.cell;
-        for (size_t i = 0; i < walls.atoms.size(); ++i) if (deg[i] > 0) t.atoms.push_back(walls.atoms[i]);
-        walls.atoms = std::move(t.atoms);
+      // atoms the carving left without a neighbour go, and heavy atoms cut off from every heavy neighbour (with their H)
+      const std::vector<char> keep = cut_keep(walls, bulk);
+      if (std::find(keep.begin(), keep.end(), 0) != keep.end()) {
+        std::vector<Atom> kept;
+        for (size_t i = 0; i < walls.atoms.size(); ++i) if (keep[i]) kept.push_back(walls.atoms[i]);
+        walls.atoms = std::move(kept);
+        if (walls.atoms.empty()) throw std::invalid_argument("no bonded wall atom is left around the channel: make the wall thicker");
         walls.bonds = crystal_bonds(walls);
       }
       if (o.passivate) {

@@ -114,6 +114,8 @@ struct BuildResult {
   std::vector<Conformer> conformers;   // lowest first
   std::string method;
   std::vector<std::string> notes;
+  int open_centres = 0;     // stereocentres in 3D the SMILES left without @/@@ (info.stereocentres counts the specified ones)
+  int open_bonds = 0;       // stereogenic double bonds the SMILES left without / or \ (info.stereo_bonds: the specified ones)
 };
 
 BuildResult build_molecule(const std::string& smiles, const BuildOptions& o = {});

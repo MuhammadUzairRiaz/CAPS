@@ -13,8 +13,14 @@
 // Charges are summed by Ewald (PME) whatever the options say (the damped shifted force cut-off puts kinks in G(V)), and
 // the Lennard-Jones term is shifted at the cut-off with no tail term whatever the options say: the energies of a few per
 // cent strain are small, and a truncated potential jumps each time a pair crosses the cut-off (a tenth of the signal in
-// polyethylene). Limits: no anharmonicity beyond the volume dependence of the modes, so results degrade towards melting. Modes that go
-// imaginary at a strain leave F_vib (counted and noted).
+// polyethylene). Limits: no anharmonicity beyond the volume dependence of the modes, so results degrade towards melting.
+// The volume mode strains a, b and c alike, so for an anisotropic crystal (a polymer chain crystal such as PE) its B_T is a
+// Voigt-like average over stiff and soft axes; the axes mode is the right choice there.
+// A cell with imaginary mesh modes is left out of every fit (its F_vib lacks those modes and jumps against its neighbours),
+// and the stable cells set the range: a minimum beyond them is marked extrapolated. When too few stable cells remain, all
+// cells are used and every row is marked unstable. Every fit is least squares with more cells than terms (volume: degree
+// 2 from 4 cells, 3 from 6, 4 from 7; axes: the highest-order terms go first when the cells cannot carry them).
+// --points (QhaOptions::points) spaces the volume grid only; the axes grid is the fixed design above.
 #include <array>
 #include <functional>
 #include <string>
@@ -54,7 +60,8 @@ struct QhaRow {
   std::array<double, 3> alpha{0, 0, 0};       // along a, b, c, 1/K
   double B = 0;                               // isothermal bulk modulus, GPa
   double Cv = 0, Cp = 0, S = 0;               // cal/mol/K per cell
-  bool extrapolated = false;                  // the minimum lies outside the strains sampled
+  bool extrapolated = false;                  // the minimum (or one at T ± ΔT) lies outside the stable strains sampled
+  bool unstable = false;                      // G is not a minimum there, or the fit had to use cells with imaginary modes
 };
 struct QhaResult {
   std::string mode;

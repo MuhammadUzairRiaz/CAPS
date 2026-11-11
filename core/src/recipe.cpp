@@ -13,6 +13,8 @@
 #include <filesystem>
 #include <fstream>
 #include <cctype>
+#include <cstring>
+#include <map>
 #include <set>
 #include <sstream>
 
@@ -85,6 +87,192 @@ ProvStep step(const std::string& engine, const std::string& summary, KeyValues p
 }
 std::string seeded(uint64_t s) { return "mt19937-64 · seed " + std::to_string(s); }
 
+// The keys each stage reads, and each block inside one (by its path): any other key is a typo or a setting CAPS does
+// not have, refused before anything runs, with the nearest name when one is close. Keep these in step with the reads
+// in run_recipe below (num / text / flag / has on the same block).
+const std::map<std::string, std::set<std::string>> kKeys = {
+    {"build", {"polymer", "pack", "molecule", "file", "topology", "crystal", "surface", "semicrystalline", "nano", "solvate"}},
+    {"build.polymer", {"smiles", "units", "dp", "chains", "tacticity", "sequence", "blocks", "weights", "pattern", "pm", "p_mr", "p_rm", "dyads", "r1", "r2",
+                       "reactivity", "transition", "penultimate", "drift", "conversion", "head_cap", "tail_cap", "linkage", "inversion", "chain_dp", "lengths",
+                       "architecture", "arms", "arm_dp", "spacing", "branch_probability", "generations", "graft_units", "graft_sequence", "graft_weights",
+                       "graft_dp", "graft_on", "graft_probability", "graft_max"}},
+    {"build.polymer.lengths", {"histogram", "distribution", "nn", "pdi", "seed"}},
+    {"build.pack", {"tolerance", "seed", "box", "density", "molecules"}},
+    {"build.pack.molecules", {"smiles", "file", "count"}},
+    {"build.molecule", {"smiles", "seed"}},
+    {"build.crystal", {"cif", "group", "cell", "sites", "cell_reduce", "reduce", "supercell"}},
+    {"build.surface", {"cif", "hkl", "layers", "termination", "vacuum", "passivate", "supercell"}},
+    {"build.semicrystalline", {"polymer", "nx", "ny", "nc", "crystal_nm", "amorphous_nm", "loops", "bridges", "tails", "reentry", "density", "united_atom", "seed"}},
+    {"build.nano", {"kind", "material", "n", "m", "length", "walls", "periodic", "lx", "ly", "layers", "cif", "shape", "radius", "height", "top_ratio", "passivate"}},
+    {"build.solvate", {"solute", "solvent", "water_model", "tolerance", "salt", "concentration", "ions", "seed", "edge", "padding"}},
+    {"type", {"file", "forcefield", "charges", "typing", "fill_from", "complete"}},
+    {"grow", {"density", "box", "seed", "contact_scale", "region", "orientation", "curve", "lookahead", "method", "temperature", "trials"}},
+    {"grow.region", {"shape", "thickness", "vacuum", "radius", "length"}},
+    {"grow.orientation", {"axis", "strength"}},
+    {"react", {"templates", "insert", "capture", "seed", "cycles", "per_cycle", "target", "relax", "md_ps", "temperature", "during_md"}},
+    {"react.insert", {"smiles", "count", "tolerance", "seed"}},
+    {"relax", {"method", "fmax", "max_iterations", "pushoff", "pushoff_md_ps", "pushoff_cap", "pushoff_temperature", "target_density"}},
+    {"cbmc", {"moves", "trials", "max_torsions", "temperature", "cutoff", "seed"}},
+    {"md", {"ps", "dt", "respa", "temperature", "ensemble", "thermostat", "barostat", "tau_t", "tau_p", "pressure", "constraints", "constraint_solver", "seed",
+            "thermo_every", "frame_every", "frame_ps"}},
+    {"equilibrate", {"protocol", "protocol_text", "t_max", "t_final", "p_max", "time_scale", "dt", "thermostat", "barostat", "tau_t", "tau_p", "constraints",
+                     "constraint_solver", "seed", "until_converged", "block_ps", "max_blocks", "tol_internal", "internal_target", "thermo_ps", "frame_ps"}},
+    {"thermal", {"dimensionality", "thickness", "method", "temperature", "equilibrate_ps", "ps", "dt", "sample_every", "corr_ps", "axis", "slabs", "swap_every",
+                 "transient", "seed"}},
+    {"analyze", {"properties", "tg"}},
+    {"analyze.tg", {"t_start", "t_end", "t_step", "ps_per_step", "equilibrate_ps", "pressure", "dt", "tau_t", "tau_p", "average_from", "barostat", "property", "fit",
+                    "glassy_max", "rubbery_min", "seed"}},
+    {"export", {"formats", "name", "lammps_styles", "hybrid", "units"}},
+};
+
+// Levenshtein distance, letters compared without case
+size_t edit_distance(const std::string& a, const std::string& b) {
+  std::vector<size_t> d(b.size() + 1);
+  for (size_t j = 0; j <= b.size(); ++j) d[j] = j;
+  for (size_t i = 1; i <= a.size(); ++i) {
+    size_t diag = d[0];
+    d[0] = i;
+    for (size_t j = 1; j <= b.size(); ++j) {
+      const size_t up = d[j];
+      const bool same = std::tolower((unsigned char)a[i - 1]) == std::tolower((unsigned char)b[j - 1]);
+      d[j] = std::min({d[j] + 1, d[j - 1] + 1, diag + (same ? 0 : 1)});
+      diag = up;
+    }
+  }
+  return d[b.size()];
+}
+
+// " (did you mean X?)" when one of the names is close to the key (one edit for short names, two otherwise), else ""
+std::string did_you_mean(const std::string& key, const std::set<std::string>& names) {
+  std::string best;
+  size_t bd = std::string::npos;
+  for (const auto& c : names)
+    if (const size_t d = edit_distance(key, c); d < bd) bd = d, best = c;
+  const size_t limit = std::min(key.size(), best.size()) <= 3 ? 1 : 2;
+  return !best.empty() && bd <= limit ? " (did you mean " + best + "?)" : "";
+}
+
+// Every key of the block at path `where` (e.g. "md", "build.polymer") is one the stage reads; throws RecipeError 2
+void check_keys(const Json& j, const std::string& where) {
+  if (!j.is_object()) return;
+  const auto it = kKeys.find(where);
+  if (it == kKeys.end()) return;
+  for (const auto& [k, v] : j.members()) {
+    if (it->second.count(k)) continue;
+    std::string hint = did_you_mean(k, it->second);
+    if (hint.empty()) {
+      std::string all;
+      for (const auto& c : it->second) all += (all.empty() ? "" : ", ") + c;
+      hint = " (" + where + " takes " + all + ")";
+    }
+    throw RecipeError(2, where + ": unknown key '" + k + "'" + hint);
+  }
+}
+
+// A block that must be a mapping (a number or a list in its place would be read as "all defaults")
+void need_mapping(const Json& j, const std::string& where, const std::string& example) {
+  if (!j.is_object()) throw RecipeError(2, where + " is a mapping of settings, e.g. " + example);
+}
+
+// A count that must be a whole number of at least 1 (dp: 0 or chains: 0 are not clamped to 1 behind the user's back)
+void need_count(const Json& P, const char* key, const std::string& where) {
+  if (!P.is_object() || !P.has(key)) return;
+  const Json& v = P[key];
+  if (!v.is_number() || !std::isfinite(v.number()) || v.number() < 1 || v.number() != std::floor(v.number()) || v.number() > 1e9)
+    throw RecipeError(2, where + "." + key + " must be a whole number of at least 1");
+}
+
+// The keys of one stage and of the blocks inside it (throws RecipeError 2 naming the block and the key)
+void check_stage_keys(const Json& r, const std::string& st) {
+  const Json& J = r[st];
+  if (J.kind() == Json::Null) return;   // "relax:" with nothing after it: the defaults
+  if (st == "export") {
+    if (J.is_object()) check_keys(J, "export");
+    else if (!J.is_array() && !J.is_string()) throw RecipeError(2, "export is a list of formats, e.g. export: [lammps, pdb]");
+    return;
+  }
+  static const std::map<std::string, std::string> kExample = {
+      {"build", "build: { polymer: { smiles: \"*CC*\", dp: 20, chains: 10 } }"}, {"type", "type: { forcefield: gaff2 }"}, {"grow", "grow: { density: 0.5 }"},
+      {"react", "react: { templates: [sulfur_allylic] }"}, {"relax", "relax: { fmax: 0.5 }"}, {"cbmc", "cbmc: { moves: 1000 }"},
+      {"equilibrate", "equilibrate: { protocol: larsen21 }"}, {"md", "md: { ps: 10, temperature: 300 }"}, {"thermal", "thermal: { dimensionality: 3 }"},
+      {"analyze", "analyze: { properties: [density, rg] }"}};
+  const auto ex = kExample.find(st);
+  need_mapping(J, st, ex != kExample.end() ? ex->second : st + ": { … }");
+  check_keys(J, st);
+  if (st == "build") {
+    std::string kinds;
+    int n = 0;
+    for (const char* k : {"polymer", "pack", "molecule", "file", "crystal", "surface", "semicrystalline", "nano", "solvate"})
+      if (J.has(k)) kinds += (n++ ? " and " : "") + std::string(k);
+    if (n > 1) throw RecipeError(2, "build makes one structure: give one of polymer, molecule, pack, file, crystal, surface, nano, semicrystalline or solvate (this one has " + kinds + ")");
+    if (J.has("topology") && !J.has("file")) throw RecipeError(2, "build.topology goes with build.file");
+    if (J.has("polymer")) {
+      const Json& P = J["polymer"];
+      need_mapping(P, "build.polymer", "polymer: { smiles: \"*CC*\", dp: 20, chains: 10 }");
+      check_keys(P, "build.polymer");
+      need_count(P, "dp", "build.polymer");
+      need_count(P, "chains", "build.polymer");
+      if (P.has("chain_dp") && P["chain_dp"].is_array())
+        for (const auto& x : P["chain_dp"].items())
+          if (!x.is_number() || x.number() < 1 || x.number() != std::floor(x.number())) throw RecipeError(2, "build.polymer.chain_dp: every length is a whole number of at least 1");
+      if (P.has("lengths") && P["lengths"].is_object()) check_keys(P["lengths"], "build.polymer.lengths");
+    }
+    if (J.has("pack") && J["pack"].is_object()) {
+      check_keys(J["pack"], "build.pack");
+      if (J["pack"].has("molecules") && J["pack"]["molecules"].is_array())
+        for (const auto& m : J["pack"]["molecules"].items()) check_keys(m, "build.pack.molecules");
+    }
+    for (const char* k : {"molecule", "crystal", "surface", "semicrystalline", "nano", "solvate"})
+      if (J.has(k) && J[k].is_object()) check_keys(J[k], "build." + std::string(k));
+  } else if (st == "grow") {
+    for (const char* k : {"region", "orientation"})
+      if (J.has(k) && J[k].is_object()) check_keys(J[k], "grow." + std::string(k));
+  } else if (st == "react") {
+    if (J.has("insert") && J["insert"].is_object()) check_keys(J["insert"], "react.insert");
+  } else if (st == "analyze") {
+    if (J.has("tg") && J["tg"].is_object()) check_keys(J["tg"], "analyze.tg");
+  }
+}
+
+// The bibliography keys (caps/provenance.hpp) of a force field's references: the first author's surname and the year,
+// taken only when the entry's volume and first page (or its DOI) are in the reference too. The rest stay as text.
+void reference_keys(const std::vector<std::string>& refs, std::vector<std::string>& keys, std::vector<std::string>& rest) {
+  for (const auto& ref : refs) {
+    std::string first = ref.substr(0, ref.find(','));
+    if (const size_t p = first.find(" et al"); p != std::string::npos) first.resize(p);
+    while (!first.empty() && first.back() == ' ') first.pop_back();
+    for (const char* suffix : {" Jr.", " III", " II"})
+      if (first.size() > std::strlen(suffix) && first.compare(first.size() - std::strlen(suffix), std::string::npos, suffix) == 0) first.resize(first.size() - std::strlen(suffix));
+    const size_t sp = first.find_last_of(" .");
+    std::string key;
+    for (char ch : sp == std::string::npos ? first : first.substr(sp + 1))
+      if (std::isalpha((unsigned char)ch) && (unsigned char)ch < 128) key += char(std::tolower((unsigned char)ch));
+    std::string year;
+    for (size_t p = ref.find('('); p != std::string::npos; p = ref.find('(', p + 1))
+      if (p + 5 < ref.size() && ref[p + 5] == ')' && std::all_of(ref.begin() + long(p) + 1, ref.begin() + long(p) + 5, [](char c) { return std::isdigit((unsigned char)c); }))
+        year = ref.substr(p + 1, 4);
+    key += year;
+    bool hit = false;
+    if (!year.empty() && key.size() > 4 && known_citation(key)) {
+      const std::string bib = bibtex({key});
+      auto field = [&](const std::string& name) {
+        const size_t at = bib.find(name + " = {");
+        if (at == std::string::npos) return std::string();
+        const size_t b = at + name.size() + 4, e = bib.find('}', b);
+        return e == std::string::npos ? std::string() : bib.substr(b, e - b);
+      };
+      const std::string vol = field("volume"), pages = field("pages"), doi = field("doi");
+      const std::string page0 = pages.substr(0, pages.find('-'));
+      hit = (!vol.empty() && !page0.empty() && ref.find(vol + ", " + page0) != std::string::npos) || (!doi.empty() && ref.find(doi) != std::string::npos);
+    }
+    if (hit) {
+      if (std::find(keys.begin(), keys.end(), key) == keys.end()) keys.push_back(key);
+    } else {
+      rest.push_back(ref);
+    }
+  }
+}
+
 Trajectory as_trajectory(const System& s) {
   Trajectory t;
   t.topology = s;
@@ -98,10 +286,16 @@ Trajectory as_trajectory(const System& s) {
 
 }  // namespace
 
-std::vector<std::string> recipe_stages(const Json& r) {
+// The stages in order; with stage_keys, every stage's keys checked too (check_recipe checks them stage by stage instead)
+static std::vector<std::string> stages_of(const Json& r, bool stage_keys) {
   if (!r.is_object()) throw RecipeError(2, "a recipe is a mapping of stages");
   for (const auto& [k, v] : r.members())
-    if (!kTop.count(k)) throw RecipeError(2, "unknown key '" + k + "' (stages: build, type, grow, react, relax, md, equilibrate, analyze, export)");
+    if (!kTop.count(k)) {
+      const std::string hint = did_you_mean(k, kTop);
+      throw RecipeError(2, "unknown key '" + k + "'" +
+                               (!hint.empty() ? hint : " (stages: build, type, grow, react, relax, cbmc, equilibrate, md, thermal, analyze, export, or dft; "
+                                                       "settings: recipe, name, seed, cutoff, electrostatics, threads)"));
+    }
   if (r.has("recipe") && r["recipe"].is_number() && r["recipe"].number() != 1) throw RecipeError(2, "this CAPS reads recipe version 1");
   // a DFT recipe: a list of workbench commands (caps/dft_commands.hpp), each {command: …, its options}, run in order
   if (r.has("dft")) {
@@ -114,9 +308,15 @@ std::vector<std::string> recipe_stages(const Json& r) {
   if (!r.has("build")) throw RecipeError(2, "a recipe needs a build stage (polymer, molecule or file)");
   std::vector<std::string> out;
   for (const auto& s : kStages) if (r.has(s)) out.push_back(s);
+  // every key inside every stage before anything runs: a misspelt "temprature" or "dpp" would otherwise fall back to
+  // the default without a word
+  if (stage_keys)
+    for (const auto& s : out) check_stage_keys(r, s);
   if (r.has("grow") && !(r["build"].is_object() && r["build"].has("polymer"))) throw RecipeError(2, "grow needs build: { polymer: … }");
   return out;
 }
+
+std::vector<std::string> recipe_stages(const Json& r) { return stages_of(r, true); }
 
 // react.templates: built-in names or template text (one string or a list)
 static std::vector<ReactionTemplate> react_templates_of(const Json& J) {
@@ -139,7 +339,7 @@ static std::vector<ReactionTemplate> react_templates_of(const Json& J) {
 RecipeCheck check_recipe(const Json& r) {
   RecipeCheck c;
   std::vector<std::string> stages;
-  try { stages = recipe_stages(r); } catch (const RecipeError& e) { c.code = e.code; c.error = e.what(); return c; }
+  try { stages = stages_of(r, false); } catch (const RecipeError& e) { c.code = e.code; c.error = e.what(); return c; }
   auto list = [](const Json& a) { std::string out; if (a.is_array()) for (const auto& x : a.items()) out += (out.empty() ? "" : ", ") + (x.is_string() ? x.str() : g6(x.number())); return out; };
   if (stages.size() == 1 && stages[0] == "dft") {
     for (const auto& item : r["dft"].items()) {
@@ -156,6 +356,7 @@ RecipeCheck check_recipe(const Json& r) {
     const Json& J = r[st];
     RecipeStageInfo info{st, "", true};
     try {
+      check_stage_keys(r, st);   // the stage's keys, reported on the stage
       if (st == "build") {
         if (J.has("polymer")) {
           const Json& P = J["polymer"];
@@ -245,7 +446,13 @@ RecipeCheck check_recipe(const Json& r) {
     } catch (const RecipeError& e) {
       info.ok = false;
       info.summary = e.what();
-      if (!c.code) { c.code = e.code; c.error = st + ": " + e.what(); }
+      if (!c.code) {
+        // "md: unknown key …", "build.polymer.dp …" and "export is …" name their stage already ("typing …" does not)
+        const std::string w = e.what();
+        const bool named = w.rfind(st, 0) == 0 && w.size() > st.size() && (w[st.size()] == ':' || w[st.size()] == '.' || w[st.size()] == ' ');
+        c.code = e.code;
+        c.error = (named ? std::string() : st + ": ") + w;
+      }
     } catch (const std::exception& e) {
       info.ok = false;
       info.summary = e.what();
@@ -369,6 +576,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
     std::string charges = text(T, "charges", "auto");
     std::string companion_note;   // charges "increments": whose charges they are
     bool increments = false;      // the force field's own charges are bond increments (PCFF, COMPASS)
+    std::vector<std::string> ff_refs;   // the library force field's references (cited in the provenance)
     ff.reset();
     try {
       if (name == "default" && sys.forcefield && sys.forcefield->charge.size() == sys.atoms.size()) {
@@ -420,6 +628,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         }
         if (!std::filesystem::exists(path)) throw RecipeError(2, "no force field '" + name + "' (a library id, uff, default or a path)");
         FFDef def = load_forcefield(path);
+        ff_refs = def.references;
         if (!typing.empty()) load_typing(def, typing);
         // fill_from: another force field's bond, angle and dihedral rules, used only where this one has none (as Field's
         // "Fill gaps from…"); what was borrowed is reported
@@ -559,12 +768,20 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
     } catch (const RecipeError&) { throw; } catch (const std::exception& e) { throw RecipeError(3, e.what()); }
     own_cutoff(ff.get());
     const std::string ch = !companion_note.empty() ? companion_note.substr(9) : charges == "qeq" ? "QEq" : charges == "gasteiger" ? "Gasteiger" : charges == "keep" ? "the file's" : charges == "auto" && ffname == "UFF" ? "no" : increments ? "from the force field's bond increments" : "from the force field";
-    std::vector<std::string> c;
-    if (ffname == "UFF") c.push_back("rappe1992");
-    else if (ffname.find("GAFF") != std::string::npos) c.push_back("wang2004");
-    if (charges == "qeq") c.push_back("rappe1991");
-    if (charges == "gasteiger") c.push_back("gasteiger1980");
+    // the force field's own papers: the bibliography's entries where it has them, the rest as text (at most three)
+    std::vector<std::string> c, other_refs;
+    reference_keys(ff_refs, c, other_refs);
+    auto add = [&](const char* key) { if (std::find(c.begin(), c.end(), key) == c.end()) c.push_back(key); };
+    if (ffname == "UFF") add("rappe1992");
+    else if (ffname.find("GAFF") != std::string::npos) add("wang2004");
+    if (charges == "qeq") add("rappe1991");
+    if (charges == "gasteiger") add("gasteiger1980");
     KeyValues kv = {{"force field", ffname}, {"charges", ch}};
+    if (!other_refs.empty()) {
+      std::string t;
+      for (size_t i = 0; i < other_refs.size() && i < 3; ++i) t += (t.empty() ? "" : "; ") + other_refs[i];
+      kv.push_back({"references", t});
+    }
     if (!borrowed.empty()) kv.push_back({"typing rules", borrowed});
     if (!filled_from.empty()) kv.push_back({"gaps filled from", filled_from + " (" + std::to_string(filled_terms) + " terms where " + ffname.substr(0, ffname.find(" (gaps")) + " has none)"});
     if (!ml_fitted.empty()) kv.push_back({"CAPS ML", std::to_string(ml_fitted.size()) + " parameter set(s) fitted where the force field has none (field.complete_ml)"});
@@ -1139,6 +1356,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           m.energy = energy;
           m.energy.mixed = true;   // MD in mixed precision, as the CLI and the Studio
           m.dt = num(J, "dt", 1.0);
+          if (!(m.dt > 0)) throw RecipeError(2, "md.dt must be above 0 fs");
           m.respa = int(num(J, "respa", 1));   // r-RESPA: bonded forces every dt / respa
           const double ps = num(J, "ps", 10);
           m.steps = int64_t(ps * 1000 / m.dt);
@@ -1162,11 +1380,13 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           m.seed = seed_of(J);
           m.new_velocities = true;
           // thermo rows: thermo_every steps (default 200 over the run); frames: frame_every steps or frame_ps, written only
-          // where the caller gave a frames file (a cluster job's traj.lammpstrj)
+          // where the caller gave a frames file (a cluster job's traj.lammpstrj); a frames file the caller asked for
+          // (caps run --dump) gets about 100 frames of a run that sets neither
           m.thermo_every = J.has("thermo_every") ? std::max(1, int(num(J, "thermo_every", 100))) : int(std::max<int64_t>(1, m.steps / 200));
-          const int frame_every = J.has("frame_every") ? int(num(J, "frame_every", 0))
-                                  : J.has("frame_ps")  ? int(std::lround(num(J, "frame_ps", 0) * 1000 / m.dt))
-                                                       : 0;
+          int frame_every = J.has("frame_every") ? int(num(J, "frame_every", 0))
+                            : J.has("frame_ps")  ? int(std::lround(num(J, "frame_ps", 0) * 1000 / m.dt))
+                                                 : 0;
+          if (!J.has("frame_every") && !J.has("frame_ps") && o.frames_requested) frame_every = int(std::clamp<int64_t>(m.steps / 100, 1, 1000000000));
           m.frame_every = 0;
           if (frame_every > 0 && o.live && !o.frames_path.empty()) {
             if (!o.live->frames_open()) o.live->open_frames(o.frames_path, s, o.resume);
@@ -1223,6 +1443,10 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           e.md.energy = energy;
           e.md.energy.mixed = true;
           e.md.seed = seed_of(J);
+          e.md.dt = num(J, "dt", e.md.dt);   // the step and coupling times of every stage (as the md stage's keys)
+          if (!(e.md.dt > 0)) throw RecipeError(2, "equilibrate.dt must be above 0 fs");
+          if (const double t = num(J, "tau_t", e.md.tau_t); t > 0) e.md.tau_t = t;
+          if (const double t = num(J, "tau_p", e.md.tau_p); t > 0) e.md.tau_p = t;
           e.md.thermostat = thermostat_from_string(text(J, "thermostat", "bussi"));
           if (e.md.thermostat == Thermostat::None) e.md.thermostat = Thermostat::Bussi;
           e.md.barostat = barostat_from_string(text(J, "barostat", e.md.thermostat == Thermostat::NoseHoover ? "mtk" : "crescale"));
@@ -1250,9 +1474,13 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
             }
           }
           if (J.has("thermo_ps")) { const double t = num(J, "thermo_ps", e.thermo_ps); e.thermo_ps = t <= 0 ? 0.0 : std::max(1e-3, t); }   // 0: about 200 rows per stage
-          if (num(J, "frame_ps", 0) > 0 && o.live && !o.frames_path.empty()) {
+          // frames every frame_ps; a frames file the caller asked for (caps run --dump) gets about 100 over the protocol
+          // when the stage sets none
+          double frame_ps = num(J, "frame_ps", 0);
+          if (!J.has("frame_ps") && o.frames_requested) frame_ps = std::max(e.md.dt / 1000.0, protocol_ps(e.stages) / 100.0);
+          if (frame_ps > 0 && o.live && !o.frames_path.empty()) {
             if (!o.live->frames_open()) o.live->open_frames(o.frames_path, s, o.resume);
-            e.frame_ps = num(J, "frame_ps", 10);
+            e.frame_ps = frame_ps;
             e.frame = [&](const std::vector<double>& x, const Cell& c, int64_t fs) { o.live->frame(x, c, fs); };
           }
           e.progress = [&](int si, int sn, const std::string& label, const ThermoRow& t) {
@@ -1460,6 +1688,9 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
   if (!ff && r.has("type") && !s.atoms.empty()) {
     try { type_now(s); } catch (const RecipeError&) { throw; } catch (const std::exception& e) { throw RecipeError(3, std::string("type: ") + e.what()); }
   }
+  // the frames file, when a stage wrote frames to it
+  if (o.live && o.live->frames_open() && !o.frames_path.empty() && std::find(res.files.begin(), res.files.end(), o.frames_path) == res.files.end())
+    res.files.push_back(o.frames_path);
   res.system = s;
   res.field = ff;
   res.forcefield = ff ? ffname : "";

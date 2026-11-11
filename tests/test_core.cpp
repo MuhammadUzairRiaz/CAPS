@@ -1074,6 +1074,8 @@ TEST(Io, GroWriterRoundTrip) {
   for (size_t i = 0; i < s.atoms.size(); i += 97)
     for (int k = 0; k < 3; ++k) EXPECT_NEAR(g.positions[0][i][k], s.atoms[i].pos[k], 0.006);   // 0.001 nm precision
   EXPECT_NEAR(g.topology.cell.a[0], s.cell.a[0], 1e-3);
+  // the data file names atoms by type label (ca, hc); the .gro names must read back as the same elements, not calcium
+  for (size_t i = 0; i < s.atoms.size(); ++i) ASSERT_EQ(g.topology.atoms[i].element, s.atoms[i].element) << "atom " << i << " " << g.topology.atoms[i].name;
   std::filesystem::remove(path);
 }
 

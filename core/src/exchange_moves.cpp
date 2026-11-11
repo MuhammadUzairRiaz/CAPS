@@ -19,6 +19,35 @@ using Pair = TopologyEditor::Pair;
 
 Pair pair_of(uint32_t i, uint32_t j) { return i < j ? Pair{i, j} : Pair{j, i}; }
 
+// The bond graph after a proposed change, read without editing the parameterised topology: a trial edit would ask the
+// editor for terms of type combinations the structure may not have yet (and abort the run), while the weight of the way
+// back needs only who is bonded to whom. decide() makes the real change, through edit() and the run's force field.
+struct GraphAfter {
+  const TopologyEditor& ed;
+  std::set<Pair> gone, made;
+  GraphAfter(const TopologyEditor& e, const std::vector<Pair>& broken, const std::vector<Pair>& formed) : ed(e) {
+    for (const auto& p : broken) gone.insert(pair_of(p[0], p[1]));
+    for (const auto& p : formed) made.insert(pair_of(p[0], p[1]));
+  }
+  bool bonded(uint32_t i, uint32_t j) const {
+    const Pair p = pair_of(i, j);
+    if (made.count(p)) return true;
+    if (gone.count(p)) return false;
+    return ed.bonded(i, j);
+  }
+  std::vector<uint32_t> neighbours(uint32_t i) const {
+    std::vector<uint32_t> r;
+    for (uint32_t j : ed.neighbours()[i])
+      if (!gone.count(pair_of(i, j))) r.push_back(j);
+    for (const auto& p : made)
+      if (p[0] == i || p[1] == i) {
+        const uint32_t j = p[0] == i ? p[1] : p[0];
+        if (std::find(r.begin(), r.end(), j) == r.end()) r.push_back(j);
+      }
+    return r;
+  }
+};
+
 }  // namespace
 
 ExchangeKind exchange_kind_from_string(const std::string& s) {
@@ -446,58 +475,59 @@ double ExchangeEngine::delta(const std::vector<Pair>& broken, const std::vector<
 bool ExchangeEngine::try_swap(const std::vector<double>& x, const Cell& cell, double beta, const std::function<double()>& potential) {
   ++st_.attempts;
   auto u = [&] { return std::uniform_real_distribution<double>(0, 1)(rng_); };
-  auto dynamic_bonds = [&] {   // bonds with both atoms in group A
-    std::vector<Pair> d;
+  std::vector<Pair> dyn;   // bonds with both atoms in group A
+  {
     const auto& nb = ed_.neighbours();
     for (uint32_t i = 0; i < nb.size(); ++i)
       if (in_a_[i])
         for (uint32_t j : nb[i])
-          if (i < j && in_a_[j]) d.push_back({i, j});
-    return d;
-  };
-  auto dyn = dynamic_bonds();
+          if (i < j && in_a_[j]) dyn.push_back({i, j});
+  }
+  const GraphAfter now(ed_, {}, {});
   if (dyn.size() < 2) { ++st_.no_candidate; return false; }
   const Pair pick = dyn[std::min(dyn.size() - 1, size_t(u() * double(dyn.size())))];
   const bool flip = u() < 0.5;
   const uint32_t a1 = flip ? pick[1] : pick[0], a2 = flip ? pick[0] : pick[1];
   const double cap = o_.capture;
-  // the swap x1–x2 + y1–y2 → x1–y2 + y1–x2 is allowed in the current topology
-  auto valid = [&](uint32_t x1, uint32_t x2, uint32_t y1, uint32_t y2) {
+  // the swap x1–x2 + y1–y2 → x1–y2 + y1–x2 is allowed in bond graph g (now, or after the swap)
+  auto valid = [&](const GraphAfter& g, uint32_t x1, uint32_t x2, uint32_t y1, uint32_t y2) {
     if (y1 == x1 || y1 == x2 || y2 == x1 || y2 == x2) return false;
-    if (!ed_.bonded(x1, x2) || !ed_.bonded(y1, y2)) return false;
+    if (!g.bonded(x1, x2) || !g.bonded(y1, y2)) return false;
     if (!o_.labels.empty() && (o_.labels[x1] != o_.labels[y1] || o_.labels[x2] != o_.labels[y2])) return false;   // as LAMMPS: both ends
-    if (ed_.bonded(x1, y2) || ed_.bonded(y1, x2)) return false;
+    if (g.bonded(x1, y2) || g.bonded(y1, x2)) return false;
     return distance(x, cell, x1, x2) < cap && distance(x, cell, y1, y2) < cap && distance(x, cell, x1, y2) < cap && distance(x, cell, y1, x2) < cap;
   };
-  auto candidates = [&](uint32_t x1, uint32_t x2) {
+  auto candidates = [&](const GraphAfter& g, const std::vector<Pair>& d, uint32_t x1, uint32_t x2) {
     std::vector<Pair> c;
-    for (const auto& b : dyn)
+    for (const auto& b : d)
       for (int o = 0; o < 2; ++o) {
         const uint32_t y1 = o ? b[1] : b[0], y2 = o ? b[0] : b[1];
-        if (valid(x1, x2, y1, y2)) c.push_back({y1, y2});
+        if (valid(g, x1, x2, y1, y2)) c.push_back({y1, y2});
       }
     return c;
   };
-  const auto cand = candidates(a1, a2);
+  const auto cand = candidates(now, dyn, a1, a2);
   if (cand.empty()) { ++st_.no_candidate; return false; }
   const Pair c = cand[std::min(cand.size() - 1, size_t(u() * double(cand.size())))];
   const uint32_t b1 = c[0], b2 = c[1];
   // proposal weights: the four ways of picking the same swap (each bond first, each way round), before it and, for the
   // way back, after it; the bond count and the 1/2 for the direction are the same both ways
-  auto weight = [&](uint32_t x1, uint32_t x2, uint32_t y1, uint32_t y2) { return valid(x1, x2, y1, y2) ? 1.0 / double(candidates(x1, x2).size()) : 0.0; };
-  const double qf = weight(a1, a2, b1, b2) + weight(b1, b2, a1, a2) + weight(a2, a1, b2, b1) + weight(b2, b1, a2, a1);
-  try {
-    ed_.swap(a1, a2, b1, b2);
-  } catch (const TopologyError& e) {
-    if (st_.note.empty()) st_.note = std::string("a change the force field cannot describe: ") + e.what();
-    ++st_.unparameterised;
-    return false;
-  }
-  dyn = dynamic_bonds();
-  const double qr = weight(a1, b2, b1, a2) + weight(b1, a2, a1, b2) + weight(b2, a1, a2, b1) + weight(a2, b1, b2, a1);
-  ed_.swap(a1, b2, b1, a2);
+  // (the way back read from the bond graph after the swap, which has the two new bonds in place of the two old ones, all
+  // four atoms in group A; the topology itself first changes in decide(), where the run's force field can type it)
+  const std::vector<Pair> broken{pair_of(a1, a2), pair_of(b1, b2)}, made{pair_of(a1, b2), pair_of(b1, a2)};
+  const GraphAfter after(ed_, broken, made);
+  std::vector<Pair> dyn_after;
+  for (const auto& p : dyn)
+    if (!after.gone.count(p)) dyn_after.push_back(p);
+  dyn_after.insert(dyn_after.end(), made.begin(), made.end());
+  auto weight = [&](const GraphAfter& g, const std::vector<Pair>& d, uint32_t x1, uint32_t x2, uint32_t y1, uint32_t y2) {
+    return valid(g, x1, x2, y1, y2) ? 1.0 / double(candidates(g, d, x1, x2).size()) : 0.0;
+  };
+  const double qf = weight(now, dyn, a1, a2, b1, b2) + weight(now, dyn, b1, b2, a1, a2) + weight(now, dyn, a2, a1, b2, b1) + weight(now, dyn, b2, b1, a2, a1);
+  const double qr = weight(after, dyn_after, a1, b2, b1, a2) + weight(after, dyn_after, b1, a2, a1, b2) + weight(after, dyn_after, b2, a1, a2, b1) +
+                    weight(after, dyn_after, a2, b1, b2, a1);
   if (!(qf > 0) || !(qr > 0)) { ++st_.no_candidate; return false; }
-  return decide({pair_of(a1, a2), pair_of(b1, b2)}, {pair_of(a1, b2), pair_of(b1, a2)}, std::log(qr / qf), beta, x, cell, potential);
+  return decide(broken, made, std::log(qr / qf), beta, x, cell, potential);
 }
 
 bool ExchangeEngine::try_shift(const std::vector<double>& x, const Cell& cell, double beta, const std::function<double()>& potential) {
@@ -509,17 +539,18 @@ bool ExchangeEngine::try_shift(const std::vector<double>& x, const Cell& cell, d
       if (in_b_[b]) r.push_back(b);
     return r;
   };
-  auto load = [&](uint32_t r) {   // bonds a residue holds to pivots
+  auto load = [&](const GraphAfter& g, uint32_t r) {   // bonds a residue holds to pivots
     int k = 0;
-    for (uint32_t b : ed_.neighbours()[r]) k += in_a_[b];
+    for (uint32_t b : g.neighbours(r)) k += in_a_[b];
     return k;
   };
-  auto attackers = [&](uint32_t p) {
+  auto attackers = [&](const GraphAfter& g, uint32_t p) {
     std::vector<uint32_t> a;
     for (uint32_t r : o_.group_b)
-      if (!ed_.bonded(p, r) && load(r) < o_.valence_b && distance(x, cell, p, r) < o_.capture) a.push_back(r);
+      if (!g.bonded(p, r) && load(g, r) < o_.valence_b && distance(x, cell, p, r) < o_.capture) a.push_back(r);
     return a;
   };
+  const GraphAfter now(ed_, {}, {});
   std::vector<uint32_t> pivots;   // pivots holding a residue: a shift keeps their number
   for (uint32_t p : o_.group_a)
     if (!residues_of(p).empty()) pivots.push_back(p);
@@ -527,18 +558,12 @@ bool ExchangeEngine::try_shift(const std::vector<double>& x, const Cell& cell, d
   const uint32_t p = pivots[std::min(pivots.size() - 1, size_t(u() * double(pivots.size())))];
   const auto lv = residues_of(p);
   const uint32_t r0 = lv[std::min(lv.size() - 1, size_t(u() * double(lv.size())))];
-  const auto att = attackers(p);
+  const auto att = attackers(now, p);
   if (att.empty()) { ++st_.no_candidate; return false; }
   const uint32_t r1 = att[std::min(att.size() - 1, size_t(u() * double(att.size())))];
-  // the way back: the same pivot and leaving count; its attackers after the move
-  try {
-    ed_.change({pair_of(p, r0)}, {pair_of(p, r1)});
-  } catch (const TopologyError&) {
-    ++st_.unparameterised;
-    return false;
-  }
-  const double back = double(attackers(p).size());
-  ed_.change({pair_of(p, r1)}, {pair_of(p, r0)});
+  // the way back: the same pivot and leaving count; its attackers in the bond graph after the move (the topology itself
+  // first changes in decide(), where the run's force field can type it)
+  const double back = double(attackers(GraphAfter(ed_, {pair_of(p, r0)}, {pair_of(p, r1)}), p).size());
   if (!(back > 0)) { ++st_.no_candidate; return false; }   // no way back (r0 beyond the capture distance): never proposed in reverse
   return decide({pair_of(p, r0)}, {pair_of(p, r1)}, std::log(double(att.size()) / back), beta, x, cell, potential);
 }
@@ -630,60 +655,50 @@ bool ExchangeEngine::try_bind(const std::vector<double>& x, const Cell& cell, do
   const double ns = double(sites.size());
   auto complementary = [&](uint32_t i, uint32_t j) { return self ? (in_a_[i] && in_a_[j]) : ((in_a_[i] && in_b_[j]) || (in_b_[i] && in_a_[j])); };
   auto valence = [&](uint32_t i) { return in_a_[i] ? o_.valence_a : o_.valence_b; };
-  auto dynamic = [&](uint32_t i) {
+  // in bond graph g: the current one, or the one after a proposed move (the weight of the way back); the topology itself
+  // first changes in decide(), where the run's force field can type it
+  auto dynamic = [&](const GraphAfter& g, uint32_t i) {
     std::vector<uint32_t> d;
-    for (uint32_t j : ed_.neighbours()[i])
+    for (uint32_t j : g.neighbours(i))
       if (complementary(i, j)) d.push_back(j);
     return d;
   };
-  auto free_partners = [&](uint32_t i) {
+  auto free_partners = [&](const GraphAfter& g, uint32_t i) {
     std::vector<uint32_t> c;
     for (uint32_t j : sites)
-      if (j != i && complementary(i, j) && !ed_.bonded(i, j) && int(dynamic(j).size()) < valence(j) && distance(x, cell, i, j) < o_.capture) c.push_back(j);
+      if (j != i && complementary(i, j) && !g.bonded(i, j) && int(dynamic(g, j).size()) < valence(j) && distance(x, cell, i, j) < o_.capture) c.push_back(j);
     return c;
   };
   // the probability of proposing to bind i and j, and to break them: either site picked first, then bind or break (½ each)
-  auto q_bind = [&](uint32_t i, uint32_t j) {
+  auto q_bind = [&](const GraphAfter& g, uint32_t i, uint32_t j) {
     double q = 0;
     for (const auto& [a, b] : {std::pair<uint32_t, uint32_t>{i, j}, {j, i}}) {
-      if (int(dynamic(a).size()) >= valence(a)) continue;
-      const auto c = free_partners(a);
+      if (int(dynamic(g, a).size()) >= valence(a)) continue;
+      const auto c = free_partners(g, a);
       if (std::find(c.begin(), c.end(), b) != c.end()) q += 1.0 / double(c.size());
     }
     return q / (2 * ns);
   };
-  auto q_break = [&](uint32_t i, uint32_t j) { return (1.0 / double(dynamic(i).size()) + 1.0 / double(dynamic(j).size())) / (2 * ns); };
+  auto q_break = [&](const GraphAfter& g, uint32_t i, uint32_t j) {
+    return (1.0 / double(dynamic(g, i).size()) + 1.0 / double(dynamic(g, j).size())) / (2 * ns);
+  };
+  const GraphAfter now(ed_, {}, {});
   const uint32_t i = sites[std::min(sites.size() - 1, size_t(u() * ns))];
   const double lk = beta * o_.binding;   // ln K
   if (u() < 0.5) {   // bind
-    if (int(dynamic(i).size()) >= valence(i)) { ++st_.no_candidate; return false; }
-    const auto c = free_partners(i);
+    if (int(dynamic(now, i).size()) >= valence(i)) { ++st_.no_candidate; return false; }
+    const auto c = free_partners(now, i);
     if (c.empty()) { ++st_.no_candidate; return false; }
     const uint32_t j = c[std::min(c.size() - 1, size_t(u() * double(c.size())))];
-    const double qf = q_bind(i, j);
-    try {
-      ed_.change({}, {pair_of(i, j)});
-    } catch (const TopologyError&) {
-      ++st_.unparameterised;
-      return false;
-    }
-    const double qr = q_break(i, j);
-    ed_.change({pair_of(i, j)}, {});
+    const double qf = q_bind(now, i, j);
+    const double qr = q_break(GraphAfter(ed_, {}, {pair_of(i, j)}), i, j);
     return decide({}, {pair_of(i, j)}, std::log(qr / qf) + lk, beta, x, cell, potential);
   }
-  const auto d = dynamic(i);   // break
+  const auto d = dynamic(now, i);   // break
   if (d.empty()) { ++st_.no_candidate; return false; }
   const uint32_t j = d[std::min(d.size() - 1, size_t(u() * double(d.size())))];
-  const double qf = q_break(i, j);
-  try {
-    ed_.change({pair_of(i, j)}, {});
-  } catch (const TopologyError& e) {
-    if (st_.note.empty()) st_.note = std::string("a change the force field cannot describe: ") + e.what();
-    ++st_.unparameterised;
-    return false;
-  }
-  const double qr = q_bind(i, j);
-  ed_.change({}, {pair_of(i, j)});
+  const double qf = q_break(now, i, j);
+  const double qr = q_bind(GraphAfter(ed_, {pair_of(i, j)}, {}), i, j);
   if (!(qr > 0)) { ++st_.no_candidate; return false; }
   return decide({pair_of(i, j)}, {}, std::log(qr / qf) - lk, beta, x, cell, potential);
 }

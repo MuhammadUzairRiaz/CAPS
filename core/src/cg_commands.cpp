@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <map>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -61,7 +62,7 @@ const std::vector<Cmd>& table() {
         {"last", "", "the last frame kept (1-based; default: the end)"}},
        {"caps cgmap PBS/system.data PBSA/system.data PBAT/system.data --preset ester-cut -o cg",
         "caps cgmap system.data --map cg/system.map.json --types cg/types.json --dump hold.lammpstrj --stride 5 -o cg"}},
-      {"cgfit", "caps cgfit bonded|refine|targets|ibi-start|ibi-step|ibi-run|fit|tg|calibrate …  (see below)",
+      {"cgfit", "caps cgfit bonded|refine|targets|ibi-start|ibi-step|ibi-run|fit|tg|calibrate|sample-chain …  (see below)",
        "Bonded coarse-grained potentials by tabulated Boltzmann inversion over many frames of many systems mapped alike: each MAP "
        "(STEM.map.json from cgmap) followed by its frames (CG dumps STEM.cg.lammpstrj or the single frame STEM.cg.data); each "
        "system's histograms normalised, then weighted. U(r) = −kT ln[P/r²], U(θ) = −kT ln[P/sin θ], U(φ) = −kT ln P, inverted only "
@@ -70,7 +71,7 @@ const std::vector<Cmd>& table() {
        "Non-bonded: targets (per-pair g(r) per system from MAP FRAMES …); ibi-start (−kT ln g tables, LAMMPS decks and run_ibi.sh, "
        "the loop for a cluster); ibi-step (one joint update from each system's CG dump and log: MAP DUMP [LOG] …); ibi-run (the loop "
        "with CAPS's engine, small systems: MAP DATA …); fit (LJ 12-6, LJ 9-6, Morse or Mie fitted to the tables); tg (T_g from a "
-       "cooling scan's T and density columns); calibrate (the next σ and ε scale factors from the runs so far, with decks for them); "
+       "cooling scan's T and density columns, whitespace or comma separated, a header line skipped); calibrate (the next σ and ε scale factors from the runs so far, with decks for them); "
        "sample-chain (isolated all-atom chains grown, typed and run by Langevin dynamics with no neighbours, each frame mapped — "
        "bonded distributions without an equilibrated melt, Fritz et al. 2009).",
        {{"types", "", "the shared type list (types.json from cgmap); default: the union of the maps given"},
@@ -87,9 +88,9 @@ const std::vector<Cmd>& table() {
         {"aat", "1,170,180", "dihedral_style table/cut switch K, θ1, θ2: the dihedral turns off as a neighbouring angle goes from θ1 to θ2"},
         {"tables", "", "refine: the bonded.json of the tables the CG run used"},
         {"alpha", "0.5", "refine: damping of the update"},
-        {"rmax", "15", "targets: g(r) range (Å; at most half the box)"},
+        {"rmax", "15", "targets: g(r) range (Å; cut to half the narrowest box width, with a note)"},
         {"dr", "0.05", "targets: g(r) bin (Å)"},
-        {"exclude", "3", "targets: bead pairs fewer than this many bonds apart left out (3: 1-2 and 1-3, special_bonds lj 0 0 1)"},
+        {"exclude", "3", "targets: bead pairs fewer than this many bonds apart left out (3: 1-2 and 1-3, special_bonds lj 0 0 1); stored in targets.json and used by ibi-*"},
         {"pressure", "1", "targets: each system's AA pressure (atm, comma-separated): the IBI pressure target"},
         {"targets", "", "ibi-*: the targets.json"},
         {"pairs", "", "ibi-step / fit: the pairs.json of the current tables"},
@@ -99,8 +100,8 @@ const std::vector<Cmd>& table() {
         {"gain", "0.5", "ibi-* --pcorr virial: the fraction of the pressure error removed per iteration"},
         {"ramp", "0.1", "ibi-* --pcorr ramp: A = −ramp kT sign(ΔP) min(1, 0.0003|ΔP|/bar) (0: off)"},
         {"iterations", "3", "ibi-run: iterations with CAPS's engine"},
-        {"steps", "2000", "ibi-run: steps per iteration (CAPS's engine; keep runs short on a laptop) / the decks' production steps"},
-        {"dt", "10", "time step of the runs (fs)"},
+        {"steps", "2000", "ibi-run: steps per iteration (CAPS's engine; keep runs short on a laptop) / the decks' production steps (ibi-start, calibrate: 500000) / sample-chain: steps per chain (20000)"},
+        {"dt", "10", "time step of the runs (fs; sample-chain: 1, an all-atom run)"},
         {"form", "lj126", "fit: lj126, lj96, morse or mie"},
         {"repulsion", "4", "fit: the fitted range starts where U falls below this many kT"},
         {"fits", "", "calibrate: the fits.json to scale"},
@@ -124,6 +125,15 @@ const std::vector<Cmd>& table() {
         {"tail_cap", "", "sample-chain: the chain's tail end group (SMILES with one *)"},
         {"damp", "1000", "sample-chain: the Langevin damping time (fs)"},
         {"cutoff", "15", "sample-chain: the interaction cut-off (Å)"},
+        {"dp", "10", "sample-chain: repeat units per chain"},
+        {"seed", "1", "sample-chain: random seed (growth and Langevin; chain k uses seed + k)"},
+        {"sequence", "alternating", "sample-chain: the sequence of several --units"},
+        {"preset", "", "sample-chain: the mapping, a rule set from data/cg/mapping_rules.json (ester-cut: polyesters, B S A T beads)"},
+        {"rules", "", "sample-chain: the mapping as a rule file (as caps cgmap --rules)"},
+        {"cut", "", "sample-chain: bond SMARTS, comma-separated: the bond between each pattern's first and last atoms is cut"},
+        {"names", "", "sample-chain: naming rules NAME=SMARTS, comma-separated, first match wins"},
+        {"position", "com", "sample-chain: com (centre of mass), cog (centre of geometry) or atom:SMARTS"},
+        {"no_strict", "false", "sample-chain: name fragments no rule matches by their class (F1, F2 …) instead of stopping"},
         {"table_dr", "0.05", "ibi-*: the pair tables' spacing (Å)"},
         {"o", "bonded", "the output folder"}},
        {"caps cgfit bonded cg/PBS.map.json cg/PBS.cg.lammpstrj cg/PBSA.map.json cg/PBSA.cg.lammpstrj cg/PBAT.map.json cg/PBAT.cg.lammpstrj --types cg/types.json -T 300 -o bonded",
@@ -152,7 +162,7 @@ const std::vector<Cmd>& table() {
         {"bonded", "", "the bonded folder (bonded.json): its distributions are drawn from"},
         {"maps", "", "map.json files (comma-separated) for the bead masses (each kind's most common)"},
         {"masses", "", "or the masses directly: B=88.1,S=84.07 (g/mol)"},
-        {"types", "", "the shared type list (types.json); default: the kinds and terms of the melt"},
+        {"types", "", "the shared type list (types.json); default: the bonded folder's types.json, which numbers bonded.in (else the melt's kinds and terms)"},
         {"seed", "1", "random seed (sequences, lengths, walks)"},
         {"stem", "melt", "file names: STEM.cg.data, STEM.map.json"},
         {"T", "300", "in.cg_equil: the final temperature (K)"},
@@ -161,7 +171,7 @@ const std::vector<Cmd>& table() {
         {"o", "melt", "the output folder"}},
        {"caps cgbuild --units BS=B+S,BA=B+A --composition BS:0.8,BA:0.2 --dp 400 --chains 200 --density 1.25 --bonded bonded --maps cg/PBSA.map.json --types cg/types.json -o melt_PBSA_400",
         "caps cgbuild --units BA=B+A,BT=B+T --composition BA:0.56,BT:0.44 --lengths schulz-zimm --pdi 2 --dp 200 --chains 300 --density 1.26 --bonded bonded --maps cg/PBAT.map.json -o melt cg/PBAT.map.json cg/PBAT.cg.lammpstrj"}},
-      {"ppa", "caps ppa MAP FRAMES [PPA_DUMP] [MAP FRAMES … for more chain lengths] [--method caps|z1|lammps] -o DIR",
+      {"ppa", "caps ppa MAP FRAMES [PPA_DUMP] [MAP FRAMES … for more chain lengths] [--method caps|z1|both|lammps] -o DIR",
        "Entanglements of coarse-grained melts: primitive paths by CAPS's own PPA (ends held, intra-chain pairs off), by a LAMMPS "
        "PPA (--method lammps writes in.cg_ppa; give its dump after the frames to read it back) or by Z1+ (config.Z1 written, Z1+ run "
        "when found — $CAPS_Z1 or --z1 — and its shortest paths read); N_e by the classical and modified S-coil and S-kink estimators "
@@ -187,7 +197,7 @@ const std::vector<Cmd>& table() {
         {"P", "1", "decks: lateral pressure in stress mode (atm)"},
         {"dt", "10", "decks: time step (fs)"},
         {"frames", "60", "decks: dumps at even strain steps"},
-        {"fit_strain", "0.02", "analyze: modulus fit range"},
+        {"fit_strain", "0.02", "analyze: modulus fit range; needs 2 or more stress lines in it"},
         {"hardening_from", "", "analyze: strain where the G_R fit starts (default: the softening minimum)"},
         {"probe", "0", "analyze: probe radius for the empty share (Å; 0: skip)"},
         {"z1", "", "analyze: the Z1+ script for Z(ε) on the frames"},
@@ -475,6 +485,31 @@ std::string stem_of_map(const std::string& map) {
   return n.size() > 9 ? n.substr(0, n.size() - 9) : n;
 }
 
+// the path p (as given: relative to the working folder, or absolute) as seen from the folder dir, for files and scripts that
+// are read from dir; absolute when no relative path exists (another drive)
+std::string path_from(const std::string& dir, const std::string& p) {
+  std::error_code ec;
+  fs::path ap = fs::absolute(p, ec);
+  if (ec) return p;
+  fs::path ad = fs::absolute(dir.empty() ? fs::path(".") : fs::path(dir), ec);
+  if (ec) return ap.lexically_normal().generic_string();
+  const fs::path cp = fs::weakly_canonical(ap, ec);
+  if (!ec) ap = cp;
+  const fs::path cd = fs::weakly_canonical(ad, ec);
+  if (!ec) ad = cd;
+  const fs::path rel = ap.lexically_normal().lexically_relative(ad.lexically_normal());
+  return rel.empty() ? ap.lexically_normal().generic_string() : rel.generic_string();
+}
+
+// a word for bash, in single quotes when it holds anything but plain path characters
+std::string sh_word(const std::string& s) {
+  const bool plain = !s.empty() && std::all_of(s.begin(), s.end(), [](unsigned char c) { return std::isalnum(c) || c == '/' || c == '.' || c == '_' || c == '-' || c == '+'; });
+  if (plain) return s;
+  std::string q = "'";
+  for (char c : s) q += c == '\'' ? std::string("'\\''") : std::string(1, c);
+  return q + "'";
+}
+
 // LAMMPS inputs for the CG model: in.cg_run (NVT or NPT, a dump for g(r) and the next IBI step) and in.cg_tg (a stepwise
 // cooling scan writing T and density to tg.dat for caps cgfit tg)
 void write_cg_decks(const std::string& dir, int exclude, double T, double dt, int64_t steps, double t_hi, double t_lo, double t_step, std::vector<std::string>& files) {
@@ -528,6 +563,16 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
   std::ostringstream t;
   char b[512];
   const double T = N(a, "T", 300);
+  // the exclusion the targets were measured with (3 for targets.json files that did not record it): the g(r) of the CG runs
+  // and the decks' special_bonds must use the same one, so a different --exclude is refused
+  auto targets_exclude = [&](const CgTargets& tg) {
+    const int ex = tg.exclude > 0 ? tg.exclude : 3;
+    if (!a.has("exclude")) return ex;
+    const int given = int(N(a, "exclude", ex));
+    if (tg.exclude > 0 && given != ex)
+      throw std::invalid_argument("--exclude " + std::to_string(given) + " differs from the " + std::to_string(ex) + " the targets were measured with: leave it out, or rebuild the targets");
+    return given;
+  };
   if (mode == "targets") {
     const auto sys = cg_systems(in, 1);
     if (sys.empty()) throw std::invalid_argument("targets: give each system's map.json and its frames");
@@ -549,8 +594,22 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
     const std::string dir = S(a, "o", "ibi");
     fs::create_directories(dir);
     CgTargets tg = cg_targets(acc, T, press);
+    // the range g(r) holds: --rmax, or less when a frame's cell is narrower than twice it (said, not silent)
+    const double r_used = tg.r.empty() ? 0 : tg.r.back() + 0.5 * po.dr;
+    char r_used_s[32];
+    std::snprintf(r_used_s, sizeof r_used_s, "%.4f", r_used);
+    if (acc.rmax_used() > 0 && acc.rmax_used() < po.rmax - 1e-9) {
+      std::snprintf(b, sizeof b, "note: g(r) range cut to %.2f Å (frames are counted to half the narrowest box width, %.2f Å; --rmax %g)\n", r_used, acc.rmax_used(), po.rmax);
+      t << b;
+    } else if (r_used < po.rmax - po.dr) {
+      std::snprintf(b, sizeof b, "note: g(r) range cut to %.2f Å (no pair was counted past it; --rmax %g)\n", r_used, po.rmax);
+      t << b;
+    }
     const std::string tp = (fs::path(dir) / "targets.json").string();
-    write_text(tp, cg_targets_json(tg).dump(0) + "\n");
+    Json tj = cg_targets_json(tg);
+    // each system's map, relative to the targets folder: ibi-start finds the maps and CG structures from it
+    for (size_t k = 0; k < sys.size() && k < tj["systems"].size(); ++k) tj["systems"].items()[k]["map"] = path_from(dir, sys[k].map);
+    write_text(tp, tj.dump(0) + "\n");
     write_text((fs::path(dir) / "types.json").string(), cg_types_json(types).dump(1) + "\n");
     files.push_back(tp);
     files.push_back((fs::path(dir) / "types.json").string());
@@ -582,38 +641,68 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
       else t << "  " << R0.key << ": no pairs in any system\n";
     }
     t << "wrote " << tp << "\n";
-    provenance(tp, "cg.targets", "per-pair g(r) of " + std::to_string(sys.size()) + " systems", {{"rmax", S(a, "rmax", "15")}, {"dr", S(a, "dr", "0.05")}, {"exclude", S(a, "exclude", "3")}}, ins, {"reith2003"});
+    provenance(tp, "cg.targets", "per-pair g(r) of " + std::to_string(sys.size()) + " systems", {{"rmax", S(a, "rmax", "15")}, {"rmax used", r_used_s}, {"dr", S(a, "dr", "0.05")}, {"exclude", S(a, "exclude", "3")}}, ins, {"reith2003"});
   } else if (mode == "ibi-start") {
     if (S(a, "targets").empty()) throw std::invalid_argument("ibi-start needs --targets (targets.json)");
-    const CgTargets tg = cg_targets_from_json(read_json_file(S(a, "targets")));
+    const Json tjr = read_json_file(S(a, "targets"));
+    const CgTargets tg = cg_targets_from_json(tjr);
     const std::string dir = S(a, "o", fs::path(S(a, "targets")).parent_path().string());
+    if (!dir.empty()) fs::create_directories(dir);
     CgIbiOptions io;
     io.rc = N(a, "rc", 15);
     io.table_dr = N(a, "table_dr", 0.05);
     const CgPairSet p = ibi_start(tg, io);
     CgTypes types;
-    if (!S(a, "types").empty()) types = cg_types_from_json(read_json_file(S(a, "types")));
-    else types = cg_types_from_json(read_json_file((fs::path(S(a, "targets")).parent_path() / "types.json").string()));
+    const std::string types_file = !S(a, "types").empty() ? S(a, "types") : (fs::path(S(a, "targets")).parent_path() / "types.json").string();
+    types = cg_types_from_json(read_json_file(types_file));
     const std::string it0 = (fs::path(dir) / "it000").string();
     for (const auto& f : write_pairs(p, types, it0)) files.push_back(f);
     std::vector<std::string> deckfiles;
-    write_cg_decks(dir, int(N(a, "exclude", 3)), tg.temperature, N(a, "dt", 10), int64_t(N(a, "steps", 500000)), N(a, "t_hi", 500), N(a, "t_lo", 150), N(a, "t_step", 25), deckfiles);
+    write_cg_decks(dir, targets_exclude(tg), tg.temperature, N(a, "dt", 10), int64_t(N(a, "steps", 500000)), N(a, "t_hi", 500), N(a, "t_lo", 150), N(a, "t_step", 25), deckfiles);
     for (const auto& f : deckfiles) files.push_back(f);
-    // the loop for a cluster (bash; LAMMPS as $CAPS_LMP, CAPS as $CAPS_BIN)
-    const std::string bonded = S(a, "bonded", "../bonded");
+    // the loop for a cluster (bash; LAMMPS as $CAPS_LMP, CAPS as $CAPS_BIN). The script runs from its own folder, so every
+    // path in it is written relative to that folder: --bonded, --targets and --types as given (relative to the working
+    // folder, as ibi-run reads them), and each system's map and CG structure from the maps given, else from targets.json.
+    std::vector<std::string> missing;
+    auto from_here = [&](const std::string& p) {
+      if (!fs::exists(p)) missing.push_back(p);
+      return path_from(dir, p);
+    };
+    const std::string bonded_dir = S(a, "bonded", "bonded");
+    if (!fs::exists(fs::path(bonded_dir) / "bonded.in")) missing.push_back((fs::path(bonded_dir) / "bonded.in").string());
+    const std::string bonded = path_from(dir, bonded_dir);
+    const std::string targets_rel = from_here(S(a, "targets")), types_rel = from_here(types_file);
+    // the maps given as inputs (MAP …), by stem; else each system's map recorded by cgfit targets (relative to its folder)
+    std::map<std::string, std::string> given;
+    for (size_t k = 1; k < in.size(); ++k)
+      if (in[k].size() > 9 && in[k].compare(in[k].size() - 9, 9, ".map.json") == 0) given[stem_of_map(in[k])] = in[k];
+    std::vector<std::string> sys_map(tg.systems.size()), sys_data(tg.systems.size());
+    const size_t nrec = tjr.has("systems") ? tjr["systems"].size() : 0;
+    for (size_t k = 0; k < tg.systems.size(); ++k) {
+      const std::string& nme = tg.systems[k];
+      std::string map;
+      if (given.count(nme)) map = given[nme];
+      else if (k < nrec && tjr["systems"][k].has("map") && !tjr["systems"][k].text("map").empty()) {
+        const fs::path m = tjr["systems"][k].text("map");
+        map = (m.is_absolute() ? m : fs::path(S(a, "targets")).parent_path() / m).lexically_normal().string();
+      } else map = (fs::path(dir) / ".." / "cg" / (nme + ".map.json")).lexically_normal().string();   // the tutorial's layout, last resort
+      const std::string data = (fs::path(map).parent_path() / (nme + ".cg.data")).string();
+      sys_map[k] = from_here(map), sys_data[k] = from_here(data);
+    }
     const std::string sh = (fs::path(dir) / "run_ibi.sh").string();
     {
       std::ofstream f(sh);
       f << "#!/bin/bash\n# CAPS joint IBI loop: each iteration runs every system with the current tables (LAMMPS), then caps cgfit ibi-step.\n"
-           "#   bash run_ibi.sh N [START]   (from this folder; LAMMPS: $CAPS_LMP, default lmp; CAPS: $CAPS_BIN, default caps)\n"
-           "# Each system needs its starting CG structure as DATA_<name> below (STEM.cg.data from caps cgmap, or an equilibrated one).\n"
-           "set -euo pipefail\nLMP=${CAPS_LMP:-lmp}\nCAPS=${CAPS_BIN:-caps}\nN=${1:-20}\nSTART=${2:-0}\n";
-      f << "BONDED=" << bonded << "\nTARGETS=targets.json\nTYPES=types.json\n";
+           "#   bash run_ibi.sh N [START]   (LAMMPS: $CAPS_LMP, default lmp; CAPS: $CAPS_BIN, default caps)\n"
+           "# The script works in its own folder: the paths below are relative to it. Each system starts from its CG structure\n"
+           "# SYSk_DATA (STEM.cg.data from caps cgmap, or an equilibrated one); override with SYS1_DATA=... bash run_ibi.sh.\n"
+           "set -euo pipefail\ncd \"$(dirname \"$0\")\"\nLMP=${CAPS_LMP:-lmp}\nCAPS=${CAPS_BIN:-caps}\nN=${1:-20}\nSTART=${2:-0}\n";
+      f << "BONDED=${BONDED:-" << sh_word(bonded) << "}\nTARGETS=${TARGETS:-" << sh_word(targets_rel) << "}\nTYPES=${TYPES:-" << sh_word(types_rel) << "}\n";
       // shell variables by number (system names hold '-' and '.'), each system named in a comment; override with SYS1_DATA=… bash run_ibi.sh
       for (size_t k = 0; k < tg.systems.size(); ++k) {
         const std::string& nme = tg.systems[k];
         const std::string v = "SYS" + std::to_string(k + 1);
-        f << "# system " << k + 1 << ": " << nme << "\n" << v << "_DATA=${" << v << "_DATA:-../cg/" << nme << ".cg.data}\n" << v << "_MAP=${" << v << "_MAP:-../cg/" << nme << ".map.json}\n";
+        f << "# system " << k + 1 << ": " << nme << "\n" << v << "_DATA=${" << v << "_DATA:-" << sh_word(sys_data[k]) << "}\n" << v << "_MAP=${" << v << "_MAP:-" << sh_word(sys_map[k]) << "}\n";
       }
       f << "for ((i=START; i<N; i++)); do\n  it=$(printf 'it%03d' $i); nx=$(printf 'it%03d' $((i+1))); prev=$(printf 'it%03d' $((i-1)))\n  args=()\n";
       for (size_t k = 0; k < tg.systems.size(); ++k) {
@@ -623,15 +712,21 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
              "  \"$LMP\" -in in.cg_run -var DATA \"$data\" -var BONDED \"$BONDED\" -var PAIR $it -var OUT \"$it/" << nme << "\" -var ENS nvt\n"
              "  args+=(\"$" << v << "_MAP\" \"$it/" << nme << ".lammpstrj\" \"$it/" << nme << ".log\")\n";
       }
-      f << "  \"$CAPS\" cgfit ibi-step \"${args[@]}\" --targets $TARGETS --pairs $it/pairs.json --types $TYPES -o $nx | tee $nx.report.txt\n"
+      f << "  \"$CAPS\" cgfit ibi-step \"${args[@]}\" --targets \"$TARGETS\" --pairs $it/pairs.json --types \"$TYPES\" -o $nx | tee $nx.report.txt\n"
            "done\n";
       files.push_back(sh);
     }
     std::snprintf(b, sizeof b, "IBI start: %zu pair tables (−kT ln g, cut-off %.1f Å) in %s\n", p.pairs.size(), p.rc, it0.c_str());
     t << b;
+    if (io.rc > p.rc + io.table_dr) {
+      std::snprintf(b, sizeof b, "note: --rc %g lowered to %.2f Å, where the targets' g(r) ends\n", io.rc, p.rc);
+      t << b;
+    }
     for (const auto& R0 : tg.rdf.front())
       if (std::none_of(p.pairs.begin(), p.pairs.end(), [&](const CgPairTable& q) { return q.key == R0.key; })) t << "  no table for " << R0.key << " (no system has both types)\n";
     t << "LAMMPS: in.cg_run (NVT/NPT run with a dump for the next step), in.cg_tg (cooling scan); loop: bash " << sh << " 20\n";
+    for (const auto& m : missing)
+      t << "warning: run_ibi.sh points at " << m << ", which does not exist (give the maps after ibi-start, --bonded, or edit the script's paths)\n";
   } else if (mode == "ibi-step" || mode == "ibi-run") {
     if (S(a, "targets").empty()) throw std::invalid_argument(mode + " needs --targets (targets.json)");
     const CgTargets tg = cg_targets_from_json(read_json_file(S(a, "targets")));
@@ -639,7 +734,7 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
     if (sys.size() != tg.systems.size()) throw std::invalid_argument(mode + ": give the " + std::to_string(tg.systems.size()) + " systems of the targets, in their order (" + std::to_string(sys.size()) + " given)");
     CgTypes types = cg_types_for(a, sys);
     CgPairOptions po;
-    po.rmax = tg.r.back() + 0.5 * (tg.r[1] - tg.r[0]), po.dr = tg.r[1] - tg.r[0], po.exclude = int(N(a, "exclude", 3));
+    po.rmax = tg.r.back() + 0.5 * (tg.r[1] - tg.r[0]), po.dr = tg.r[1] - tg.r[0], po.exclude = targets_exclude(tg);
     CgIbiOptions io;
     io.alpha = N(a, "alpha", 0.2);
     io.ramp = N(a, "ramp", 0.1);
@@ -751,8 +846,10 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
       e["key"] = f.key, e["epsilon"] = f.epsilon, e["sigma"] = f.sigma, e["a"] = f.a, e["n"] = f.n, e["m"] = f.m;
       e["rms"] = std::isfinite(f.rms) ? Json(f.rms) : Json();
       e["lo"] = f.lo, e["hi"] = f.hi;
+      if (!f.rejected.empty()) e["rejected"] = f.rejected;
       arr.push_back(e);
       if (!std::isfinite(f.rms)) { t << "  " << f.key << ": too few points to fit\n"; continue; }
+      if (!f.rejected.empty()) { t << "  warning: " << f.key << ": no usable " << form << " fit (" << f.rejected << "); left out of pair.in and tables: use the IBI tables or another --form\n"; continue; }
       if (form == "morse") std::snprintf(b, sizeof b, "  %-5s D0 %.4f kcal/mol · α %.4f /Å · r0 %.3f Å · rms %.3f kcal/mol over %.2f–%.2f Å\n", f.key.c_str(), f.epsilon, f.a, f.sigma, f.rms, f.lo, f.hi);
       else if (form == "mie") std::snprintf(b, sizeof b, "  %-5s ε %.4f kcal/mol · σ %.3f Å · n %.2f, m 6 · rms %.3f kcal/mol over %.2f–%.2f Å\n", f.key.c_str(), f.epsilon, f.sigma, f.n, f.rms, f.lo, f.hi);
       else std::snprintf(b, sizeof b, "  %-5s ε %.4f kcal/mol · σ %.3f Å · rms %.3f kcal/mol over %.2f–%.2f Å\n", f.key.c_str(), f.epsilon, f.sigma, f.rms, f.lo, f.hi);
@@ -764,17 +861,28 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
     for (const auto& f : write_pairs(tables_of_fits(fits, p), types, (fs::path(dir) / "tables").string())) files.push_back(f);
     t << form << " fitted to " << fits.size() << " pairs: " << dir << "/pair.in (analytic), " << dir << "/tables (the same as tables)\n";
   } else if (mode == "tg") {
-    if (in.size() < 2) throw std::invalid_argument("tg: give the cooling scan's file (T and density per line)");
+    if (in.size() < 2) throw std::invalid_argument("tg: give the cooling scan's file (T and density columns, whitespace or comma separated)");
     std::ifstream f(in[1]);
     if (!f) throw std::invalid_argument("cannot open " + in[1]);
     std::vector<double> Tv, rho;
+    size_t lines = 0, skipped = 0, bad_density = 0;
     for (std::string line; std::getline(f, line);) {
-      if (line.empty() || line[0] == '#') continue;
+      // a .csv scan as well as LAMMPS's whitespace columns: commas, semicolons and tabs separate too
+      std::replace_if(line.begin(), line.end(), [](char c) { return c == ',' || c == ';' || c == '\t' || c == '\r'; }, ' ');
+      const auto first = line.find_first_not_of(' ');
+      if (first == std::string::npos || line[first] == '#') continue;
+      ++lines;
       std::istringstream ss(line);
       double x, y;
-      if (ss >> x >> y) Tv.push_back(x), rho.push_back(1.0 / y);   // specific volume
+      if (!(ss >> x >> y) || !std::isfinite(x) || !std::isfinite(y)) { ++skipped; continue; }   // a header line, or text
+      if (!(y > 0)) { ++bad_density; continue; }
+      Tv.push_back(x), rho.push_back(1.0 / y);   // specific volume
     }
-    if (Tv.size() < 5) throw std::invalid_argument("tg: at least five temperatures are needed");
+    if (bad_density > 0) t << "note: " << bad_density << " line(s) with a density that is not positive left out\n";
+    if (Tv.size() < 5)
+      throw std::invalid_argument("tg: " + std::to_string(Tv.size()) + " of " + std::to_string(lines) + " lines of " + in[1] +
+                                  " read as 'T density' (whitespace, comma or semicolon separated; " + std::to_string(skipped) +
+                                  " could not be read); at least five temperatures are needed");
     const BilinearFit fit = fit_bilinear(Tv, rho);
     if (!fit.ok) throw std::invalid_argument("tg: no kink in the specific volume (" + fit.note + ")");
     std::snprintf(b, sizeof b, "T_g = %.1f ± %.1f K (bilinear fit of the specific volume; α %.2e → %.2e /K below → above)\n", fit.tg, fit.tg_err, fit.alpha_low, fit.alpha_high);
@@ -789,6 +897,8 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
     const int dp = int(N(a, "dp", 10)), chains = int(N(a, "chains", 1));
     const std::string dir = S(a, "o", "single_chain");
     fs::create_directories(dir);
+    if (S(a, "preset").empty() && S(a, "rules").empty() && !a.has("cut"))
+      throw std::invalid_argument("sample-chain needs a mapping: --preset ID, --rules FILE, or --cut SMARTS with --names NAME=SMARTS");
     std::string label;
     const CgRules rules = rules_of(a, data_dir, &label);
     Json build = Json::object(), poly = Json::object(), ul = Json::array();
@@ -890,6 +1000,7 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
       CgPairFit f;
       f.key = e["key"].str(), f.form = fj["form"].str(), f.epsilon = e.num("epsilon", 0), f.sigma = e.num("sigma", 0), f.a = e.num("a", 0), f.n = e.num("n", 12), f.m = e.num("m", 6);
       f.rms = e["rms"].is_null() ? std::numeric_limits<double>::quiet_NaN() : e["rms"].number();
+      f.rejected = e.text("rejected");
       fits.push_back(f);
     }
     const std::string hist = S(a, "history", "calibration.json");
@@ -928,7 +1039,7 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
                   dir.c_str(), dir.c_str(), st.s_sigma, st.s_eps);
     t << b;
   } else {
-    throw std::invalid_argument("cgfit " + mode + ": bonded, refine, targets, ibi-start, ibi-step, ibi-run, fit, tg or calibrate");
+    throw std::invalid_argument("cgfit " + mode + ": bonded, refine, targets, ibi-start, ibi-step, ibi-run, fit, tg, calibrate or sample-chain");
   }
   t << r.text("command") << "\n";
   r["text"] = t.str();
@@ -1338,9 +1449,41 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
       masses[x.substr(0, e)] = std::stod(x.substr(e + 1));
     }
     const CgBuildResult res = build_cg_polymer(o, bonded, masses);
+    // the type numbers of STEM.cg.data must be bonded.in's (in.cg_equil includes ${BONDED}/bonded.in, numbered by the bonded
+    // folder's types.json): --types, else that list, else the melt's own kinds with a warning
+    std::vector<std::string> type_notes;
     CgTypes types;
-    if (!S(a, "types").empty()) types = cg_types_from_json(read_json_file(S(a, "types")));
-    else types = cg_types_of(res.topology);
+    std::string types_from;
+    const fs::path bonded_types = fs::path(S(a, "bonded")) / "types.json";
+    const bool have_bonded_types = fs::exists(bonded_types);
+    if (!S(a, "types").empty()) {
+      types = cg_types_from_json(read_json_file(S(a, "types")));
+      types_from = S(a, "types");
+      if (have_bonded_types) {
+        const CgTypes bt = cg_types_from_json(read_json_file(bonded_types.string()));
+        if (bt.beads != types.beads || bt.bonds != types.bonds || bt.angles != types.angles || bt.dihedrals != types.dihedrals)
+          type_notes.push_back("warning: --types " + S(a, "types") + " differs from " + bonded_types.string() +
+                               ", which numbers bonded.in: in.cg_equil may apply the wrong bonded tables");
+      }
+    } else if (have_bonded_types) {
+      types = cg_types_from_json(read_json_file(bonded_types.string()));
+      types_from = bonded_types.string();
+    } else {
+      types = cg_types_of(res.topology);
+      types_from = "the melt's own kinds";
+      type_notes.push_back("warning: no --types and no types.json in " + S(a, "bonded") +
+                           ": type numbers follow the melt and may not match bonded.in");
+    }
+    {
+      const CgTypes own = cg_types_of(res.topology);
+      std::string miss;
+      auto check = [&](const std::vector<std::string>& have, const std::vector<std::string>& list, const char* what) {
+        for (const auto& h : have)
+          if (std::find(list.begin(), list.end(), h) == list.end()) miss += (miss.empty() ? "" : ", ") + std::string(what) + " " + h;
+      };
+      check(own.beads, types.beads, "bead"), check(own.bonds, types.bonds, "bond"), check(own.angles, types.angles, "angle"), check(own.dihedrals, types.dihedrals, "dihedral");
+      if (!miss.empty()) throw std::invalid_argument("the type list (" + types_from + ") has no " + miss + " of the melt: give --types with a list that holds them");
+    }
     const std::string dir = S(a, "o", "melt");
     fs::create_directories(dir);
     const std::string stem = (fs::path(dir) / S(a, "stem", "melt")).string();
@@ -1353,6 +1496,7 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
     std::ostringstream t;
     char b[400];
     for (const auto& n : res.notes) t << n << "\n";
+    for (const auto& n : type_notes) t << n << "\n";
     for (const auto& [u, n] : res.units_drawn) { std::snprintf(b, sizeof b, "  %s %.1f %%", u.c_str(), 100.0 * n / std::max(1, [&] { int z = 0; for (const auto& kv : res.units_drawn) z += kv.second; return z; }())); t << b; }
     t << "\n";
     for (const auto& q : res.sequences) t << "  " << (q.size() > 90 ? q.substr(0, 90) + " …" : q) << "\n";
@@ -1409,6 +1553,8 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
     const std::string dir = S(a, "o", "ppa");
     fs::create_directories(dir);
     const std::string method = S(a, "method", "caps");
+    if (method != "caps" && method != "z1" && method != "both" && method != "lammps")
+      throw std::invalid_argument("--method must be caps, z1, both or lammps (got '" + method + "')");
     std::string z1 = S(a, "z1", std::getenv("CAPS_Z1") ? std::getenv("CAPS_Z1") : "");
     std::ostringstream t;
     char b[512];
@@ -1421,7 +1567,7 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
       // the frame: the last of the frames (or the one asked for); a PPA dump given after the frames is read back
       std::vector<std::string> frames = x.frames;
       std::string ppa_dump;
-      if (frames.size() >= 2 && method != "lammps") { ppa_dump = frames.back(); frames.pop_back(); }
+      if (frames.size() >= 2) { ppa_dump = frames.back(); frames.pop_back(); }
       CgSysIn y = x;
       y.frames = frames;
       std::vector<Vec3> pos;
@@ -1441,14 +1587,14 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
       mass_per_bead = ms / double(std::max<size_t>(1, x.t.beads()));
       CgChainPaths paths;
       std::string how;
-      if (method == "lammps") {
+      if (method == "lammps" && ppa_dump.empty()) {   // the deck; its dump, given after the frame, is read back below
         double sg = N(a, "sigma", 0);
         if (sg <= 0) sg = std::sqrt(l0sq) / 0.97;
         const std::string ends = (fs::path(dir) / (stem + ".ends.in")).string();
         write_text(ends, ppa_ends(x.t));
         write_text((fs::path(dir) / "in.cg_ppa").string(), ppa_deck(x.t, sg, fs::path(ends).filename().string()));
         files.push_back(ends), files.push_back((fs::path(dir) / "in.cg_ppa").string());
-        t << stem << ": LAMMPS PPA deck written (in.cg_ppa with " << fs::path(ends).filename().string() << "); run it on the frame, then: caps ppa " << x.map << " FRAME ppa.lammpstrj\n";
+        t << stem << ": LAMMPS PPA deck written (in.cg_ppa with " << fs::path(ends).filename().string() << "); run it on the frame, then: caps ppa " << x.map << " FRAME ppa.lammpstrj --method lammps\n";
         continue;
       }
       if (!ppa_dump.empty()) {
@@ -1483,7 +1629,7 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
           } else t << "  Z1+ did not finish (see " << (run / "z1.log").string() << ")\n";
         } else t << "  Z1+ not found (set CAPS_Z1 or --z1): config.Z1 written for it — " << cfg << "\n";
       }
-      if (paths.lpp.empty()) continue;
+      if (paths.lpp.empty()) { t << stem << ": no primitive paths, so no N_e for this system\n"; continue; }
       const CgEntanglement e = entanglement_of(paths);
       sets.push_back(e);
       // C(x) from the longest chains measured
@@ -1561,8 +1707,11 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
       if (in.size() < 2) throw std::invalid_argument("mech analyze: give the stress_strain.dat (and the map and dump for orientations)");
       const CgStressStrain cs = read_stress_strain(in[1]);
       const CgTensionAnalysis an = analyse_tension(cs, N(a, "fit_strain", 0.02), a.has("hardening_from") ? N(a, "hardening_from", -1) : -1);
-      std::snprintf(b, sizeof b, "modulus %.1f MPa (0–%.0f %%) · yield %.1f MPa at %.3f · softening %.1f MPa (minimum at %.3f) · G_R %.2f MPa (σ vs λ² − 1/λ from strain %.2f, rms %.2f MPa)\n",
-                    an.modulus, 100 * N(a, "fit_strain", 0.02), an.yield_stress, an.yield_strain, an.softening, an.min_strain, an.hardening_modulus, an.hardening_from, an.hardening_rms);
+      char mod[48];
+      if (std::isfinite(an.modulus)) std::snprintf(mod, sizeof mod, "%.1f MPa", an.modulus);
+      else std::snprintf(mod, sizeof mod, "n/a");
+      std::snprintf(b, sizeof b, "modulus %s (0–%g %%) · yield %.1f MPa at %.3f · softening %.1f MPa (minimum at %.3f) · G_R %.2f MPa (σ vs λ² − 1/λ from strain %.2f, rms %.2f MPa)\n",
+                    mod, 100 * N(a, "fit_strain", 0.02), an.yield_stress, an.yield_strain, an.softening, an.min_strain, an.hardening_modulus, an.hardening_from, an.hardening_rms);
       t << b;
       if (!an.note.empty()) t << "  note: " << an.note << "\n";
       const size_t e = cs.strain.size() - 1;
@@ -1571,7 +1720,8 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
                       cs.dihedral[e], cs.pair[e], cs.kinetic[e]);
         t << b;
       }
-      r["modulus"] = an.modulus, r["yield_stress"] = an.yield_stress, r["yield_strain"] = an.yield_strain, r["softening"] = an.softening, r["hardening_modulus"] = an.hardening_modulus;
+      r["modulus"] = std::isfinite(an.modulus) ? Json(an.modulus) : Json(), r["yield_stress"] = an.yield_stress, r["yield_strain"] = an.yield_strain, r["softening"] = an.softening, r["hardening_modulus"] = an.hardening_modulus;
+      if (!an.note.empty()) r["note"] = an.note;
       const auto sys = cg_systems(in, 2);
       if (!sys.empty()) {
         const auto& x = sys.front();

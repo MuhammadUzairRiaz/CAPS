@@ -29,7 +29,7 @@
 <div class="code" data-lang="synopsis"><pre><code>caps build   SMILES -o OUT.mol2|OUT.pdb|OUT.xyz|OUT.data [--conformers 1] [--seed 1] [--ff FF.json] [--all]
              a 3D molecule from SMILES; --ff cleans each conformer up with that force field (with typing rules)</code></pre></div></article>
 <article class="cmd" id="grow" data-name="grow"><h3><code>caps grow</code></h3>
-<div class="code" data-lang="synopsis"><pre><code>caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]
+<div class="code" data-lang="synopsis"><pre><code>caps grow    -o OUT.data|OUT.pdb|OUT.xyz|OUT.mol2|OUT.gro|OUT.cif [--chains 10] [--dp 8] [--density 0.5 | --box 33]
              copolymers: --sequence terminal|markov|penultimate --weights FEED [--r1 R --r2 R | --reactivity &#x27;r11,r12;r21,r22&#x27;
               | --transition &#x27;p11,p12;p21,p22&#x27; | --penultimate r1,r1p,r2,r2p] [--drift none|chains|along --conversion 0.8]
               [--sequence-report OUT.json]   composition, dyads, triads and run lengths, model against built
@@ -39,13 +39,16 @@
              [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]
              [--units &#x27;*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC&#x27; --sequence homopolymer|alternating|block|random|shuffled|gradient|pattern
               --weights 0.7,0.3 --blocks 20,20 --pattern AAB --ff FF.json --method trials|rosenbluth|rosenbluth_lj
-              --threads N --lookahead 1]   any repeat units (else polystyrene); the contact scale is automatic
+              --threads N --lookahead 1]   any repeat units (else polystyrene); several units and no --sequence:
+              alternating (random with --weights); gradient: A falls from the head to the tail, its share the first
+              weight, the other units in their weights&#x27; ratio; the contact scale is automatic
               (lowered only where a chain is stuck) unless --scale fixes it</code></pre></div></article>
 <article class="cmd" id="blend" data-name="blend"><h3><code>caps blend</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps blend   --components SMILES1,SMILES2 [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs | --droplet] -o OUT</code></pre></div></article>
 <article class="cmd" id="crystal" data-name="crystal"><h3><code>caps crystal</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps crystal --group &#x27;P 42/m n m&#x27; --cell a,b,c[,α,β,γ] --sites &#x27;Ti1 Ti 0 0 0; O1 O 0.3048 0.3048 0&#x27; -o OUT
-             (OUT.cif in P 1, OUT.vasp or POSCAR for VASP, .data, .pdb, .xyz …)
+             (OUT.cif keeps the space group and its asymmetric unit, P 1 once caps symmetry clears it;
+             OUT.vasp or POSCAR for VASP, .data, .pdb, .xyz … hold every atom)
              [--supercell 2,2,2] [--primitive] [--symmetrize] [--tolerance 0.01]   a crystal from a space group
 caps crystal CRYSTAL.cif --find-symmetry [--tolerance 0.1]   its space group and asymmetric unit
 caps crystal --groups [QUERY]    the 530 space-group settings (key, number, Hermann–Mauguin, Hall)</code></pre></div></article>
@@ -89,23 +92,25 @@ caps crystal --groups [QUERY]    the 530 space-group settings (key, number, Herm
 <div class="code" data-lang="synopsis"><pre><code>caps ff complete FILE --ff FF.json [--overlay OV.json] -o OVERLAY.json [--report R.json] [--model M.model] [--step 15]
              the bonded terms FF lacks for FILE, found and fitted with CAPS&#x27;s machine-learned potential
 caps ff import-lt FILE.lt -o FF.json          convert a moltemplate force field into the CAPS format
-caps ff info FF.json                           types, rules, styles, references
+caps ff info FF.json|NAME|uff                  types, rules, styles, references
 caps ff overlays [FF_ID]                       the library&#x27;s overlays (parameter refits) for --overlay
-caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules
+caps ff type FILE --ff FF.json|NAME|uff [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules (UFF: its own typer)
 caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --dt FS (default: the force field&#x27;s, Martini 20, else 0.5) --steps N] [--moltemplate SYSTEM.lt]]] [--gromacs STEM] [--dlpoly DIR] [--overlay USER.json[,MORE.json]] [--types TYPES.txt] [--charges auto|keep|types|gasteiger]
              [--complete ml [--model M.model]]   (terms the force field lacks fitted by CAPS ML, marked as such in every file)
              [--lammps-style native|exact] [--hybrid] [--kspace auto|pppm|ewald|dsf|cut] [--kspace-accuracy 1e-4] [--lammps-cutoff Å] [--units auto|real|metal]
+             [--supercell auto|NA,NB,NC]   copies of the cell first (a --types file names the cell&#x27;s atoms); a cell too small for its bonds is refused without them (ff type types it on its copies)
              [--list] [-o OUT.data]   parameters for a structure whose atoms carry type names (or TYPES.txt)</code></pre></div></article>
 <article class="cmd" id="field" data-name="field"><h3><code>caps field</code></h3>
 <p>the structure&#x27;s force field (below): types, terms, energy (and per-atom forces)</p>
-<div class="code" data-lang="synopsis"><pre><code>caps field   FILE [--topology DATA] [--forces OUT.txt]   the structure&#x27;s force field (below): types, terms, energy (and per-atom forces)</code></pre></div></article>
+<div class="code" data-lang="synopsis"><pre><code>caps field   FILE [--topology DATA] [--ff FF.json [--overlay OV.json] [--charges MODE]] [--cutoff Å] [--forces OUT.txt]   the structure&#x27;s force field (below): types, terms, energy (and per-atom forces)</code></pre></div></article>
 </section>
 <section class="group" id="relax-and-run"><h2>Relax and run</h2><p class="lede">Minimisation, molecular dynamics, equilibration protocols, regrowth, crosslinking and recipes.</p>
 <article class="cmd" id="relax" data-name="relax"><h3><code>caps relax</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps relax   FILE -o OUT.data|OUT.pdb|OUT.xyz [--method lbfgs|cg|sd|fire] [--ftol 0.5] [--iterations 5000]
              [--density 1.05] [--step 0.06] [--box-relax] [--pressure 1] [--no-pushoff] [--cutoff Å]
              [--no-coulomb] [--ff FF.json [--overlay OV.json[,MORE.json]] [--charges auto|types|gasteiger|keep|qeq|increments] [--complete ml]] [--quiet]
-             (.data output carries the force field for LAMMPS)
+             (.data output carries the force field for LAMMPS; --quiet hides only the live progress line)
+             exit 3: OUT was written but the last minimisation stopped on --iterations before --ftol (not converged)
              --restraints &#x27;distance 1 2 3.0 20; angle 1 2 3 109.5; torsion 1 2 3 4 60:90 50; position 1-40 5 axes z radius 0.5&#x27;
              or a file of them (relax, md, equilibrate; ff apply writes them into the LAMMPS and GROMACS files): ½ k Δ², flat between
              LO:HI, atoms from 1, k kcal/mol/Å² or /rad² (defaults 10 and 50), &#x27;ramp KEND&#x27; to change k over a run
@@ -119,12 +124,14 @@ caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-ru
              [--log thermo.csv] [--cutoff Å] [--skin 1.5] [--threads N] [--no-coulomb] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--quiet]
              [--checkpoint-every N [--checkpoint OUT.restart.data]]   the full state every N steps
              [--progress-file progress.jsonl]   one JSON line per thermo row (default in a SLURM job)
-             caps md OUT.restart.data --resume --steps TOTAL -o OUT   continues from a checkpoint</code></pre></div></article>
+             caps md OUT.restart.data --resume --steps TOTAL -o OUT   continues from a checkpoint with the first run&#x27;s settings
+             (kept beside it in OUT.restart.settings.json; --dt, --constraints and --hmr cannot change on a resume)</code></pre></div></article>
 <article class="cmd" id="equilibrate" data-name="equilibrate"><h3><code>caps equilibrate</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps equilibrate FILE -o OUT.data [--protocol larsen21|annealing|pushoff|PROTOCOL.txt] [--print-protocol]
              [--tfinal 300] [--tmax 600] [--pfinal 1] [--pmax 49346] [--scale 1] (atm, K; --scale shortens every stage)
              [--cycles 3] [--tlow 300] [--thigh 600] [--ramp 50] [--hold 50]   (annealing, ps)
              [--until-converged] [--block 20] [--max-blocks 20] [--dt 1] [--thermostat bussi|langevin|nose-hoover] [--tau-t 100]
+             (--until-converged exits 3 when --max-blocks run out before every check passes; OUT is still written)
              [--barostat crescale|berendsen|mtk] [--tau-p 1000] [--seed 1] [--dump TRAJ.lammpstrj --every-ps 10] [--log thermo.csv]
              [--precision mixed|double] [--constraints h-bonds] [--hmr 3.024] [--cutoff Å] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--quiet]
              (mixed: pair terms in single precision
@@ -141,13 +148,20 @@ caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-ru
 <article class="cmd" id="run" data-name="run"><h3><code>caps run</code></h3>
 <p>build → type → grow → relax → equilibrate →</p>
 <div class="code" data-lang="synopsis"><pre><code>caps run     RECIPE.yaml|json [--seed N] [--threads N] [--out DIR] [--json] [--log thermo.csv] [--dump traj.lammpstrj]   build → type → grow → relax → equilibrate →
-             md → analyze → export from one file (exit 0 ok · 2 input · 3 missing params · 4 failed run)
-caps run     PIPELINE.yaml|json [--input &#x27;runs/*/X.lammpstrj&#x27;] [--frame first|last] [--csv OUT] [--out DIR: the outputs: block] [--branch NAME]
-                                 a saved pipeline over many inputs: one row of attributes per input</code></pre></div></article>
+             md → analyze → export from one file (exit 0 ok · 2 input · 3 missing params · 4 failed run); an unknown
+             key in any stage is refused (exit 2); --dump: frames every frame_ps (or frame_every steps) of an md or
+             equilibrate stage, about 100 per stage that sets neither
+caps run     PIPELINE.yaml|json [--input &#x27;runs/*/X.lammpstrj&#x27;] [--topology DATA] [--frame first|last] [--csv OUT] [--out DIR: the outputs: block] [--branch NAME]
+                                 a saved pipeline over many inputs: one row of attributes per input; the topology is
+                                 --topology, else the pipeline&#x27;s source: topology:, else STEM.data next to each dump</code></pre></div></article>
 </section>
 <section class="group" id="properties"><h2>Properties</h2><p class="lede">Mechanics, glass transition, elastic constants and interfaces.</p>
 <article class="cmd" id="tensile" data-name="tensile"><h3><code>caps tensile</code></h3>
-<div class="code" data-lang="synopsis"><pre><code>caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]</code></pre></div></article>
+<div class="code" data-lang="synopsis"><pre><code>caps tensile DATA -o OUT.data [--axis x|y|z|xyz] [--rate 1e-3] [--strain 0.2] [--temp 300] [--dt 1] [--equilibrate 20] [--pressure 1] [--tau-p 1000] [--fixed-lateral]
+             [--fit 0.02] [--seed 1] [--new-velocities] [--dump T.lammpstrj [--every 1000]] [--checkpoint-every N] [--resume-curve OUT.tensile-curve.json]
+             [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]
+             runs --equilibrate ps of NPT (each axis at --pressure atm; 20 ps is 20000 steps at 1 fs) before the pull, so the box starts
+             stress-free; --equilibrate 0 skips it for a cell already equilibrated (--eq-ps is the same option)</code></pre></div></article>
 <article class="cmd" id="tg" data-name="tg"><h3><code>caps tg</code></h3>
 <p>caps tg --fit RUN [RUN ...] [--volume]</p>
 <div class="code" data-lang="synopsis"><pre><code>caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]   |   caps tg --fit RUN [RUN ...] [--volume]</code></pre></div></article>
@@ -173,7 +187,9 @@ caps run     PIPELINE.yaml|json [--input &#x27;runs/*/X.lammpstrj&#x27;] [--fram
 <p>per-molecule Rg and shape</p>
 <div class="code" data-lang="synopsis"><pre><code>caps shape   FILE [--topology DATA]          per-molecule Rg and shape</code></pre></div></article>
 <article class="cmd" id="rdf" data-name="rdf"><h3><code>caps rdf</code></h3>
-<div class="code" data-lang="synopsis"><pre><code>caps rdf     FILE [--topology DATA] [--rmax 12] [--dr 0.2] [--pair C-C] [--inter]</code></pre></div></article>
+<p>g(r) of a periodic cell (all images within</p>
+<div class="code" data-lang="synopsis"><pre><code>caps rdf     FILE [--topology DATA] [--rmax 12] [--dr 0.2] [--pair C-C] [--inter]   g(r) of a periodic cell (all images within
+             --rmax count, so it may pass half the cell); --pair takes element symbols or all</code></pre></div></article>
 <article class="cmd" id="analyze" data-name="analyze"><h3><code>caps analyze</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps analyze FILE [--topology DATA] [--props density,rdf,sq,xray,neutron,rg,ree,cn,persistence,msd,diffusion,
              relaxation,ced,delta,ffv,psd,crosslinks,entanglements] [--first N --last N --stride N] [--frame-ps X | --timestep-fs 1]
@@ -188,7 +204,8 @@ caps run     PIPELINE.yaml|json [--input &#x27;runs/*/X.lammpstrj&#x27;] [--fram
 <article class="cmd" id="frames" data-name="frames"><h3><code>caps frames</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps frames  FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N]   (read thinned)</code></pre></div></article>
 <article class="cmd" id="convert" data-name="convert"><h3><code>caps convert</code></h3>
-<div class="code" data-lang="synopsis"><pre><code>caps convert FILE OUT.data|xyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA]   (.car: with its .mdf)</code></pre></div></article>
+<div class="code" data-lang="synopsis"><pre><code>caps convert FILE OUT.data|lmp|xyz|extxyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA] [--supercell auto|na,nb,nc]   (.car: with its .mdf)
+             a crystal cell too small for its bonds is refused for a format with bonds: --supercell auto writes the copies that hold them</code></pre></div></article>
 <article class="cmd" id="render" data-name="render"><h3><code>caps render</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps render  FILE -o OUT.png|OUT.svg [--topology DATA] [--frame N] [--size WxH]
              [--bg dark|white|transparent] [--colour molecule|element|type|distance]
@@ -205,11 +222,12 @@ caps run     PIPELINE.yaml|json [--input &#x27;runs/*/X.lammpstrj&#x27;] [--fram
 <div class="code" data-lang="synopsis"><pre><code>caps bundle  FILE [--topology DATA] --steps S.json [-o OUT.caps-bundle.zip] [--include-input] [--frame N]
                                  a figure with its data, pipeline, provenance and hashes (and the input)</code></pre></div></article>
 <article class="cmd" id="reproduce" data-name="reproduce"><h3><code>caps reproduce</code></h3>
-<p>rebuild a bundle&#x27;s data from its input and pipeline, compare sha256</p>
-<div class="code" data-lang="synopsis"><pre><code>caps reproduce BUNDLE.caps-bundle.zip   rebuild a bundle&#x27;s data from its input and pipeline, compare sha256</code></pre></div></article>
+<p>check every shipped file&#x27;s sha256, rebuild the data from its input and pipeline, compare</p>
+<div class="code" data-lang="synopsis"><pre><code>caps reproduce BUNDLE.caps-bundle.zip   check every shipped file&#x27;s sha256, rebuild the data from its input and pipeline, compare</code></pre></div></article>
 <article class="cmd" id="bench" data-name="bench"><h3><code>caps bench</code></h3>
-<p>the built-in validation suite</p>
-<div class="code" data-lang="synopsis"><pre><code>caps bench   [T1 T2 … | --all] [--repeats 3] [--quick] [--out DIR] [--samples DIR]   the built-in validation suite</code></pre></div></article>
+<div class="code" data-lang="synopsis"><pre><code>caps bench   [T1 T2 … | --all] [--repeats 3] [--quick] [--out DIR] [--samples DIR] [--cells DIR] [--reference polymers.json]
+             the built-in validation suite; T6/T7 measure the equilibrated cells in --cells (else CAPS_BENCH_CELLS,
+             else ~/.caps/bench/cells), one per material named by its reference id, against data/reference/polymers.json</code></pre></div></article>
 </section>
 <section class="group" id="cluster-jobs"><h2>Cluster jobs</h2><p class="lede">CAPS&#x27;s own runs as batch jobs on a SLURM or PBS cluster, or a workstation over ssh.</p>
 <article class="cmd" id="job" data-name="job"><h3><code>caps job</code></h3>
@@ -260,10 +278,10 @@ examples:
   caps cgmap PBS/system.data PBSA/system.data PBAT/system.data --preset ester-cut -o cg
   caps cgmap system.data --map cg/system.map.json --types cg/types.json --dump hold.lammpstrj --stride 5 -o cg</code></pre></div></article>
 <article class="cmd" id="cgfit" data-name="cgfit"><h3><code>caps cgfit</code><span class="pill">--help</span></h3>
-<div class="code" data-lang="caps cgfit --help"><pre><code>usage: caps cgfit bonded|refine|targets|ibi-start|ibi-step|ibi-run|fit|tg|calibrate …  (see below)
+<div class="code" data-lang="caps cgfit --help"><pre><code>usage: caps cgfit bonded|refine|targets|ibi-start|ibi-step|ibi-run|fit|tg|calibrate|sample-chain …  (see below)
 
 Bonded coarse-grained potentials by tabulated Boltzmann inversion over many frames of many systems mapped alike: each MAP (STEM.map.json from cgmap) followed by its frames (CG dumps STEM.cg.lammpstrj or the single frame STEM.cg.data); each system&#x27;s histograms normalised, then weighted. U(r) = −kT ln[P/r²], U(θ) = −kT ln[P/sin θ], U(φ) = −kT ln P, inverted only where P exceeds a share of its maximum, with slope-continuous walls outside. refine: one bonded IBI step from a CG run with the tables (U ← U + α kT ln(P_CG/P_target)), for the shift the non-bonded 1–3 and 1–4 terms cause.
-Non-bonded: targets (per-pair g(r) per system from MAP FRAMES …); ibi-start (−kT ln g tables, LAMMPS decks and run_ibi.sh, the loop for a cluster); ibi-step (one joint update from each system&#x27;s CG dump and log: MAP DUMP [LOG] …); ibi-run (the loop with CAPS&#x27;s engine, small systems: MAP DATA …); fit (LJ 12-6, LJ 9-6, Morse or Mie fitted to the tables); tg (T_g from a cooling scan&#x27;s T and density columns); calibrate (the next σ and ε scale factors from the runs so far, with decks for them); sample-chain (isolated all-atom chains grown, typed and run by Langevin dynamics with no neighbours, each frame mapped — bonded distributions without an equilibrated melt, Fritz et al. 2009).
+Non-bonded: targets (per-pair g(r) per system from MAP FRAMES …); ibi-start (−kT ln g tables, LAMMPS decks and run_ibi.sh, the loop for a cluster); ibi-step (one joint update from each system&#x27;s CG dump and log: MAP DUMP [LOG] …); ibi-run (the loop with CAPS&#x27;s engine, small systems: MAP DATA …); fit (LJ 12-6, LJ 9-6, Morse or Mie fitted to the tables); tg (T_g from a cooling scan&#x27;s T and density columns, whitespace or comma separated, a header line skipped); calibrate (the next σ and ε scale factors from the runs so far, with decks for them); sample-chain (isolated all-atom chains grown, typed and run by Langevin dynamics with no neighbours, each frame mapped — bonded distributions without an equilibrated melt, Fritz et al. 2009).
 
 options (default · why):
   --types
@@ -295,11 +313,11 @@ options (default · why):
   --alpha  [0.5]
       refine: damping of the update
   --rmax  [15]
-      targets: g(r) range (Å; at most half the box)
+      targets: g(r) range (Å; cut to half the narrowest box width, with a note)
   --dr  [0.05]
       targets: g(r) bin (Å)
   --exclude  [3]
-      targets: bead pairs fewer than this many bonds apart left out (3: 1-2 and 1-3, special_bonds lj 0 0 1)
+      targets: bead pairs fewer than this many bonds apart left out (3: 1-2 and 1-3, special_bonds lj 0 0 1); stored in targets.json and used by ibi-*
   --pressure  [1]
       targets: each system&#x27;s AA pressure (atm, comma-separated): the IBI pressure target
   --targets
@@ -319,9 +337,9 @@ options (default · why):
   --iterations  [3]
       ibi-run: iterations with CAPS&#x27;s engine
   --steps  [2000]
-      ibi-run: steps per iteration (CAPS&#x27;s engine; keep runs short on a laptop) / the decks&#x27; production steps
+      ibi-run: steps per iteration (CAPS&#x27;s engine; keep runs short on a laptop) / the decks&#x27; production steps (ibi-start, calibrate: 500000) / sample-chain: steps per chain (20000)
   --dt  [10]
-      time step of the runs (fs)
+      time step of the runs (fs; sample-chain: 1, an all-atom run)
   --form  [lj126]
       fit: lj126, lj96, morse or mie
   --repulsion  [4]
@@ -368,6 +386,24 @@ options (default · why):
       sample-chain: the Langevin damping time (fs)
   --cutoff  [15]
       sample-chain: the interaction cut-off (Å)
+  --dp  [10]
+      sample-chain: repeat units per chain
+  --seed  [1]
+      sample-chain: random seed (growth and Langevin; chain k uses seed + k)
+  --sequence  [alternating]
+      sample-chain: the sequence of several --units
+  --preset
+      sample-chain: the mapping, a rule set from data/cg/mapping_rules.json (ester-cut: polyesters, B S A T beads)
+  --rules
+      sample-chain: the mapping as a rule file (as caps cgmap --rules)
+  --cut
+      sample-chain: bond SMARTS, comma-separated: the bond between each pattern&#x27;s first and last atoms is cut
+  --names
+      sample-chain: naming rules NAME=SMARTS, comma-separated, first match wins
+  --position  [com]
+      sample-chain: com (centre of mass), cog (centre of geometry) or atom:SMARTS
+  --no-strict  [false]
+      sample-chain: name fragments no rule matches by their class (F1, F2 …) instead of stopping
   --table-dr  [0.05]
       ibi-*: the pair tables&#x27; spacing (Å)
   -o  [bonded]
@@ -418,7 +454,7 @@ options (default · why):
   --masses
       or the masses directly: B=88.1,S=84.07 (g/mol)
   --types
-      the shared type list (types.json); default: the kinds and terms of the melt
+      the shared type list (types.json); default: the bonded folder&#x27;s types.json, which numbers bonded.in (else the melt&#x27;s kinds and terms)
   --seed  [1]
       random seed (sequences, lengths, walks)
   --stem  [melt]
@@ -438,7 +474,7 @@ examples:
   caps cgbuild --units BS=B+S,BA=B+A --composition BS:0.8,BA:0.2 --dp 400 --chains 200 --density 1.25 --bonded bonded --maps cg/PBSA.map.json --types cg/types.json -o melt_PBSA_400
   caps cgbuild --units BA=B+A,BT=B+T --composition BA:0.56,BT:0.44 --lengths schulz-zimm --pdi 2 --dp 200 --chains 300 --density 1.26 --bonded bonded --maps cg/PBAT.map.json -o melt cg/PBAT.map.json cg/PBAT.cg.lammpstrj</code></pre></div></article>
 <article class="cmd" id="ppa" data-name="ppa"><h3><code>caps ppa</code><span class="pill">--help</span></h3>
-<div class="code" data-lang="caps ppa --help"><pre><code>usage: caps ppa MAP FRAMES [PPA_DUMP] [MAP FRAMES … for more chain lengths] [--method caps|z1|lammps] -o DIR
+<div class="code" data-lang="caps ppa --help"><pre><code>usage: caps ppa MAP FRAMES [PPA_DUMP] [MAP FRAMES … for more chain lengths] [--method caps|z1|both|lammps] -o DIR
 
 Entanglements of coarse-grained melts: primitive paths by CAPS&#x27;s own PPA (ends held, intra-chain pairs off), by a LAMMPS PPA (--method lammps writes in.cg_ppa; give its dump after the frames to read it back) or by Z1+ (config.Z1 written, Z1+ run when found — $CAPS_Z1 or --z1 — and its shortest paths read); N_e by the classical and modified S-coil and S-kink estimators (Hoy, Foteinopoulou &amp; Kröger 2009, Eqs. 4–7) per system, and by M-kink (13) and M-coil (15) over several chain lengths; M_e = N_e × the mean bead mass, Z = N / N_e, the tube step a_pp.
 
@@ -481,7 +517,7 @@ options (default · why):
   --frames  [60]
       decks: dumps at even strain steps
   --fit-strain  [0.02]
-      analyze: modulus fit range
+      analyze: modulus fit range; needs 2 or more stress lines in it
   --hardening-from
       analyze: strain where the G_R fit starts (default: the softening minimum)
   --probe  [0]
@@ -587,7 +623,7 @@ options (default · why):
   --janus  [false]
       different faces (a net dipole: the dipole correction is switched on)
   --site  [fcc]
-      fcc (above the third layer), hcp (above the second), top or bridge
+      fcc (above the third layer), hcp (above the second), top or bridge; one termination per surface atom on each (bridge: the bonds along a)
   --site-bottom
       the bottom face&#x27;s site with --janus
   --supercell  [1x1]
@@ -678,7 +714,7 @@ examples:
 <article class="cmd" id="vasp-set" data-name="vasp-set"><h3><code>caps vasp-set</code><span class="pill">--help</span></h3>
 <div class="code" data-lang="caps vasp-set --help"><pre><code>usage: caps vasp-set STRUCTURE --out DIR
 
-One VASP case folder: POSCAR (species grouped), INCAR.cell / .relax / .static with a reason per tag, KPOINTS, job.slurm (stages, resume, backup, watchdog, storage), make_potcar.sh, POTCAR from your PAW directory, the validation report.
+One VASP case folder for a 2D slab (k 1 along c, c fixed in the cell stages) or, with --gamma, a molecule in a box: POSCAR (species grouped), INCAR.cell / .relax / .static with a reason per tag, KPOINTS, job.slurm (stages, resume, backup, watchdog, storage), make_potcar.sh, POTCAR from your PAW directory, the validation report (the 2D slab check; with --gamma the molecule-in-a-box check: close contacts, fragments, distance to the periodic images). A structure without a vacuum gap along c (a bulk crystal) is refused: use caps vasp-relax. Exit code 1 when the validation fails (the set is still written).
 
 options (default · why):
   --out
@@ -686,11 +722,11 @@ options (default · why):
   --label
       SYSTEM and the job name (default: the folder name)
   --stages  [slab]
-      slab (01_cell 02_cell2 03_relax 04_static), fixed (03_relax 04_static) or a list
+      slab (01_cell 02_cell2 03_relax 04_static), fixed (03_relax 04_static) or a comma list of those names in that order
   --static-out  [pot]
       04_static outputs: none (energy + DOS), pot (+ LOCPOT), all (+ CHGCAR, AECCAR)
   --encut
-      eV (default 1.3 × the largest ENMAX of the POTCARs; 520 without them)
+      eV (default 1.3 × the largest ENMAX of the POTCARs, else of data/dft/enmax.json; 520 when an element is in neither)
   --kdens  [45]
       Å
   --ivdw  [12]
@@ -698,9 +734,11 @@ options (default · why):
   --ispin  [1]
       non-magnetic
   --dipole  [auto]
-      auto (when the faces differ), on, off — energy-only, no LDIPOL
+      auto (when the faces differ), on, off (energy only, no LDIPOL)
   --gamma  [false]
-      Γ only (a molecule in a box)
+      Γ only (a molecule in a box): checked as a molecule, not as a slab
+  --force  [false]
+      accept a set whose validation fails (exit code 0)
   --pp-dir
       your licensed PAW directory
   --profile  [slurm-workspace]
@@ -856,7 +894,7 @@ examples:
              [--conversion 0.9 [--points 21]] [--csv OUT.csv] [--json OUT]   copolymer model: composition, dyads, triads, runs, drift</code></pre></div></article>
 <article class="cmd" id="data" data-name="data"><h3><code>caps data</code></h3>
 <p>a measured curve (columns, .xrdml, GSAS, .uxd, Rigaku, JCAMP-DX) or a .cube grid</p>
-<div class="code" data-lang="synopsis"><pre><code>caps data FILE [-o OUT.csv|.cube|.vtk|.npy] [--json OUT]   a measured curve (columns, .xrdml, GSAS, .uxd, Rigaku, JCAMP-DX) or a .cube grid</code></pre></div></article>
+<div class="code" data-lang="synopsis"><pre><code>caps data FILE [-o OUT.csv|.npy (a curve) | OUT.cube|.vtk|.npy (a .cube grid)] [--json OUT]   a measured curve (columns, .xrdml, GSAS, .uxd, Rigaku, JCAMP-DX) or a .cube grid</code></pre></div></article>
 <article class="cmd" id="dendrimer" data-name="dendrimer"><h3><code>caps dendrimer</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps dendrimer -o OUT [--preset pamam|ppi|bismpa --generation G] [--core SMILES] [--unit SMILES] [--end SMILES]
              [--focal SMILES] [--shells 2] [--growth perfect|sma|flory --units 30 --seed 1] [--no-relax]
@@ -870,8 +908,10 @@ examples:
             domains of a group&#x27;s density field: volumes, radii, ellipsoid axes, percolation, spacing; slices on any plane</code></pre></div></article>
 <article class="cmd" id="dpd" data-name="dpd"><h3><code>caps dpd</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps dpd --molecules &#x27;AAAABBBB:300@shell:in; C:9000&#x27; [--regions &#x27;core droplet r=3 prio=2; shell shell r=5 in=3 prio=1&#x27;] [--box 16]
-         [--chi AB=25] [--density 3] [--steps 2000] [--equilibration 500] [--every 50] [--seed 1] [--spec SPEC.json] [-o OUT.xyz] [--json OUT]
-         dissipative particle dynamics; regions (droplet, rod, slab, shell, tube; c=fx,fy,fz r= in= t= axis= prio=) compose the start</code></pre></div></article>
+         [--chi AB=25] [--density 3] [--steps 20000] [--equilibration STEPS/4] [--every STEPS/40] [--seed 1] [--spec SPEC.json] [-o OUT.xyz] [--json OUT]
+         dissipative particle dynamics; a sequence is bead letters A-Z with optional counts (A4B4 = AAAABBBB), branches in parentheses;
+         regions (droplet, rod, slab, shell, tube; c=fx,fy,fz r= in= t= axis= prio=) compose the start;
+         frames write bead types as elements A=C, B=O, C=N, D=S, others P (select them with &#x27;element O&#x27; in domains, analyze)</code></pre></div></article>
 <article class="cmd" id="enumerate" data-name="enumerate"><h3><code>caps enumerate</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps enumerate CRYSTAL --from Cu --to Au [--count 1] [--supercell 2,2,2] [--max-configurations 200000] [--write DIR]
             the symmetry-distinct occupations of a sublattice by COUNT substituents, with orbit sizes</code></pre></div></article>
@@ -882,7 +922,7 @@ examples:
              | caps exchange heal HEALED INTACT [--modulus-strain 0.03] [--at-strain E] [--up-to E]   [--json OUT] [--csv DIR]   (bond exchange and healing)
              | caps exchange list   |   caps exchange show CHEMISTRY   (exchange chemistries and their barriers, data/exchange)
              | caps exchange run DATA -o OUT [--chemistry ID] --kind swap|shift|bind [--sites SEL] [--partners SEL] [--labels chain|ends] [--capture 1.3]
-               [--barrier E] [--binding E] [--valence N[,M]] [--relax 1000 [--relax-depth 3]] [--every 10] [--attempts 1] [--steps 10000] [--temp 300] [--dt 1] [--kg [--k-theta K] | --ff FF.json]
+               [--barrier E] [--binding E] [--valence N[,M]] [--relax 1000 [--relax-depth 3]] [--every 10] [--attempts 1] [--steps 10000] [--temp 300] [--dt FS (default: the force field&#x27;s own step, 0.49 with --kg; else 1)] [--kg [--k-theta K] | --ff FF.json]
              | caps exchange bond-react DATA -o STEM --chemistry ID [--temp 300] [--t-ref T] [--steps N] [--ff FF.json]   (LAMMPS fix bond/react)
              | caps exchange bond-swap DATA -o STEM [--sites SEL] [--stickers | --both-ends] [--every 50] [--fraction 0.5] [--cutoff 1.3] [--seed 1] [--steps N] [--k-theta K]
              | caps exchange cut|gap|crack|fragment DATA -o OUT [--axis z] [--plane 0.5] [--gap A] [--radius A [--centre x,y,z]] [--axes xyz]   (healing-test starts)
@@ -890,7 +930,7 @@ examples:
              | caps exchange heal-run DATA --ps PS [--start START] [--axis z] [--plane 0.5] [--chunks 10] [--npt]
                (with the moves and field options of run, or --no-exchange; [-o OUT] [--json OUT] [--csv DIR])</code></pre></div></article>
 <article class="cmd" id="fields" data-name="fields"><h3><code>caps fields</code></h3>
-<div class="code" data-lang="synopsis"><pre><code>caps fields --molecules &#x27;A8B8:1; A8:0.5&#x27; [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]
+<div class="code" data-lang="synopsis"><pre><code>caps fields --molecules &#x27;A8B8:1; A8:0.5&#x27; [--chi AB=0.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]
              [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)</code></pre></div></article>
 <article class="cmd" id="fit" data-name="fit"><h3><code>caps fit</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps fit SPEC.json [--ff FF.json] [--relaxed | --conventional] [--iterations 50] [--out FITTED.json] [--json REPORT.json]
@@ -903,14 +943,16 @@ examples:
            [--shape-obj SHAPE.obj] [--json OUT]   crystal habit: BFDH faces, attachment and surface energies, Wulff shapes, a particle in that shape</code></pre></div></article>
 <article class="cmd" id="index" data-name="index"><h3><code>caps index</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps index DATA.xy [--wavelength 1.54056] [--tolerance 0.03] [--systems cubic,tetragonal,hexagonal,orthorhombic,monoclinic] [--max-length 20]
-           [--lines 20] [--unindexed 0] [--json OUT]   cells that index the pattern&#x27;s lines (successive dichotomy), by M20</code></pre></div></article>
+           [--lines 20] [--unindexed 0] [--max-boxes 20000000] [--json OUT]   cells that index the pattern&#x27;s lines (successive
+           dichotomy), by M20; a cell that indexes every line with M20 100 or more ends the search of lower symmetries</code></pre></div></article>
 <article class="cmd" id="ml" data-name="ml"><h3><code>caps ml</code></h3>
 <p>energy (eV) and forces (eV/A) of a molecule from CAPS&#x27;s</p>
 <div class="code" data-lang="synopsis"><pre><code>caps ml eval FILE [--model M.model] [--json OUT.json]   energy (eV) and forces (eV/A) of a molecule from CAPS&#x27;s
              machine-learned potential (data/ml/caps-mace-v1.model; a build with -DCAPS_WITH_TORCH=ON)
 caps ml relax JOBS.json -o OUT.json [--model M.model]   constrained relaxations (bonds / angles / dihedrals held)</code></pre></div></article>
 <article class="cmd" id="path" data-name="path"><h3><code>caps path</code></h3>
-<div class="code" data-lang="synopsis"><pre><code>caps path A B -o PATH.xyz [--no-match] [--method idpp|lst|linear] [--images 7] [--neb [--ff FF.json] [--relax-ends] [--spring 5] [--fmax 0.05] [--no-climb] [--steps 2000]]
+<div class="code" data-lang="synopsis"><pre><code>caps path A B -o PATH.xyz [--no-match] [--method idpp|lst|linear] [--images 7] [--neb [--ff FF.json [--overlay OV.json] [--charges auto|types|gasteiger|keep|qeq|increments]]
+         [--cutoff 10] [--no-coulomb] [--relax-ends] [--spring 5] [--fmax 0.05] [--no-climb] [--steps 2000]]
          atoms of B matched to A, the images between them, and the climbing-image NEB barrier with the force field</code></pre></div></article>
 <article class="cmd" id="phono3py" data-name="phono3py"><h3><code>caps phono3py</code><span class="pill">--help</span></h3>
 <div class="code" data-lang="caps phono3py --help"><pre><code>usage: caps phono3py setup|estimate CRYSTAL --out DIR | check DIR | analyze DIR
@@ -980,11 +1022,13 @@ examples:
   caps phono3py analyze PE_kappa/full</code></pre></div></article>
 <article class="cmd" id="phonons" data-name="phonons"><h3><code>caps phonons</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps phonons CRYSTAL [--ff FF.json] [--cutoff Å] [--supercell n1,n2,n3] [--mesh m1,m2,m3] [--path &#x27;G 0 0 0; X 0.5 0 0; …&#x27;] [--displacement 0.01]
-             [--sigma 5 (cm⁻¹)] [--temps 100,300] [--csv STEM] [--json OUT]   force-field phonons: dispersion, DOS, harmonic thermodynamics, sound speeds</code></pre></div></article>
+             [--sigma 5 (cm⁻¹)] [--temps 100,300] [--csv STEM] [--json OUT]   force-field phonons: dispersion, DOS, harmonic thermodynamics, sound speeds
+             (CRYSTAL for phonons, qha and dielectric: a file, or a library crystal by id or file name: silicon, pe-orthorhombic.cif)</code></pre></div></article>
 <article class="cmd" id="planes" data-name="planes"><h3><code>caps planes</code></h3>
 <p>lattice planes (hkl) of the cell: d-spacing,</p>
-<div class="code" data-lang="synopsis"><pre><code>caps planes  FILE --hkl h,k,l [--shift 0.5] [--max N] [--json OUT]   lattice planes (hkl) of the cell: d-spacing,
-             normal, each plane cut to the cell, and the view angles that look down the normal</code></pre></div></article>
+<div class="code" data-lang="synopsis"><pre><code>caps planes  FILE --hkl h,k,l [--shift 0] [--max N] [--json OUT]   lattice planes (hkl) of the cell: d-spacing,
+             normal, each plane cut to the cell, and the view angles that look down the normal
+             (--shift in units of d, 0 through the origin; planes on the cell&#x27;s faces are not listed)</code></pre></div></article>
 <article class="cmd" id="pointgroup" data-name="pointgroup"><h3><code>caps pointgroup</code></h3>
 <p>the molecule&#x27;s point group and symmetry elements;</p>
 <div class="code" data-lang="synopsis"><pre><code>caps pointgroup FILE [--tolerance 0.1] [--symmetrize -o OUT]   the molecule&#x27;s point group and symmetry elements;
@@ -998,12 +1042,17 @@ examples:
              [--preferred h,k,l --march r] [--zero °] [--monochromator 2θ°] [--polarised] [--first N --last N --stride N] [--peaks 20] [--csv OUT] [--json OUT]
              the powder pattern of the cell (its reciprocal lattice, frames averaged): reflections with hkl, d, 2θ, multiplicity, |F|, I</code></pre></div></article>
 <article class="cmd" id="qeq" data-name="qeq"><h3><code>caps qeq</code></h3>
-<div class="code" data-lang="synopsis"><pre><code>caps qeq FILE [--kernel ohno|slater|point] [--ewald [--accuracy 1e-7]] [--lambda 0.4913] [--hydrogen] [--bounds &#x27;O:-1.2:0,Si:0:2.4&#x27;]
-         [--cutoff 10] [--total 0] [--chg OUT.chg] [-o OUT.data|mol2|car|pdb]   charge equilibration (Slater shielding, Ewald for periodic cells)</code></pre></div></article>
+<div class="code" data-lang="synopsis"><pre><code>caps qeq FILE [--kernel ohno|slater|point] [--ewald|--no-ewald] [--accuracy 1e-7] [--lambda 0.4913] [--hydrogen] [--bounds &#x27;O:-1.2:0,Si:0:2.4&#x27;]
+         [--cutoff 10] [--total 0] [--chg OUT.chg] [-o OUT.data|mol2|car]   charge equilibration (Slater shielding; Ewald by default for cells
+         periodic along a, b and c unless the cell is too large for it to be quick; --ewald always, --no-ewald never:
+         the tapered kernel summed over the images within the cut-off); charges that did not converge exit 1 and are not
+         written unless [--allow-unconverged]</code></pre></div></article>
 <article class="cmd" id="qha" data-name="qha"><h3><code>caps qha</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps qha     CRYSTAL [--mode volume|axes] [--lock c] [--range 0.02] [--points 7] [--temps 0,100,200,298.15,400] [--pressure 0]
              [--no-relax-cell] [--ff FF.json] [--cutoff 10] [--supercell n,n,n] [--mesh m,m,m] [--csv OUT]
-             quasi-harmonic free energy: phonons at strained cells, the cell, α, B_T, C_v, C_p and S at each temperature</code></pre></div></article>
+             quasi-harmonic free energy: phonons at strained cells, the cell, α, B_T, C_v, C_p and S at each temperature
+             (--points: cells on the volume grid, at least 4, volume mode only; the axes mode uses a fixed grid of the
+             centre, 4 cells per free axis, 4 per pair of free axes and, with a, b and c all free, 4 along the diagonal: 29)</code></pre></div></article>
 <article class="cmd" id="qspr" data-name="qspr"><h3><code>caps qspr</code></h3>
 <p>molecular descriptors (graph, shape, charged surface areas)</p>
 <div class="code" data-lang="synopsis"><pre><code>caps qspr descriptors [FILE ...] [--smiles &#x27;CCO;CC(C)O&#x27;] [--csv OUT]   molecular descriptors (graph, shape, charged surface areas)
@@ -1015,19 +1064,23 @@ caps qspr lda TABLE.csv --class COL [--x …]   Fisher&#x27;s discriminant analy
 <div class="code" data-lang="synopsis"><pre><code>caps refine DATA.xy CRYSTAL [CRYSTAL …] [--pawley] [--anode Cu | --wavelength Å] [--neutron] [--background 6] [--two-theta 10,90]
             [--refine U,W,Y,zero] [--b-iso] [--preferred h,k,l] [--iterations 50] [--csv OUT] [--json OUT]   Rietveld or Pawley fit of a measured pattern</code></pre></div></article>
 <article class="cmd" id="report" data-name="report"><h3><code>caps report</code></h3>
-<p>a problem report for support@caps-studio.org (version, system, the last failed command)</p>
-<div class="code" data-lang="synopsis"><pre><code>caps report  [--email]                a problem report for support@caps-studio.org (version, system, the last failed command)</code></pre></div></article>
+<p>a problem report for support@caps-studio.org (version, system, the last failed command;</p>
+<div class="code" data-lang="synopsis"><pre><code>caps report  [--email]                a problem report for support@caps-studio.org (version, system, the last failed command;
+                                      a wrong argument is not kept)</code></pre></div></article>
 <article class="cmd" id="semicrystalline" data-name="semicrystalline"><h3><code>caps semicrystalline</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps semicrystalline -o OUT.data [--polymer pe|pvdf-beta|ipp-alpha|nylon6-alpha|pet|...|CELL.cif | --polymer list]
              [--repeats 4,6] [--crystal 7.6 (nm) | --crystal-cells 30] [--amorphous 7.6 (nm)] [--loops 0.35 --bridges 0.1 --tails 0.55]
-             [--reentry adjacent|random] [--density 0.852] [--seed 1] [--ff auto|oplsaa2024|pcff|compass|oplsua2024] [--no-relax]
+             [--reentry adjacent|random] [--density 0.852] [--seed 1] [--ff auto|oplsaa2024|pcff|compass|oplsua2024]
+             [--no-relax: skip the CAPS relax, tens of minutes on one thread for a library cell of ~14,000 atoms]
              [--report R.json] [--lammps-input IN.lmp] [--gromacs STEM]   a lamellar stack of any library crystal: stems, loops,
              bridges and tails grown from the crystal&#x27;s repeat unit (groups crystal, amorphous); defaults and force field per polymer
 caps semicrystalline FILE --analyse [--report R.json] [--labels L.txt]   loops, bridges, tails, P2 crystallinity, profiles
              of any frame; --labels: each atom&#x27;s id, class (stem, loop, bridge, tail, none) and segment (side atoms as their backbone atom)</code></pre></div></article>
 <article class="cmd" id="solve" data-name="solve"><h3><code>caps solve</code></h3>
-<div class="code" data-lang="synopsis"><pre><code>caps solve DATA.xy MOLECULE --cell a,b,c,al,be,ga --space-group &#x27;P 21/c&#x27; [--wavelength Å] [--steps 6000] [--seed 1] -o CRYSTAL.cif
-           a molecular crystal found by simulated annealing against the pattern (direct space)</code></pre></div></article>
+<div class="code" data-lang="synopsis"><pre><code>caps solve DATA.xy MOLECULE --cell a,b,c,al,be,ga --space-group &#x27;P 21/c&#x27; [--wavelength Å] [--steps 6000] [--restarts 2] [--seed 1]
+           [--uvw U,V,W] [--xy X,Y] [--zero DEG] -o CRYSTAL.cif   a molecular crystal found by simulated annealing against the
+           pattern (direct space); --steps counts all moves, shared by the restarts; the peak profile is fitted to the data
+           (Pawley, in the cell) first unless --uvw, --xy or --zero give it</code></pre></div></article>
 <article class="cmd" id="sqs" data-name="sqs"><h3><code>caps sqs</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps sqs CRYSTAL --from Cu --to Au [--fraction 0.5] [--supercell 2,2,2] [--shells 3] [--steps 20000] [--restarts 4] [--seed 1] -o OUT.cif
             special quasirandom structure: the random alloy&#x27;s pair correlations on the first shells (Zunger et al.)</code></pre></div></article>
@@ -1043,9 +1096,13 @@ caps semicrystalline FILE --analyse [--report R.json] [--labels L.txt]   loops, 
 <article class="cmd" id="thermal" data-name="thermal"><h3><code>caps thermal</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps thermal FILE --dimensionality 3d|2d [--method gk|nemd] [--temp 300] [--eq-ps 10] [--ps 100] [--dt 1] [--every 5]
              [--corr-ps 5] [--axis x|y|z] [--layers 20] [--swap-every 100] [--transient 0.3] [--thickness 3.35] [--seed 1]
-             [--ff FF] [--json OUT.json] [--lammps-input IN.lmp]   thermal conductivity by MD: Green-Kubo (heat-flux
-             autocorrelation, centroid form for bonded terms) or Muller-Plathe NEMD; 2d: a sheet with vacuum along z,
-             in-plane only, kappa over an effective thickness and the sheet conductance</code></pre></div></article>
+             [--ff FF] [--json OUT.json] [--lammps-input IN.lmp [--lammps-eq-ps 100] [--lammps-ps 2000]]
+             thermal conductivity by MD: Green-Kubo (heat-flux autocorrelation, centroid form for bonded terms)
+             or Muller-Plathe NEMD; 2d: a sheet with vacuum along z,
+             in-plane only, kappa over an effective thickness and the sheet conductance; NEMD takes any force field
+             and an even --layers of at least 10; Green-Kubo here takes harmonic bonds and angles, Fourier torsions
+             and impropers and 12-6 LJ with DSF Coulomb (for other terms use nemd or --lammps-input); --eq-ps/--ps are the
+             local run, the LAMMPS input&#x27;s lengths are --lammps-eq-ps/--lammps-ps (with --lammps-input, --ps also runs here)</code></pre></div></article>
 <article class="cmd" id="vasp-relax" data-name="vasp-relax"><h3><code>caps vasp-relax</code><span class="pill">--help</span></h3>
 <div class="code" data-lang="caps vasp-relax --help"><pre><code>usage: caps vasp-relax CRYSTAL --out DIR [--dimensionality 3d|2d] | caps vasp-relax report DIR
 

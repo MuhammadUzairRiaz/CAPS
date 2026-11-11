@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <map>
 #include <numeric>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 
@@ -387,7 +388,9 @@ ThermalResult nemd_kappa(const std::vector<double>& T, double width, double exch
   ThermalResult r;
   r.method = "nemd";
   const int n = int(T.size());
-  if (n < 6 || n % 2) throw std::invalid_argument("NEMD needs an even number of slabs (at least 6)");
+  if (n < 10 || n % 2)
+    throw std::invalid_argument("NEMD needs an even number of slabs, at least 10 (each half's straight-line fit leaves out the slabs next to the hot and "
+                                "cold ones and needs 2 or more points); got " + std::to_string(n));
   r.slab_t = T;
   for (int k = 0; k < n; ++k) r.slab_x.push_back((k + 0.5) * width);
   // two straight lines: slabs 2 … n/2 − 2 (cold → hot) and n/2 + 2 … n − 2 (hot → cold), the slopes' magnitudes averaged
@@ -399,7 +402,8 @@ ThermalResult nemd_kappa(const std::vector<double>& T, double width, double exch
       sx += x, sy += y, sxx += x * x, sxy += x * y, ++m;
     }
     const double d = m * sxx - sx * sx;
-    return d != 0 ? (m * sxy - sx * sy) / d : 0.0;
+    if (m < 2 || !(d > 0)) throw std::invalid_argument("NEMD: a straight-line fit over slabs " + std::to_string(a) + " to " + std::to_string(b) + " has fewer than 2 points");
+    return (m * sxy - sx * sy) / d;
   };
   const int h = n / 2;
   const double g1 = slope(2, h - 2), g2 = slope(h + 2, n - 2);
@@ -417,6 +421,9 @@ ThermalResult nemd_kappa(const std::vector<double>& T, double width, double exch
     r.kappa_mean_error = 0.5 * std::fabs(k1 - k2);
     r.error = {r.kappa_mean_error, r.kappa_mean_error, r.kappa_mean_error};
   }
+  if (!(g > 0))
+    r.notes.push_back("the temperature profile has no gradient on either side of the hot slab, so κ could not be measured (0 is no result): "
+                      "exchange more often (--swap-every) or run longer");
   if (std::fabs(g1) > 0 && std::fabs(g2) > 0 && std::fabs(std::fabs(g1) - std::fabs(g2)) > 0.25 * g)
     r.notes.push_back("the two halves' gradients differ by more than 25 %: the profile is not yet steady or the run is noisy");
   return r;
@@ -454,8 +461,14 @@ ThermalResult thermal_conductivity(System& s, const ThermalOptions& o) {
     if (o.method == "nemd" && o.axis == 2) throw std::invalid_argument("2D: the NEMD flux runs in the plane (axis x or y)");
   }
   const auto field = o.field ? o.field : std::make_shared<const ForceField>(default_forcefield(s));
-  HeatFlux hf(*field, o.energy);   // checks the terms (both methods: NEMD needs none, but the same limits keep them alike)
-  const auto& m = hf.masses();
+  // the heat flux (and its limits on the terms) is Green-Kubo's alone; NEMD only exchanges velocities, so any field run_dynamics takes works
+  std::optional<HeatFlux> hf;
+  if (o.method == "gk") hf.emplace(*field, o.energy);
+  const std::vector<double>& m = field->mass;
+  if (m.size() != field->type_index.size()) throw FieldError("thermal: the force field carries no masses");
+  if (o.method == "nemd" && o.slabs < 10)
+    throw std::invalid_argument("NEMD needs at least 10 slabs (--layers), an even number: each half's straight-line fit leaves out the slabs next to the hot "
+                                "and cold ones and needs 2 or more points; got " + std::to_string(o.slabs));
   DynamicsOptions d;
   d.field = field;
   d.energy = o.energy;
@@ -491,7 +504,7 @@ ThermalResult thermal_conductivity(System& s, const ThermalOptions& o) {
     std::vector<Vec3> q;
     const int every = std::max(1, o.sample_every);
     d.after_step = [&](const std::vector<double>& x, std::vector<double>& v, const Cell& cell, int64_t step) {
-      if ((step - neq) % every == 0) q.push_back(hf.flux(x, v, cell));
+      if ((step - neq) % every == 0) q.push_back(hf->flux(x, v, cell));
     };
     run_dynamics(s, d);
     const double vol = two ? norm(cross(s.cell.a, s.cell.b)) * thick : s.cell.volume();
@@ -505,7 +518,7 @@ ThermalResult thermal_conductivity(System& s, const ThermalOptions& o) {
     R.notes.insert(R.notes.begin(), fmtd(o.equilibrate_ps, 4) + " ps NVT (Bussi) then " + fmtd(o.ps, 4) + " ps NVE at " + fmtd(o.dt) + " fs steps");
   } else {
     const int ax = std::clamp(o.axis, 0, 2);
-    const int ns = std::max(6, o.slabs + (o.slabs % 2));
+    const int ns = o.slabs + (o.slabs % 2);   // an odd count is rounded up to the next even one (at least 10, checked above)
     const Vec3 edge = ax == 0 ? s.cell.a : ax == 1 ? s.cell.b : s.cell.c;
     const double L = norm(edge);
     if (std::fabs(edge[ax] - L) > 1e-6 * L) throw std::invalid_argument("NEMD: the flux axis must be a cell edge along x, y or z");
@@ -681,12 +694,18 @@ std::string thermal_lammps_run(const ThermalLammps& q) {
       << "variable        k equal (v_kxx+v_kyy+v_kzz)/3.0\n"
       << "print           \"kappa (W/m/K): x ${kxx} y ${kyy} z ${kzz} mean ${k}\" file kappa.txt\n";
   } else {
-    o << "# reverse NEMD (Muller-Plathe): kinetic energy swapped every " << q.swap_every << " steps between slab 1 (cold) and slab " << (q.slabs / 2 + 1)
+    // fix thermal/conductivity takes an even slab count; the fit below leaves out the slabs next to the hot and cold ones,
+    // so each half keeps 2 or more points only from 10 slabs on (as CAPS's own run)
+    const int ns = q.slabs + (q.slabs % 2);
+    if (ns < 10)
+      throw std::invalid_argument("NEMD needs at least 10 slabs (--layers), an even number: each half's straight-line fit leaves out the slabs next to the hot "
+                                  "and cold ones and needs 2 or more points; got " + std::to_string(q.slabs));
+    o << "# reverse NEMD (Muller-Plathe): kinetic energy swapped every " << q.swap_every << " steps between slab 1 (cold) and slab " << (ns / 2 + 1)
       << " (hot)\n"
       << "compute         ke all ke/atom\nvariable        temp atom c_ke/(1.5*0.0019872043)\n"
-      << "compute         layers all chunk/atom bin/1d " << ax << " lower " << 1.0 / q.slabs << " units reduced\n"
+      << "compute         layers all chunk/atom bin/1d " << ax << " lower " << 1.0 / ns << " units reduced\n"
       << "fix             profile all ave/chunk 10 100 1000 layers v_temp file profile.mp\n"
-      << "fix             mp all thermal/conductivity " << q.swap_every << " " << ax << " " << q.slabs << "\n"
+      << "fix             mp all thermal/conductivity " << q.swap_every << " " << ax << " " << ns << "\n"
       << "thermo_style    custom step temp pe etotal f_mp\n"
       << "run             " << nrun << "\n"
       << "# kappa = (f_mp / (2 A t)) / |dT/d" << ax << "|: f_mp the energy moved (kcal/mol), A the cross-section, t the time (fs),\n"

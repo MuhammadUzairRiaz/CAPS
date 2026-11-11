@@ -859,6 +859,8 @@ BuildResult build_molecule(const std::string& smiles, const BuildOptions& o) {
       for (size_t k = 0; k < v.size() && k < 6; ++k) t += (k ? ", " : "") + v[k];
       return t + (v.size() > 6 ? " …" : "");
     };
+    R.open_centres = int(open_c.size());
+    R.open_bonds = int(open_d.size());
     if (!open_c.empty())
       R.notes.push_back(std::to_string(open_c.size()) + " stereocentre" + (open_c.size() > 1 ? "s" : "") +
                         " not specified in the SMILES, built as the embedding chose (atoms " + list(open_c) + "): write @ or @@ to fix them");

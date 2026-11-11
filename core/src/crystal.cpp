@@ -345,7 +345,8 @@ std::vector<Bond> crystal_bonds(const System& s) {
 }
 
 // Adds O–H to under-coordinated oxygens (S, Se), M–OH to cations bonded to oxygen in the bulk and H to under-coordinated
-// covalent network atoms of `s`, up to each element's coordination in `bulk`, pointing along outward_of(position).
+// covalent network atoms of `s`, on the free vertices of the atom's own bulk polyhedron fitted to its surviving bonds
+// (outward_of(position) and room breaking ties). An O site two cations both lost is put back once, bridging them.
 // Metals keep their bare surfaces. Returns the H and OH added.
 std::pair<int, int> passivate_surface(System& s, const System& bulk, const std::function<Vec3(const Vec3&)>& outward_of) {
   int added_h = 0, added_oh = 0;
@@ -383,9 +384,11 @@ std::pair<int, int> passivate_surface(System& s, const System& bulk, const std::
     dirs.push_back({r * std::cos(phi), r * std::sin(phi), y});
   }
   std::vector<std::vector<Vec3>> bonded(s.atoms.size());
+  std::vector<std::vector<uint32_t>> bonded_to(s.atoms.size());
   for (const auto& b : image_bonds(s)) {
     bonded[b.i].push_back(b.d * (1 / norm(b.d)));
     bonded[b.j].push_back(b.d * (-1 / norm(b.d)));
+    bonded_to[b.i].push_back(b.j), bonded_to[b.j].push_back(b.i);
   }
   // metals keep their bare surfaces: only oxygen (and S, Se), cations of oxides and covalent network atoms
   auto passivable = [&](int z) {
@@ -393,49 +396,351 @@ std::pair<int, int> passivate_surface(System& s, const System& bulk, const std::
     if (main_partner(z) == 8) return true;
     return z == 5 || z == 6 || z == 7 || z == 14 || z == 15 || z == 32;
   };
-  auto pick = [&](const std::vector<Vec3>& taken, const Vec3& outward, double target) {
+  // The bulk polyhedra: the bond vectors of each element's atoms, one per distinct shape (an element on two kinds of
+  // site, Fe in magnetite, has a tetrahedron and an octahedron). A surface atom's missing bonds are the vertices of its
+  // own bulk polyhedron that its surviving bonds leave free, all placed together, so a cation that lost two or three
+  // bonds still gets a tetrahedron or an octahedron.
+  struct Poly { std::vector<Vec3> v; std::vector<int> pz; };
+  std::map<int, std::vector<Poly>> polys;
+  {
+    std::vector<Poly> all(bulk.atoms.size());
+    for (const auto& b : image_bonds(bulk)) {
+      all[b.i].v.push_back(b.d), all[b.i].pz.push_back(bulk.atoms[b.j].element);
+      all[b.j].v.push_back(b.d * -1.0), all[b.j].pz.push_back(bulk.atoms[b.i].element);
+    }
+    auto shape = [](const Poly& p) {
+      std::vector<double> c;
+      for (size_t a = 0; a < p.v.size(); ++a)
+        for (size_t b = a + 1; b < p.v.size(); ++b) c.push_back(dot(p.v[a], p.v[b]) / (norm(p.v[a]) * norm(p.v[b])));
+      std::sort(c.begin(), c.end());
+      return c;
+    };
+    std::map<int, std::vector<std::vector<double>>> shapes;
+    for (size_t i = 0; i < bulk.atoms.size(); ++i) {
+      const int z = bulk.atoms[i].element;
+      if (all[i].v.empty()) continue;
+      auto& L = polys[z];
+      if (L.size() >= 24) continue;
+      const auto sh = shape(all[i]);
+      bool seen = false;
+      for (const auto& o : shapes[z]) {
+        if (o.size() != sh.size()) continue;
+        double m = 0;
+        for (size_t k = 0; k < sh.size(); ++k) m = std::max(m, std::fabs(sh[k] - o[k]));
+        if (m < 0.02) { seen = true; break; }
+      }
+      if (seen) continue;
+      shapes[z].push_back(sh);
+      L.push_back(all[i]);
+    }
+  }
+  const bool periodic = s.cell.valid();
+  auto sep = [&](const Vec3& a, const Vec3& b) {
+    Vec3 d = a - b;
+    if (periodic) d = s.cell.minimum_image(d);
+    return norm(d);
+  };
+  auto is_chalcogen = [](int z) { return z == 8 || z == 16 || z == 34; };
+  // the closest an added atom may come to another atom: H 1.2 Å from H and 1.5 Å from heavier atoms, a heavy atom
+  // 2.2 Å from heavy atoms (shorter than any O-O edge of an oxide polyhedron)
+  auto too_close = [](int za, int zb) { return za == 1 && zb == 1 ? 1.2 : za == 1 || zb == 1 ? 1.5 : 2.2; };
+  // planned atoms (all placed before any is added): owner, element, position
+  struct Plan { uint32_t owner; int z; Vec3 p; };
+  constexpr double kShared = 1.2;
+  std::vector<Plan> plans;
+  // The atoms near an atom i (i and its partners left out) and those planned for other atoms, as separations from i:
+  // kind 1 a cation that lost bonds too (a new O at bond length from it is the site the two shared, not a clash),
+  // kind 2 an O planned by another cation (two O planned on one lattice site, within 1.2 Å since no two O come that
+  // close, are one bridging O).
+  struct Near { Vec3 r; int z; int kind; double r2_skip; };
+  std::vector<char> deficient(s.atoms.size(), 0);   // set below: atoms short of a bulk polyhedron
+  auto lost_bonds = [&](uint32_t k) { return k < deficient.size() && deficient[k]; };
+  auto near_of = [&](uint32_t i, int nz, size_t n_atoms) {
+    std::vector<Near> out;
+    const Vec3 pos = s.atoms[i].pos;
+    for (uint32_t k = 0; k < n_atoms; ++k) {
+      if (k == i || std::find(bonded_to[i].begin(), bonded_to[i].end(), k) != bonded_to[i].end()) continue;
+      Vec3 d = s.atoms[k].pos - pos;
+      if (periodic) d = s.cell.minimum_image(d);
+      if (norm(d) >= 5.0) continue;
+      const int zk = s.atoms[k].element;
+      const bool shared = nz == 8 && !is_chalcogen(zk) && main_partner(zk) == 8 && lost_bonds(k);
+      const double skip = shared ? 0.8 * bond_length(zk, 8) : 0;
+      out.push_back({d, zk, shared ? 1 : 0, skip * skip});
+    }
+    for (const Plan& pl : plans) {
+      if (pl.owner == i) continue;
+      Vec3 d = pl.p - pos;
+      if (periodic) d = s.cell.minimum_image(d);
+      if (norm(d) < 5.0) out.push_back({d, pl.z, nz == 8 && pl.z == 8 ? 2 : 0, 0});
+    }
+    return out;
+  };
+  // clashes of an atom of element nz at r from atom i with the atoms near it
+  auto clashes = [&](int nz, const Vec3& r, const std::vector<Near>& near) {
+    int n = 0;
+    for (const Near& q : near) {
+      const Vec3 d = q.r - r;
+      const double d2 = dot(d, d);
+      if (q.kind == 1 && d2 > q.r2_skip) continue;
+      if (q.kind == 2 && d2 < kShared * kShared) continue;
+      const double c = too_close(nz, q.z);
+      if (d2 < c * c) ++n;
+    }
+    return n;
+  };
+  // the direction from `dirs` with the largest smallest angle to `taken` (or that angle closest to `target`), not below
+  // `floor`, pointing outward and clear of other atoms (`clash` counts them)
+  auto pick = [&](const std::vector<Vec3>& taken, const Vec3& outward, double target, double floor, const std::function<int(const Vec3&)>& clash) {
     Vec3 best = outward;
     double bs = -1e300;
     for (const auto& u : dirs) {
       double mina = 180;
       for (const auto& t : taken) mina = std::min(mina, std::acos(std::clamp(dot(u, t), -1.0, 1.0)) / kDeg);
       double sc = target > 0 ? -std::fabs(mina - target) * 2 : mina;
-      if (mina < 95) sc -= 1000;
+      if (mina < floor) sc -= 1000;
       sc += 40 * dot(outward, u);
+      if (clash) sc -= 500 * clash(u);
       if (sc > bs) { bs = sc; best = u; }
     }
     return best;
   };
+  // the length of an added bond: X-H on O, S, Se; the bulk M-O length on a cation; C-H style on covalent atoms
+  auto added_length = [&](int z, int pz, double tlen) {
+    if (is_chalcogen(z)) return z == 8 ? 0.97 : 1.34;
+    if (main_partner(z) == 8) return pz == 8 && tlen > 0.5 ? tlen : bond_length(z, 8);
+    return element(z).covalent + 0.31;
+  };
+  auto unit = [](const Vec3& v) { return v * (1 / norm(v)); };
+  // a rotation taking the frame of (t1, t2) onto the frame of (b1, b2)
+  struct Rot {
+    Vec3 b1, b2, b3, t1, t2, t3;
+    Vec3 operator()(const Vec3& x) const { return b1 * dot(t1, x) + b2 * dot(t2, x) + b3 * dot(t3, x); }
+  };
+  auto frame = [](const Vec3& u, const Vec3& v, Vec3& e1, Vec3& e2, Vec3& e3) {
+    e1 = u * (1 / norm(u));
+    const Vec3 w = v - e1 * dot(e1, v);
+    const double l = norm(w);
+    if (l < 1e-6) return false;
+    e2 = w * (1 / l), e3 = cross(e1, e2);
+    return true;
+  };
+  // Every assignment of an atom's surviving bonds (unit vectors b) to vertices of polyhedron P whose angles agree within
+  // 25°, a bounded search; `leaf` gets each assignment with the rotation taking P onto the bonds and its worst angle
+  // (one surviving bond: the polyhedron turned about it in 5° steps).
+  using Leaf = std::function<void(const std::vector<int>&, const Rot&, double)>;
+  auto fit = [&](const std::vector<Vec3>& b, const Poly& P, const Leaf& leaf) {
+    const size_t n = P.v.size(), k = b.size();
+    if (k == 0 || k > n) return;
+    std::vector<Vec3> tv(n);
+    for (size_t t = 0; t < n; ++t) tv[t] = unit(P.v[t]);
+    std::vector<int> asg(k, -1);
+    std::vector<char> used(n, 0);
+    long budget = 5000;
+    std::function<void(size_t)> dfs = [&](size_t q) {
+      if (--budget < 0) return;
+      if (q == k) {
+        Rot R{};
+        if (k == 1) {
+          const Vec3& t1 = tv[size_t(asg[0])];
+          size_t ref = n;
+          double lo = 2;
+          for (size_t t = 0; t < n; ++t)
+            if (int(t) != asg[0] && std::fabs(dot(tv[t], t1)) < lo) lo = std::fabs(dot(tv[t], t1)), ref = t;
+          if (ref == n) { leaf(asg, R, 0.0); return; }   // a lone bond: nothing left to place
+          if (lo > 0.95 || !frame(t1, tv[ref], R.t1, R.t2, R.t3)) return;
+          Vec3 e1, perp, e3;
+          if (!frame(b[0], std::fabs(b[0][0]) < 0.9 ? Vec3{1, 0, 0} : Vec3{0, 1, 0}, e1, perp, e3)) return;
+          for (int st = 0; st < 72; ++st) {
+            const double ph = st * 5.0 * kDeg;
+            const Vec3 e2 = perp * std::cos(ph) + e3 * std::sin(ph);
+            R.b1 = e1, R.b2 = e2, R.b3 = cross(e1, e2);
+            leaf(asg, R, 0.0);
+          }
+          return;
+        }
+        // the frame of the two most nearly perpendicular surviving bonds
+        size_t pa = 0, pb = 1;
+        double lo = 2;
+        for (size_t x = 0; x < k; ++x)
+          for (size_t y = x + 1; y < k; ++y)
+            if (std::fabs(dot(b[x], b[y])) < lo) lo = std::fabs(dot(b[x], b[y])), pa = x, pb = y;
+        if (!frame(tv[size_t(asg[pa])], tv[size_t(asg[pb])], R.t1, R.t2, R.t3) || !frame(b[pa], b[pb], R.b1, R.b2, R.b3)) return;
+        double resid = 0;
+        for (size_t x = 0; x < k; ++x)
+          resid = std::max(resid, std::acos(std::clamp(dot(unit(R(tv[size_t(asg[x])])), b[x]), -1.0, 1.0)) / kDeg);
+        if (resid < 20) leaf(asg, R, resid);
+        return;
+      }
+      for (size_t t = 0; t < n; ++t) {
+        if (used[t]) continue;
+        bool ok = true;
+        for (size_t x = 0; x < q && ok; ++x) {
+          const double ab = std::acos(std::clamp(dot(b[q], b[x]), -1.0, 1.0)), at = std::acos(std::clamp(dot(tv[t], tv[size_t(asg[x])]), -1.0, 1.0));
+          ok = std::fabs(ab - at) < 25 * kDeg;
+        }
+        if (!ok) continue;
+        used[t] = 1, asg[q] = int(t);
+        dfs(q + 1);
+        used[t] = 0, asg[q] = -1;
+      }
+    };
+    dfs(0);
+  };
+  // Which atoms lost bonds: fewer than the largest bulk polyhedron of their element, and not a whole smaller one (its
+  // angles within 15°), or with no polyhedron at all fewer bonds than the element's usual coordination.
   const size_t n0 = s.atoms.size();
   for (size_t i = 0; i < n0; ++i) {
     const int z = s.atoms[i].element;
-    const int missing = (want.count(z) ? want[z] : 0) - int(bonded[i].size());
-    if (missing <= 0 || !passivable(z)) continue;
-    const Vec3 outward = outward_of(s.atoms[i].pos);
-    auto taken = bonded[i];
-    for (int m = 0; m < missing; ++m) {
-      const Vec3 u = pick(taken, outward, 0);
-      taken.push_back(u);
-      const int partner = main_partner(z);
-      if (z == 8 || z == 16 || z == 34) {
-        const uint32_t hdx = add_atom(s, 1, s.atoms[i].pos + u * (z == 8 ? 0.97 : 1.34), "H", 1);
-        s.bonds.push_back({uint32_t(i), hdx, 1});
-        ++added_h;
-      } else if (partner == 8) {
-        const Vec3 po = s.atoms[i].pos + u * bond_length(z, 8);
-        const uint32_t odx = add_atom(s, 8, po, "O", 1);
-        s.bonds.push_back({uint32_t(i), odx, 1});
-        const Vec3 v = pick({u * -1.0}, outward, 115);
-        const uint32_t hdx = add_atom(s, 1, po + v * 0.97, "H", 1);
-        s.bonds.push_back({odx, hdx, 1});
-        ++added_oh;
-      } else {
-        const uint32_t hdx = add_atom(s, 1, s.atoms[i].pos + u * (element(z).covalent + 0.31), "H", 1);
-        s.bonds.push_back({uint32_t(i), hdx, 1});
-        ++added_h;
-      }
+    if (!passivable(z)) continue;
+    const size_t k = bonded[i].size();
+    const auto pit = polys.find(z);
+    if (pit == polys.end() || pit->second.empty()) {
+      deficient[i] = int(k) < (want.count(z) ? want[z] : 0);
+      continue;
     }
+    size_t max_n = 0;
+    for (const Poly& P : pit->second) max_n = std::max(max_n, P.v.size());
+    if (k >= max_n) continue;
+    bool whole = false;
+    for (const Poly& P : pit->second) {
+      if (P.v.size() != k || whole) continue;
+      if (k == 0) { whole = true; break; }
+      fit(bonded[i], P, [&](const std::vector<int>&, const Rot&, double resid) { if (resid < 15) whole = true; });
+    }
+    deficient[i] = !whole;
   }
+  int greedy = 0;
+  for (size_t i = 0; i < n0; ++i) {
+    const int z = s.atoms[i].element;
+    if (!deficient[i]) continue;
+    const int nz = is_chalcogen(z) ? 1 : main_partner(z) == 8 ? 8 : 1;
+    const Vec3 pos = s.atoms[i].pos;
+    const Vec3 outward = outward_of(pos);
+    const auto near = near_of(uint32_t(i), nz, n0);
+    // each larger bulk polyhedron fitted to the surviving bonds: the best fit (smallest angle error, fewest clashes,
+    // most outward) gives the new atoms
+    const auto& b = bonded[i];
+    const size_t k = b.size();
+    struct Fit { double score = -1e300; std::vector<Vec3> p; } best;
+    if (polys.count(z))
+      for (const Poly& P : polys[z]) {
+        if (P.v.size() <= k) continue;
+        fit(b, P, [&](const std::vector<int>& asg, const Rot& R, double resid) {
+          std::vector<char> used(P.v.size(), 0);
+          for (int a : asg) used[size_t(a)] = 1;
+          std::vector<Vec3> placed;
+          int nclash = 0;
+          double out = 0;
+          for (size_t t = 0; t < P.v.size(); ++t) {
+            if (used[t]) continue;
+            const Vec3 u = unit(R(P.v[t]));
+            const Vec3 r = u * added_length(z, P.pz[t], norm(P.v[t]));
+            nclash += clashes(nz, r, near);
+            out += dot(outward, u);
+            placed.push_back(pos + r);
+          }
+          if (placed.empty()) return;
+          const double sc = -resid - 60.0 * nclash + 10.0 * out / double(placed.size());
+          if (sc > best.score) best.score = sc, best.p = std::move(placed);
+        });
+      }
+    const int missing = (want.count(z) ? want[z] : 0) - int(k);
+    if (best.p.empty() && missing <= 0) continue;
+    std::vector<Vec3> placed;
+    if (!best.p.empty()) {
+      placed = best.p;
+    } else {
+      // no polyhedron fits (or none survives): one bond at a time, no closer than the polyhedron's own angles allow
+      double target = 0, floor = 95;
+      if (polys.count(z) && !polys[z].empty()) {
+        const Poly* P = &polys[z].front();
+        for (const Poly& Q : polys[z])
+          if (int(Q.v.size()) == missing + int(k)) { P = &Q; break; }
+        const auto& v = P->v;
+        std::vector<double> nearest;
+        for (size_t x = 0; x < v.size(); ++x) {
+          double m = 180;
+          for (size_t y = 0; y < v.size(); ++y)
+            if (y != x) m = std::min(m, std::acos(std::clamp(dot(unit(v[x]), unit(v[y])), -1.0, 1.0)) / kDeg);
+          nearest.push_back(m);
+        }
+        std::sort(nearest.begin(), nearest.end());
+        target = nearest[nearest.size() / 2];
+        floor = std::max(60.0, nearest.front() - 15);
+      }
+      const double len = added_length(z, 8, bond_length(z, 8));
+      auto taken = b;
+      for (int m = 0; m < missing; ++m) {
+        const Vec3 u = pick(taken, outward, k + size_t(m) >= 2 ? target : 0, floor, [&](const Vec3& c) {
+          const Vec3 p = pos + c * len;
+          int n = clashes(nz, c * len, near);
+          for (const Vec3& q : placed) n += sep(p, q) < too_close(nz, nz);
+          return n;
+        });
+        taken.push_back(u);
+        placed.push_back(pos + u * len);
+      }
+      ++greedy;
+    }
+    for (const Vec3& p : placed) plans.push_back({uint32_t(i), nz, p});
+  }
+  // the planned atoms added: an O planned by two or more cations on one site is the bulk's bridging O put back, bonded
+  // to all of them; every new O with fewer cations than the bulk O has gets one H (M-OH at 115° to the M-O bond, a
+  // bridging M-OH-M away from its cations), outward and clear of the others
+  std::vector<uint32_t> new_o;
+  std::map<uint32_t, std::vector<uint32_t>> o_owners;
+  for (const Plan& pl : plans) {
+    if (pl.z == 1) {
+      const uint32_t hdx = add_atom(s, 1, pl.p, "H", 1);
+      s.bonds.push_back({pl.owner, hdx, 1});
+      ++added_h;
+      continue;
+    }
+    long at = -1;
+    for (uint32_t o : new_o)
+      if (sep(pl.p, s.atoms[o].pos) < kShared) { at = long(o); break; }
+    if (at < 0) {
+      at = long(add_atom(s, 8, pl.p, "O", 1));
+      new_o.push_back(uint32_t(at));
+    } else {
+      // the shared site: the mean of the positions its cations planned
+      auto& a = s.atoms[size_t(at)];
+      Vec3 d = pl.p - a.pos;
+      if (periodic) d = s.cell.minimum_image(d);
+      a.pos = a.pos + d * (1.0 / double(o_owners[uint32_t(at)].size() + 1));
+    }
+    o_owners[uint32_t(at)].push_back(pl.owner);
+    s.bonds.push_back({pl.owner, uint32_t(at), 1});
+  }
+  int bridging = 0;
+  const int o_cn = want.count(8) ? want[8] : 2;
+  for (uint32_t o : new_o) {
+    const auto& own = o_owners[o];
+    if (own.size() > 1) ++bridging;
+    if (int(own.size()) >= o_cn) continue;   // as many cations as in the bulk: a whole O
+    const Vec3 po = s.atoms[o].pos;
+    std::vector<Vec3> to_m;
+    for (uint32_t m : own) {
+      Vec3 d = s.atoms[m].pos - po;
+      if (periodic) d = s.cell.minimum_image(d);
+      to_m.push_back(unit(d));
+    }
+    std::vector<uint32_t> near;
+    for (uint32_t q = 0; q < s.atoms.size(); ++q)
+      if (q != o && std::find(own.begin(), own.end(), q) == own.end() && sep(po, s.atoms[q].pos) < 4.0) near.push_back(q);
+    const Vec3 v = pick(to_m, outward_of(po), own.size() == 1 ? 115 : 0, 95, [&](const Vec3& c) {
+      const Vec3 p = po + c * 0.97;
+      int n = 0;
+      for (uint32_t q : near) n += sep(p, s.atoms[q].pos) < too_close(1, s.atoms[q].element);
+      return n;
+    });
+    const uint32_t hdx = add_atom(s, 1, po + v * 0.97, "H", 1);
+    s.bonds.push_back({o, hdx, 1});
+    ++added_oh;
+  }
+  if (bridging) s.notes.push_back(std::to_string(bridging) + " bridging O put back on bulk sites shared by surface cations that lost them");
+  if (greedy) s.notes.push_back(std::to_string(greedy) + " surface atoms matched no bulk polyhedron: their missing bonds placed one at a time");
   // Each direction above was chosen from its own atom's bonds only: a hydrogen can land on a neighbour's (two silanols
   // on adjacent oxygens). Every added hydrogen closer than 1.7 Å to an atom it is not bonded to turns about its
   // parent's bond axis (length and angle kept) to the position farthest from the others.
@@ -523,9 +828,10 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
     throw CrystalError((name.empty() ? std::string("CIF") : name) + ": the atom sites have no _atom_site_fract_" + (cy_ < 0 ? "y" : "z") + " column");
   const int csym = col("_atom_site_type_symbol"), clab = col("_atom_site_label"), cocc = col("_atom_site_occupancy");
   const int cass = col("_atom_site_disorder_assembly"), cgrp = col("_atom_site_disorder_group");
+  const int cq = col("_atom_site_charge");   // partial charges (as CAPS writes them), copied to every image of a site
   if (o.mode != "major" && o.mode != "group" && o.mode != "random") throw CrystalError("disorder: major, group or random");
   // the sites
-  struct Site { std::string label, assembly, group; int z = 0; Vec3 f0{0, 0, 0}; double occ = 1; };
+  struct Site { std::string label, assembly, group; int z = 0; Vec3 f0{0, 0, 0}; double occ = 1, q = 0; };
   std::vector<Site> S;
   auto blank = [](const std::string& v) { return v.empty() || v == "." || v == "?"; };
   for (const auto& r : sites) {
@@ -536,6 +842,7 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
     if (!st.z) throw CrystalError("site " + (clab >= 0 ? r[size_t(clab)] : std::string("?")) + ": unknown element");
     st.label = clab >= 0 ? r[size_t(clab)] : element(st.z).symbol;
     st.f0 = {cif_number(r[size_t(cx_)]), cif_number(r[size_t(cy_)]), cif_number(r[size_t(cz_)])};
+    st.q = cq >= 0 && !blank(r[size_t(cq)]) ? cif_number(r[size_t(cq)], 0) : 0;
     if (cgrp >= 0 && !blank(r[size_t(cgrp)]) && r[size_t(cgrp)] != "0") {
       st.group = r[size_t(cgrp)];
       // a negative group (a fragment disordered across a symmetry element) is no alternative to the positive groups
@@ -632,7 +939,7 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
   }
   // the cells, the draws
   const bool random = o.mode == "random";
-  const std::array<int, 3> N = random ? o.supercell : std::array<int, 3>{1, 1, 1};
+  const std::array<int, 3> N = o.supercell;   // every mode: major and group repeat the one chosen cell
   for (int k = 0; k < 3; ++k)
     if (N[size_t(k)] < 1) throw CrystalError("disorder: a supercell of at least 1 × 1 × 1");
   std::mt19937_64 rng(o.seed * 0x9E3779B97F4A7C15ull + 17);
@@ -704,11 +1011,15 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
     };
     if (!random) {
       // the chosen group's copies in the order of the operations: a copy stays unless it overlaps one already kept
-      for (const auto& [key, v] : node_id) {
-        const auto& [a, g] = node_ag[size_t(v)];
-        const bool keep_it = chosen[a] == g && !blocked(v);
-        copy_on[size_t(v)] = keep_it ? 1 : 2;
-        if (chosen[a] == g && !keep_it) ++across_left_out;
+      // (the same choice in every copy cell; left-out copies counted per cell)
+      for (const auto& [key, node] : node_id) {
+        const auto& [a, g] = node_ag[size_t(node)];
+        for (int c = 0; c < ncells; ++c) {
+          const int v = node * ncells + c;
+          const bool keep_it = chosen[a] == g && !blocked(v);
+          copy_on[size_t(v)] = keep_it ? 1 : 2;
+          if (c == 0 && chosen[a] == g && !keep_it) ++across_left_out;
+        }
       }
     } else {
       // in a random order, each undecided copy and the free copies it overlaps: at most one of them, drawn by occupancy
@@ -731,7 +1042,7 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
       }
     }
   }
-  struct Kept { int z; Vec3 f; std::string label; };
+  struct Kept { int z; Vec3 f; std::string label; double q; };
   std::vector<Kept> keep;
   for (int i0 = 0; i0 < N[0]; ++i0)
     for (int i1 = 0; i1 < N[1]; ++i1)
@@ -763,11 +1074,11 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
             on = true;
           }
           for (const auto& [z, e] : std::map<int, double>{{st.z, st.occ}}) R.expected[z] += e;
-          if (on) keep.push_back({st.z, {(X[i].fw[0] + i0) / N[0], (X[i].fw[1] + i1) / N[1], (X[i].fw[2] + i2) / N[2]}, st.label});
+          if (on) keep.push_back({st.z, {(X[i].fw[0] + i0) / N[0], (X[i].fw[1] + i1) / N[1], (X[i].fw[2] + i2) / N[2]}, st.label, st.q});
         }
       }
+  s.cell.a = s.cell.a * double(N[0]), s.cell.b = s.cell.b * double(N[1]), s.cell.c = s.cell.c * double(N[2]);
   if (random) {
-    s.cell.a = s.cell.a * double(N[0]), s.cell.b = s.cell.b * double(N[1]), s.cell.c = s.cell.c * double(N[2]);
     R.notes.push_back("disorder filled at random in a " + std::to_string(N[0]) + " × " + std::to_string(N[1]) + " × " + std::to_string(N[2]) + " supercell (seed " +
                       std::to_string(o.seed) + ")");
   } else {
@@ -784,6 +1095,8 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
     if (lone) s.notes.push_back(std::to_string(lone) + " sites with occupancy below 0.5 left out");
     if (mixed) R.notes.push_back(std::to_string(mixed) + " mixed sites: the element of the largest occupancy kept");
     if (split_kept) R.notes.push_back(std::to_string(split_kept) + " split positions: the one of the largest occupancy kept");
+    if (ncells > 1)
+      R.notes.push_back("a " + std::to_string(N[0]) + " × " + std::to_string(N[1]) + " × " + std::to_string(N[2]) + " supercell of the ordered cell");
   }
   std::map<int, int> type_of;
   for (size_t i = 0; i < keep.size(); ++i) {
@@ -792,6 +1105,7 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
     a.mol = 1;
     a.element = keep[i].z;
     a.name = keep[i].label;
+    a.charge = keep[i].q;
     a.pos = s.cell.a * keep[i].f[0] + s.cell.b * keep[i].f[1] + s.cell.c * keep[i].f[2];
     auto it = type_of.find(keep[i].z);
     if (it == type_of.end()) {
@@ -806,16 +1120,19 @@ System parse_cif(const std::string& text, const std::string& name, const CifDiso
     s.atoms.push_back(a);
     R.obtained[keep[i].z] += 1;
   }
-  s.has_mol = true;
+  s.has_charges = cq >= 0;
+  // a CIF numbers no molecules: they follow the perceived bonds (a network is one, a molecular crystal one per unit,
+  // a polymer cell one per chain); mol = 1 above is only a placeholder
+  s.has_mol = false;
   s.unwrapped = true;   // one periodic network: positions stay as placed (never "made whole")
   s.bonds = crystal_bonds(s);
   std::map<int, int> count;
   for (const auto& a : s.atoms) count[a.element]++;
   s.notes.insert(s.notes.begin(), std::to_string(ops.size()) + " symmetry operations · " + std::to_string(s.atoms.size()) + " atoms in the " +
-                                      (random ? "supercell" : "cell") + " (" + hill(count) + ") · " + std::to_string(s.bonds.size()) + " bonds");
+                                      (ncells > 1 ? "supercell" : "cell") + " (" + hill(count) + ") · " + std::to_string(s.bonds.size()) + " bonds");
   for (const auto& n : R.notes) s.notes.push_back(n);
   // the space group stays with an ordered cell that its operations still map onto itself
-  if (ops.size() > 1 && !random && R.groups == 0 && nplaces == 0) {
+  if (ops.size() > 1 && !random && ncells == 1 && R.groups == 0 && nplaces == 0) {
     Symmetry g;
     for (const char* k : {"_space_group_name_h-m_alt", "_symmetry_space_group_name_h-m"})
       if (g.name.empty() && !item(k).empty() && item(k) != "?") g.name = item(k);

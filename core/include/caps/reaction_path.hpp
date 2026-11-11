@@ -4,7 +4,10 @@
 //  match_atoms     which atom of B is each atom of A when the files list them in another order: atoms of one element
 //                  (and, when both structures have the same bonded environments, one environment, refined by the
 //                  neighbours' environments) are assigned by the Hungarian method (Kuhn, Naval Res. Logist. Q. 2, 83
-//                  (1955)) to minimise the summed squared distances; a molecule is superposed first (Horn's quaternion
+//                  (1955)) to minimise the summed squared distances, and, with the environments, then turned into the
+//                  nearest map that keeps every bond (each molecule walked breadth-first, every atom given a free
+//                  partner bonded to its placed neighbours' partners, the Hungarian one first, then the nearest;
+//                  backtracking within a bounded number of tries, a note when none is found); a molecule is superposed first (Horn's quaternion
 //                  fit, from the four principal-axis orientations, the assignment and the fit repeated until stable), a
 //                  periodic cell uses minimum-image distances.
 //  interpolate     the images between A and B (B in A's atom order, each atom at its image nearest A's; a molecule's B

@@ -3,8 +3,10 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cerrno>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
@@ -30,6 +32,16 @@ std::string slurp(const std::string& p) {
   ss << in.rdbuf();
   return ss.str();
 }
+// For an input the command cannot do without: a missing or unreadable file is an error, not an empty text.
+std::string slurp_required(const std::string& p) {
+  std::error_code ec;
+  if (!fs::exists(p, ec)) throw std::runtime_error("missing " + p);
+  std::ifstream in(p, std::ios::binary);
+  if (!in) throw std::runtime_error("cannot open " + p);
+  std::stringstream ss;
+  ss << in.rdbuf();
+  return ss.str();
+}
 std::vector<std::string> lines_of(const std::string& t) {
   std::vector<std::string> out;
   std::stringstream ss(t);
@@ -42,7 +54,17 @@ std::vector<std::string> split(const std::string& s) {
   for (std::string w; ss >> w;) t.push_back(w);
   return t;
 }
-double to_d(const std::string& s) { try { return std::stod(s); } catch (...) { return std::nan(""); } }
+// strtod, not std::stod: a subnormal such as 1.4E-320 (ERANGE on underflow) keeps its value instead of
+// turning into NaN. No number at all, or an overflow, still gives NaN.
+double to_d(const std::string& s) {
+  const char* b = s.c_str();
+  char* e = nullptr;
+  errno = 0;
+  const double x = std::strtod(b, &e);
+  if (e == b) return std::nan("");
+  if (errno == ERANGE && std::fabs(x) > 1.0) return std::nan("");
+  return x;
+}
 std::string fmt(const char* f, double v) { char b[96]; std::snprintf(b, sizeof b, f, v); return b; }
 double age_seconds(const std::string& p) {
   std::error_code ec;
@@ -171,16 +193,25 @@ std::vector<IonicStep> read_ionic_steps(const std::string& dir, std::string* use
 }
 
 std::vector<System> read_xdatcar(const std::string& path) {
-  const auto L = lines_of(slurp(path));
+  const auto L = lines_of(slurp_required(path));
   if (L.size() < 8) throw std::runtime_error(path + ": not an XDATCAR");
   System base;
   const double sc = to_d(split(L[1]).at(0));
   Vec3 v[3];
-  for (int r = 0; r < 3; ++r) { const auto w = split(L[size_t(2 + r)]); v[r] = Vec3{to_d(w[0]), to_d(w[1]), to_d(w[2])} * sc; }
+  for (int r = 0; r < 3; ++r) {
+    const auto w = split(L[size_t(2 + r)]);
+    if (w.size() < 3) throw std::runtime_error(path + ": bad lattice line " + std::to_string(3 + r));
+    v[r] = Vec3{to_d(w[0]), to_d(w[1]), to_d(w[2])} * sc;
+  }
   base.cell.a = v[0], base.cell.b = v[1], base.cell.c = v[2];
   const auto names = split(L[5]);
   std::vector<int> counts;
-  for (const auto& w : split(L[6])) counts.push_back(int(to_d(w)));
+  for (const auto& w : split(L[6])) {
+    const double c = to_d(w);
+    if (!std::isfinite(c) || c < 0 || c > 1e7 || c != std::floor(c))
+      throw std::runtime_error(path + ": line 7 must hold the atom counts per species, found '" + w + "'");
+    counts.push_back(int(c));
+  }
   std::vector<int> el;
   for (size_t s = 0; s < names.size() && s < counts.size(); ++s) for (int i = 0; i < counts[s]; ++i) el.push_back(element_from_symbol(names[s].substr(0, names[s].find('_'))));
   std::vector<System> frames;
@@ -204,7 +235,7 @@ std::vector<System> read_xdatcar(const std::string& path) {
 }
 
 Doscar read_doscar(const std::string& path) {
-  const auto L = lines_of(slurp(path));
+  const auto L = lines_of(slurp_required(path));
   if (L.size() < 7) throw std::runtime_error(path + ": not a DOSCAR");
   Doscar d;
   const int nat = int(to_d(split(L[0]).at(0)));
@@ -214,6 +245,7 @@ Doscar read_doscar(const std::string& path) {
   size_t k = 6;
   for (int e = 0; e < nedos && k < L.size(); ++e, ++k) {
     const auto w = split(L[k]);
+    if (w.size() < 2) throw std::runtime_error(path + ": bad total-DOS line " + std::to_string(k + 1));
     d.energy.push_back(to_d(w[0]) - d.efermi);
     d.total.push_back(w.size() >= 5 ? to_d(w[1]) + to_d(w[2]) : to_d(w[1]));
   }
@@ -232,6 +264,10 @@ Doscar read_doscar(const std::string& path) {
 }
 
 VaspGrid read_vasp_grid(const std::string& path) {
+  {
+    std::error_code ec;
+    if (!fs::exists(path, ec)) throw std::runtime_error("missing " + path);
+  }
   std::ifstream in(path);
   if (!in) throw std::runtime_error("cannot open " + path);
   VaspGrid g;
@@ -239,31 +275,81 @@ VaspGrid read_vasp_grid(const std::string& path) {
   std::vector<std::string> head;
   for (int k = 0; k < 7 && std::getline(in, l); ++k) head.push_back(l);
   if (head.size() < 7) throw std::runtime_error(path + ": not a VASP grid file");
-  const double sc = to_d(split(head[1]).at(0));
+  const auto sw = split(head[1]);
+  const double sc = sw.empty() ? std::nan("") : to_d(sw[0]);
+  if (!std::isfinite(sc)) throw std::runtime_error(path + ": bad scale line 2");
   Vec3 v[3];
-  for (int r = 0; r < 3; ++r) { const auto w = split(head[size_t(2 + r)]); v[r] = Vec3{to_d(w[0]), to_d(w[1]), to_d(w[2])} * sc; }
+  for (int r = 0; r < 3; ++r) {
+    const auto w = split(head[size_t(2 + r)]);
+    if (w.size() < 3) throw std::runtime_error(path + ": bad lattice line " + std::to_string(3 + r));
+    v[r] = Vec3{to_d(w[0]), to_d(w[1]), to_d(w[2])} * sc;
+  }
   g.system.cell.a = v[0], g.system.cell.b = v[1], g.system.cell.c = v[2];
   const auto names = split(head[5]);
   std::vector<int> counts;
-  for (const auto& w : split(head[6])) counts.push_back(int(to_d(w)));
-  std::getline(in, l);   // Direct
+  for (const auto& w : split(head[6])) {
+    const double c = to_d(w);
+    if (!std::isfinite(c) || c < 0 || c > 1e7 || c != std::floor(c))
+      throw std::runtime_error(path + ": line 7 must hold the atom counts per species, found '" + w + "'");
+    counts.push_back(int(c));
+  }
+  if (names.empty() || counts.size() != names.size())
+    throw std::runtime_error(path + ": species names (line 6) and atom counts (line 7) do not match");
+  if (!std::getline(in, l)) throw std::runtime_error(path + ": the file ends before the atom positions");
+  {
+    const auto w = split(l);   // "Direct", or "Selective dynamics" followed by "Direct"
+    if (!w.empty() && (w[0][0] == 'S' || w[0][0] == 's') && !std::getline(in, l))
+      throw std::runtime_error(path + ": the file ends before the atom positions");
+  }
   for (size_t s = 0; s < names.size(); ++s)
     for (int i = 0; i < counts[s]; ++i) {
-      std::getline(in, l);
+      if (!std::getline(in, l))
+        throw std::runtime_error(path + ": the file ends in the atom positions (" + std::to_string(g.system.atoms.size()) + " read)");
       const auto w = split(l);
+      if (w.size() < 3) throw std::runtime_error(path + ": bad position line for atom " + std::to_string(g.system.atoms.size() + 1));
       Atom a;
       a.element = element_from_symbol(names[s].substr(0, names[s].find('_')));
       a.id = int64_t(g.system.atoms.size() + 1);
       a.pos = g.system.cell.to_cartesian({to_d(w[0]), to_d(w[1]), to_d(w[2])});
       g.system.atoms.push_back(a);
     }
-  while (std::getline(in, l) && split(l).size() < 3) {}
-  const auto nw = split(l);
-  g.n = {int(to_d(nw[0])), int(to_d(nw[1])), int(to_d(nw[2]))};
+  std::vector<std::string> nw;
+  while (std::getline(in, l)) {
+    nw = split(l);
+    if (nw.size() >= 3) break;
+    nw.clear();
+  }
+  if (nw.empty()) throw std::runtime_error(path + ": no grid dimensions (the file ends early)");
+  double dim[3];
+  for (int k = 0; k < 3; ++k) {
+    dim[k] = to_d(nw[size_t(k)]);
+    if (!std::isfinite(dim[k]) || dim[k] < 1 || dim[k] > 1e5 || dim[k] != std::floor(dim[k]))
+      throw std::runtime_error(path + ": bad grid dimensions '" + l + "'");
+  }
+  if (dim[0] * dim[1] * dim[2] > 2e9) throw std::runtime_error(path + ": grid dimensions '" + l + "' are too large");
+  g.n = {int(dim[0]), int(dim[1]), int(dim[2])};
   const size_t total = size_t(g.n[0]) * size_t(g.n[1]) * size_t(g.n[2]);
-  g.values.reserve(total);
-  double x;
-  while (g.values.size() < total && in >> x) g.values.push_back(x);
+  g.values.reserve(std::min<size_t>(total, size_t(1) << 26));
+  // Token by token through strtod: `in >> double` sets failbit on a subnormal such as 1.4E-320 (ERANGE),
+  // which stopped a complete grid half way. A non-numeric token (the augmentation header) still ends it.
+  // Fortran drops the E of a three-digit exponent ("0.13809134801-319"): the sign then starts the exponent.
+  std::string tok;
+  while (g.values.size() < total && in >> tok) {
+    const char* b = tok.c_str();
+    char* e = nullptr;
+    double x = std::strtod(b, &e);
+    if (e == b) break;
+    if (*e == '+' || *e == '-') {
+      const std::string fixed = tok.substr(0, size_t(e - b)) + "E" + tok.substr(size_t(e - b));
+      const char* fb = fixed.c_str();
+      char* fe = nullptr;
+      const double y = std::strtod(fb, &fe);
+      if (*fe == '\0') x = y, e = const_cast<char*>(b) + tok.size();
+    }
+    if (*e != '\0' || !std::isfinite(x))
+      throw std::runtime_error(path + ": bad grid value '" + tok + "' (value " + std::to_string(g.values.size() + 1) + ")");
+    g.values.push_back(x);
+  }
   if (g.values.size() != total) throw std::runtime_error(path + ": the grid ends early");
   return g;
 }
@@ -292,19 +378,24 @@ void write_chgcar(const VaspGrid& g, const std::string& path) {
 
 std::vector<double> read_acf(const std::string& path) {
   std::vector<double> q;
-  for (const auto& l : lines_of(slurp(path))) {
+  for (const auto& l : lines_of(slurp_required(path))) {
     const auto w = split(l);
     if (w.size() >= 5 && std::all_of(w[0].begin(), w[0].end(), ::isdigit)) q.push_back(to_d(w[4]));
   }
+  if (q.empty()) throw std::runtime_error(path + ": no atom rows (not a Bader ACF.dat)");
   return q;
 }
 
 std::vector<std::pair<std::string, int>> poscar_species(const std::string& path) {
-  const auto L = lines_of(slurp(path));
+  const auto L = lines_of(slurp_required(path));
   if (L.size() < 7) throw std::runtime_error(path + ": not a POSCAR");
   const auto n = split(L[5]), c = split(L[6]);
   std::vector<std::pair<std::string, int>> out;
-  for (size_t k = 0; k < n.size() && k < c.size(); ++k) out.push_back({n[k], int(to_d(c[k]))});
+  for (size_t k = 0; k < n.size() && k < c.size(); ++k) {
+    const double x = to_d(c[k]);
+    if (!std::isfinite(x) || x < 0 || x > 1e7) throw std::runtime_error(path + ": line 7 must hold the atom counts per species, found '" + c[k] + "'");
+    out.push_back({n[k], int(x)});
+  }
   return out;
 }
 
@@ -330,8 +421,9 @@ const std::vector<std::string> kStages = {"01_cell", "02_cell2", "03_relax", "04
 double lattice_a(const std::string& poscar) {
   const auto L = lines_of(slurp(poscar));
   if (L.size() < 3) return std::nan("");
-  const double s = to_d(split(L[1]).at(0));
-  const auto w = split(L[2]);
+  const auto sw = split(L[1]), w = split(L[2]);
+  if (sw.empty() || w.size() < 3) return std::nan("");
+  const double s = to_d(sw[0]);
   return s * std::sqrt(to_d(w[0]) * to_d(w[0]) + to_d(w[1]) * to_d(w[1]) + to_d(w[2]) * to_d(w[2]));
 }
 

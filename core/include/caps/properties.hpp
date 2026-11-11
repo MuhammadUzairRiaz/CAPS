@@ -59,7 +59,7 @@ struct AnalyzeOptions {
   // structure
   int elem_a = 0, elem_b = 0;   // g(r) element pair (0 = any)
   bool inter_only = false;
-  double rdf_rmax = 0;          // 0: half the shortest cell width (at most 15 Å)
+  double rdf_rmax = 0;          // 0: half the shortest cell width (at most 15 Å, at least 8 Å); periodic images past half the cell count
   double rdf_dr = 0.02;
   double qmax = 25.0, dq = 0.02;   // Å⁻¹
   double q_direct = 4.0;           // S(q) by the direct reciprocal-lattice sum up to here (Å⁻¹); 0: from g(r) only

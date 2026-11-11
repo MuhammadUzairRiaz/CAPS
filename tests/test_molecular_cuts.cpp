@@ -84,3 +84,63 @@ TEST(MolecularCuts, NetworksAreCutAtomByAtom) {
   for (const auto& n : rep.notes) noted = noted || n.find("periodic network") != std::string::npos;
   EXPECT_TRUE(noted);
 }
+
+// A chain crystal cut with whole molecules gives the same atoms as a plain cut (its chains are one periodic network):
+// no H is left behind by a carbon outside the cube
+TEST(MolecularCuts, NetworkCutLeavesNoBareHydrogen) {
+  const System pe = read_cif(std::string(CAPS_SOURCE_DIR) + "/data/crystals/polymers/pe-orthorhombic.cif");
+  ParticleOptions o;
+  o.shape = ParticleShape::Cube;
+  o.radius = 10;
+  const System plain = nanoparticle(pe, o);
+  o.whole_molecules = true;
+  const System whole = nanoparticle(pe, o);
+  EXPECT_EQ(whole.atoms.size(), plain.atoms.size());
+  for (size_t i = 0; i < whole.atoms.size(); ++i) {
+    if (whole.atoms[i].element != 1) continue;
+    double dmin = 1e300;
+    for (size_t j = 0; j < whole.atoms.size(); ++j)
+      if (j != i) dmin = std::min(dmin, norm(whole.atoms[j].pos - whole.atoms[i].pos));
+    EXPECT_LT(dmin, 1.2);
+  }
+}
+
+// A sphere cut from a chain crystal keeps no carbon cut off from every other carbon, so passivation makes no methane
+TEST(MolecularCuts, NoDetachedCarbonsToPassivate) {
+  const System pe = read_cif(std::string(CAPS_SOURCE_DIR) + "/data/crystals/polymers/pe-orthorhombic.cif");
+  ParticleOptions o;
+  o.shape = ParticleShape::Sphere;
+  o.radius = 10;
+  o.passivate = true;
+  const System s = nanoparticle(pe, o);
+  ASSERT_FALSE(s.atoms.empty());
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    if (s.atoms[i].element != 6) continue;
+    double dmin = 1e300;
+    for (size_t j = 0; j < s.atoms.size(); ++j)
+      if (j != i && s.atoms[j].element == 6) dmin = std::min(dmin, norm(s.atoms[j].pos - s.atoms[i].pos));
+    EXPECT_LT(dmin, 1.7);
+  }
+}
+
+// A passivated quartz channel keeps Si, O and H as three types with their own masses
+TEST(MolecularCuts, PassivatedChannelKeepsSiliconType) {
+  const System quartz = read_cif(std::string(CAPS_SOURCE_DIR) + "/data/crystals/alpha-quartz.cif");
+  PoreOptions o;
+  o.kind = PoreKind::Cylinder;
+  o.crystal = &quartz;
+  o.width = 14;
+  o.wall = 6;
+  o.length = 20;
+  o.passivate = true;
+  const System s = build_pore(o);
+  ASSERT_EQ(s.types.size(), 3u);
+  for (const auto& a : s.atoms) {
+    const TypeInfo* t = nullptr;
+    for (const auto& ti : s.types)
+      if (ti.type == a.type) t = &ti;
+    ASSERT_NE(t, nullptr);
+    if (a.element == 14) EXPECT_NEAR(t->mass, 28.0855, 0.01);
+    if (a.element == 1) EXPECT_NEAR(t->mass, 1.008, 0.01);
+  }
+}

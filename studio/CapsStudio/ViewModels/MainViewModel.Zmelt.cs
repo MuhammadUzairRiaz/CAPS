@@ -72,7 +72,7 @@ public sealed partial class MainViewModel
             ZmCurve = (pts.Select(p => (double?)p!["energy"] ?? 0).ToArray(), pts.Select(p => (double?)p!["temperature"] ?? 0).ToArray(),
                        pts.Select(p => (bool?)p!["melted"] == true).ToArray(), tm, tls);
             ZmHas = true;
-            Status = tm > 0 ? string.Format(inv, "Z method: T_m {0:0} K", tm) : "Z method: no run melted";
+            Status = tm > 0 ? string.Format(inv, "Z method: T_m {0:0} K", tm) : ((JsonArray)r["points"]!).Any(p => (bool?)p!["melted"] == true) ? "Z method: no Z found" : "Z method: no run melted";
             ZmeltChanged?.Invoke();
         }
         catch (Exception ex) { ZmError = ex.Message.Contains("cancel") ? "stopped" : ex.Message; }

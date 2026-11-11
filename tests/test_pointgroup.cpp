@@ -107,3 +107,52 @@ TEST(PointGroup, SymmetrizeNoisyBenzene) {
   const double cc = norm(s.atoms[0].pos - s.atoms[2].pos);
   for (int k = 0; k < 6; ++k) EXPECT_NEAR(norm(s.atoms[size_t(2 * k)].pos - s.atoms[size_t((2 * k + 2) % 12)].pos), cc, 1e-9);
 }
+
+// Near-symmetric geometries: the group named, its order and its largest miss all come from one set of operations, every
+// one of them within the tolerance. Noisy SF6 is not Oh at 0.1 Å (Oh misses by 0.14 Å) but a subgroup of matching order;
+// noisy methane and ethane close into C3v and D3d, not into a group larger than their names.
+TEST(PointGroup, NoisyGeometriesNameMatchesOrder) {
+  auto order_of = [](const std::string& g) {
+    if (g == "C1") return 1;
+    if (g == "Cs" || g == "Ci") return 2;
+    if (g == "T") return 12;
+    if (g == "Td" || g == "Th" || g == "O") return 24;
+    if (g == "Oh") return 48;
+    if (g == "I") return 60;
+    if (g == "Ih") return 120;
+    const int n = std::stoi(g.substr(1));
+    if (g[0] == 'S') return n;
+    if (g[0] == 'C') return g.size() > 1 && (g.back() == 'v' || g.back() == 'h') ? 2 * n : n;
+    return g.back() == 'h' || g.back() == 'd' ? 4 * n : 2 * n;   // Dn, Dnh, Dnd
+  };
+  struct Case { System s; double tol; std::string group; };
+  const std::vector<Case> cases = {
+      {mol({{16, {0.035326, 0.023879, -0.030708}}, {9, {1.568931, 0.003024, 0.045016}}, {9, {-1.532467, -0.025447, 0.057621}},
+            {9, {-0.045832, 1.550175, 0.030857}}, {9, {-0.041762, -1.561324, -0.055295}}, {9, {0.020186, 0.031749, 1.568763}},
+            {9, {0.045057, -0.022350, -1.536565}}}), 0.1, "D2"},
+      {mol({{6, {0.019270, 0.049173, 0.033876}}, {1, {0.660017, 0.627364, 0.591423}}, {1, {-0.595304, -0.650098, 0.666099}},
+            {1, {-0.573401, 0.617501, -0.641834}}, {1, {0.683616, -0.603024, -0.669600}}}), 0.1, "C3v"},
+      {mol({{6, {-0.016813, -0.010222, 0.756432}}, {6, {0.039903, 0.007134, -0.776143}}, {1, {1.014244, -0.017988, 1.123861}},
+            {1, {0.478137, 0.910120, -1.177150}}, {1, {-0.475153, 0.863292, 1.141258}}, {1, {-1.019123, -0.024812, -1.170132}},
+            {1, {-0.473507, -0.852605, 1.184957}}, {1, {0.520472, -0.850272, -1.124744}}}), 0.2, "D3d"},
+  };
+  for (const auto& c : cases) {
+    const auto r = point_group(c.s, c.tol);
+    EXPECT_EQ(r.group, c.group);
+    EXPECT_EQ(r.order, order_of(r.group)) << r.group;
+    EXPECT_LE(r.max_deviation, c.tol) << r.group;
+  }
+  // benzene: C7 never passes for a six-ring at a loose tolerance
+  std::vector<std::pair<int, Vec3>> benz;
+  for (int k = 0; k < 6; ++k) {
+    const double p = M_PI * k / 3;
+    benz.push_back({6, {1.39 * std::cos(p) + 0.02 * std::sin(2.1 * k), 1.39 * std::sin(p), 0.03 * std::cos(1.3 * k)}});
+    benz.push_back({1, {2.47 * std::cos(p), 2.47 * std::sin(p) - 0.03 * std::sin(0.7 * k), 0}});
+  }
+  for (double tol : {0.02, 0.05, 0.1, 0.5}) {
+    const auto r = point_group(mol(benz), tol);
+    EXPECT_EQ(r.order, order_of(r.group)) << r.group << " at " << tol;
+    EXPECT_LE(r.max_deviation, tol) << r.group << " at " << tol;
+    for (const auto& e : r.elements) EXPECT_LE(e.n, 6) << r.group << " at " << tol;
+  }
+}

@@ -1,8 +1,11 @@
 // GROMACS .gro (fixed columns, nm) and XYZ / extended XYZ readers.
+#include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <vector>
 
 #include "caps/elements.hpp"
 #include "caps/io.hpp"
@@ -157,15 +160,39 @@ void write_gro(const System& s, const std::string& path) {
   write_gro_frame(out, s, s.title.empty() ? "CAPS structure" : s.title);
 }
 
+// A .gro file carries no element column: readers (CAPS, GROMACS, ASE, VMD) take the element from the atom name.
+// A name is written as it is only when it reads back as the atom's element and starts with a capital letter
+// (C1, CA, OW, HW1, Cl1). Force-field type labels that a LAMMPS data file leaves in the name (c3, ca, hc, os,
+// opls_135) do not: "ca" reads as calcium and "os" as osmium.
+static bool gro_name_keeps_element(const std::string& name, int z) {
+  if (name.empty()) return false;
+  if (z <= 0) return true;   // unknown element: the name is all there is
+  size_t k = 0;
+  while (k < name.size() && std::isdigit(static_cast<unsigned char>(name[k]))) ++k;
+  if (k == name.size() || !std::isupper(static_cast<unsigned char>(name[k]))) return false;
+  return element_from_name(name) == z;
+}
+
 void write_gro_frame(std::ostream& out, const System& s, const std::string& title) {
   out << title << "\n" << s.atoms.size() << "\n";
-  const auto mol = s.molecules();
+  int nmol = 0;
+  const auto mol = s.molecules(&nmol);
+  std::vector<long> seen(static_cast<size_t>(std::max(nmol, 0)) + 1, 0);   // atoms so far in each molecule
   char b[96];
   for (size_t i = 0; i < s.atoms.size(); ++i) {
     const Atom& a = s.atoms[i];
     const long res = (a.resid > 0 ? long(a.resid) : s.has_mol && a.mol > 0 ? long(a.mol) : long(mol[i] + 1)) % 100000;
     std::string rn = a.resname.empty() ? "MOL" : a.resname.substr(0, 5);
-    std::string an = a.name.empty() ? element(a.element).symbol : a.name.substr(0, 5);
+    const size_t m = i < mol.size() && mol[i] >= 0 && static_cast<size_t>(mol[i]) < seen.size() ? static_cast<size_t>(mol[i]) : seen.size() - 1;
+    const long nth = ++seen[m];
+    std::string an = a.name.substr(0, 5);
+    if (!gro_name_keeps_element(an, a.element)) {
+      // element symbol plus the atom's place in its molecule (C1, C2, H17), kept to the 5-column field
+      const std::string sym = element(a.element).symbol;
+      long wrap = 1;
+      for (size_t d = sym.size(); d < 5; ++d) wrap *= 10;
+      an = a.element > 0 ? (sym + std::to_string(wrap > 1 ? (nth - 1) % (wrap - 1) + 1 : nth)).substr(0, 5) : sym.substr(0, 5);
+    }
     std::snprintf(b, sizeof b, "%5ld%-5s%5s%5ld%8.3f%8.3f%8.3f\n", res, rn.c_str(), an.c_str(), long((i + 1) % 100000), a.pos[0] / 10, a.pos[1] / 10, a.pos[2] / 10);
     out << b;
   }

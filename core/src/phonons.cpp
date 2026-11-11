@@ -35,6 +35,8 @@ PhononResult phonons(const System& s, const PhononOptions& o) {
   if (!o.field_for) throw std::invalid_argument("phonons: no force field");
   const size_t N = s.atoms.size(), n = 3 * N;
   if (N == 0) throw std::invalid_argument("phonons: no atoms");
+  // a zero step makes every force constant 0/0 (NaN), a long one leaves the harmonic range
+  if (!(o.step > 0 && o.step <= 0.5)) throw std::invalid_argument("phonons: the displacement must be a length above 0 and at most 0.5 Å (e.g. 0.01)");
   auto stop = [&](const std::string& w, double f) {
     if (o.progress && !o.progress(w, f)) throw std::runtime_error("phonons stopped");
   };
@@ -51,6 +53,14 @@ PhononResult phonons(const System& s, const PhononOptions& o) {
       --sc[size_t(std::max_element(sc.begin(), sc.end()) - sc.begin())];
       cut = true;
     }
+  {
+    // the atom cap holds for every supercell: an explicit --supercell, a partly given one and the cell itself
+    const size_t total = size_t(sc[0]) * size_t(sc[1]) * size_t(sc[2]) * N;
+    if (total > o.max_atoms)
+      throw std::invalid_argument("phonons: supercell " + std::to_string(sc[0]) + "x" + std::to_string(sc[1]) + "x" +
+                                  std::to_string(sc[2]) + " has " + std::to_string(total) + " atoms (at most " +
+                                  std::to_string(o.max_atoms) + "): use smaller repeats");
+  }
   if (cut) r.notes.push_back("the supercell was cut to stay under " + std::to_string(o.max_atoms) + " atoms: pairs beyond half its width are folded in");
   r.supercell = sc;
   const System sup = supercell(s, sc[0], sc[1], sc[2]);

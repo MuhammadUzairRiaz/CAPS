@@ -56,7 +56,7 @@
               <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4" IsVisible="{Binding ThNemd}">
                 <TextBlock Text="Flux along" Classes="label" /><TextBlock Grid.Column="1" Text="Slabs" Classes="label" /><TextBlock Grid.Column="2" Text="Exchange every" Classes="label" />
                 <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.ThAxes}" SelectedIndex="{Binding ThAxis}" HorizontalAlignment="Stretch" />
-                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ThSlabs}" Minimum="6" Increment="2" FormatString="0" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ThSlabs}" Minimum="10" Increment="2" FormatString="0" />
                 <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding ThSwap}" Minimum="1" FormatString="0 'steps'" />
               </Grid>
               <TextBlock Text="{Binding ThSteps}" Classes="dim" />

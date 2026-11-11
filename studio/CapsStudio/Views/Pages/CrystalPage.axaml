@@ -320,7 +320,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                       <NumericUpDown Value="{Binding HabitRadius}" Minimum="5" Maximum="100" Increment="5" FormatString="R 0 Å" Width="90" ShowButtonSpinner="False"
                                      ToolTip.Tip="Distance from the centre to the farthest corner of the particle" />
-                      <Button Classes="small" Content="Build particle" Click="OnHabitParticle" ToolTip.Tip="A particle of the crystal in the shape shown, as a new structure (whole molecules and ions)" />
+                      <Button Classes="small" Content="Build particle" Click="OnHabitParticle" ToolTip.Tip="A particle of the crystal in the shape shown, as a new structure (whole molecules and ions; a network or metal is cut atom by atom)" />
                     </StackPanel>
                   </StackPanel>
                 </StackPanel>

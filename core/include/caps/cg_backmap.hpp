@@ -19,6 +19,7 @@
 #pragma once
 #include <array>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -52,6 +53,15 @@ struct BackmapLibrary {
   struct Template { int kind = 0; int type = 0; std::vector<int> classes; std::vector<std::pair<int, int>> atoms; };   // atoms: (bead offset, role)
   std::vector<Template> templates;                                  // kind 0 bond, 1 angle, 2 dihedral, 3 improper
   LammpsFull reference;                                             // its masses and coefficients (atoms cleared)
+  // angles (kind 1) and dihedrals (kind 2) by the atom types they join, for a term of the placed bond graph that no
+  // template covers (a short chain whose class window never occurs in the reference): (kind, type tuple read either
+  // way, the smaller first) → (term type, the type tuple in the reference's own order); and the tuples the reference's
+  // bond graph has with no term at all (left out there, so left out here too)
+  std::map<std::pair<int, std::vector<int>>, std::pair<int, std::vector<int>>> by_types;
+  std::set<std::pair<int, std::vector<int>>> no_term;
+  // every run of consecutive bead classes the reference chains have (as wide as the widest template): a term over a
+  // run listed here that no template placed is one the reference leaves out on purpose, so it is not filled by types
+  std::set<std::vector<int>> windows;
   std::vector<std::string> notes;
 };
 BackmapLibrary backmap_library(const LammpsFull& aa, const Json& map_json, int conformers = 20);
@@ -59,6 +69,7 @@ BackmapLibrary backmap_library(const LammpsFull& aa, const Json& map_json, int c
 struct BackmapResult {
   LammpsFull data;
   int beads = 0, terms_unmatched = 0;
+  int terms_by_types = 0, terms_untyped = 0;      // angles + dihedrals no template covered: typed by atom types, or left out
   double cut_min = 0, cut_mean = 0, cut_max = 0;   // the restored cut bonds' lengths before relaxation (Å)
   double charge = 0;                                // net charge
   int reversed_chains = 0;

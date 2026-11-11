@@ -39,7 +39,7 @@ Barostat barostat_from_string(const std::string& s) {
   if (s == "crescale" || s == "c-rescale") return Barostat::CRescale;
   if (s == "berendsen") return Barostat::Berendsen;
   if (s == "mtk" || s == "mttk" || s == "nose-hoover" || s == "parrinello-rahman-mtk") return Barostat::MTK;
-  throw std::invalid_argument("unknown barostat '" + s + "' (none, crescale, berendsen)");
+  throw std::invalid_argument("unknown barostat '" + s + "' (none, crescale, berendsen, mtk)");
 }
 
 const char* to_string(Thermostat t) {
@@ -86,6 +86,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   if (o.deform_axis >= 0 && (o.deform_axis > 2 || !s.cell.valid())) throw std::invalid_argument("deformation needs a periodic cell and an axis 0, 1 or 2");
   if (o.deform_axis >= 0 && o.barostat != Barostat::None && (!o.anisotropic || o.couple_axis[o.deform_axis]))
     throw std::invalid_argument("the deformed axis cannot also follow the barostat: use per-axis coupling without that axis");
+  if (o.steps < 0) throw std::invalid_argument("the number of steps must be 0 or more (got " + std::to_string(o.steps) + ")");
   if (o.respa < 1 || o.respa > 16) throw std::invalid_argument("r-RESPA inner steps must be 1 … 16");
   if (o.respa > 1 && o.thermostat == Thermostat::Langevin) throw std::invalid_argument("r-RESPA runs with the Bussi thermostat or none");
   if (o.respa > 1 && o.constraints != ConstraintMode::None) throw std::invalid_argument("r-RESPA and bond constraints are alternatives: choose one");
@@ -434,10 +435,25 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     et.virial += cons.virial();
     for (int c = 0; c < 6; ++c) et.w[c] += cons.tensor()[c];
   };
+  // the last RATTLE's constraint virial tensor, kept for the recompute after a barostat update: the reprojection
+  // there (rattle with h = 0) carries no force, so without it the pressure on those steps would lack the constraints
+  double cw[6] = {0, 0, 0, 0, 0, 0};
   auto settle_v = [&] {
     if (!ncons) return;
     cons.rattle(x, v, cell, dt);
+    for (int c = 0; c < 6; ++c) cw[c] = cons.tensor()[c];
     constraint_virial();
+  };
+  // after a barostat update: the step's constraint virial back on et, each component r_a F_b scaled with the cell
+  // (r_ij follows the cell, the constraint force is to first order unchanged)
+  auto saved_constraint_virial = [&](const double mu[3]) {
+    if (!ncons) return;
+    static const int ia[6] = {0, 1, 2, 0, 0, 1}, ib[6] = {0, 1, 2, 1, 2, 2};
+    for (int c = 0; c < 6; ++c) {
+      cw[c] *= std::sqrt(mu[ia[c]] * mu[ib[c]]);
+      et.w[c] += cw[c];
+    }
+    et.virial += cw[0] + cw[1] + cw[2];
   };
   // after the cell is scaled or deformed: bonds back to their lengths, no relative velocity along them
   auto reproject = [&] {
@@ -560,6 +576,28 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     scale_axis(o.deform_axis, (1 + o.deform_strain0 + o.deform_rate * t1) / (1 + o.deform_strain0 + o.deform_rate * t0));
   };
 
+  // step 0: no RATTLE with a time step has run yet, so the constraint virial at t = 0 comes from one trial step on
+  // copies of x and v (half kick, drift with SHAKE, half kick with the same forces, RATTLE), the way settle_v() reads
+  // it on every later step: both the part that holds the bonds against the forces and the centripetal part
+  if (ncons) {
+    std::vector<double> xt = x, vt = v;
+    auto trial_kick = [&] {
+      for (size_t i = 0; i < n; ++i) {
+        if (held[i]) continue;
+        const double a = 0.5 * dt * kAcc / m[i];
+        for (int k = 0; k < 3; ++k) vt[3 * i + k] += a * f[3 * i + k];
+      }
+      zero_partial(vt);
+    };
+    trial_kick();
+    cons.reference(xt, cell);
+    for (size_t k = 0; k < xt.size(); ++k) xt[k] += dt * vt[k];
+    cons.shake(xt, &vt, dt);
+    trial_kick();
+    cons.rattle(xt, vt, cell, dt);
+    for (int c = 0; c < 6; ++c) cw[c] = cons.tensor()[c];
+    constraint_virial();
+  }
   const auto t_start = std::chrono::steady_clock::now();
   emit(0);
   if (o.frame && o.frame_every > 0) o.frame(x, cell, o.step_offset);
@@ -631,11 +669,13 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       // Berendsen per axis: μ_k = exp(−β hp (P0 − P_kk) / (3τ)), the linear-strain form of the isotropic update
       const double hp = dt * std::max(1, o.barostat_every);
       const ThermoRow r = row(step);
+      double mu_axis[3] = {1, 1, 1};
       for (int k = 0; k < 3; ++k) {
         if (!o.couple_axis[k]) continue;
         const double target = std::isnan(o.axis_pressure[k]) ? o.pressure : o.axis_pressure[k];
         const double deps = std::clamp(-o.compressibility / o.tau_p * (target - r.p[k]) * hp / 3, -0.0033, 0.0033);
-        scale_axis(k, std::exp(deps));
+        mu_axis[k] = std::exp(deps);
+        scale_axis(k, mu_axis[k]);
       }
       if (o.full_shape) {   // simple shears toward zero shear stress: x by y (xy), x by z (xz), y by z (yz)
         static const int moved[3] = {0, 0, 1}, along[3] = {1, 2, 2}, comp[3] = {3, 4, 5};
@@ -657,7 +697,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       }
       reproject();
       et = compute();
-      if (ncons) constraint_virial();
+      saved_constraint_virial(mu_axis);
     } else if (o.barostat != Barostat::None && !mtk && step % std::max(1, o.barostat_every) == 0) {
       const double hp = dt * std::max(1, o.barostat_every);
       const double k = kinetic_energy(v, m);
@@ -678,7 +718,8 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       }
       reproject();
       et = compute();
-      if (ncons) constraint_virial();
+      const double mu3[3] = {mu, mu, mu};
+      saved_constraint_virial(mu3);
     }
 
     if (o.topology && o.topology_every > 0 && step % o.topology_every == 0) {
