@@ -40,7 +40,7 @@ for iff, base, ff, frc in (("iff-pcff", "pcff-frc", "INTERFACE (IFF 1.5, PCFF)",
                           f"and metal rules (priority 6) for {frc}. Among matching rules the highest priority wins."
                           + (f" Base types {frc} does not define, left out: {', '.join(left)}." if left else ""),
            "rules": rules + OWN, "unbonded_types": METALS}
-    for k in ("pairs", "analogies", "analogy_source", "ordered"):
+    for k in ("pairs", "analogies", "analogy_source", "ordered", "refused"):
         if k in B:
             doc[k] = B[k]
     json.dump(doc, open(os.path.join(OUT, iff + ".typing.json"), "w"), indent=1, ensure_ascii=False)

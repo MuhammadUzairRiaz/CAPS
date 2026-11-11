@@ -1207,6 +1207,53 @@ static bool rigid_site_reduce(const System& s, const ForceField& ff, System& rs,
   return true;
 }
 
+// Molecules whose every bonded term has a zero constant: the force field's mark of a rigid model with no site (TraPPE's
+// CO2, ethylene oxide, thiophene, naphthalene; EPM2's CO2), which fix rigid must carry, or its atoms come apart in a
+// flexible run. Returns their molecule ids (1-based as the data file numbers them). A molecule with a zero-constant bond
+// beside non-zero terms is half rigid, which no export can run: refused by name.
+static std::vector<int64_t> zero_constant_bodies(const System& s, const ForceField& ff) {
+  int nm = 0;
+  const auto comp = s.molecules(&nm);
+  auto mol_id = [&](uint32_t a) { return s.has_mol ? s.atoms[a].mol : int64_t(comp[a]) + 1; };
+  std::vector<char> flexible(size_t(std::max(nm, 0)), 0), zero_bond(size_t(std::max(nm, 0)), 0);
+  std::vector<std::string> zero_names(size_t(std::max(nm, 0)));
+  auto flex = [&](uint32_t a) { if (comp[a] >= 0) flexible[size_t(comp[a])] = 1; };
+  for (const auto& t : ff.bonds) {
+    if (t.k != 0) { flex(t.i); continue; }
+    if (comp[t.i] < 0) continue;
+    zero_bond[size_t(comp[t.i])] = 1;
+    if (zero_names[size_t(comp[t.i])].empty()) zero_names[size_t(comp[t.i])] = ff.atom_type[t.i] + "-" + ff.atom_type[t.j];
+  }
+  for (const auto& t : ff.angles) if (t.kt != 0) flex(t.j);
+  for (const auto& t : ff.dihedrals) if (t.v != 0) flex(t.i);
+  for (const auto& t : ff.impropers) if (t.v != 0) flex(t.i);
+  for (const auto& t : ff.impropers_dlpoly) if (t.v != 0) flex(t.i);
+  for (const auto& t : ff.impropers_harmonic) flex(t.i);
+  for (const auto& t : ff.inversions) flex(t.c);
+  for (const auto& t : ff.bonds_x) flex(t.i);
+  for (const auto& t : ff.angles_x) flex(t.j);
+  for (const auto& t : ff.urey_bradley) flex(t.i);
+  for (const auto& t : ff.cbt) flex(t.j);
+  for (const auto& t : ff.bonds2) flex(t.i);
+  for (const auto& t : ff.angles2) flex(t.j);
+  for (const auto& t : ff.dihedrals2) flex(t.j);
+  for (const auto& t : ff.impropers2) flex(t.j);
+  std::vector<int64_t> bodies;
+  std::vector<char> seen(size_t(std::max(nm, 0)), 0);
+  for (uint32_t a = 0; a < s.atoms.size(); ++a) {
+    if (comp[a] < 0 || seen[size_t(comp[a])]) continue;
+    const size_t c = size_t(comp[a]);
+    seen[c] = 1;
+    if (!zero_bond[c]) continue;
+    if (flexible[c])
+      throw FieldError(ff.name + ": molecule " + std::to_string(mol_id(a)) + " has a bond with no constant (" + zero_names[c] +
+                       ") beside non-zero terms: a rigid model's term on a flexible molecule, which neither a rigid body nor a "
+                       "flexible run can hold; type the molecule with one model's types");
+    bodies.push_back(mol_id(a));
+  }
+  return bodies;
+}
+
 // The virtual sites LAMMPS can take: four-site water, and sites on rigid molecules. False: others remain (build refuses).
 static bool reduce_virtual_sites(const System& s, const ForceField& ff, System& rs, ForceField& rf, LammpsStyle& st) {
   if (tip4p_reduce(s, ff, rs, rf, st)) return true;
@@ -1242,8 +1289,22 @@ static std::array<int, 4> tip4p_types(const System& s, const ForceField& ff, con
   return r;
 }
 
-void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOptions& e0, const std::string& path, bool pair_coeffs,
+// The structure with every rigid model at the force field's own geometry (apply_rigid_geometry: the zero-constant bonds'
+// lengths and angles; a massless site follows its atoms), so a rigid body starts as the model, not as the builder made it.
+// Only the first call does it: after the virtual sites are reduced, the zero-force bonds that tie a site to its body are
+// exclusions, not geometry.
+static const System& at_rigid_geometry(const System& s, const ForceField& ff, const LammpsStyle& st, System& copy) {
+  if (!st.rigid_site_mols.empty() || st.tip4p_qdist > 0 ||
+      std::none_of(ff.bonds.begin(), ff.bonds.end(), [](const BondTerm& b) { return b.k == 0 && b.r0 > 0; }))
+    return s;
+  copy = s;
+  return apply_rigid_geometry(copy, ff, 0, copy.atoms.size()) > 0 ? copy : s;
+}
+
+void write_lammps_data_ff(const System& s_in, const ForceField& ff0, const EnergyOptions& e0, const std::string& path, bool pair_coeffs,
                           const LammpsStyle& st) {
+  System rigid_geometry;
+  const System& s = at_rigid_geometry(s_in, ff0, st, rigid_geometry);
   const Digits digits(st.full_precision);
   if (!ff0.vsites.empty()) {   // four-site water: LAMMPS places the M sites itself
     System rs;
@@ -1642,6 +1703,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     LammpsStyle st2 = st;
     if (reduce_virtual_sites(s, ff0, rs, rf, st2)) return write_lammps_input(rs, rf, e0, data_path, path, held_mol, pair_coeffs, run, st2, notes);
   }
+  const std::vector<int64_t> zero_bodies = zero_constant_bodies(s, ff0);   // before any file: a half-rigid molecule is refused
   const bool metal = lammps_metal_units(ff0, st);
   const ForceField mff = metal ? forcefield_in_metal_units(ff0) : ForceField{};
   const ForceField& ff = metal ? mff : ff0;
@@ -1852,6 +1914,9 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   std::vector<int64_t> rigid;
   for (int64_t m : st.rigid_mols)
     if (m > 0 && m != held_mol) rigid.push_back(m);
+  for (int64_t m : zero_bodies)   // rigid models without a site (TraPPE's CO2, ethylene oxide): fix rigid carries them too
+    if (m > 0 && m != held_mol && std::find(rigid.begin(), rigid.end(), m) == rigid.end()) rigid.push_back(m);
+  std::sort(rigid.begin(), rigid.end());
   if (!rigid.empty()) {
     std::vector<int64_t> by_exclude;   // bodies with a massless site have their pairs taken out by zero-force bonds instead
     for (int64_t m : rigid)
@@ -1890,9 +1955,10 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
       break;
   }
   // nothing but rigid bodies (a box of TraPPE O2): group mobile is empty, and the bodies carry the thermostat and barostat
-  const bool only_bodies = !rigid.empty() && held_mol <= 0 && s.has_mol && std::all_of(s.atoms.begin(), s.atoms.end(), [&](const Atom& a) {
-    return std::find(rigid.begin(), rigid.end(), a.mol) != rigid.end();
-  });
+  const std::vector<int> frag_ob = s.has_mol ? std::vector<int>() : s.molecules();   // the data file's molecule ids
+  bool only_bodies = !rigid.empty() && held_mol <= 0;
+  for (size_t i = 0; only_bodies && i < s.atoms.size(); ++i)
+    only_bodies = std::find(rigid.begin(), rigid.end(), s.has_mol ? s.atoms[i].mol : int64_t(frag_ob[i]) + 1) != rigid.end();
   const std::string mobile = held_mol > 0 || !rigid.empty() ? "mobile" : "all";
   if (held_mol > 0 || !rigid.empty())
     out << "group           mobile subtract all" << (held_mol > 0 ? " held" : "") << (rigid.empty() ? "" : " rigid") << "\n";

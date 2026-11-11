@@ -342,7 +342,9 @@ UNTYPED_BALANCE = {
     "thiophene": (OPLS, "thiophene: no numbers of its own (furan's C / H with thiazole's S give +0.16 e)"),
     "lutidine": (OPLS, "a 3-alkylpyridine: 672 is a pyridazine's CH3 and does not carry the ring H's charge (-0.16 e)"),
 }
-num = lambda t: re.sub(r"^opls_0*", "", t or "") if (t or "").startswith("opls_") else (t or "")
+# the number of an opls_NNN, or of an opls2024_NNN (oplsaa-gromacs's fallback: the 2024 table's NNN, so the 2024 table's
+# reasons hold for it)
+num = lambda t: re.sub(r"^opls(2024)?_0*", "", t or "") if re.match(r"^opls(2024)?_", t or "") else (t or "")
 # pysimm's PCFF typer (pysimm/forcefield/pcff.py) is a short element-and-bond-order list: every non-aromatic sp2 C c=2,
 # every 3-coordinate N n, every O with a non-sp3 neighbour o_2. pcff.frc's own descriptions and terms decide:
 PYSIMM_PCFF = {
@@ -391,12 +393,13 @@ EXPLAINED = [(ff, t, w) for ff in GAFFS for t, w in [
     (lambda m, r, c, e, i: m == "water" and (r, c) in (("oh", "ow"), ("ho", "hw")),
      "water: CAPS types it as GAFF's own water (ow / hw of gaff.dat), antechamber as an alcohol O-H (make_gaff_rules.py)"),
 ]] + [(ff, (lambda m, r, c, e, i: (num(r), num(c)) in FOYER_OPLS), "foyer") for ff in OPLS] + [
-    ("oplsaa-gromacs", lambda m, r, c, e, i: m == "allene" and c in ("", "?"),
-     "allene: GROMACS's oplsaa.ff has no allene types (the 2024 table's 1153-1157); CAPS leaves it untyped, foyer gives the "
-     "central C 927, an alkyne C"),
-    ("oplsaa-gromacs", lambda m, r, c, e, i: m == "P007" and num(r) == "962" and c in ("", "?"),
-     "the CF2H end of the hydrogen-capped PVDF oligomer: GROMACS's file has no CF2H type (the 2024 table's 966 / 967); "
-     "962 with its two F 965 and an H 140 would leave the group at +0.06"),
+    ("pcff-frc", lambda m, r, c, e, i: m == "cyclooctatetraene" and c in ("", "?"),
+     "a conjugated chain of four C=C: pcff.frc's c= / c=1 / c=2 carry one inner double bond, and no assignment gives each "
+     "double and single bond of the ring its own term (pysimm's c=2 everywhere puts the double bond's 1.34 A term on the "
+     "single bonds); CAPS refuses it by name"),
+    ("pcff-frc", lambda m, r, c, e, i: m in ("nitromethane", "nitrobenzene") and c in ("", "?"),
+     "nitro group: pcff.frc has no nitro N type (pysimm's n is the amide N, CAPS used to take the ring N npc); CAPS refuses "
+     "the group by name"),
 ]
 
 

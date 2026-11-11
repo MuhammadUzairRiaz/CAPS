@@ -680,6 +680,30 @@ def opls(t):
     return "opls_%03d" % int(t) if re.fullmatch(r"\d+", t) else t
 
 
+# Groups neither OPLS-AA table types at an integer charge: the rules above leave them untyped, and the typing files list
+# them under "refused" so CAPS's error names the group and the reason (the source's own numbers, never a spread residual)
+_TRIESTER = "[PX4](=[OX1])([OX2][#6])([OX2][#6])[OX2][#6]"
+_THIOPHENE = "the thiophene ring: OPLS-AA has no numbers of its own (furan's C / H with thiazole's S 633 give +0.16 e)"
+REFUSED = [
+    *[(sm, "CH3Br: the alkyl bromide C 976 with three H leaves CH3Br at +0.10 e, and OPLS-AA has no methyl bromide numbers")
+      for sm in ("[CX4H3;$(*Br)]", "[Br][CX4H3]")],
+    *[(sm, "CH3I: the iodoalkane C 1011 with three H leaves CH3I at +0.10 e, and OPLS-AA has no methyl iodide numbers")
+      for sm in ("[CX4H3;$(*I)]", "[I][CX4H3]")],
+    *[(sm, "CCl4: the RCCl3 C (+0.60 with chlorine's -0.20) would leave CCl4 at -0.20 e; OPLS-AA has no CCl4 C")
+      for sm in ("[CX4;$(*(Cl)(Cl)(Cl)Cl)]", "[Cl][CX4;$(*(Cl)(Cl)(Cl)Cl)]")],
+    *[(sm, "a carbon with both F and Cl: the monofluoro C 957-960 are sized for F 956 and the CF2 C 962 for two F, so no "
+           "numbers balance the group") for sm in ("[CX4;$(*F);$(*Cl)]", "[F,Cl][CX4;$(*F);$(*Cl)]")],
+    *[(sm, "a trialkyl phosphate: OPLS-AA's 440-444 are the dimethyl phosphate anion's, which leave trimethyl phosphate at "
+           "-0.47 e and triethyl phosphate at -0.38 e") for sm in (f"[PX4;$({_TRIESTER})]", f"[OX1]=[PX4;$({_TRIESTER})]",
+                                                                  f"[OX2;$(O[PX4;$({_TRIESTER})])]", f"[#6;$(*[OX2][PX4;$({_TRIESTER})])]")],
+    *[(sm, "an alkyne on an aryl ring (phenylacetylene, tolan): the ring C has no number, and benzene's 145 without its H "
+           "leaves tolan at -0.23 e") for sm in ("[CX2;$(*c)]", "[CX2;$(*#[CX2]c)]", "[c;$(c[CX2]#[CX2])]")],
+    *[(sm, _THIOPHENE) for sm in ("[c;$(c1cccs1),$(c1ccsc1)]", "[s;$(s1cccc1)]", "[H][c;$(c1cccs1),$(c1ccsc1)]")],
+    *[(sm, "a 3-alkylpyridine: 672 is a pyridazine's CH3 and does not carry the ring H's charge (-0.16 e on 3,5-lutidine)")
+      for sm in ("[CX4;$(*c1cnccc1)]", "[c;$(c1cnccc1);$(c[CX4])]", "[H][CX4;$(*c1cnccc1)]")],
+]
+
+
 if __name__ == "__main__":
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(root, "data", "typing")
@@ -699,6 +723,7 @@ if __name__ == "__main__":
         rules24.append({**r, "type": t, **({"overrides": [WATER.get(x, opls(x)) for x in r["overrides"]]} if "overrides" in r else {})})
     json.dump({"format": "caps-typing", "version": 1, "forcefield": "OPLS-AA 2024 (Jorgensen)", "unknown_types": "untyped",
                "description": "CAPS's OPLS-AA rules in opls_NNN names for the library built from Jorgensen's 2024 BOSS files "
-                              "(bench/typing/make_oplsaa_rules.py)", "rules": rules24},
+                              "(bench/typing/make_oplsaa_rules.py)", "rules": rules24,
+               "refused": [{"smarts": sm, "reason": why} for sm, why in REFUSED]},
               open(os.path.join(out, "oplsaa2024.typing.json"), "w"), indent=1, ensure_ascii=False)
     print(f"oplsaa2024: {len(rules24)} rules" + (f", types the file lacks: {sorted(lacking)}" if lacking else ""))

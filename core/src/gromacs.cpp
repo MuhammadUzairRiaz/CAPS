@@ -271,12 +271,63 @@ std::string gromacs_mdp(const System& s, const ForceField& ff, const EnergyOptio
     m << "coulombtype              = Reaction-Field\n";
     m << "epsilon-rf               = 1\n";
   }
-  m << "constraints              = none        ; CAPS keeps every bond flexible\n";
+  if (std::any_of(ff.bonds.begin(), ff.bonds.end(), [](const BondTerm& b) { return b.k == 0 && b.r0 > 0; })) {
+    // rigid diatomics (TraPPE N2, O2, H2): their bond is in [ constraints ], which hold whatever "constraints" says
+    m << "constraints              = none        ; CAPS keeps every other bond flexible\n";
+    m << "constraint-algorithm     = lincs       ; the rigid diatomics' [ constraints ]\n";
+    m << "lincs-iter               = 2           ; for energy conservation with LINCS\n";
+    m << "lincs-order              = 4\n";
+  } else {
+    m << "constraints              = none        ; CAPS keeps every bond flexible\n";
+  }
   return m.str();
+}
+
+// A molecule with a zero-constant bond is the force field's mark of a rigid model. A rigid diatomic (TraPPE's N2, O2,
+// H2, with or without the charge site on the bond) is one bond held at its length: its bond is written as a constraint
+// (the returned bond indices) and the site as a virtual_sites2. Anything larger (TraPPE's CO2, ethylene oxide, rings)
+// would need a constraint-and-site construction CAPS does not write, and LINCS cannot hold linear CO2 or coupled ring
+// triangles: refused by name, pointing to the LAMMPS export (fix rigid). So is a half-rigid molecule.
+static std::set<size_t> rigid_diatomic_bonds(const System& s, const ForceField& ff) {
+  int nm = 0;
+  const auto comp = s.molecules(&nm);
+  std::vector<char> is_site(s.atoms.size(), 0);
+  for (const auto& v : ff.vsites) if (v.site < is_site.size()) is_site[v.site] = 1;
+  std::vector<int> real(size_t(std::max(nm, 0)), 0);
+  for (uint32_t a = 0; a < s.atoms.size(); ++a) if (comp[a] >= 0 && !is_site[a]) ++real[size_t(comp[a])];
+  std::set<size_t> diatomic;
+  std::vector<char> flexible(size_t(std::max(nm, 0)), 0);
+  auto flex = [&](uint32_t a) { if (comp[a] >= 0) flexible[size_t(comp[a])] = 1; };
+  for (const auto& t : ff.bonds) if (t.k != 0) flex(t.i);
+  for (const auto& t : ff.angles) if (t.kt != 0) flex(t.j);
+  for (const auto& t : ff.dihedrals) if (t.v != 0) flex(t.i);
+  for (const auto& t : ff.bonds_x) flex(t.i);
+  for (const auto& t : ff.bonds2) flex(t.i);
+  for (const auto& t : ff.angles2) flex(t.j);
+  for (const auto& t : ff.urey_bradley) flex(t.i);
+  for (size_t k = 0; k < ff.bonds.size(); ++k) {
+    const auto& t = ff.bonds[k];
+    if (t.k != 0 || comp[t.i] < 0) continue;
+    const int64_t mol = s.has_mol ? s.atoms[t.i].mol : int64_t(comp[t.i]) + 1;
+    const std::string pair = ff.atom_type[t.i] + "-" + ff.atom_type[t.j];
+    if (!flexible[size_t(comp[t.i])] && real[size_t(comp[t.i])] == 2 && !is_site[t.i] && !is_site[t.j] && t.r0 > 0) {
+      diatomic.insert(k);
+      continue;
+    }
+    if (flexible[size_t(comp[t.i])])
+      throw FieldError(ff.name + ": molecule " + std::to_string(mol) + " has a bond with no constant (" + pair +
+                       ") beside non-zero terms: a rigid model's term on a flexible molecule, which no topology can hold; type the "
+                       "molecule with one model's types");
+    throw FieldError(ff.name + ": molecule " + std::to_string(mol) + " is a rigid model (its bonds, " + pair +
+                     " among them, have no constant): beyond a diatomic, GROMACS needs it written as constraints and virtual sites, "
+                     "which CAPS does not write; use the LAMMPS export, which runs it as a rigid body (fix rigid)");
+  }
+  return diatomic;
 }
 
 std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, const EnergyOptions& e0, const std::string& stem,
                                        const std::vector<Restraint>& restraints) {
+  const std::set<size_t> constrained = rigid_diatomic_bonds(s, ff);
   EnergyOptions e = e0;
   if (ff.cutoff > 0) e.cutoff = ff.cutoff;   // the model's own cut-off, as gromacs_mdp writes it: the vacuum box is sized by it
   std::vector<std::string> notes = gromacs_notes(s, ff, e);
@@ -365,8 +416,9 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   const auto mol = s.molecules(&nmol);
   // charges at six decimals, each molecule's total kept (as the LAMMPS data file has them)
   const std::vector<double> q6 = charges_six_decimals(ff.charge, std::vector<int64_t>(mol.begin(), mol.end()));
-  enum Sec { ATOMS, BONDS, PAIRS, ANGLES, DIHEDRALS, VSITES, VSITES2, VSITES3, EXCLUSIONS, NSEC };
+  enum Sec { ATOMS, BONDS, CONSTRAINTS, PAIRS, ANGLES, DIHEDRALS, VSITES, VSITES2, VSITES3, EXCLUSIONS, NSEC };
   static const char* sec_head[NSEC] = {"[ atoms ]\n; nr  type  resnr  residue  atom  cgnr  charge  mass\n", "[ bonds ]\n; i  j  func  parameters\n",
+                                       "[ constraints ]\n; i  j  func  b0 (nm)   (a rigid diatomic: its bond held at the model's length)\n",
                                        "[ pairs ]\n; i  j  func  sigma (nm)  epsilon (kJ/mol), scaled\n", "[ angles ]\n; i  j  k  func  parameters\n",
                                        "[ dihedrals ]\n; i  j  k  l  func  parameters\n",
                                        "[ virtual_sitesn ]\n; site  func  atom weight ... (3: weighted centre)\n",
@@ -385,8 +437,10 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   // bonds (structure bonds without a term: function 5, a connection, so tools see the molecule)
   std::set<std::pair<uint32_t, uint32_t>> have;
   auto mark = [&](uint32_t i, uint32_t j) { have.insert({std::min(i, j), std::max(i, j)}); };
-  for (const auto& t : ff.bonds) {
-    add(BONDS, {t.i, t.j}, " 1" + nm8s({t.r0 / 10, 2 * t.k * KJ * 100}));
+  for (size_t k = 0; k < ff.bonds.size(); ++k) {
+    const auto& t = ff.bonds[k];
+    if (constrained.count(k)) add(CONSTRAINTS, {t.i, t.j}, " 1" + nm8s({t.r0 / 10}));
+    else add(BONDS, {t.i, t.j}, " 1" + nm8s({t.r0 / 10, 2 * t.k * KJ * 100}));
     mark(t.i, t.j);
   }
   for (const auto& t : ff.bonds_x) {
