@@ -29,10 +29,15 @@ public sealed partial class MainViewModel
     private ProjectItem? _beforeMol;     // the structure that was active when the Molecule module opened (Insert goes there)
     private bool _from3D;                // the SMILES was written from the 3D structure: no rebuild
 
+    private int _colourBeforeMol = -1;   // the Studio's colouring, given back when the Molecule module closes
+
     private void MoleculeModuleChanged(int was, int m)
     {
         if (m == 9 && was != 9)
         {
+            // one molecule: its elements are what the eye needs (the Studio colours by molecule)
+            _colourBeforeMol = ColourIndex;
+            ColourIndex = 0;
             _beforeMol = _activeItem != _molItem ? _activeItem : _beforeMol;
             if (_molItem != null && ProjectItems.Contains(_molItem) && !_molItem.Doc.IsDisposed) Activate(_molItem);
             else if (_activeItem != null)
@@ -46,8 +51,13 @@ public sealed partial class MainViewModel
                 RaiseProject();
             }
         }
-        else if (was == 9 && m != 9 && _activeItem == null && _beforeMol != null && ProjectItems.Contains(_beforeMol) && !_beforeMol.Doc.IsDisposed)
-            Activate(_beforeMol);   // left without building: the structure that was open comes back
+        else if (was == 9 && m != 9)
+        {
+            if (_colourBeforeMol >= 0 && ColourIndex == 0) ColourIndex = _colourBeforeMol;
+            _colourBeforeMol = -1;
+            if (_activeItem == null && _beforeMol != null && ProjectItems.Contains(_beforeMol) && !_beforeMol.Doc.IsDisposed)
+                Activate(_beforeMol);   // left without building: the structure that was open comes back
+        }
     }
 
     /// <summary>The builder's molecule into the view: a single-frame copy of the chosen conformer (the Studio edits one

@@ -252,6 +252,13 @@ def markdown(text: str) -> tuple[str, list[tuple[int, str, str]], dict]:
                 kind = "warn"
             out.append(f'<aside class="{kind}">' + inline(" ".join(note)) + "</aside>")
             continue
+        m = re.match(r"^!\[(.+)\]\(([^)]+)\)\s*$", l)
+        if m:
+            # a Studio picture from docs/manual/img with its caption (the tutorials sit one folder down)
+            para(buf)
+            out.append(module_shot(m.group(2), m.group(1), "../"))
+            i += 1
+            continue
         if l.startswith("|"):
             para(buf)
             rows = []

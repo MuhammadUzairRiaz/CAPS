@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Draw and build molecules · CAPS tutorial</title>
+<meta name="description" content="Draw styrene by hand, fuse rings into naphthalene and anthracene, type a curative as SMILES, edit a molecule in 3D with the Studio&#x27;s tools, and send the result to Packing and the Polymer builder.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="icon" type="image/svg+xml" href="../assets/caps.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/caps_32.png">
+<link rel="apple-touch-icon" href="../assets/caps_256.png">
+<link rel="stylesheet" href="../assets/site.css?v=c2a81f6c45">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/site.js?v=c2a81f6c45"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html" title="CAPS · Chain Assembly and Packing Suite"><svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 2 L26.3 8.5 L26.3 21.5 L15 28 L3.7 21.5 L3.7 8.5 Z" fill="none" stroke="var(--accent)" stroke-width="2"/><path d="M15 9.5 V11.7 M19.8 17.8 L17.9 16.7 M10.2 17.8 L12.1 16.7" stroke="currentColor" stroke-width="1.4"/><circle cx="15" cy="15" r="3.4" fill="var(--accent)"/><circle cx="15" cy="7.5" r="2" fill="currentColor"/><circle cx="21.5" cy="18.8" r="2" fill="currentColor"/><circle cx="8.5" cy="18.8" r="2" fill="currentColor"/></svg><span class="brand-name"><b>CAPS</b><small>Chain Assembly and Packing Suite</small></span></a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html" aria-current="page">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="../whatsnew.html">What's new</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>On this page</h2><a class="l2" href="#what-you-will-make">What you will make</a><a class="l2" href="#1-find-your-way-around">1. Find your way around</a><a class="l2" href="#2-draw-styrene-by-hand">2. Draw styrene by hand</a><a class="l2" href="#3-fuse-rings-naphthalene-anthracene-phenanthrene">3. Fuse rings: naphthalene, anthracene, phenanthrene</a><a class="l2" href="#4-type-a-smiles-the-accelerator-cbs">4. Type a SMILES: the accelerator CBS</a><a class="l2" href="#5-any-element-the-periodic-table">5. Any element: the periodic table</a><a class="l2" href="#6-edit-in-3d-with-the-studio-s-tools">6. Edit in 3D with the Studio's tools</a><a class="l2" href="#7-send-the-molecules-on">7. Send the molecules on</a><a class="l2" href="#the-same-from-the-command-line">The same from the command line</a><a class="l2" href="#next">Next</a></nav>
+<main>
+<header class="hero"><p class="eyebrow">Tutorial 09</p><h1>Draw and build molecules</h1><p>Draw styrene by hand, fuse rings into naphthalene and anthracene, type a curative as SMILES, edit a molecule in 3D with the Studio's tools, and send the result to Packing and the Polymer builder.</p><div class="strip"><span><i>Time</i> 15 minutes</span><span><i>Level</i> first steps</span><span><i>Uses</i> Studio · Molecule</span></div></header><h2 id="what-you-will-make">What you will make</h2>
+<p>Four small molecules, each built a different way: styrene drawn atom by atom, naphthalene and anthracene from fused benzene rings, the rubber accelerator CBS typed as SMILES, and chlorobenzene made by editing benzene in 3D. At the end, styrene goes to the Polymer builder as a repeat unit and CBS goes to Packing.</p>
+<p>Everything happens in the <strong>Molecule</strong> module of CAPS Studio. Open it from the Start page (the <strong>Molecule</strong> card) or with <strong>Build › Molecule builder…</strong>.</p>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/03_molecule.jpg" alt="The Molecule module: the 2D sketch on the left, the Studio view with every shelf in the middle, the molecule&#x27;s SMILES, conformers and buttons on the right." width="1440" height="900" loading="lazy" decoding="async"></button><figcaption>The Molecule module: the 2D sketch on the left, the Studio view with every shelf in the middle, the molecule's SMILES, conformers and buttons on the right.</figcaption></figure>
+<h2 id="1-find-your-way-around">1. Find your way around</h2>
+<p>The module has three parts.</p>
+<ul><li><strong>The 2D sketch, on the left.</strong> Its tools sit above the drawing: Draw, Bond, Ring, Charge, Move, Cut and Erase, then the bond orders (single, double, triple), the ring list, Undo, Redo, Tidy and Clear, and the element keys with <strong>…</strong> for the periodic table.</li><li><strong>The Studio view, in the middle.</strong> It shows the molecule in 3D as soon as there is one, with every Studio shelf above it: select and lasso, translate and rotate, place atom, draw bond, cut, <strong>+H</strong>, <strong>Fragments</strong>, rings, and the <strong>Modify</strong> row.</li><li><strong>The molecule's panel, on the right.</strong> The SMILES, the conformers with their energies, the properties (formula, mass, stereocentres, valence check), the 3D embedding options and the buttons that send the molecule on.</li></ul>
+<p>Hover over any tool to read what it does. Over the drawing, the label next to an atom says what the next click will do.</p>
+<aside class="note">CAPS adds hydrogens for you from each atom's valence. You draw the heavy atoms; the hover label shows the hydrogens each one carries (CH₃, CH₂, OH).</aside>
+<h2 id="2-draw-styrene-by-hand">2. Draw styrene by hand</h2>
+<p>Styrene is a benzene ring with a vinyl group, C₆H₅–CH=CH₂.</p>
+<ol><li>Click <strong>Ring</strong> (the hexagon) and check that the ring list says <strong>Benzene</strong>. Click in the middle of the sketch. A benzene ring appears and the panel reads C₆H₆, valence <em>ok</em>.</li><li>Click <strong>Draw</strong> (the pencil) and make sure <strong>C</strong> is the chosen element. Click one carbon of the ring. A new carbon appears, bonded to it: you now have toluene, C₇H₈.</li><li>Click the new carbon. Another carbon is added in a zig-zag: ethylbenzene, C₈H₁₀.</li><li>Click <strong>Bond</strong> (second tool), then the <strong>double</strong> key (two lines). Click the bond between the two chain carbons. It becomes a double bond: styrene, C₈H₈.</li></ol>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/03c_molecule_bonds.jpg" alt="The Bond tool with double bonds chosen, on styrene." width="1440" height="900" loading="lazy" decoding="async"></button><figcaption>The Bond tool with double bonds chosen, on styrene.</figcaption></figure>
+<p>About half a second after each change, the view in the middle builds the molecule in 3D and the panel lists its conformers.</p>
+<p>If you click the wrong place, press <strong>Undo</strong> (or ⌘Z on a Mac, Ctrl+Z on Windows and Linux, while the sketch has the focus).</p>
+<aside class="note">CAPS keeps every atom within its valence. Try a double bond from a ring carbon that already has one: the bond is not drawn, and the status line says <em>Not drawn: C takes 4 bonds</em>.</aside>
+<h2 id="3-fuse-rings-naphthalene-anthracene-phenanthrene">3. Fuse rings: naphthalene, anthracene, phenanthrene</h2>
+<ol><li>Press <strong>Clear</strong> (the ×). With <strong>Ring</strong> and <strong>Benzene</strong>, click empty space: benzene.</li><li>Click one of the ring's bonds. A second benzene ring is fused onto that bond: naphthalene, C₁₀H₈.</li><li>Click a bond on the far edge of the new ring for anthracene (three rings in a line), or a bond on its angled edge for phenanthrene. Either way the panel reads C₁₄H₁₀, valence <em>ok</em>.</li></ol>
+<p>CAPS places the double bonds over the whole ring system each time, shifting the older ring's double bonds where needed. Every CH keeps exactly one hydrogen, so the result is fully conjugated.</p>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/03b_molecule_rings.jpg" alt="Phenanthrene from three fused benzene rings: C₁₄H₁₀, one H on every CH." width="1440" height="900" loading="lazy" decoding="async"></button><figcaption>Phenanthrene from three fused benzene rings: C₁₄H₁₀, one H on every CH.</figcaption></figure>
+<p>The ring list also has saturated rings of 3 to 8 atoms. Click an atom instead of a bond to put a ring through that atom (a spiro ring).</p>
+<h2 id="4-type-a-smiles-the-accelerator-cbs">4. Type a SMILES: the accelerator CBS</h2>
+<p>For a larger molecule, typing is quicker than drawing. CBS (N-cyclohexyl-2-benzothiazolesulfenamide) is a common sulfur-cure accelerator.</p>
+<ol><li>Click the SMILES box under <strong>Identifiers</strong> on the right and type <code>C1CCC(CC1)NSc1nc2ccccc2s1</code>.</li><li>The sketch draws the molecule and the view builds it: C₁₃H₁₆N₂S₂, 264.4 g/mol, 33 atoms.</li><li>The <strong>Conformers</strong> list shows five conformers minimised with GAFF2, lowest energy first. Click a row to see that conformer in the view.</li></ol>
+<p>To change how the 3D structure is made, open <strong>3D embedding</strong> in the panel: the method (distance bounds, or with a rotor search over the rotatable bonds), the number of conformers (1 to 50), the force field for the clean-up (GAFF2, or UFF for any element) and how hydrogens are added.</p>
+<p>A SMILES and the sketch are the same molecule. Edit the drawing and the SMILES changes; edit the SMILES and the drawing is redrawn.</p>
+<h2 id="5-any-element-the-periodic-table">5. Any element: the periodic table</h2>
+<p>The element row has the common elements. For anything else:</p>
+<ol><li>Click <strong>…</strong> at the end of the element row. The periodic table opens over the sketch.</li><li>Click an element, for example <strong>Se</strong>. It gets its own key next to the others and becomes the element <strong>Draw</strong> places.</li><li>Click empty space: a selenium atom with its two hydrogens, written <code>[SeH2]</code>.</li></ol>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/03d_molecule_table.jpg" alt="The periodic table, opened from the … key." width="1440" height="900" loading="lazy" decoding="async"></button><figcaption>The periodic table, opened from the … key.</figcaption></figure>
+<h2 id="6-edit-in-3d-with-the-studio-s-tools">6. Edit in 3D with the Studio's tools</h2>
+<p>The view in the middle is a real Studio view, so its tools work on the molecule. Here you turn benzene into chlorobenzene in 3D.</p>
+<ol><li>Clear the sketch and type <code>c1ccccc1</code> in the SMILES box. Benzene appears in the view.</li><li>In the shelf above the view, pick the <strong>Select</strong> tool (the arrow) and click one hydrogen in the view.</li><li>In the <strong>Modify</strong> row (the second row of the shelf), click <strong>Cl</strong>.</li></ol>
+<p>The hydrogen becomes chlorine in 3D. The SMILES box changes to <code>c1(ccccc1)Cl</code> and the sketch redraws as chlorobenzene. The molecule is not built again, so the 3D geometry you edited stays.</p>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/03e_molecule_3dedit.jpg" alt="Benzene with one hydrogen made Cl in the view: the SMILES and the sketch follow." width="1440" height="900" loading="lazy" decoding="async"></button><figcaption>Benzene with one hydrogen made Cl in the view: the SMILES and the sketch follow.</figcaption></figure>
+<p>Every other tool works the same way: <strong>+H</strong> adds missing hydrogens, <strong>Fragments</strong> attaches a group to a picked atom, and <strong>draw bond</strong> and <strong>cut</strong> work on the 3D structure. After an edit in 3D, the conformer list shows one entry, <em>edited in the Studio view</em>. That edited structure is what the buttons on the right use.</p>
+<h2 id="7-send-the-molecules-on">7. Send the molecules on</h2>
+<ul><li><strong>A repeat unit for a polymer.</strong> Type <code>*CC(*)c1ccccc1</code> (styrene's repeat unit: <code>*</code> marks the head and the tail) and click <strong>Use as repeat unit</strong>. The Polymer builder opens with it as unit A.</li><li><strong>Molecules to pack.</strong> With CBS built, click <strong>Use in Pack</strong>. CAPS asks where to save it, then opens Packing with CBS on its list of molecules.</li><li><strong>Into a structure you had open.</strong> <strong>Insert into document</strong> puts the molecule into the structure that was open in the Studio before you came to the Molecule module. Click in the view where it should go; the mouse wheel turns it.</li><li><strong>On its own.</strong> <strong>Open in Studio</strong> keeps the molecule as a structure of the project and goes to the Studio. The save button writes mol2, PDB, XYZ or LAMMPS data.</li></ul>
+<h2 id="the-same-from-the-command-line">The same from the command line</h2>
+<p>The Studio uses the same core as the <code>caps</code> command, so these steps can be scripted:</p>
+<div class="code" data-lang="shell"><pre><code>caps build &#x27;C=Cc1ccccc1&#x27; -o styrene.mol2 --conformers 5 --ff uff
+caps build &#x27;C1CCC(CC1)NSc1nc2ccccc2s1&#x27; -o cbs.mol2 --conformers 5
+caps build &#x27;c1ccccc1&#x27; -o benzene.mol2
+caps edit benzene.mol2 --ops &#x27;ring 1 2 6 aromatic&#x27; -o naphthalene.mol2</code></pre></div>
+<p>The last line fuses an aromatic six-ring onto the bond between atoms 1 and 2 of benzene, which gives naphthalene.</p>
+<h2 id="next">Next</h2>
+<ul><li><a href="../modules/molecule.html">Molecule module guide</a>: every tool and option on one page.</li><li><a href="first-cell.html">Tutorial 01</a>: grow a polymer cell from a repeat unit like the one above.</li></ul><nav class="pager"><a href="cluster.html"><small>Previous</small>Running CAPS on your own cluster</a><span></span></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

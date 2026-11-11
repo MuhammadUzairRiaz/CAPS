@@ -83,6 +83,12 @@ make() {
     01_start) shot 01_start "" "wait=500" ;;
     02_studio) shot 02_studio "" "$PS" "relax=1" "module=8" "tab=0" "wait=1500" ;;
     03_molecule) shot 03_molecule "" "molecule=C1CCC(CC1)NSc1nc2ccccc2s1" "wait=3000" ;;
+    # the Molecule module's sketch tools: fused rings (phenanthrene) with the Ring tool, styrene with the Bond tool on
+    # double bonds, the periodic table, and benzene edited in 3D (an H made Cl with the Studio's tool; the sketch follows)
+    03b_molecule_rings) shot 03b_molecule_rings "" "molecule=c1ccc2c(c1)ccc1ccccc12" "moltool=ring" "wait=2000" ;;
+    03c_molecule_bonds) shot 03c_molecule_bonds "" "molecule=C=Cc1ccccc1" "moltool=bond" "molorder=2" "wait=2000" ;;
+    03d_molecule_table) shot 03d_molecule_table "" "molecule=CC(C)O" "moltable=1" "wait=1500" ;;
+    03e_molecule_3dedit) shot 03e_molecule_3dedit "" "molecule=c1ccccc1" "molreplace=Cl" "wait=2000" ;;
     # one atactic polystyrene chain (DP 8) previewed from the library
     04_polymer) shot 04_polymer "" "polydp=8" "polymer=P013" "wait=1000" ;;
     # PBSA (butylene succinate : butylene adipate 80:20 by moles) at DP 25, its composition table
@@ -172,6 +178,6 @@ PY
   esac
 }
 
-if [ $# -eq 0 ]; then set -- 01_start 02_studio 03_molecule 04_polymer 04b_composition 05_grow 06_field 07_relax 08_dynamics 09_equilibrate 10_pack 11_blend 12_nano_sheet 13_nano_matrix 14_crystal 15_surface 16_react 17_cg 18_analyze 19_export 20_project 21_solvation 22_glass 23_jobs 27_dft_sheets 28_semicrystalline 29_thermal_phonons 30_thermal_dielectric 31_powder 32_study; fi
+if [ $# -eq 0 ]; then set -- 01_start 02_studio 03_molecule 03b_molecule_rings 03c_molecule_bonds 03d_molecule_table 03e_molecule_3dedit 04_polymer 04b_composition 05_grow 06_field 07_relax 08_dynamics 09_equilibrate 10_pack 11_blend 12_nano_sheet 13_nano_matrix 14_crystal 15_surface 16_react 17_cg 18_analyze 19_export 20_project 21_solvation 22_glass 23_jobs 27_dft_sheets 28_semicrystalline 29_thermal_phonons 30_thermal_dielectric 31_powder 32_study; fi
 for n in "$@"; do make "$n"; done
 echo "PNGs and work files in $WORK"

@@ -171,43 +171,105 @@
     "Build",
     "Molecule builder…"
    ],
-   "card": "Draw or type a SMILES and get 3D conformers: monomers, curatives, solvents and additives.",
-   "lede": "Sketch a molecule or type its SMILES and CAPS builds 3D coordinates and conformers, cleaned up with a force field. Use it for monomers, curatives, solvents, plasticisers and small additives.",
-   "input": "A SMILES string or a 2D sketch.",
+   "card": "Draw a molecule or type its SMILES; edit it in 2D or in 3D with the Studio's tools, and get 3D conformers.",
+   "lede": "Draw a molecule on the 2D sketch or type its SMILES, and CAPS builds it in 3D with conformers cleaned up by a force field. The sketch sits beside the Studio view, so every Studio tool works on the molecule too, and an edit made in 3D redraws the sketch. Use it for monomers, curatives, accelerators, solvents, plasticisers and small additives.",
+   "input": "A 2D drawing, a SMILES string, or both.",
    "output": "A 3D molecule (several conformers if you ask), ready for Packing, the Polymer builder or the Studio.",
    "shots": [
     {
      "img": "03_molecule.jpg",
-     "cap": "**Molecule builder** with the accelerator CBS (N-cyclohexyl-2-benzothiazolesulfenamide) typed as SMILES: the 2D sketch, the 3D structure (C₁₃H₁₆N₂S₂, 264.40 g/mol, 33 atoms) and five conformers minimised with GAFF2, with their energies relative to the lowest."
+     "cap": "**Molecule** with the accelerator CBS (N-cyclohexyl-2-benzothiazolesulfenamide) typed as SMILES. Left: the 2D sketch and its tools. Middle: the Studio view with the molecule and every shelf (Sketch & edit, Modify, the workspaces). Right: the SMILES, five conformers minimised with GAFF2 (energies relative to the lowest) and what to do with the molecule. C₁₃H₁₆N₂S₂, 264.4 g/mol, 33 atoms."
+    },
+    {
+     "img": "03b_molecule_rings.jpg",
+     "cap": "**Fused rings**: phenanthrene drawn with the Ring tool, a benzene ring clicked onto the bond of the one before. The double bonds move across the whole ring system, so every carbon keeps one H: C₁₄H₁₀, valence ok."
+    },
+    {
+     "img": "03c_molecule_bonds.jpg",
+     "cap": "**Bond tool** with double bonds chosen (the three keys after the tools: single, double, triple), on styrene."
+    },
+    {
+     "img": "03d_molecule_table.jpg",
+     "cap": "**Any element**: the … key opens the periodic table over the sketch. The element you pick gets its own key next to C, H, N … and Draw places it."
+    },
+    {
+     "img": "03e_molecule_3dedit.jpg",
+     "cap": "**An edit in 3D comes back to the sketch**: benzene built, then one hydrogen made Cl with the Studio's element tool in the view. The SMILES becomes c1(ccccc1)Cl and the sketch redraws as chlorobenzene, without building the molecule again."
     }
    ],
    "steps": [
     {
-     "t": "Draw or type",
+     "t": "Open the module",
      "d": [
-      "Sketch with the draw, ring and charge tools and the element buttons (C, N, O, S, F, Cl, Br, P, I, Si), or type the SMILES under **Identifiers**. Properties update: formula, molecular weight, stereocentres and a valence check."
+      "Click **Molecule** on the Start page, or choose **Build › Molecule builder…**. The window splits into three: the **2D sketch** on the left, the **Studio view** in the middle with the shelves above it, and the molecule's panel on the right (SMILES, conformers, properties, the 3D embedding and the buttons that send the molecule on).",
+      "The view stays empty until there is something to build. The structure you had open in the Studio waits in the project list and comes back when you leave the module without building."
      ]
     },
     {
-     "t": "Set the 3D embedding",
+     "t": "Draw atoms and chains",
      "d": [
-      "Method [[Distance bounds]] (default) or with a rotor search; conformers 1–50 (default 5); clean up with GAFF2 or UFF (every element); hydrogens added from valences, or as written for united-atom models."
+      "Pick **Draw** (the pencil, first tool) and an element key: C, H, N, O, S, F, Cl, Br, P, I or Si. Click empty space to place an atom. Click an atom of the same element to add a new atom bonded to it, at the angle a zig-zag chain needs; click an atom of another element to change it. Drag from an atom to grow a bond in 30° steps, or drag onto another atom to bond the two.",
+      "Hydrogens are implicit: CAPS adds them from each atom's valence, and the hover label shows how many an atom has (CH₂, NH, OH). Draw H only where you want one written explicitly."
      ]
     },
     {
-     "t": "Pick a conformer",
+     "t": "Make and change bonds",
      "d": [
-      "The **Conformers** table lists each one by relative energy, lowest first."
+      "Pick **Bond** (second tool) and an order with the three keys to its right: single, double or triple. Click one atom, then another, to bond them; the first atom gets an amber ring until you click the second (Esc lets go). Click the same atom twice to grow a new atom on it with that bond. Click an existing bond to give it the chosen order. A click on empty space places two atoms with the bond between them.",
+      "With **Draw** instead, a click on a bond steps it through single, double and triple.",
+      "CAPS will not draw an atom with more bonds than its valence allows (four for carbon, three for neutral nitrogen, two for oxygen). Such an edit is undone at once and the status line says why, for example *Not drawn: C takes 4 bonds*. Remove a bond first, or choose a lower order."
+     ]
+    },
+    {
+     "t": "Add rings, fused rings and spiro rings",
+     "d": [
+      "Pick **Ring** (the hexagon) and a ring in the list next to the bond keys: **Benzene** (the default), or a saturated 3-, 4-, 5-, 6-, 7- or 8-ring. Click empty space for a free ring; click a **bond** to fuse the ring onto it; click an **atom** for a spiro ring through it.",
+      "Fusing benzene onto benzene gives naphthalene; fuse again on an outer edge for anthracene (straight) or phenanthrene (angled). The double bonds are placed over the whole ring system, shifting the old ring's where needed, so every CH keeps exactly one hydrogen and the valence check stays *ok*."
+     ]
+    },
+    {
+     "t": "Any element, charges and moves",
+     "d": [
+      "The **…** key at the end of the element row opens the full periodic table over the sketch. Pick an element and it gets its own key; Draw then places it. Elements outside the SMILES organic set get their usual hydrogens written out: Se becomes [SeH2], Si [SiH4].",
+      "**Charge** (+) cycles a clicked atom through +1, −1 and 0. **Move** (the arrows) drags an atom to a new place; drag empty space to pan the drawing."
+     ]
+    },
+    {
+     "t": "Delete, undo and tidy",
+     "d": [
+      "**Cut** (scissors) breaks a clicked bond and keeps both atoms. **Erase** (the bin) removes a clicked atom with its bonds, or a clicked bond.",
+      "The four keys after the ring list are **Undo**, **Redo**, **Tidy** and **Clear**. Undo and Redo also work from the keyboard while the sketch has the focus: ⌘Z and ⇧⌘Z on a Mac, Ctrl+Z and Ctrl+Shift+Z (or Ctrl+Y) on Windows and Linux. Tidy lays the drawing out again from its SMILES. Clear empties the sketch, and Undo brings it back."
+     ]
+    },
+    {
+     "t": "Or type the SMILES",
+     "d": [
+      "Type or paste a SMILES under **Identifiers** on the right, for example `C1CCC(CC1)NSc1nc2ccccc2s1` for CBS. The sketch draws it and the molecule is built. Formula, molecular weight, stereocentres and the valence check update as you type; a SMILES that cannot be read says why in red under the box.",
+      "Drawing and typing are the same molecule: an edit of either updates the other."
+     ]
+    },
+    {
+     "t": "Edit in 3D with the Studio's tools",
+     "d": [
+      "About half a second after each change, the molecule is built in 3D and shown in the view in the middle. It is a structure of the project like any other, so every Studio tool works on it: select and lasso, translate and rotate, place atom, draw bond, cut, **+H**, **Fragments**, rings and joins, and the **Modify** row (element, bond order, hybridisation). The workspaces at the top (Sketch, Assemble, Analyse, Present, Mine) arrange the shelves as they do in the Studio.",
+      "Every edit made in 3D writes the molecule's SMILES back and redraws the sketch, without building again, so your 3D geometry stays. After such an edit, the conformer list shows one entry, *edited in the Studio view*, and that edited structure is what Save, Use in Pack, Insert and Open in Studio take. A new edit of the sketch builds the molecule again from the drawing."
+     ]
+    },
+    {
+     "t": "Set the 3D embedding and pick a conformer",
+     "d": [
+      "Under **3D embedding** on the right: method [[Distance bounds]] (default) or with a rotor search over the rotatable bonds; 1 to 50 conformers (default 5); clean-up with GAFF2 or UFF (UFF covers every element); hydrogens added from valences, or as written for united-atom models.",
+      "The **Conformers** list gives each conformer's energy relative to the lowest, in kcal/mol. Click a row and the view shows that conformer."
      ]
     },
     {
      "t": "Send it on",
      "d": [
-      "[[Open in Studio]]; [[Use in Pack]] to fill a box with it; [[Use as repeat unit]] when the SMILES has two `*` (it becomes unit A of the Polymer builder); or [[Insert into document]]."
+      "[[Open in Studio]] keeps the molecule as a structure of the project and goes to the Studio. [[Use in Pack]] saves it and adds it to Pack's list of molecules. [[Use as repeat unit]] works when the SMILES has two `*` (head, then tail): it becomes unit A of the Polymer builder. [[Insert into document]] puts it into the structure that was open before you came to the Molecule module: click in the view where it goes (the mouse wheel turns it). The save button writes mol2, PDB, XYZ or LAMMPS data."
      ]
     },
     {
-     "t": "Rings and joins in the Studio",
+     "t": "Rings and joins on a structure in the Studio",
      "d": [
       "With a structure open in the Studio, the **Rings and joins** button on the view toolbar edits it in place. Pick the two atoms of a bond and [[Fuse on bond]] adds a ring of 3 to 8 atoms that shares it; pick one atom and [[Spiro on atom]] adds a ring through it. **Atoms** names the new ring atoms (`O`, `N C=O C C`; empty for carbons), and [[Aromatic]] makes a fused six-ring aromatic. [[Benzene]] fuses a benzene ring onto the picked bond.",
       "**Insert** puts an atom of the chosen element into the picked bond. **Join a structure**: pick the leaving atom (a hydrogen, or any atom with one bond), give the piece's own leaving atom and the torsion or leave them to CAPS, then [[Choose file and join…]]."
@@ -219,6 +281,16 @@
    "next": [
     "packing",
     "polymer"
+   ],
+   "tips": [
+    "Each tool's tooltip says what a click does, and the label next to the atom under the pointer says what this click will do (*drag to grow*, *click: spiro ring*, *click, then another atom: bond them*).",
+    "The step-by-step tutorial [Draw and build molecules](../tutorials/molecules.html) builds styrene, naphthalene, anthracene and CBS from scratch, edits one in 3D and sends the result to Packing and the Polymer builder."
+   ],
+   "tutorials": [
+    [
+     "molecules",
+     "Draw and build molecules"
+    ]
    ]
   },
   {

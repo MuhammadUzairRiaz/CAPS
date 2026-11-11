@@ -1240,6 +1240,24 @@ internal static class Screenshot
                 var t = w.ViewModel.BuildMolecule();
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
             }
+            // the Molecule module's sketch tools: moltool=draw|bond|ring|charge|move|cut|erase  molorder=1..3  molring=0..6 (the
+            // ring list: benzene, 3- to 8-rings)  moltable=1 (the periodic table open)  molreplace=SYMBOL (an H of the
+            // molecule made SYMBOL with the Studio's element tool, so the sketch follows the 3D edit)
+            if (kv[0] is "moltool" or "molorder" or "molring" or "moltable" or "molreplace"
+                && w.GetVisualDescendants().OfType<Views.Pages.MoleculeSketchPane>().FirstOrDefault() is { } pane)
+            {
+                if (kv[0] == "moltool") pane.SelectTool(kv[1]);
+                if (kv[0] == "molorder") pane.ChooseOrder(int.Parse(kv[1]));
+                if (kv[0] == "molring") pane.ChooseRing(int.Parse(kv[1]));
+                if (kv[0] == "moltable") pane.OpenTable();
+                if (kv[0] == "molreplace" && w.ViewModel.Document is { } md)
+                {
+                    var n = (int)md.Summary().Atoms;
+                    var h = Enumerable.Range(0, n).FirstOrDefault(i => md.Atom(i).Element == 1, -1);
+                    if (h >= 0) { w.ViewModel.Pick(h); w.ViewModel.BuildElement = kv[1]; w.ViewModel.ReplacePickedElement(); }
+                }
+                for (var i = 0; i < 20; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
             // pointer input in window coordinates: click=X,Y  drag=X1,Y1,X2,Y2 (after any building so the layout is settled)
             if (kv[0] is "click" or "drag")
             {

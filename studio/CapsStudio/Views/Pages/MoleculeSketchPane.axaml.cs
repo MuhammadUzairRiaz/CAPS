@@ -56,6 +56,13 @@ public partial class MoleculeSketchPane : PageBase
         };
     }
 
+    /// <summary>The bond-order key 1, 2 or 3 (the screenshot tool).</summary>
+    public void ChooseOrder(int n) { if (this.FindControl<ToggleButton>("Order" + n) is { } b) OnOrder(b, new RoutedEventArgs()); }
+    /// <summary>The ring list's entry (0 benzene, then 3- to 8-rings).</summary>
+    public void ChooseRing(int index) { if (this.FindControl<ComboBox>("RingKind") is { } c) c.SelectedIndex = index; }
+    /// <summary>The periodic table open, as its key does.</summary>
+    public void OpenTable() { if (this.FindControl<Button>("TableButton") is { } b) OnPeriodicTable(b, new RoutedEventArgs()); }
+
     private void OnOrder(object? s, RoutedEventArgs e)
     {
         if (s is not ToggleButton b || !int.TryParse(b.Tag as string, out var n)) return;
