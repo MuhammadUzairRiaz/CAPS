@@ -1738,3 +1738,17 @@ TEST(FFDef, OplsDesDoherty2018FromThePaper) {
   EXPECT_EQ(rule(def.impropers, "*-CD_mal-*-*"), (std::vector<double>{10.5, -1.0, 2.0}));     // Table S6, V2 21
   EXPECT_EQ(rule(def.impropers, "*-NA-*-*"), (std::vector<double>{1.0, -1.0, 2.0}));          // Table S3, V2 2
 }
+
+// Peguin et al. 2009 HFA134a: each of Table 1's torsion fits (F-C-C-F, F-C-C-H) is the relaxed scan of the whole C-C
+// rotation, so the library shares it over the bond's nine dihedrals; their in-phase 3-fold terms then add up to the
+// scanned barrier (2 x (3 C3(FCCF) + 6 C3(FCCH)) / 9 = 4.24 kcal/mol), not nine times it (38 kcal/mol)
+TEST(FFDef, Hfa134aTorsionBarrierAsScanned) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/peguin2009-hfa134a.json");
+  double c3_ff = 0, c3_fh = 0;
+  for (const auto& r : def.dihedrals) {
+    ASSERT_GE(r.params.size(), 13u);
+    for (int k = 0; k < int(r.params[0]); ++k)
+      if (int(r.params[2 + 3 * k]) == 3) (r.match[3] == "F_hfa" ? c3_ff : c3_fh) = r.params[1 + 3 * k];
+  }
+  EXPECT_NEAR(2 * (3 * c3_ff + 6 * c3_fh), 4.24, 0.01);
+}

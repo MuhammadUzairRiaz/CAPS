@@ -227,20 +227,20 @@
    ],
    "params": [
     4,
-    0.0038949204279999997,
+    0.0004327689364444444,
     1,
     0.0,
-    -0.04868650535,
+    -0.005409611705555555,
     2,
     180.0,
-    2.126666297774,
+    0.2362962553082222,
     3,
     0.0,
-    0.022554768804999997,
+    0.0025060854227777775,
     0,
     90.0
    ],
-   "comment": "C0 + C1 (1 + cos phi) + C2 (1 - cos 2 phi) + C3 (1 + cos 3 phi); C0..C3 11.35, 1.96, -24.5, 1070.18 K (Table 1)"
+   "comment": "[C0 + C1 (1 + cos phi) + C2 (1 - cos 2 phi) + C3 (1 + cos 3 phi)] / 9; C0..C3 11.35, 1.96, -24.5, 1070.18 K (Table 1, eq. 3: a fit to the whole C-C rotation scan, shared over the bond's nine dihedrals)"
   },
   {
    "name": "F_hfa-C_hfa-C_hfa-H_hfa",
@@ -252,30 +252,31 @@
    ],
    "params": [
     4,
-    0.003159654837,
+    0.00035107275966666666,
     1,
     0.0,
-    0.019792554828000002,
+    0.002199172758666667,
     2,
     180.0,
-    2.115677057995,
+    0.2350752286661111,
     3,
     0.0,
-    -0.058264830075999995,
+    -0.006473870008444444,
     0,
     90.0
    ],
-   "comment": "C0 + C1 (1 + cos phi) + C2 (1 - cos 2 phi) + C3 (1 + cos 3 phi); C0..C3 -29.32, 1.59, 9.96, 1064.65 K (Table 1)"
+   "comment": "[C0 + C1 (1 + cos phi) + C2 (1 - cos 2 phi) + C3 (1 + cos 3 phi)] / 9; C0..C3 -29.32, 1.59, 9.96, 1064.65 K (Table 1, eq. 3: a fit to the whole C-C rotation scan, shared over the bond's nine dihedrals)"
   }
  ],
  "impropers": [],
  "notes": [
   "built by CAPS (bench/ff/make_zeolite_sorbates.py) from the paper's Tables 1 (read from the page image) and 2",
   "bond lengths fixed in the paper: stiff harmonic bonds (600 kcal/mol/A^2), to be constrained in MD",
-  "Table 1's torsion columns read as C0..C3 of eq. 3",
   "no intramolecular non-bonded pairs (eq. 1)",
   "charges belong to HFA134a only (CHELPG fit of that molecule)",
-  "cut-off 14 A (section 3.2)"
+  "cut-off 14 A (section 3.2)",
+  "Table 1's torsion columns read as C0..C3 of eq. 3",
+  "Table 1's two torsion fits each reproduce the relaxed scan of the whole C-C rotation (alone 4.33 / 4.26 kcal/mol); on all nine dihedrals of the bond their in-phase 3-fold terms gave 38 kcal/mol, so each is divided by nine (C-C barrier 4.24 kcal/mol, staggered minimum)"
  ],
  "units": "real",
  "typing": "../typing/peguin2009-hfa134a.typing.json"
