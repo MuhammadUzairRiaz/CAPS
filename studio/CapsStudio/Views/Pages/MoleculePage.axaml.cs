@@ -19,6 +19,7 @@ public partial class MoleculePage : PageBase
         _sketch = this.FindControl<SketchCanvas>("Sketch")!;
         _preview = this.FindControl<MolView>("Preview")!;
         _sketch.Edited += smiles => Vm.SmilesFromSketch(smiles);
+        _sketch.Notice += message => Vm.Status = message;
         _sketch.HistoryChanged += () =>
         {
             this.FindControl<Button>("UndoButton")!.IsEnabled = _sketch.CanUndo;

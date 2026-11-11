@@ -5572,6 +5572,18 @@ internal static class SelfTest
             Pump();
             Check(undone == "C₁₀H₈" && F() == "C₁₄H₁₀", $"sketch undo → {undone}, redo (keys) → {F()}");
             Step("3: a 5-ring (cyclopentane) from the ring li");
+            // valence: a double bond grown from a ring carbon that has one already is refused (carbon would hold 5), a single one is not
+            Press("ToolBond");
+            Press("Order2");
+            var ringAtom = Enumerable.Range(0, skc.AtomCount).First(i => skc.Neighbours2(i) == 2);
+            Click(At(skc, skc.AtomPoint(ringAtom)));
+            Click(At(skc, skc.AtomPoint(ringAtom)));
+            var refused = $"{F()} {mv.MolValence} · '{mv.Status}'";
+            Press("Order1");
+            Click(At(skc, skc.AtomPoint(ringAtom)));
+            Click(At(skc, skc.AtomPoint(ringAtom)));
+            Check(refused.StartsWith("C₁₄H₁₀ ok") && refused.Contains("C takes 4 bonds") && F() == "C₁₅H₁₂" && mv.MolValence == "ok",
+                  $"sketch valence: double bond on a ring CH refused ({refused}) · single → {F()} {mv.MolValence}");
             // a 5-ring (cyclopentane) from the ring list, on empty space after Clear (choosing a ring picks the Ring tool)
             Press("ClearButton");
             Press("ToolCharge");

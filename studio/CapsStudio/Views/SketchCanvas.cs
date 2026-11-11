@@ -222,8 +222,45 @@ public sealed class SketchCanvas : Control
         Edited?.Invoke(smiles);
     }
 
+    /// <summary>Raised with a short message when an edit was refused (the status line shows it).</summary>
+    public event Action<string>? Notice;
+
+    /// <summary>The most bonds an uncharged atom takes (its highest common valence); 0: no limit kept (metals, others).</summary>
+    private static int MaxValence(int z) => z switch
+    {
+        1 or 9 or 17 or 35 or 53 => 1, 8 => 2, 5 or 7 => 3, 6 or 14 or 32 or 50 => 4, 15 or 33 => 5, 16 or 34 or 52 => 6, _ => 0,
+    };
+
+    /// <summary>An atom of `touched` holding more bonds than its valence allows, or −1.</summary>
+    private int OverValence(int[] touched)
+    {
+        foreach (var i in touched)
+        {
+            if (i < 0 || i >= _atoms.Count) continue;
+            var a = _atoms[i];
+            var max = MaxValence(a.Z);
+            if (max == 0 || a.Charge != 0 || a.Aromatic) continue;
+            var sum = _bonds.Where(b => b.A == i || b.B2 == i).Sum(b => b.Order == 4 ? 1 : b.Order);
+            if (sum > max) return i;
+        }
+        return -1;
+    }
+
     private void Changed(params int[] touched)
     {
+        // an edit that gives an atom more bonds than its valence (a double bond on a ring carbon that has one already, a
+        // fifth bond on carbon) is taken back, and the status line says why
+        if (OverValence(touched) is var bad and >= 0 && _before != null)
+        {
+            var sym = Sym(_atoms[bad].Z);
+            var max = MaxValence(_atoms[bad].Z);
+            Restore(_before);
+            _before = null;
+            _pending = -1;
+            InvalidateVisual();
+            Notice?.Invoke($"Not drawn: {sym} takes {max} bonds and that would give it more. Remove a bond from it first, or use a lower bond order.");
+            return;
+        }
         if (_before != null) { Remember(_before); _before = null; }
         // an edit next to a stereocentre or a marked double bond drops that stereo (it would no longer mean the same)
         foreach (var i in touched)
@@ -454,6 +491,7 @@ public sealed class SketchCanvas : Control
     internal int OuterBond(double towardsX) =>
         Enumerable.Range(0, _bonds.Count).Where(k => Neighbours(_bonds[k].A).Count == 2 && Neighbours(_bonds[k].B2).Count == 2)
                   .OrderByDescending(k => (_atoms[_bonds[k].A].X + _atoms[_bonds[k].B2].X) * towardsX).FirstOrDefault(-1);
+    internal int Neighbours2(int i) => Neighbours(i).Count;
     internal int MaxHydrogens => _atoms.Count == 0 ? 0 : Enumerable.Range(0, _atoms.Count).Max(ImplicitH);
 
     // ---------------------------------------------------------------- input
