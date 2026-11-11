@@ -43,7 +43,7 @@
               <DataTemplate x:DataType="vm:ProjectDoc">
                 <Button Classes="doc" Classes.on="{Binding Selected}" Click="OnDoc" DoubleTapped="OnDocOpen" Tag="{Binding}" ToolTip.Tip="Click: its methods · double-click: open it">
                   <StackPanel>
-                    <Border Height="120" Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+                    <Border Height="120" Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" CornerRadius="9,9,0,0" ClipToBounds="True">
                       <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
                     </Border>
                     <StackPanel Spacing="3" Margin="12,10">

@@ -156,6 +156,7 @@ public partial class TacticityPage : PageBase
             }
             Paint(meso, MesoColour);
             Paint(racemo, RacemoColour);
+            steps.Reverse();   // a pipeline runs its list bottom to top: each selection must sit below its colour step
             units.SetPipeline(steps.Count == 0 ? null : "{\"steps\":[" + string.Join(",", steps) + "]}");
         }
         catch

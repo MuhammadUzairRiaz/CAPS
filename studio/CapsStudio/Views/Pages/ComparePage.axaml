@@ -84,14 +84,24 @@
                 <StackPanel Spacing="4">
                   <TextBlock Text="A" Classes="label" />
                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                    <TextBox Text="{Binding ComparePathA, Mode=OneWay}" IsReadOnly="True" Classes="mono" FontSize="11.5" />
+                    <!-- read-only path: the end (the file name) stays visible, the full path is the tooltip -->
+                    <Border Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="5" MinHeight="30" Padding="10,0" ToolTip.Tip="{Binding ComparePathA}">
+                      <Panel>
+                        <TextBlock Text="{Binding ComparePathA}" Classes="mono" FontSize="11.5" VerticalAlignment="Center" TextTrimming="LeadingCharacterEllipsis" />
+                      </Panel>
+                    </Border>
                     <Button Grid.Column="1" Classes="small" Content="Choose…" Click="OnChooseA" />
                   </Grid>
                 </StackPanel>
                 <StackPanel Spacing="4">
                   <TextBlock Text="B" Classes="label" />
                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                    <TextBox Text="{Binding ComparePathB, Mode=OneWay}" IsReadOnly="True" Classes="mono" FontSize="11.5" Watermark="another build, seed or run" />
+                    <Border Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="5" MinHeight="30" Padding="10,0" ToolTip.Tip="{Binding ComparePathB}">
+                      <Panel>
+                        <TextBlock Text="{Binding ComparePathB}" Classes="mono" FontSize="11.5" VerticalAlignment="Center" TextTrimming="LeadingCharacterEllipsis" />
+                      <TextBlock Text="another build, seed or run" Classes="dim" FontSize="11.5" VerticalAlignment="Center" IsVisible="{Binding ComparePathB, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+                      </Panel>
+                    </Border>
                     <Button Grid.Column="1" Classes="small" Content="Choose…" Click="OnChooseB" />
                   </Grid>
                 </StackPanel>

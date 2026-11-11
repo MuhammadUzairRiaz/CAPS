@@ -32,8 +32,8 @@
     </Border>
     <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
       <DockPanel>
-        <TextBlock DockPanel.Dock="Right" Text="{Binding RecipeSha, StringFormat='sha256 {0}'}" Classes="mono dim" VerticalAlignment="Center" MaxWidth="520" TextTrimming="CharacterEllipsis" />
-        <TextBlock Text="{Binding RecipePathText}" Classes="mono dim" VerticalAlignment="Center" />
+        <TextBlock DockPanel.Dock="Right" Text="{Binding RecipeSha, StringFormat='sha256 {0}'}" Classes="mono dim" VerticalAlignment="Center" MaxWidth="300" TextTrimming="CharacterEllipsis" Margin="18,0,0,0" ToolTip.Tip="{Binding RecipeSha}" />
+        <TextBlock Text="{Binding RecipePathText}" Classes="mono dim" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding RecipePathText}" />
       </DockPanel>
     </Border>
     <Grid v:Panes.Split="True" ColumnDefinitions="260,*,440" ColumnSpacing="14" Margin="22,18">
