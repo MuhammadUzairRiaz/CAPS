@@ -120,24 +120,6 @@
    "description": "cyclopropane C (C)"
   },
   {
-   "type": "opls_714",
-   "smarts": "[CX4H2;r4;!$(*~[!#6;!#1])]",
-   "priority": 1,
-   "description": "cyclobutane C (CH2)"
-  },
-  {
-   "type": "opls_715",
-   "smarts": "[CX4H1;r4;!$(*~[!#6;!#1])]",
-   "priority": 1,
-   "description": "cyclobutane C (CH)"
-  },
-  {
-   "type": "opls_716",
-   "smarts": "[CX4H0;r4;!$(*~[!#6;!#1])]",
-   "priority": 1,
-   "description": "cyclobutane C (C)"
-  },
-  {
    "type": "opls_154",
    "smarts": "[OX2H1][CX4]",
    "priority": 5,
@@ -2796,22 +2778,40 @@
    "description": "pyroglutamate CG"
   },
   {
-   "type": "opls_124",
-   "priority": 13,
-   "smarts": "[SX3](=[OX1])([CX4H3])[CX4H3]",
-   "description": "DMSO S"
+   "type": "opls_145B",
+   "priority": 8,
+   "smarts": "[c;$(c-!@c)]",
+   "description": "biphenyl junction C"
   },
   {
-   "type": "opls_125",
-   "priority": 13,
-   "smarts": "[OX1]=[SX3]([CX4H3])[CX4H3]",
-   "description": "DMSO O"
+   "type": "opls_927",
+   "priority": 7,
+   "smarts": "[CX2;$(*#[CX2H1]);$(*-[CX4H3,CX4H2])]",
+   "description": "alkyne inner C, R with 2-3 H"
   },
   {
-   "type": "opls_139",
-   "priority": 13,
-   "smarts": "[CX4H3][SX3](=[OX1])[CX4H3]",
-   "description": "DMSO C"
+   "type": "opls_928",
+   "priority": 7,
+   "smarts": "[CX2;$(*#[CX2H1]);$(*-[CX4H1])]",
+   "description": "alkyne inner C, R with 1 H"
+  },
+  {
+   "type": "opls_929",
+   "priority": 7,
+   "smarts": "[CX2;$(*#[CX2H1]);$(*-[CX4H0,c])]",
+   "description": "alkyne inner C, R with no H or phenyl"
+  },
+  {
+   "type": "opls_930",
+   "priority": 7,
+   "smarts": "[H][CX4;$(*-[CX2]#[CX2H1])]",
+   "description": "H on the alkyl C of R-C#CH"
+  },
+  {
+   "type": "opls_931",
+   "priority": 7,
+   "smarts": "[CX2;$(*([#6])#[CX2][#6])]",
+   "description": "alkyne C of RC#CR"
   },
   {
    "type": "opls_406",

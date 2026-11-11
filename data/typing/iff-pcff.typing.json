@@ -2,7 +2,7 @@
  "format": "caps-typing",
  "version": 1,
  "forcefield": "INTERFACE (IFF 1.5, PCFF)",
- "description": "SMARTS rules giving the PCFF (cff91) atom types as the published PCFF parameter set types them. Among matching rules the highest priority wins; generic element rules have priority 0. (for pcff_interface_v1_5.frc: rules for SOD, cl-, which it does not define, left out)",
+ "description": "CAPS's pcff-frc rules for organic atoms (bench/typing/make_iff_rules.py), then IFF's silica, sodium and metal rules (priority 6) for pcff_interface_v1_5.frc. Among matching rules the highest priority wins.",
  "rules": [
   {
    "type": "hc",
@@ -27,7 +27,7 @@
   },
   {
    "type": "hn2",
-   "smarts": "[H][N;!+]C=[O,S]",
+   "smarts": "[H][N;!+]C=O",
    "priority": 2,
    "description": "amide / urea / carbamate / imide H"
   },
@@ -89,12 +89,6 @@
    "description": "CH with three heavy neighbours"
   },
   {
-   "type": "c",
-   "smarts": "[CX4][F,Cl,Br,I]",
-   "priority": 2,
-   "description": "sp3 C on a halogen"
-  },
-  {
    "type": "coh",
    "smarts": "[CX4;H1,H2](O)O",
    "priority": 3,
@@ -132,9 +126,9 @@
   },
   {
    "type": "c4h",
-   "smarts": "[CX4;r4]O",
+   "smarts": "[CX4;r4;!H0]",
    "priority": 5,
-   "description": "sp3 C on O in a 4-ring"
+   "description": "sp3 C with hydrogens in a 4-membered ring (pcff.frc)"
   },
   {
    "type": "cp",
@@ -143,9 +137,9 @@
   },
   {
    "type": "c5",
-   "smarts": "[c;$(c1aaaa1);!$(c1aaaaa1)]",
+   "smarts": "[c;$(c1[n]c[n]c1),$(c1[n]cc[n]1);!$(c[nX2])]",
    "priority": 1,
-   "description": "aromatic C in a 5-ring only"
+   "description": "imidazole C bonded only to N-H, not to the pyridine-like N (furan, oxazole and indole carbons stay cp)"
   },
   {
    "type": "ci",
@@ -163,12 +157,6 @@
    "type": "c=",
    "smarts": "[CX3]=[C,N]",
    "description": "non-aromatic C=C / C=N carbon"
-  },
-  {
-   "type": "c=1",
-   "smarts": "[CX3](=[C,N])[c,$([CX3]=[C,N]),$([NX2]=*)]",
-   "priority": 1,
-   "description": "double-bonded C conjugated with an aromatic ring or another double bond"
   },
   {
    "type": "c=2",
@@ -231,9 +219,9 @@
   },
   {
    "type": "oc",
-   "smarts": "[OX2]([CX4,c,CX2])[CX4,c,CX2]",
+   "smarts": "[OX2]([CX4,c,CX2,$([CX3]=[#6])])[CX4,c,CX2,$([CX3]=[#6])]",
    "priority": 1,
-   "description": "ether / acetal O"
+   "description": "ether / acetal O (also on an alkene carbon: a vinyl ether)"
   },
   {
    "type": "o_2",
@@ -354,7 +342,7 @@
   },
   {
    "type": "n_2",
-   "smarts": "[NX3;H1,H2]C=[O,S]",
+   "smarts": "[NX3;H1,H2]C=O",
    "priority": 3,
    "description": "amide / urea / carbamate N with H"
   },
@@ -504,8 +492,9 @@
    "description": "aromatic S"
   },
   {
-   "type": "p=",
-   "smarts": "[P]"
+   "type": "p",
+   "smarts": "[P]",
+   "description": "phosphorus (pcff.frc p)"
   },
   {
    "type": "p",
@@ -514,8 +503,9 @@
    "description": "phosphate anion P"
   },
   {
-   "type": "sio",
-   "smarts": "[Si]"
+   "type": "si",
+   "smarts": "[Si]",
+   "description": "silicon (pcff.frc si)"
   },
   {
    "type": "he",
@@ -546,7 +536,97 @@
    "type": "s'",
    "smarts": "[SX4](=O)(=O)",
    "priority": 2,
-   "description": "sulfone S: sf in PCFF's templates, a child of s' (pcff.frc parameterises s')"
+   "description": "sulfone S: s' (pcff.frc parameterises s'; sf is its child for sulfonate)"
+  },
+  {
+   "type": "c3h",
+   "smarts": "[CX4;r3;!H0;!$(*1~*~[#8]1)]",
+   "priority": 5,
+   "description": "sp3 C with hydrogens in a 3-membered carbocycle (pcff.frc); an epoxide ring C is c3m"
+  },
+  {
+   "type": "cs",
+   "smarts": "[c;$(c1aaaa1);$(c[s])]",
+   "priority": 2,
+   "description": "aromatic C in a 5-membered ring next to S (pcff.frc)"
+  },
+  {
+   "type": "c=1",
+   "smarts": "[CX3;$(*=[CX3]);$(*-[CX3]=[CX3])]",
+   "priority": 1,
+   "description": "C=C carbon single-bonded to a carbon of another non-aromatic C=C (butadiene C2 and C3, the second carbon of a triene, cyclooctatetraene); an aromatic ring, C=O, C#N or C=N next to it does not count"
+  },
+  {
+   "type": "c=1",
+   "smarts": "[CX3;$(*=[NX2]-[#7]);$(*-c),$(*-[CX3]=[CX3])]",
+   "priority": 1,
+   "description": "hydrazone C (C=N-N) next to an aryl ring or a C=C"
+  },
+  {
+   "type": "c=2",
+   "smarts": "[CX3;$(*-[CX3]=[CX3;!$(*-[CX3]=[CX3])]);$(*=[CX3;$(*-[CX3]=[CX3;!$(*-[CX3]=[CX3])])])]",
+   "priority": 2,
+   "description": "middle C=C of a conjugated triene (hexa-1,3,5-triene C3 / C4): pcff.frc's conjugated-system types (ref 3) carry Sun's 1995 terms c=-c=1 1.34 A, c=1-c=2 1.44 A (single), c=2-c=2 1.34 A (double, ref 12), so the middle double bond is c=2=c=2 and its single bonds c=1-c=2; c=1 twice would give the middle double bond and butadiene's single bond one type pair"
+  },
+  {
+   "type": "c=2",
+   "smarts": "[CX3]=[SX1]",
+   "priority": 2,
+   "description": "thiocarbonyl C (thioamide)"
+  },
+  {
+   "type": "cr",
+   "smarts": "[CX3](=[NX2])([NX3])[NX3]",
+   "priority": 5,
+   "description": "C of neutral guanidine (pcff.frc: C in neutral arginine)"
+  },
+  {
+   "type": "n2",
+   "smarts": "[NX3H2][CX3](=[NX2])[NX3]",
+   "priority": 5,
+   "description": "NH2 of neutral guanidine (pcff.frc)"
+  },
+  {
+   "type": "n",
+   "smarts": "[NX3]S(=O)=O",
+   "priority": 2,
+   "description": "sulfonamide N"
+  },
+  {
+   "type": "sio",
+   "smarts": "[Si][O]",
+   "priority": 1,
+   "description": "siloxane Si (pcff.frc)"
+  },
+  {
+   "type": "p=",
+   "smarts": "[P]=N",
+   "priority": 1,
+   "description": "phosphazene P (pcff.frc)"
+  },
+  {
+   "type": "c",
+   "smarts": "[CX4][F,Cl,Br,I]",
+   "priority": 2,
+   "description": "sp3 C on a halogen"
+  },
+  {
+   "type": "sf",
+   "smarts": "[SX4](=O)(=O)[OX2H1,OX1-]",
+   "priority": 3,
+   "description": "sulfonate / sulfonic acid S (pcff.frc sf)"
+  },
+  {
+   "type": "s",
+   "smarts": "[SX4](=O)(=O)([OX2,OX1-])[OX2,OX1-]",
+   "priority": 4,
+   "description": "sulfate S (s)"
+  },
+  {
+   "type": "ci",
+   "smarts": "[c;$(c1[n]c[n]c1),$(c1[n]cc[n]1);$(c[nX2])]",
+   "priority": 3,
+   "description": "imidazole C bonded to the pyridine-like N (as in neutral histidine)"
   },
   {
    "type": "sc4",

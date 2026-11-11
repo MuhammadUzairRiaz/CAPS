@@ -568,13 +568,13 @@ namespace {
 
 enum class Op { And, Or, AndLow, Not, Prim };
 enum class Prim { True, Aromatic, Aliphatic, Element, Degree, Connect, HCount, ImplicitH, Valence, RingCount, RingSize,
-                  RingBonds, Charge, Recursive, Type, Chiral, ArClass };
+                  RingBonds, Charge, Recursive, Type, Chiral, ArClass, RingsOfSize };
 
 struct AtomExpr {
   Op op = Op::Prim;
   Prim prim = Prim::True;
   int value = 0;         // element / count (−1: "any non-zero" for R r x)
-  int arom = -1;         // for Element: 1 aromatic, 0 aliphatic, −1 either
+  int arom = -1;         // for Element: 1 aromatic, 0 aliphatic, −1 either; for RingsOfSize: the ring size
   std::string name;      // %type
   std::shared_ptr<SmartsNode> rec;
   std::vector<std::unique_ptr<AtomExpr>> kids;
@@ -688,13 +688,26 @@ struct Parser {
       return e;
     }
     if (c == '*') { ++i; return prim(Prim::True); }
-    if (c == '{') {   // CAPS extension: {AR1} .. {AR5}, antechamber's ring classes
+    if (c == '{') {   // CAPS extensions: {AR1} .. {AR5}, antechamber's ring classes; {nRGm}, in exactly n SSSR rings of m atoms
       const size_t close = t.find('}', i);
-      if (close == std::string::npos || t.compare(i + 1, 2, "AR") != 0 || close != i + 4 || !std::isdigit(static_cast<unsigned char>(t[i + 3])))
-        fail("expected {AR1} .. {AR5}");
-      const int v = t[i + 3] - '0';
+      if (close != std::string::npos && t.compare(i + 1, 2, "AR") == 0 && close == i + 4 && std::isdigit(static_cast<unsigned char>(t[i + 3]))) {
+        const int v = t[i + 3] - '0';
+        i = close + 1;
+        return prim(Prim::ArClass, v);
+      }
+      const size_t rg = t.find("RG", i);
+      auto digits = [&](size_t a, size_t b) {
+        if (a >= b) return false;
+        for (size_t k = a; k < b; ++k)
+          if (!std::isdigit(static_cast<unsigned char>(t[k]))) return false;
+        return true;
+      };
+      if (close == std::string::npos || rg == std::string::npos || rg > close || !digits(i + 1, rg) || !digits(rg + 2, close))
+        fail("expected {AR1} .. {AR5} or {nRGm}");
+      auto e = prim(Prim::RingsOfSize, std::stoi(t.substr(i + 1, rg - i - 1)));
+      e->arom = std::stoi(t.substr(rg + 2, close - rg - 2));
       i = close + 1;
-      return prim(Prim::ArClass, v);
+      return e;
     }
     if (c == '#') { ++i; const int z = number(-1); if (z < 0) fail("'#' needs a number"); return elem(z, -1); }
     if (c == '+' || c == '-') {
@@ -1012,6 +1025,12 @@ bool eval_atom(const AtomExpr& e, const Ctx& c, uint32_t a) {
     case Prim::Recursive: return match_node(*e.rec, c, a);
     case Prim::Type: return a < c.types.size() && c.types[a] == e.name;
     case Prim::ArClass: return p.ar_class[a] == e.value;
+    case Prim::RingsOfSize: {
+      int n = 0;
+      for (const auto& r : p.rings)
+        if (int(r.size()) == e.arom && std::find(r.begin(), r.end(), a) != r.end()) ++n;
+      return n == e.value;
+    }
   }
   return false;
 }

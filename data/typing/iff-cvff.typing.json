@@ -2,7 +2,7 @@
  "format": "caps-typing",
  "version": 1,
  "forcefield": "INTERFACE (IFF 1.5, CVFF)",
- "description": "SMARTS rules giving the CVFF atom types as the published CVFF parameter set types them. Among matching rules the highest priority wins; generic element rules have priority 0. (for cvff_interface_v1_5.frc: rules for , which it does not define, left out)",
+ "description": "CAPS's cvff rules for organic atoms (bench/typing/make_iff_rules.py), then IFF's silica, sodium and metal rules (priority 6) for cvff_interface_v1_5.frc. Among matching rules the highest priority wins.",
  "rules": [
   {
    "type": "h",
@@ -329,6 +329,18 @@
    "type": "ca+",
    "smarts": "[Ca]",
    "description": "calcium"
+  },
+  {
+   "type": "c2",
+   "smarts": "[CX4;r3]",
+   "priority": 3,
+   "description": "sp3 C in a 3-ring (epoxide, cyclopropane), whatever its hydrogens"
+  },
+  {
+   "type": "c1",
+   "smarts": "[CX4H2]([OX2])[OX2]",
+   "priority": 3,
+   "description": "acetal CH2 (between two ether O)"
   },
   {
    "type": "sc4",

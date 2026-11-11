@@ -45,7 +45,9 @@ def rules(v2, small_rings=None):
         add("cs", "[#6X3]~[#16X1]", d="C=S")
     add("c", "[#6X3]~[#8X1]" if v2 else "[#6X3]~[#8X1,#16X1]", d="C=O" + ("" if v2 else " / C=S"))
     add("cz", "[#6X3](~[#7X3])(~[#7X3])~[#7X3]", d="guanidinium C")
-    add("cp", "[#6X3;{AR1};R1](-!@[*;{AR1}])", d="aromatic C at a single bond between aromatic rings (biphenyl)")
+    # ATD cp [AR1,1RG6] (XX[AR1],XX[AR1],XX[AR1]): in exactly one six-membered ring, every neighbour pure aromatic; the
+    # bond to the other ring may itself be in a ring (carbazole, dibenzofuran, fluorene), as antechamber types it
+    add("cp", "[#6X3;{AR1};{1RG6};$(*(~[{AR1}])(~[{AR1}])~[{AR1}])]", d="aromatic C bridging to another aromatic ring (biphenyl, carbazole)")
     add("ca", "[#6X3;{AR1}]", d="pure aromatic C")
     add("cc", "[#6X3;{AR2},{AR3}]", d="sp2 C in a conjugated ring (with cd)")
     add("ce", f"[#6X3;$(*=*);{CONJ_SB}]", d="sp2 C in a conjugated chain (with cf)")

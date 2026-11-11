@@ -104,9 +104,19 @@ ADD = [
     ("opls_235", 8, "[CX3;r5;$(*=[OX1]);$(*-[NX3;r5])]", "lactam C=O"), ("opls_236", 8, "[OX1]=[CX3;r5;$(*-[NX3;r5])]", "lactam O"),
     ("opls_224B", 9, "[CX4H1;r5;$(*-[NX3H1;r5]-[CX3;r5]=[OX1]);$(*-[CX3;!R](~[OX1])~[OX1,#7X3])]", "pyroglutamate C alpha"),
     ("opls_274", 8, "[CX4H2;r5;$(*-[CX3;r5](=[OX1])-[NX3;r5]-[CX4H1;r5]-[CX3;!R](~[OX1])~[OX1,#7X3])]", "pyroglutamate CG"),
-    # DMSO as GROMACS's topology has it
-    ("opls_124", 8, "[SX3](=[OX1])([CX4H3])[CX4H3]", "DMSO S"), ("opls_125", 8, "[OX1]=[SX3]([CX4H3])[CX4H3]", "DMSO O"),
-    ("opls_139", 8, "[CX4H3][SX3](=[OX1])[CX4H3]", "DMSO C"),
+    # DMSO: OPLS-AA's all-atom sulfoxide types 496 / 497 / 498 (the general rules), as the GROMACS OPLS-AA topologies of
+    # Caleman et al. 2012 type it; aminoacids.rtp's DMSO residue ("use at your own risk", 2006) takes the united-atom DMSO
+    # S and O (124 / 125) with alkane C 139 and charges of its own, which with the types' charges leave DMSO at +0.04 e
+    # biphenyl: GROMACS's own note on opls_145 ("Use #145B for biphenyl"), class C! with its C!-C! / CA-C! terms
+    ("opls_145B", 3, "[c;$(c-!@c)]", "biphenyl junction C"),
+    # alkynes, GROMACS's own set (ffnonbonded.itp 925-931, other meanings than the 2024 table's): terminal C 925, its H 926,
+    # the inner sp C of R-C#CH by R's H count (927 2-3 H, 928 1 H, 929 none or phenyl), the H on R's carbon 930 (that C:
+    # 135-139), RC#CR 931; propyne 135 + 3 x 930 + 927 + 925 + 926 = 0, as the GROMACS topology of Caleman et al. types it
+    ("opls_927", 2, "[CX2;$(*#[CX2H1]);$(*-[CX4H3,CX4H2])]", "alkyne inner C, R with 2-3 H"),
+    ("opls_928", 2, "[CX2;$(*#[CX2H1]);$(*-[CX4H1])]", "alkyne inner C, R with 1 H"),
+    ("opls_929", 2, "[CX2;$(*#[CX2H1]);$(*-[CX4H0,c])]", "alkyne inner C, R with no H or phenyl"),
+    ("opls_930", 2, "[H][CX4;$(*-[CX2]#[CX2H1])]", "H on the alkyl C of R-C#CH"),
+    ("opls_931", 2, "[CX2;$(*([#6])#[CX2][#6])]", "alkyne C of RC#CR"),
     # ions (ions.itp) and TIP3P water (111 / 112); other water models are overlays
     *[(t, 9, s, "ion") for t, s in (("opls_406", "[Li+]"), ("opls_407", "[Na+]"), ("opls_408", "[K+]"), ("opls_409", "[Rb+]"),
                                     ("opls_410", "[Cs+]"), ("opls_411", "[Mg+2]"), ("opls_412", "[Ca+2]"), ("opls_413", "[Sr+2]"),

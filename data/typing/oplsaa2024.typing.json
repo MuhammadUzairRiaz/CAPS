@@ -66,6 +66,36 @@
    "description": "conjugated diene central C (=CR-RC=)"
   },
   {
+   "type": "opls_1154",
+   "smarts": "[CX3H2;$(*=[CX2]=[CX3])]",
+   "priority": 2,
+   "description": "allene terminal C (CH2=C=)"
+  },
+  {
+   "type": "opls_1155",
+   "smarts": "[CX3H1;!$(*~[!#6;!#1]);$(*=[CX2]=[CX3])]",
+   "priority": 2,
+   "description": "allene terminal C (RHC=C=)"
+  },
+  {
+   "type": "opls_1156",
+   "smarts": "[CX3H0;!$(*~[!#6;!#1]);$(*=[CX2]=[CX3])]",
+   "priority": 2,
+   "description": "allene terminal C (R2C=C=)"
+  },
+  {
+   "type": "opls_1157",
+   "smarts": "[CX2;!$(*~[!#6;!#1])](=[CX3])=[CX3]",
+   "priority": 2,
+   "description": "allene central C (=C=)"
+  },
+  {
+   "type": "opls_1153",
+   "smarts": "[H][CX3;$(*=[CX2]=[CX3])]",
+   "priority": 2,
+   "description": "allene H"
+  },
+  {
    "type": "opls_144",
    "smarts": "[H][CX3]=[CX3]",
    "priority": 1,
@@ -2290,6 +2320,30 @@
    "smarts": "[H][CX2]#[CX2]",
    "priority": 6,
    "description": "alkyne terminal H"
+  },
+  {
+   "type": "opls_927",
+   "smarts": "[CX4H3;$(*-[CX2]#[CX2H1])]",
+   "priority": 7,
+   "description": "sp3 C on a terminal alkyne (R-C#CH, CH3)"
+  },
+  {
+   "type": "opls_928",
+   "smarts": "[CX4H2;$(*-[CX2]#[CX2H1])]",
+   "priority": 7,
+   "description": "sp3 C on a terminal alkyne (R-C#CH, CH2)"
+  },
+  {
+   "type": "opls_929",
+   "smarts": "[CX4H1;$(*-[CX2]#[CX2H1])]",
+   "priority": 7,
+   "description": "sp3 C on a terminal alkyne (R-C#CH, CH)"
+  },
+  {
+   "type": "opls_930",
+   "smarts": "[CX4H0;$(*-[CX2]#[CX2H1])]",
+   "priority": 7,
+   "description": "sp3 C on a terminal alkyne (R-C#CH, C)"
   },
   {
    "type": "opls_401",

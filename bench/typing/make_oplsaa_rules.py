@@ -33,11 +33,11 @@ def add(num, prio, smarts, desc, only2024=False):
         R.append({"type": str(num), "smarts": s, "priority": prio, "description": desc, **({"only2024": True} if only2024 else {})})
 
 
-def by_h(nums, prio, env, desc):
+def by_h(nums, prio, env, desc, only2024=False):
     """sp3 carbon types by hydrogen count (H3, H2, H1, H0), each with the environment `env` as a recursive SMARTS."""
     for h, n in zip((3, 2, 1, 0), nums):
         if n:
-            add(n, prio, f"[CX4H{h};{env}]", f"{desc} ({['C', 'CH', 'CH2', 'CH3'][h]})")
+            add(n, prio, f"[CX4H{h};{env}]", f"{desc} ({['C', 'CH', 'CH2', 'CH3'][h]})", only2024)
 
 
 # ---------------------------------------------------------------- hydrocarbons
@@ -58,6 +58,14 @@ add(143, 1, f"[CX3H2;{HC_ONLY}]=[CX3]", "alkene C (H2C=)")
 DIENE = "$(*-[CX3]=[CX3])"
 add(150, 3, f"[CX3H1;{HC_ONLY};$(*=[CX3]);{DIENE}]", "conjugated diene central C (=CH-CH=)", True)
 add(178, 3, f"[CX3H0;{HC_ONLY};$(*=[CX3]);{DIENE}]", "conjugated diene central C (=CR-RC=)", True)
+# allenes (C=C=C): the 2024 table's 1153-1157 (allene H, terminal CH2 / CHR / CR2, the central C of class C:), with the
+# CM-C:-CM bend and the allene torsions of the .sb file; CH2=C=CH2 sums to zero (2 x -0.25, -0.10, 4 x 0.15)
+ALLENE_END = "$(*=[CX2]=[CX3])"
+add(1154, 2, f"[CX3H2;{ALLENE_END}]", "allene terminal C (CH2=C=)", True)
+add(1155, 2, f"[CX3H1;{HC_ONLY};{ALLENE_END}]", "allene terminal C (RHC=C=)", True)
+add(1156, 2, f"[CX3H0;{HC_ONLY};{ALLENE_END}]", "allene terminal C (R2C=C=)", True)
+add(1157, 2, f"[CX2;{HC_ONLY}](=[CX3])=[CX3]", "allene central C (=C=)", True)
+add(1153, 2, f"[H][CX3;{ALLENE_END}]", "allene H", True)
 add(144, 1, "[H][CX3]=[CX3]", "alkene H")
 add(145, 1, f"[c;{HC_ONLY}]", "aromatic C")
 add(146, 1, "[H]c", "aromatic H")
@@ -72,7 +80,8 @@ add(519, 3, "[c;$(c-!@c)]", "biphenyl junction C")
 by_h((148, 149, 515, 516), 2, f"$(*c);{HC_ONLY}", "benzylic C")
 # small rings (OPLS-2020): cyclopropane and cyclobutane carbons have their own CY types; their H stay 140
 by_h((None, 711, 712, 713), 1, f"r3;{HC_ONLY}", "cyclopropane C")
-by_h((None, 714, 715, 716), 1, f"r4;{HC_ONLY}", "cyclobutane C")
+# (GROMACS's oplsaa.ff gives 714-716 to the cyclopentadienyl anion and radical: its library keeps the alkane numbers)
+by_h((None, 714, 715, 716), 1, f"r4;{HC_ONLY}", "cyclobutane C", True)
 
 # ---------------------------------------------------------------- alcohols and phenols
 ALC = "$(*[OX2H1])"
@@ -463,7 +472,12 @@ add(444, 6, f"[H][CX4][OX2]{PO4}", "H on C of a phosphate ester O")
 add(925, 6, "[CX2]#[CX2]", "alkyne C")
 add(939, 7, "[CX2;$(*([#6])#[CX2][#6])]", "alkyne C of RC#CR")
 add(926, 6, "[H][CX2]#[CX2]", "alkyne terminal H")
-# the sp3 C on an alkyne C keeps the alkane types (135-139), as the GROMACS OPLS-AA topologies type propyne
+# a terminal alkyne R-C#CH: both sp C are 925 (-0.200) and the H 926 (+0.200), so the sp3 C of R takes the table's
+# alkyne-substituent numbers 927-930 (H3C- 0.020 ... R3C- 0.200, class CT) whose group with its H 140 carries +0.200 and
+# keeps the molecule neutral (propyne: 927 + 3 x 140 + 925 + 925 + 926 = 0; with the alkane 135 it would be -0.200).
+# In RC#CR the sp C are 939 (0.000) and R keeps the alkane numbers
+for h, n in ((3, 927), (2, 928), (1, 929), (0, 930)):
+    add(n, 7, f"[CX4H{h};$(*-[CX2]#[CX2H1])]", f"sp3 C on a terminal alkyne (R-C#CH, {['C', 'CH', 'CH2', 'CH3'][h]})", True)
 
 # monatomic ions
 for z, n, d in (("[Cl-,Cl;X0]", 401, "Cl-"), ("[Br-,Br;X0]", 402, "Br-"), ("[Li+,Li;X0]", 406, "Li+"), ("[Na+,Na;X0]", 407, "Na+"), ("[K+,K;X0]", 408, "K+")):

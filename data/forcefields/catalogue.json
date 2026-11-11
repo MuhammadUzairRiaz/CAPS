@@ -325,7 +325,7 @@
    },
    "typing": {
     "rules": "typing/oplsaa-gromacs.typing.json",
-    "evidence": "CAPS's OPLS-AA rules in opls_NNN names plus GROMACS's protein types (bench/typing/make_opls_gromacs_rules.py): aminoacids.rtp 504 / 504 atoms, 46 / 46 residues (PGLU's entry listed as a deviation), methanol.itp exact; every parameter CAPS assigns equals GROMACS's own lookup (bench/ff/check_source_gromacs.py)"
+    "evidence": "CAPS's OPLS-AA rules in opls_NNN names plus GROMACS's protein types (bench/typing/make_opls_gromacs_rules.py): GROMACS 2025.4's aminoacids.rtp 490 / 497 atoms as its residues type them, 43 / 46 residues (bench/ff/validate_rtp_types.py --exclude PGLU,DMSO; the other 7: HISD / HISE ring H, which CAPS gives OPLS-AA's imidazole H 563-565 where the rtp has the generic aromatic H 146, and HOH, SPC in the rtp, TIP3P here with SPC as an overlay). PGLU's entry is a deviation (a four-coordinate amide N); the rtp's 2006 all-atom DMSO residue (united-atom DMSO S / O with charges of its own) is typed with OPLS-AA's sulfoxide types 496-498 instead, neutral with the types' charges, as the GROMACS topologies of Caleman et al. 2012 type DMSO; alkynes take GROMACS's own alkyne numbers (925-931), biphenyl its 145B, methanol.itp exact; every parameter CAPS assigns equals GROMACS's own lookup (bench/ff/check_source_gromacs.py)"
    },
    "list": {
     "label": "OPLS-AA/L (GROMACS)",

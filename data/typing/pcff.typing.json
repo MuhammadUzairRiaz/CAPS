@@ -558,13 +558,19 @@
    "type": "c=1",
    "smarts": "[CX3;$(*=[CX3]);$(*-[CX3]=[CX3])]",
    "priority": 1,
-   "description": "C=C carbon single-bonded to a carbon of another non-aromatic C=C (butadiene C2 and C3, the inner carbons of hexatriene and cyclooctatetraene); an aromatic ring, C=O, C#N or C=N next to it does not count"
+   "description": "C=C carbon single-bonded to a carbon of another non-aromatic C=C (butadiene C2 and C3, the second carbon of a triene, cyclooctatetraene); an aromatic ring, C=O, C#N or C=N next to it does not count"
   },
   {
    "type": "c=1",
    "smarts": "[CX3;$(*=[NX2]-[#7]);$(*-c),$(*-[CX3]=[CX3])]",
    "priority": 1,
    "description": "hydrazone C (C=N-N) next to an aryl ring or a C=C"
+  },
+  {
+   "type": "c=2",
+   "smarts": "[CX3;$(*-[CX3]=[CX3;!$(*-[CX3]=[CX3])]);$(*=[CX3;$(*-[CX3]=[CX3;!$(*-[CX3]=[CX3])])])]",
+   "priority": 2,
+   "description": "middle C=C of a conjugated triene (hexa-1,3,5-triene C3 / C4): pcff.frc's conjugated-system types (ref 3) carry Sun's 1995 terms c=-c=1 1.34 A, c=1-c=2 1.44 A (single), c=2-c=2 1.34 A (double, ref 12), so the middle double bond is c=2=c=2 and its single bonds c=1-c=2; c=1 twice would give the middle double bond and butadiene's single bond one type pair"
   },
   {
    "type": "c=2",

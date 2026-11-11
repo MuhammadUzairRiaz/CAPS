@@ -113,7 +113,7 @@ add("C_3", 0, "[#6X4]", "tetrahedral C"); add("C_2", 0, "[#6X3]", "trigonal C");
 add("C_R", 1, "[c]", "resonant (aromatic) C")
 add("N_3", 0, "[#7X4,#7X3]", "tetrahedral N"); add("N_2", 1, "[#7X2]", "trigonal N"); add("N_1", 1, "[#7X1]", "linear N")
 add("N_R", 2, "[n]", "resonant (aromatic) N")
-add("N_R", 2, "[#7X3;$(*-[#6X3]=[#8X1,#16X1]),$(*-c)]", "resonant N (amide, N on an aromatic ring)")
+add("N_R", 2, "[#7X3;$(*-[#6X3]=[#8X1,#16X1,#7]),$(*=[#6X3]),$(*-c)]", "resonant N (amide, amidine / guanidine and guanidinium N, N on an aromatic ring): a planar sp2 N in resonance, as the paper defines R")
 add("O_3", 0, "[#8X2]", "tetrahedral O"); add("O_2", 1, "[#8X1]", "trigonal O"); add("O_R", 2, "[o]", "resonant (aromatic) O")
 add("F_", 0, "[F]", "fluorine"); add("Cl", 0, "[Cl]", "chlorine"); add("Br", 0, "[Br]", "bromine"); add("I_", 0, "[I]", "iodine")
 for t, z in (("Al3", 13), ("Si3", 14), ("P_3", 15), ("S_3", 16), ("Ga3", 31), ("Ge3", 32), ("As3", 33), ("Se3", 34), ("In3", 49),

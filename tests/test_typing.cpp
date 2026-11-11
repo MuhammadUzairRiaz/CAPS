@@ -220,9 +220,9 @@ TEST(Typing, PcffConjugatedAlkeneCarbons) {
   EXPECT_EQ(b.types[1], "c=1");
   EXPECT_EQ(b.types[2], "c=1");
   const System ht = mol({"C", "C", "C", "C", "C", "C"}, {2, 1, 1, 1, 1, 2}, {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}});   // hexa-1,3,5-triene
-  const TypingResult h = assign_types(ht, ff);
-  EXPECT_EQ(h.types[2], "c=1");
-  EXPECT_EQ(h.types[3], "c=1");
+  const TypingResult h = assign_types(ht, ff);   // its middle double bond c=2=c=2 (pcff.frc ref 12), see PcffTriene...
+  EXPECT_EQ(h.types[2], "c=2");
+  EXPECT_EQ(h.types[3], "c=2");
   const System st = mol({"C", "C", "C", "C", "C", "C", "C", "C"}, {2, 1, 0, 1, 1, 1, 1, 1},
                         {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 2}});   // styrene
   const TypingResult y = assign_types(st, ff);
@@ -624,4 +624,95 @@ TEST(Typing, OutOfDomainNamesTheMotifsOnce) {
   EXPECT_NE(why.find("outside"), std::string::npos);
   EXPECT_NE(why.find("OPLS-AA 2024"), std::string::npos);
   EXPECT_NE(untyped_message(def, s, tr.untyped, &tr.types).find("bonded to"), std::string::npos);
+}
+
+// Fixes from the typing audit of 2026-11-11 (bench/typing/typing_audit.py, compare_oplsaa_top.py, compare_msi_types.py).
+// GAFF / GAFF2 cp follows ATOMTYPE_GFF.DEF's [AR1,1RG6] with three AR1 neighbours: carbazole's ring-junction carbons
+// C4a / C4b (their bond is in the five-membered ring) are cp, as antechamber types them; C9a (next to N) stays ca
+TEST(Typing, GaffBiarylBridgeInAFiveRingAsAntechamber) {
+  const System cbz = mol({"N", "C", "C", "C", "C", "C", "C", "C", "C", "C", "C", "C", "C"}, {1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0},
+                         {{1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 1}, {7, 8}, {8, 9}, {9, 10}, {10, 11}, {11, 12}, {12, 7},
+                          {5, 7}, {6, 0}, {12, 0}});
+  for (const char* ff : {"gaff-1.81-ambertools", "gaff2-2.2.20-ambertools", "gaff2-2.11-ambertools"}) {
+    const TypingResult t = type_with(ff, cbz);
+    EXPECT_EQ(t.types[5], "cp") << ff;
+    EXPECT_EQ(t.types[7], "cp") << ff;
+    EXPECT_EQ(t.types[6], "ca") << ff;
+    EXPECT_EQ(t.types[0], "na") << ff;
+  }
+  // biphenyl's bridge stays cp, naphthalene's fusion carbons (two six-membered rings) ca
+  const System bp = mol({"C", "C", "C", "C", "C", "C", "C", "C", "C", "C", "C", "C"}, {0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1},
+                        {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 0}, {6, 7}, {7, 8}, {8, 9}, {9, 10}, {10, 11}, {11, 6}, {0, 6}});
+  EXPECT_EQ(type_with("gaff-1.81-ambertools", bp).types[0], "cp");
+  EXPECT_EQ(type_with("gaff-1.81-ambertools", bp).types[1], "ca");
+}
+
+// OPLS-AA 2024: allene's own types (1153-1157); a terminal alkyne's alkyl C takes 927-930 so that propyne is neutral
+// (927 + 3 x 140 + 925 + 925 + 926 = 0; the alkane 135 left it at -0.2). GROMACS's oplsaa.ff has its own alkyne set
+// (inner sp C 927-929, H on the alkyl C 930), its sulfoxide DMSO (496-498), 145B for biphenyl and no cyclobutane type
+// (its 714-716 are the cyclopentadienyl anion and radical)
+TEST(Typing, OplsAlkynesAllenesAndGromacsNumbers) {
+  const System allene = mol({"C", "C", "C"}, {2, 0, 2}, {{0, 1}, {1, 2}});
+  const TypingResult a = type_with("oplsaa2024", allene);
+  EXPECT_EQ(a.types[0], "opls_1154");
+  EXPECT_EQ(a.types[1], "opls_1157");
+  EXPECT_EQ(a.types[2], "opls_1154");
+  for (int i = 3; i < 7; ++i) EXPECT_EQ(a.types[i], "opls_1153") << i;
+  const System propyne = mol({"C", "C", "C"}, {3, 0, 1}, {{0, 1}, {1, 2}});
+  const TypingResult p = type_with("oplsaa2024", propyne);
+  EXPECT_EQ(p.types[0], "opls_927");
+  EXPECT_EQ(p.types[1], "opls_925");
+  EXPECT_EQ(p.types[2], "opls_925");
+  EXPECT_EQ(p.types[3], "opls_140");
+  EXPECT_EQ(p.types[6], "opls_926");
+  const TypingResult g = type_with("oplsaa-gromacs", propyne);
+  EXPECT_EQ(g.types[0], "opls_135");
+  EXPECT_EQ(g.types[1], "opls_927");
+  EXPECT_EQ(g.types[2], "opls_925");
+  EXPECT_EQ(g.types[3], "opls_930");
+  EXPECT_EQ(g.types[6], "opls_926");
+  const System butyne = mol({"C", "C", "C", "C"}, {3, 0, 0, 3}, {{0, 1}, {1, 2}, {2, 3}});
+  EXPECT_EQ(type_with("oplsaa2024", butyne).types[1], "opls_939");
+  EXPECT_EQ(type_with("oplsaa-gromacs", butyne).types[1], "opls_931");
+  const System dmso = mol({"C", "S", "O", "C"}, {3, 0, 0, 3}, {{0, 1}, {1, 2}, {1, 3}});
+  const TypingResult d = type_with("oplsaa-gromacs", dmso);
+  EXPECT_EQ(d.types[0], "opls_498");
+  EXPECT_EQ(d.types[1], "opls_496");
+  EXPECT_EQ(d.types[2], "opls_497");
+  const System cbu = mol({"C", "C", "C", "C"}, {2, 2, 2, 2}, {{0, 1}, {1, 2}, {2, 3}, {3, 0}});
+  EXPECT_EQ(type_with("oplsaa2024", cbu).types[0], "opls_714");
+  EXPECT_EQ(type_with("oplsaa-gromacs", cbu).types[0], "opls_136");
+  const System bp = mol({"C", "C", "C", "C", "C", "C", "C", "C", "C", "C", "C", "C"}, {0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1},
+                        {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 0}, {6, 7}, {7, 8}, {8, 9}, {9, 10}, {10, 11}, {11, 6}, {0, 6}});
+  EXPECT_EQ(type_with("oplsaa2024", bp).types[0], "opls_519");
+  EXPECT_EQ(type_with("oplsaa-gromacs", bp).types[0], "opls_145B");
+}
+
+// PCFF: hexa-1,3,5-triene's middle double bond c=2=c=2 with c=1-c=2 single bonds (pcff.frc ref 12: c=-c=1 1.34 A,
+// c=1-c=2 1.44 A, c=2-c=2 1.34 A); IFF on PCFF / CVFF types organic atoms with PCFF's / CVFF's own rules
+TEST(Typing, PcffTrieneAndIffOrganicAsItsBase) {
+  const System ht = mol({"C", "C", "C", "C", "C", "C"}, {2, 1, 1, 1, 1, 2}, {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}});
+  const TypingResult h = type_with("pcff-frc", ht);
+  EXPECT_EQ(h.types[0], "c=");
+  EXPECT_EQ(h.types[1], "c=1");
+  EXPECT_EQ(h.types[2], "c=2");
+  EXPECT_EQ(h.types[3], "c=2");
+  EXPECT_EQ(h.types[4], "c=1");
+  const System bd = mol({"C", "C", "C", "C"}, {2, 1, 1, 2}, {{0, 1}, {1, 2}, {2, 3}});
+  EXPECT_EQ(type_with("pcff-frc", bd).types[1], "c=1");
+  const System thioacetamide = mol({"C", "C", "S", "N"}, {3, 0, 0, 2}, {{0, 1}, {1, 2}, {1, 3}});
+  const System cyclopropane = mol({"C", "C", "C"}, {2, 2, 2}, {{0, 1}, {1, 2}, {2, 0}});
+  for (const System* s : {&thioacetamide, &cyclopropane, &ht}) {
+    EXPECT_EQ(type_with("iff-pcff", *s).types, type_with("pcff-frc", *s).types);
+    EXPECT_EQ(type_with("iff-cvff", *s).types, type_with("cvff-frc", *s).types);
+  }
+  EXPECT_EQ(type_with("iff-pcff", cyclopropane).types[0], "c3h");
+}
+
+// DREIDING: guanidinium's three N are planar sp2 atoms in resonance, N_R (the paper's R), not tetrahedral N_3
+TEST(Typing, DreidingGuanidiniumResonantN) {
+  const System gua = mol({"C", "N", "N", "N"}, {0, 2, 2, 2}, {{0, 1}, {0, 2}, {0, 3}});
+  const TypingResult t = type_with("dreiding1990", gua);
+  for (int i = 1; i <= 3; ++i) EXPECT_EQ(t.types[i], "N_R") << i;
+  EXPECT_EQ(t.types[4], "H__HB");
 }
