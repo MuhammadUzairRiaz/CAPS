@@ -5726,8 +5726,8 @@
   },
   {
    "name": "opls_436",
-   "element": "X",
-   "mass": 0.0,
+   "element": "U",
+   "mass": 238.029,
    "charge": 2.5,
    "description": "",
    "equivalence": {
@@ -8677,7 +8677,7 @@
   },
   {
    "name": "opls_697",
-   "element": "X",
+   "element": "Ac",
    "mass": 227.03,
    "charge": 3.0,
    "description": "",
@@ -8690,7 +8690,7 @@
   },
   {
    "name": "opls_698",
-   "element": "X",
+   "element": "Th",
    "mass": 232.04,
    "charge": 4.0,
    "description": "",
@@ -8703,7 +8703,7 @@
   },
   {
    "name": "opls_699",
-   "element": "X",
+   "element": "Am",
    "mass": 243.06,
    "charge": 3.0,
    "description": "",
@@ -8755,7 +8755,7 @@
   },
   {
    "name": "opls_703",
-   "element": "X",
+   "element": "La",
    "mass": 138.91,
    "charge": 3.0,
    "description": "",
@@ -8768,7 +8768,7 @@
   },
   {
    "name": "opls_704",
-   "element": "X",
+   "element": "Nd",
    "mass": 144.24,
    "charge": 3.0,
    "description": "",
@@ -8781,7 +8781,7 @@
   },
   {
    "name": "opls_705",
-   "element": "X",
+   "element": "Eu",
    "mass": 151.96,
    "charge": 3.0,
    "description": "",
@@ -8794,7 +8794,7 @@
   },
   {
    "name": "opls_706",
-   "element": "X",
+   "element": "Gd",
    "mass": 157.25,
    "charge": 3.0,
    "description": "",
@@ -8807,7 +8807,7 @@
   },
   {
    "name": "opls_707",
-   "element": "X",
+   "element": "Yb",
    "mass": 173.04,
    "charge": 3.0,
    "description": "",

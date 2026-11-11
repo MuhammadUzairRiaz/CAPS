@@ -347,11 +347,11 @@
    "status": "validated",
    "file": "oplsaa2024.json",
    "counts": {
-    "atom_types": 1034,
-    "pairs": 1034,
-    "bonds": 467,
-    "angles": 1442,
-    "dihedrals": 1187,
+    "atom_types": 1053,
+    "pairs": 1053,
+    "bonds": 468,
+    "angles": 1446,
+    "dihedrals": 1232,
     "impropers": 4
    },
    "typing": {
@@ -537,7 +537,7 @@
     "pairs": 109,
     "bonds": 235,
     "angles": 1069,
-    "dihedrals": 2990,
+    "dihedrals": 3044,
     "impropers": 0
    },
    "typing": {

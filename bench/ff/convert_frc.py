@@ -170,6 +170,8 @@ def convert(frc, cls, name, version, references, typing, out_name, src=None, ext
     types = []
     for t in dict.fromkeys(e[2][0] for e in atoms):
         mass, el, comment = info[t]
+        if t == "mg" and el == "mg" and mass == 100.0:   # cvff.frc's Magnesium: element 'mg', mass 100.000
+            el, mass, comment = "Mg", 24.305, comment + " (cvff.frc gives element 'mg' and mass 100.000: Mg's IUPAC standard atomic weight here)"
         q = {}
         if t in eqw:
             e = eqw[t]

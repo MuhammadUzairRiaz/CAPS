@@ -5194,8 +5194,8 @@
   },
   {
    "name": "opls_436",
-   "element": "X",
-   "mass": 0.0,
+   "element": "U",
+   "mass": 238.029,
    "charge": 2.5,
    "description": "U in UO2+ J Mol Struct 366, 55 (96)",
    "equivalence": {
@@ -8587,8 +8587,8 @@
   },
   {
    "name": "opls_697",
-   "element": "X",
-   "mass": 0.0,
+   "element": "Ac",
+   "mass": 227.028,
    "charge": 3.0,
    "description": "Ac+3 Actinide params -",
    "equivalence": {
@@ -8600,8 +8600,8 @@
   },
   {
    "name": "opls_698",
-   "element": "X",
-   "mass": 0.0,
+   "element": "Th",
+   "mass": 232.038,
    "charge": 4.0,
    "description": "Th+4",
    "equivalence": {
@@ -8613,8 +8613,8 @@
   },
   {
    "name": "opls_699",
-   "element": "X",
-   "mass": 0.0,
+   "element": "Am",
+   "mass": 243.061,
    "charge": 3.0,
    "description": "Am+3 F. van Veggel",
    "equivalence": {
@@ -8665,8 +8665,8 @@
   },
   {
    "name": "opls_703",
-   "element": "X",
-   "mass": 0.0,
+   "element": "La",
+   "mass": 138.905,
    "charge": 3.0,
    "description": "La+3",
    "equivalence": {
@@ -8678,8 +8678,8 @@
   },
   {
    "name": "opls_704",
-   "element": "X",
-   "mass": 0.0,
+   "element": "Nd",
+   "mass": 144.242,
    "charge": 3.0,
    "description": "Nd+3 Lanthanide params -",
    "equivalence": {
@@ -8691,8 +8691,8 @@
   },
   {
    "name": "opls_705",
-   "element": "X",
-   "mass": 0.0,
+   "element": "Eu",
+   "mass": 151.964,
    "charge": 3.0,
    "description": "Eu+3 F. van Veggel, Chem Eur J",
    "equivalence": {
@@ -8704,8 +8704,8 @@
   },
   {
    "name": "opls_706",
-   "element": "X",
-   "mass": 0.0,
+   "element": "Gd",
+   "mass": 157.25,
    "charge": 3.0,
    "description": "Gd+3 5, 90 (1999).",
    "equivalence": {
@@ -8717,8 +8717,8 @@
   },
   {
    "name": "opls_707",
-   "element": "X",
-   "mass": 0.0,
+   "element": "Yb",
+   "mass": 173.045,
    "charge": 3.0,
    "description": "Yb+3 see also JPC-A 104, 7659 (2000)",
    "equivalence": {

@@ -26,9 +26,12 @@ D, OUT = sys.argv[1], sys.argv[2]
 arg = lambda k, d=None: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 KJ = 4.184
 esc = lambda t: t.replace("*", "\\*").replace("?", "\\?")   # a literal * in a class name (C*, N*): CAPS's patterns are globs
-ELEMENT = {1: "H", 3: "Li", 6: "C", 7: "N", 8: "O", 9: "F", 11: "Na", 12: "Mg", 14: "Si", 15: "P", 16: "S", 17: "Cl",
-           19: "K", 20: "Ca", 26: "Fe", 29: "Cu", 30: "Zn", 35: "Br", 36: "Kr", 37: "Rb", 53: "I", 54: "Xe", 55: "Cs",
-           2: "He", 10: "Ne", 18: "Ar", 38: "Sr", 56: "Ba", 0: "X"}
+ELEMENT = dict(enumerate(("X H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr "
+                            "Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb "
+                            "Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am").split()))   # 0: a massless site
+# ffnonbonded.itp gives opls_436 (U in UO2+) atomic number 0 and mass 0, like its massless sites: the element and its
+# IUPAC standard atomic weight instead, so a typed U atom has its mass
+FIX_ELEMENT = {"opls_436": ("U", 238.029)}
 
 
 def sections(path):
@@ -60,7 +63,10 @@ for sec, w, c in sections(os.path.join(D, "ffnonbonded.itp")):
     if sec != "atomtypes" or len(w) < 8:
         continue
     name, bt, z, mass, q, sig, eps = w[0], w[1], int(w[2]), float(w[3]), float(w[4]), float(w[6]), float(w[7])
-    types[name] = {"name": name, "element": ELEMENT.get(z, "X"), "mass": mass, "charge": q,
+    el = ELEMENT.get(z, "X")
+    if name in FIX_ELEMENT:
+        el, mass = FIX_ELEMENT[name]
+    types[name] = {"name": name, "element": el, "mass": mass, "charge": q,
                    "description": c, "equivalence": {"bond": bt, "angle": bt, "dihedral": bt, "improper": bt}}
     pairs.append({"name": name, "match": [esc(name)], "params": [eps / KJ, sig * 10]})
 for sec, w, c in sections(os.path.join(D, "ffbonded.itp")):

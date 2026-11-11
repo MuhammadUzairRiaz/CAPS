@@ -27,6 +27,9 @@ if(Python3_FOUND)
   # "Copy command" options taken by caps, and a React run the same through the C API and the command line
   add_test(NAME cli_gui_sync COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test_cli_gui_sync.py $<TARGET_FILE:caps_cli> ${PROJECT_SOURCE_DIR})
   set_tests_properties(cli_gui_sync PROPERTIES ENVIRONMENT "CAPS_LIB=$<TARGET_FILE:caps_c>")
+  # every shipped parameter file consistent: types the terms name defined, masses the elements', typing rules naming
+  # their force field's types, no entry given twice with different values beyond the documented ones
+  add_test(NAME parameter_files_audit COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/bench/ff/audit_parameter_files.py)
 endif()
 
 # caps job on a fake SLURM cluster (stub sbatch / squeue / sacct / scancel / ws_allocate / ws_release; needs bash)

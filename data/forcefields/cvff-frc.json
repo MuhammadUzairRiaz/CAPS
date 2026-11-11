@@ -2337,9 +2337,9 @@
   },
   {
    "name": "mg",
-   "element": "mg",
-   "mass": 100.0,
-   "description": "Magnesium",
+   "element": "Mg",
+   "mass": 24.305,
+   "description": "Magnesium (cvff.frc gives element 'mg' and mass 100.000: Mg's IUPAC standard atomic weight here)",
    "equivalence": {
     "bond": "sz",
     "angle": "sz",
