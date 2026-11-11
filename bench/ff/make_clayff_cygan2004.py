@@ -104,7 +104,10 @@ doc = {"format": "caps-forcefield", "format_version": 1, "name": "ClayFF (Cygan 
        "typing": f"../typing/{FID}.typing.json"}
 json.dump(doc, open(os.path.join(DATA, "forcefields", FID + ".json"), "w"), indent=1, ensure_ascii=False)
 
-AL_TET, SUB, OH = "[Al;X4]", "[Mg,Fe,Li]", "[O;H1]"
+# the octahedral substitutions that leave a charge deficit: Mg2+ (mgo 1.36) and Li+ (lio 0.525) for Al3+ (ao 1.575). ClayFF's
+# octahedral iron feo carries 1.575 like ao (Table 1: Fe3+, from goethite and lepidocrocite), so it changes nothing and the
+# O beside it stay ob / oh (with Fe in this set each O next to feo took the deficit charges and the clay was not neutral)
+AL_TET, SUB, OH = "[Al;X4]", "[Mg,Li]", "[O;H1]"
 R = []
 def rule(t, p, s, d, **kw):
     R.append({"type": t, "smarts": s, "priority": p, "description": d, **kw})

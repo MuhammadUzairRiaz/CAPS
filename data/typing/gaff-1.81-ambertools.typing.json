@@ -14,6 +14,10 @@
    "cf"
   ],
   [
+   "cg",
+   "ch"
+  ],
+  [
    "cp",
    "cq"
   ],
@@ -238,9 +242,25 @@
    "smarts": "[#15X6]"
   },
   {
+   "type": "ni",
+   "smarts": "[#7X3;r3;$(*[#6X3]~[#8X1,#16X1])]"
+  },
+  {
+   "type": "nj",
+   "smarts": "[#7X3;r4;$(*[#6X3]~[#8X1,#16X1])]"
+  },
+  {
    "type": "n",
    "smarts": "[#7X3;$(*[#6X3]~[#8X1,#16X1])]",
    "description": "amide N"
+  },
+  {
+   "type": "nk",
+   "smarts": "[#7X4;r3]"
+  },
+  {
+   "type": "nl",
+   "smarts": "[#7X4;r4]"
   },
   {
    "type": "n4",
@@ -256,6 +276,46 @@
    "type": "na",
    "smarts": "[#7X3;{AR1},{AR2},{AR3}]",
    "description": "N with 3 connections in a planar ring"
+  },
+  {
+   "type": "nm",
+   "smarts": "[#7X3;$(*[#6,#7,#8,#16,#15;{AR1},{AR2},{AR3}]);r3]"
+  },
+  {
+   "type": "nm",
+   "smarts": "[#7X3;$(*[#6X3;$(*=*)]);r3]"
+  },
+  {
+   "type": "nm",
+   "smarts": "[#7X3;$(*[#7X2;$(*=*)]);r3]"
+  },
+  {
+   "type": "nm",
+   "smarts": "[#7X3;$(*[#15X2;$(*=*)]);r3]"
+  },
+  {
+   "type": "nm",
+   "smarts": "[#7X3;v4;$(*=[#6X3][#7X3]);r3]"
+  },
+  {
+   "type": "nn",
+   "smarts": "[#7X3;$(*[#6,#7,#8,#16,#15;{AR1},{AR2},{AR3}]);r4]"
+  },
+  {
+   "type": "nn",
+   "smarts": "[#7X3;$(*[#6X3;$(*=*)]);r4]"
+  },
+  {
+   "type": "nn",
+   "smarts": "[#7X3;$(*[#7X2;$(*=*)]);r4]"
+  },
+  {
+   "type": "nn",
+   "smarts": "[#7X3;$(*[#15X2;$(*=*)]);r4]"
+  },
+  {
+   "type": "nn",
+   "smarts": "[#7X3;v4;$(*=[#6X3][#7X3]);r4]"
   },
   {
    "type": "nh",
@@ -281,6 +341,14 @@
    "type": "nh",
    "smarts": "[#7X3;v4;$(*=[#6X3][#7X3])]",
    "description": "amine N on an aromatic / conjugated atom"
+  },
+  {
+   "type": "np",
+   "smarts": "[#7X3;r3]"
+  },
+  {
+   "type": "nq",
+   "smarts": "[#7X3;r4]"
   },
   {
    "type": "n3",

@@ -326,6 +326,14 @@ FOYER_OPLS = {
     ("135", "273"): "acetate CH3: GROMACS's carboxylate CH3 273, whose charges sum to -1 with 271 / 272",
     ("143", "1154"): "allene: the 2024 table's allene types 1153-1157", ("144", "1153"): "allene: the 2024 table's allene types 1153-1157",
     ("927", "1157"): "allene: the 2024 table's allene types 1153-1157 (foyer: an sp3 alkyne-substituent C for the central C)",
+    **{p: "open-chain carbonate: the 2024 table's carbonate numbers 771-773 with the methoxy C 789 and H 777, which sum to "
+          "zero (foyer's ester types leave -0.08 e)" for p in (("465", "772"), ("466", "771"), ("467", "773"), ("468", "789"), ("469", "777"))},
+}
+# molecules a library leaves untyped because no numbers of its table balance their charges (check_type_charges.py)
+UNTYPED_BALANCE = {
+    "trimethyl_phosphate": (OPLS, "a phosphate triester: the table's 440-444 are the dimethyl phosphate anion's (-0.47 e here)"),
+    "thiophene": (("oplsaa2024",), "thiophene: no numbers in the 2024 table (furan's C / H with thiazole's S give +0.16 e)"),
+    "lutidine": (("oplsaa2024",), "a 3-alkylpyridine: 672 is a pyridazine's CH3 and does not carry the ring H's charge (-0.16 e)"),
 }
 num = lambda t: re.sub(r"^opls_0*", "", t or "") if (t or "").startswith("opls_") else (t or "")
 # pysimm's PCFF typer (pysimm/forcefield/pcff.py) is a short element-and-bond-order list: every non-aromatic sp2 C c=2,
@@ -421,6 +429,8 @@ def compare(out):
                 why = next((w for f_, t_, w in EXPLAINED if f_ == ff and t_(name, x, y, els, i)), None)
                 if why == "foyer":
                     why = FOYER_OPLS[(num(x), num(y))]
+                if why is None and name in UNTYPED_BALANCE and ff in UNTYPED_BALANCE[name][0]:
+                    why = UNTYPED_BALANCE[name][1] + "; left untyped (CAPS reports it), the rest of the molecule as the reference"
                 if why is None and ff == "pcff-frc" and (x, y) in PYSIMM_PCFF:
                     why = PYSIMM_PCFF[(x, y)]
                 if why is None and ff == "dreiding1990" and (x, y) in PYSIMM_DREIDING:

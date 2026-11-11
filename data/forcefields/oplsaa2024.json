@@ -50325,106 +50325,837 @@
  ],
  "dihedrals": [
   {
-   "name": "HC-CM-CT-O?",
+   "name": "??-Zn-N-??",
    "match": [
-    "HC",
+    "**",
+    "Zn",
+    "N",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 021: JACS 113, 8262 (91)"
+  },
+  {
+   "name": "??-Zn-O-??",
+   "match": [
+    "**",
+    "Zn",
+    "O",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 021: JACS 113, 8262 (91)"
+  },
+  {
+   "name": "??-??-SY-OY",
+   "match": [
+    "**",
+    "**",
+    "SY",
+    "OY"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 146: sulfonamide"
+  },
+  {
+   "name": "??-CA-CA-??",
+   "match": [
+    "**",
+    "CA",
+    "CA",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165: in aromatic ring"
+  },
+  {
+   "name": "??-CB-CB-??",
+   "match": [
+    "**",
+    "CB",
+    "CB",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-CB-CS-??",
+   "match": [
+    "**",
+    "CB",
+    "CS",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-CS-C-??",
+   "match": [
+    "**",
+    "CS",
+    "C",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-CR-CS-??",
+   "match": [
+    "**",
+    "CR",
+    "CS",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-CS-CW-??",
+   "match": [
+    "**",
+    "CS",
+    "CW",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-NC-CA-??",
+   "match": [
+    "**",
+    "NC",
+    "CA",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-NC-CB-??",
+   "match": [
+    "**",
+    "NC",
+    "CB",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-NA-CB-??",
+   "match": [
+    "**",
+    "NA",
+    "CB",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-NB-CB-??",
+   "match": [
+    "**",
+    "NB",
+    "CB",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-NB-CR-??",
+   "match": [
+    "**",
+    "NB",
+    "CR",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-NB-CU-??",
+   "match": [
+    "**",
+    "NB",
+    "CU",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-N-CB-??",
+   "match": [
+    "**",
+    "N",
+    "CB",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-NC-CR-??",
+   "match": [
+    "**",
+    "NC",
+    "CR",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-NC-CQ-??",
+   "match": [
+    "**",
+    "NC",
+    "CQ",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-N-CQ-??",
+   "match": [
+    "**",
+    "N",
+    "CQ",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "??-CW-NA-??",
+   "match": [
+    "**",
+    "CW",
+    "NA",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    2.8,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 166"
+  },
+  {
+   "name": "??-NA-CR-??",
+   "match": [
+    "**",
+    "NA",
+    "CR",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    4.65,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 167"
+  },
+  {
+   "name": "??-CW-NB-??",
+   "match": [
+    "**",
+    "CW",
+    "NB",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    10.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 168"
+  },
+  {
+   "name": "??-CK-NB-??",
+   "match": [
+    "**",
+    "CK",
+    "NB",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    10.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 168"
+  },
+  {
+   "name": "??-CK-NA-??",
+   "match": [
+    "**",
+    "CK",
+    "NA",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    10.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 168"
+  },
+  {
+   "name": "??-CK-NC-??",
+   "match": [
+    "**",
+    "CK",
+    "NC",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    10.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 168"
+  },
+  {
+   "name": "??-NA-NB-??",
+   "match": [
+    "**",
+    "NA",
+    "NB",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    10.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 168"
+  },
+  {
+   "name": "??-NB-NB-??",
+   "match": [
+    "**",
+    "NB",
+    "NB",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    10.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 168"
+  },
+  {
+   "name": "??-NB-CV-??",
+   "match": [
+    "**",
+    "NB",
+    "CV",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    4.8,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 169"
+  },
+  {
+   "name": "??-CW-CV-??",
+   "match": [
+    "**",
+    "CW",
+    "CV",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    10.75,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 170"
+  },
+  {
+   "name": "??-CW-CW-??",
+   "match": [
+    "**",
+    "CW",
+    "CW",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    10.75,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 170"
+  },
+  {
+   "name": "??-C*-CW-??",
+   "match": [
+    "**",
+    "C\\*",
+    "CW",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    13.05,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 172"
+  },
+  {
+   "name": "??-C*-CB-??",
+   "match": [
+    "**",
+    "C\\*",
+    "CB",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    3.35,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 173"
+  },
+  {
+   "name": "??-CA-CB-??",
+   "match": [
+    "**",
+    "CA",
+    "CB",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 174"
+  },
+  {
+   "name": "??-C-CB-??",
+   "match": [
+    "**",
+    "C",
+    "CB",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 174"
+  },
+  {
+   "name": "??-CB-CN-??",
+   "match": [
+    "**",
+    "CB",
+    "CN",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    6.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 175"
+  },
+  {
+   "name": "??-NA-CN-??",
+   "match": [
+    "**",
+    "NA",
+    "CN",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    3.05,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 176"
+  },
+  {
+   "name": "??-CM-CM-??",
+   "match": [
+    "**",
     "CM",
-    "CT",
-    "O*"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.3,
-    0.0
-   ],
-   "comment": "BOSS type 001: alcohols, ethers AA"
-  },
-  {
-   "name": "CT-CT-CT-O?",
-   "match": [
-    "CT",
-    "CT",
-    "CT",
-    "O*"
-   ],
-   "style": "opls",
-   "params": [
-    1.3,
-    -0.5,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 006: alcohols, ethers OPLS/2020"
-  },
-  {
-   "name": "CT-CT-CO-O?",
-   "match": [
-    "CT",
-    "CT",
-    "CO",
-    "O*"
-   ],
-   "style": "opls",
-   "params": [
-    1.3,
-    -0.5,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 006: alcohols, ethers OPLS/2020"
-  },
-  {
-   "name": "CT-CM-CT-O?",
-   "match": [
-    "CT",
     "CM",
-    "CT",
-    "O*"
+    "**"
    ],
    "style": "opls",
    "params": [
-    1.3,
-    -0.5,
+    0.0,
+    14.0,
     0.0,
     0.0
    ],
-   "comment": "BOSS type 006: alcohols, ethers AA"
+   "comment": "BOSS type 222: alkene"
   },
   {
-   "name": "HC-CT-OS-C?",
+   "name": "??-C#-C#-??",
    "match": [
-    "HC",
-    "CT",
-    "OS",
-    "C*"
+    "**",
+    "C#",
+    "C#",
+    "**"
    ],
    "style": "opls",
    "params": [
     0.0,
+    14.0,
     0.0,
-    0.76,
     0.0
    ],
-   "comment": "BOSS type 012: ethers AA"
+   "comment": "BOSS type 222: alkene"
   },
   {
-   "name": "CT-OS-CT-O?",
+   "name": "??-N-CU-??",
    "match": [
-    "CT",
-    "OS",
-    "CT",
-    "O*"
+    "**",
+    "N",
+    "CU",
+    "**"
    ],
    "style": "opls",
    "params": [
-    -0.521,
-    -2.018,
-    1.996,
+    0.0,
+    2.17,
+    0.0,
     0.0
    ],
-   "comment": "BOSS type 014: acetals AA (Sugars:see 150-155)"
+   "comment": "BOSS type 223: biphenyl-like"
+  },
+  {
+   "name": "??-N-CW-??",
+   "match": [
+    "**",
+    "N",
+    "CW",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    2.17,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 223: biphenyl-like"
+  },
+  {
+   "name": "??-N-CS-??",
+   "match": [
+    "**",
+    "N",
+    "CS",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    2.17,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 223: biphenyl-like"
+  },
+  {
+   "name": "??-CM-CU-??",
+   "match": [
+    "**",
+    "CM",
+    "CU",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    2.17,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 223: biphenyl-like"
+  },
+  {
+   "name": "??-CM-CW-??",
+   "match": [
+    "**",
+    "CM",
+    "CW",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    2.17,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 223: biphenyl-like"
+  },
+  {
+   "name": "??-CM-CS-??",
+   "match": [
+    "**",
+    "CM",
+    "CS",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    2.17,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 223: biphenyl-like"
+  },
+  {
+   "name": "??-CZ-CZ-??",
+   "match": [
+    "**",
+    "CZ",
+    "CZ",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 243: alkynes"
+  },
+  {
+   "name": "??-CY-CY-??",
+   "match": [
+    "**",
+    "CY",
+    "CY",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 260: small ring"
+  },
+  {
+   "name": "??-CY-N$-??",
+   "match": [
+    "**",
+    "CY",
+    "N$",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 260: small ring"
+  },
+  {
+   "name": "??-CY-C$-??",
+   "match": [
+    "**",
+    "CY",
+    "C$",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 260: small ring"
+  },
+  {
+   "name": "??-CY-S-??",
+   "match": [
+    "**",
+    "CY",
+    "S",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 260: small ring"
   },
   {
    "name": "??-C?-Cl-XC",
@@ -50767,6 +51498,652 @@
    "comment": "BOSS type 021: aromatics"
   },
   {
+   "name": "H-N-CT-??",
+   "match": [
+    "H",
+    "N",
+    "CT",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 042: peptides"
+  },
+  {
+   "name": "??-CT-C-O",
+   "match": [
+    "**",
+    "CT",
+    "C",
+    "O"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 043: peptides"
+  },
+  {
+   "name": "??-CA-SY-OY",
+   "match": [
+    "**",
+    "CA",
+    "SY",
+    "OY"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 146: sulfonamide"
+  },
+  {
+   "name": "??-N-SY-OY",
+   "match": [
+    "**",
+    "N",
+    "SY",
+    "OY"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 146: sulfonamide"
+  },
+  {
+   "name": "??-CT-SY-OY",
+   "match": [
+    "**",
+    "CT",
+    "SY",
+    "OY"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 146: sulfonamide"
+  },
+  {
+   "name": "??-CT-SY-N",
+   "match": [
+    "**",
+    "CT",
+    "SY",
+    "N"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 146: sulfonamide"
+  },
+  {
+   "name": "HA-CU-CW-??",
+   "match": [
+    "HA",
+    "CU",
+    "CW",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "HA-CW-CU-??",
+   "match": [
+    "HA",
+    "CW",
+    "CU",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "H-N-CQ-??",
+   "match": [
+    "H",
+    "N",
+    "CQ",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "LP-NB-CR-??",
+   "match": [
+    "LP",
+    "NB",
+    "CR",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "LP-NB-CV-??",
+   "match": [
+    "LP",
+    "NB",
+    "CV",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "LP-NB-NA-??",
+   "match": [
+    "LP",
+    "NB",
+    "NA",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 165"
+  },
+  {
+   "name": "HA-CR-NB-??",
+   "match": [
+    "HA",
+    "CR",
+    "NB",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    10.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 168"
+  },
+  {
+   "name": "HA-CR-NA-??",
+   "match": [
+    "HA",
+    "CR",
+    "NA",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    10.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 168"
+  },
+  {
+   "name": "H-NA-CW-??",
+   "match": [
+    "H",
+    "NA",
+    "CW",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    5.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 171"
+  },
+  {
+   "name": "H-NA-CR-??",
+   "match": [
+    "H",
+    "NA",
+    "CR",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    5.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 171"
+  },
+  {
+   "name": "H-NA-CB-??",
+   "match": [
+    "H",
+    "NA",
+    "CB",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    5.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 171"
+  },
+  {
+   "name": "CA-CA-N-??",
+   "match": [
+    "CA",
+    "CA",
+    "N",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    2.1,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 207: N-phenylamide"
+  },
+  {
+   "name": "??-CA-N2-H",
+   "match": [
+    "**",
+    "CA",
+    "N2",
+    "H"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    2.133,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 215: aniline-like"
+  },
+  {
+   "name": "??-CQ-N2-H",
+   "match": [
+    "**",
+    "CQ",
+    "N2",
+    "H"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    2.133,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 215: aniline-like"
+  },
+  {
+   "name": "??-CT-CZ-NZ",
+   "match": [
+    "**",
+    "CT",
+    "CZ",
+    "NZ"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 242: nitriles"
+  },
+  {
+   "name": "??-CA-CZ-NZ",
+   "match": [
+    "**",
+    "CA",
+    "CZ",
+    "NZ"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 242: nitriles"
+  },
+  {
+   "name": "??-C#-CZ-NZ",
+   "match": [
+    "**",
+    "C#",
+    "CZ",
+    "NZ"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 242: nitriles"
+  },
+  {
+   "name": "??-CT-NZ-CZ",
+   "match": [
+    "**",
+    "CT",
+    "NZ",
+    "CZ"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 242: isonitriles"
+  },
+  {
+   "name": "??-CA-NZ-CZ",
+   "match": [
+    "**",
+    "CA",
+    "NZ",
+    "CZ"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 242: isonitriles"
+  },
+  {
+   "name": "??-CT-CZ-CZ",
+   "match": [
+    "**",
+    "CT",
+    "CZ",
+    "CZ"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 244: alkynes"
+  },
+  {
+   "name": "CY-CY-N$-??",
+   "match": [
+    "CY",
+    "CY",
+    "N$",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 260: small ring"
+  },
+  {
+   "name": "N-CY-CY-??",
+   "match": [
+    "N",
+    "CY",
+    "CY",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 260: small ring"
+  },
+  {
+   "name": "F-CT-CW-??",
+   "match": [
+    "F",
+    "CT",
+    "CW",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.45,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 350: fluoromethyl aromatic"
+  },
+  {
+   "name": "F-CT-CS-??",
+   "match": [
+    "F",
+    "CT",
+    "CS",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.45,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 350: fluoromethyl aromatic"
+  },
+  {
+   "name": "Cl-CT-CW-??",
+   "match": [
+    "Cl",
+    "CT",
+    "CW",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    -0.4,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 351: chloromethyl aromatic"
+  },
+  {
+   "name": "Cl-CT-CS-??",
+   "match": [
+    "Cl",
+    "CT",
+    "CS",
+    "**"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    -0.4,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 351: chloromethyl aromatic"
+  },
+  {
+   "name": "HC-CM-CT-O?",
+   "match": [
+    "HC",
+    "CM",
+    "CT",
+    "O*"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.3,
+    0.0
+   ],
+   "comment": "BOSS type 001: alcohols, ethers AA"
+  },
+  {
+   "name": "CT-CT-CT-O?",
+   "match": [
+    "CT",
+    "CT",
+    "CT",
+    "O*"
+   ],
+   "style": "opls",
+   "params": [
+    1.3,
+    -0.5,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 006: alcohols, ethers OPLS/2020"
+  },
+  {
+   "name": "CT-CT-CO-O?",
+   "match": [
+    "CT",
+    "CT",
+    "CO",
+    "O*"
+   ],
+   "style": "opls",
+   "params": [
+    1.3,
+    -0.5,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 006: alcohols, ethers OPLS/2020"
+  },
+  {
+   "name": "CT-CM-CT-O?",
+   "match": [
+    "CT",
+    "CM",
+    "CT",
+    "O*"
+   ],
+   "style": "opls",
+   "params": [
+    1.3,
+    -0.5,
+    0.0,
+    0.0
+   ],
+   "comment": "BOSS type 006: alcohols, ethers AA"
+  },
+  {
+   "name": "HC-CT-OS-C?",
+   "match": [
+    "HC",
+    "CT",
+    "OS",
+    "C*"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.76,
+    0.0
+   ],
+   "comment": "BOSS type 012: ethers AA"
+  },
+  {
+   "name": "CT-OS-CT-O?",
+   "match": [
+    "CT",
+    "OS",
+    "CT",
+    "O*"
+   ],
+   "style": "opls",
+   "params": [
+    -0.521,
+    -2.018,
+    1.996,
+    0.0
+   ],
+   "comment": "BOSS type 014: acetals AA (Sugars:see 150-155)"
+  },
+  {
    "name": "O?-CT-CA-CA",
    "match": [
     "O*",
@@ -50920,74 +52297,6 @@
    "comment": "BOSS type 021: aromatics"
   },
   {
-   "name": "??-Zn-N-??",
-   "match": [
-    "**",
-    "Zn",
-    "N",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 021: JACS 113, 8262 (91)"
-  },
-  {
-   "name": "??-Zn-O-??",
-   "match": [
-    "**",
-    "Zn",
-    "O",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 021: JACS 113, 8262 (91)"
-  },
-  {
-   "name": "H-N-CT-??",
-   "match": [
-    "H",
-    "N",
-    "CT",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 042: peptides"
-  },
-  {
-   "name": "??-CT-C-O",
-   "match": [
-    "**",
-    "CT",
-    "C",
-    "O"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 043: peptides"
-  },
-  {
    "name": "C?-CA-SH-HS",
    "match": [
     "C*",
@@ -51139,108 +52448,6 @@
     0.0
    ],
    "comment": "BOSS type 127: MeOPO3 (2-) mll"
-  },
-  {
-   "name": "??-??-SY-OY",
-   "match": [
-    "**",
-    "**",
-    "SY",
-    "OY"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 146: sulfonamide"
-  },
-  {
-   "name": "??-CA-SY-OY",
-   "match": [
-    "**",
-    "CA",
-    "SY",
-    "OY"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 146: sulfonamide"
-  },
-  {
-   "name": "??-N-SY-OY",
-   "match": [
-    "**",
-    "N",
-    "SY",
-    "OY"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 146: sulfonamide"
-  },
-  {
-   "name": "??-CT-SY-OY",
-   "match": [
-    "**",
-    "CT",
-    "SY",
-    "OY"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 146: sulfonamide"
-  },
-  {
-   "name": "??-CT-SY-N",
-   "match": [
-    "**",
-    "CT",
-    "SY",
-    "N"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 146: sulfonamide"
-  },
-  {
-   "name": "??-CA-CA-??",
-   "match": [
-    "**",
-    "CA",
-    "CA",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165: in aromatic ring"
   },
   {
    "name": "CA-CA-CA-N?",
@@ -51498,23 +52705,6 @@
    "comment": "BOSS type 165"
   },
   {
-   "name": "??-CB-CB-??",
-   "match": [
-    "**",
-    "CB",
-    "CB",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
    "name": "C?-CB-CB-C?",
    "match": [
     "C*",
@@ -51555,74 +52745,6 @@
     "CB",
     "CB",
     "N*"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "??-CB-CS-??",
-   "match": [
-    "**",
-    "CB",
-    "CS",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "??-CS-C-??",
-   "match": [
-    "**",
-    "CS",
-    "C",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "??-CR-CS-??",
-   "match": [
-    "**",
-    "CR",
-    "CS",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "??-CS-CW-??",
-   "match": [
-    "**",
-    "CS",
-    "CW",
-    "**"
    ],
    "style": "opls",
    "params": [
@@ -51719,46 +52841,12 @@
    "comment": "BOSS type 165"
   },
   {
-   "name": "??-NC-CA-??",
-   "match": [
-    "**",
-    "NC",
-    "CA",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
    "name": "C?-NC-CA-N?",
    "match": [
     "C*",
     "NC",
     "CA",
     "N*"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "??-NC-CB-??",
-   "match": [
-    "**",
-    "NC",
-    "CB",
-    "**"
    ],
    "style": "opls",
    "params": [
@@ -51793,74 +52881,6 @@
     "NC",
     "CB",
     "N*"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "??-NA-CB-??",
-   "match": [
-    "**",
-    "NA",
-    "CB",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "??-NB-CB-??",
-   "match": [
-    "**",
-    "NB",
-    "CB",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "??-NB-CR-??",
-   "match": [
-    "**",
-    "NB",
-    "CR",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "??-NB-CU-??",
-   "match": [
-    "**",
-    "NB",
-    "CU",
-    "**"
    ],
    "style": "opls",
    "params": [
@@ -51940,91 +52960,6 @@
    "comment": "BOSS type 165"
   },
   {
-   "name": "??-N-CB-??",
-   "match": [
-    "**",
-    "N",
-    "CB",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "HA-CU-CW-??",
-   "match": [
-    "HA",
-    "CU",
-    "CW",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "HA-CW-CU-??",
-   "match": [
-    "HA",
-    "CW",
-    "CU",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "??-NC-CR-??",
-   "match": [
-    "**",
-    "NC",
-    "CR",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "??-NC-CQ-??",
-   "match": [
-    "**",
-    "NC",
-    "CQ",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
    "name": "C?-NC-CQ-HA",
    "match": [
     "C*",
@@ -52059,23 +52994,6 @@
    "comment": "BOSS type 165"
   },
   {
-   "name": "??-N-CQ-??",
-   "match": [
-    "**",
-    "N",
-    "CQ",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
    "name": "C?-N-CQ-N?",
    "match": [
     "C*",
@@ -52099,23 +53017,6 @@
     "N",
     "CQ",
     "HA"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "H-N-CQ-??",
-   "match": [
-    "H",
-    "N",
-    "CQ",
-    "**"
    ],
    "style": "opls",
    "params": [
@@ -52195,148 +53096,12 @@
    "comment": "BOSS type 165"
   },
   {
-   "name": "LP-NB-CR-??",
-   "match": [
-    "LP",
-    "NB",
-    "CR",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "LP-NB-CV-??",
-   "match": [
-    "LP",
-    "NB",
-    "CV",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "LP-NB-NA-??",
-   "match": [
-    "LP",
-    "NB",
-    "NA",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.25,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 165"
-  },
-  {
-   "name": "??-CW-NA-??",
-   "match": [
-    "**",
-    "CW",
-    "NA",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    2.8,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 166"
-  },
-  {
-   "name": "??-NA-CR-??",
-   "match": [
-    "**",
-    "NA",
-    "CR",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    4.65,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 167"
-  },
-  {
-   "name": "HA-CR-NB-??",
-   "match": [
-    "HA",
-    "CR",
-    "NB",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    10.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 168"
-  },
-  {
    "name": "N?-CR-NB-C?",
    "match": [
     "N*",
     "CR",
     "NB",
     "C*"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    10.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 168"
-  },
-  {
-   "name": "??-CW-NB-??",
-   "match": [
-    "**",
-    "CW",
-    "NB",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    10.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 168"
-  },
-  {
-   "name": "HA-CR-NA-??",
-   "match": [
-    "HA",
-    "CR",
-    "NA",
-    "**"
    ],
    "style": "opls",
    "params": [
@@ -52363,125 +53128,6 @@
     0.0
    ],
    "comment": "BOSS type 168"
-  },
-  {
-   "name": "??-CK-NB-??",
-   "match": [
-    "**",
-    "CK",
-    "NB",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    10.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 168"
-  },
-  {
-   "name": "??-CK-NA-??",
-   "match": [
-    "**",
-    "CK",
-    "NA",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    10.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 168"
-  },
-  {
-   "name": "??-CK-NC-??",
-   "match": [
-    "**",
-    "CK",
-    "NC",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    10.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 168"
-  },
-  {
-   "name": "??-NA-NB-??",
-   "match": [
-    "**",
-    "NA",
-    "NB",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    10.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 168"
-  },
-  {
-   "name": "??-NB-NB-??",
-   "match": [
-    "**",
-    "NB",
-    "NB",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    10.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 168"
-  },
-  {
-   "name": "??-NB-CV-??",
-   "match": [
-    "**",
-    "NB",
-    "CV",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    4.8,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 169"
-  },
-  {
-   "name": "??-CW-CV-??",
-   "match": [
-    "**",
-    "CW",
-    "CV",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    10.75,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 170"
   },
   {
    "name": "C?-CW-CV-C?",
@@ -52524,23 +53170,6 @@
     "CW",
     "CV",
     "C*"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    10.75,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 170"
-  },
-  {
-   "name": "??-CW-CW-??",
-   "match": [
-    "**",
-    "CW",
-    "CW",
-    "**"
    ],
    "style": "opls",
    "params": [
@@ -52722,108 +53351,6 @@
    "comment": "BOSS type 171"
   },
   {
-   "name": "H-NA-CW-??",
-   "match": [
-    "H",
-    "NA",
-    "CW",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    5.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 171"
-  },
-  {
-   "name": "H-NA-CR-??",
-   "match": [
-    "H",
-    "NA",
-    "CR",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    5.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 171"
-  },
-  {
-   "name": "H-NA-CB-??",
-   "match": [
-    "H",
-    "NA",
-    "CB",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    5.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 171"
-  },
-  {
-   "name": "??-C*-CW-??",
-   "match": [
-    "**",
-    "C\\*",
-    "CW",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    13.05,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 172"
-  },
-  {
-   "name": "??-C*-CB-??",
-   "match": [
-    "**",
-    "C\\*",
-    "CB",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    3.35,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 173"
-  },
-  {
-   "name": "??-CA-CB-??",
-   "match": [
-    "**",
-    "CA",
-    "CB",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 174"
-  },
-  {
    "name": "C?-CA-CB-C?",
    "match": [
     "C*",
@@ -52881,23 +53408,6 @@
     "CA",
     "CB",
     "C*"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    7.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 174"
-  },
-  {
-   "name": "??-C-CB-??",
-   "match": [
-    "**",
-    "C",
-    "CB",
-    "**"
    ],
    "style": "opls",
    "params": [
@@ -52977,40 +53487,6 @@
    "comment": "BOSS type 174"
   },
   {
-   "name": "??-CB-CN-??",
-   "match": [
-    "**",
-    "CB",
-    "CN",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    6.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 175"
-  },
-  {
-   "name": "??-NA-CN-??",
-   "match": [
-    "**",
-    "NA",
-    "CN",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    3.05,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 176"
-  },
-  {
    "name": "N?-CA-NT-H",
    "match": [
     "N*",
@@ -53077,91 +53553,6 @@
     0.0
    ],
    "comment": "BOSS type 202: 2-Me-1,3-butadiene-like"
-  },
-  {
-   "name": "CA-CA-N-??",
-   "match": [
-    "CA",
-    "CA",
-    "N",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    2.1,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 207: N-phenylamide"
-  },
-  {
-   "name": "??-CA-N2-H",
-   "match": [
-    "**",
-    "CA",
-    "N2",
-    "H"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    2.133,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 215: aniline-like"
-  },
-  {
-   "name": "??-CQ-N2-H",
-   "match": [
-    "**",
-    "CQ",
-    "N2",
-    "H"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    2.133,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 215: aniline-like"
-  },
-  {
-   "name": "??-CM-CM-??",
-   "match": [
-    "**",
-    "CM",
-    "CM",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    14.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 222: alkene"
-  },
-  {
-   "name": "??-C#-C#-??",
-   "match": [
-    "**",
-    "C#",
-    "C#",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    14.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 222: alkene"
   },
   {
    "name": "CZ-CM-CM-C?",
@@ -53487,108 +53878,6 @@
    "comment": "BOSS type 223: biphenyl-like"
   },
   {
-   "name": "??-N-CU-??",
-   "match": [
-    "**",
-    "N",
-    "CU",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    2.17,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 223: biphenyl-like"
-  },
-  {
-   "name": "??-N-CW-??",
-   "match": [
-    "**",
-    "N",
-    "CW",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    2.17,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 223: biphenyl-like"
-  },
-  {
-   "name": "??-N-CS-??",
-   "match": [
-    "**",
-    "N",
-    "CS",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    2.17,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 223: biphenyl-like"
-  },
-  {
-   "name": "??-CM-CU-??",
-   "match": [
-    "**",
-    "CM",
-    "CU",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    2.17,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 223: biphenyl-like"
-  },
-  {
-   "name": "??-CM-CW-??",
-   "match": [
-    "**",
-    "CM",
-    "CW",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    2.17,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 223: biphenyl-like"
-  },
-  {
-   "name": "??-CM-CS-??",
-   "match": [
-    "**",
-    "CM",
-    "CS",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    2.17,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 223: biphenyl-like"
-  },
-  {
    "name": "NC-C!-CU-C?",
    "match": [
     "NC",
@@ -53691,125 +53980,6 @@
    "comment": "BOSS type 233: allyl alcohols, ethers"
   },
   {
-   "name": "??-CT-CZ-NZ",
-   "match": [
-    "**",
-    "CT",
-    "CZ",
-    "NZ"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 242: nitriles"
-  },
-  {
-   "name": "??-CA-CZ-NZ",
-   "match": [
-    "**",
-    "CA",
-    "CZ",
-    "NZ"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 242: nitriles"
-  },
-  {
-   "name": "??-C#-CZ-NZ",
-   "match": [
-    "**",
-    "C#",
-    "CZ",
-    "NZ"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 242: nitriles"
-  },
-  {
-   "name": "??-CT-NZ-CZ",
-   "match": [
-    "**",
-    "CT",
-    "NZ",
-    "CZ"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 242: isonitriles"
-  },
-  {
-   "name": "??-CA-NZ-CZ",
-   "match": [
-    "**",
-    "CA",
-    "NZ",
-    "CZ"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 242: isonitriles"
-  },
-  {
-   "name": "??-CZ-CZ-??",
-   "match": [
-    "**",
-    "CZ",
-    "CZ",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 243: alkynes"
-  },
-  {
-   "name": "??-CT-CZ-CZ",
-   "match": [
-    "**",
-    "CT",
-    "CZ",
-    "CZ"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 244: alkynes"
-  },
-  {
    "name": "C?-NA-CT-OS",
    "match": [
     "C*",
@@ -53895,114 +54065,12 @@
    "comment": "BOSS type 256: imidazoles, indoles, purines"
   },
   {
-   "name": "??-CY-CY-??",
-   "match": [
-    "**",
-    "CY",
-    "CY",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 260: small ring"
-  },
-  {
-   "name": "??-CY-N$-??",
-   "match": [
-    "**",
-    "CY",
-    "N$",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 260: small ring"
-  },
-  {
-   "name": "??-CY-C$-??",
-   "match": [
-    "**",
-    "CY",
-    "C$",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 260: small ring"
-  },
-  {
-   "name": "??-CY-S-??",
-   "match": [
-    "**",
-    "CY",
-    "S",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 260: small ring"
-  },
-  {
-   "name": "CY-CY-N$-??",
-   "match": [
-    "CY",
-    "CY",
-    "N$",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 260: small ring"
-  },
-  {
    "name": "HC-CY-N$-C?",
    "match": [
     "HC",
     "CY",
     "N$",
     "C*"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 260: small ring"
-  },
-  {
-   "name": "N-CY-CY-??",
-   "match": [
-    "N",
-    "CY",
-    "CY",
-    "**"
    ],
    "style": "opls",
    "params": [
@@ -54046,74 +54114,6 @@
     0.0
    ],
    "comment": "BOSS type 260: small ring"
-  },
-  {
-   "name": "F-CT-CW-??",
-   "match": [
-    "F",
-    "CT",
-    "CW",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.45,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 350: fluoromethyl aromatic"
-  },
-  {
-   "name": "F-CT-CS-??",
-   "match": [
-    "F",
-    "CT",
-    "CS",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    0.45,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 350: fluoromethyl aromatic"
-  },
-  {
-   "name": "Cl-CT-CW-??",
-   "match": [
-    "Cl",
-    "CT",
-    "CW",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    -0.4,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 351: chloromethyl aromatic"
-  },
-  {
-   "name": "Cl-CT-CS-??",
-   "match": [
-    "Cl",
-    "CT",
-    "CS",
-    "**"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    -0.4,
-    0.0,
-    0.0
-   ],
-   "comment": "BOSS type 351: chloromethyl aromatic"
   },
   {
    "name": "C2-C2-C2-O?",

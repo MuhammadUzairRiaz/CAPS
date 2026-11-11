@@ -65,7 +65,8 @@
     "auto_torsion_center": "Br_",
     "auto_oop_end": "Br_",
     "auto_oop_center": "Br_"
-   }
+   },
+   "charge": -1.0
   },
   {
    "name": "Cl",
@@ -80,7 +81,8 @@
     "auto_torsion_center": "Cl_",
     "auto_oop_end": "Cl_",
     "auto_oop_center": "Cl_"
-   }
+   },
+   "charge": -1.0
   },
   {
    "name": "Cr",
@@ -563,7 +565,8 @@
     "auto_torsion_center": "ca_",
     "auto_oop_end": "ca_",
     "auto_oop_center": "ca_"
-   }
+   },
+   "charge": 2.0
   },
   {
    "name": "cg",

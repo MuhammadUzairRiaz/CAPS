@@ -97,3 +97,14 @@ CN=C=NC dimethylcarbodiimide
 c1ccc2c(c1)[nH]c1ccccc12 carbazole
 c1ccc2c(c1)oc1ccccc12 dibenzofuran
 c1ccc2c(c1)sc1ccccc12 dibenzothiophene
+# GAFF checks: nitrogen in three- and four-membered rings, conjugated C#C (cg / ch)
+C1CN1 aziridine
+CN1CC1 N-methylaziridine
+C1CNC1 azetidine
+O=C1CCN1 2-azetidinone
+CC(=O)N1CC1 N-acetylaziridine
+c1ccc(cc1)N1CC1 N-phenylaziridine
+C[N+]1(C)CC1 dimethylaziridinium
+c1ccc(cc1)C#Cc1ccccc1 tolan
+C=CC#CC=C hexa-1,5-dien-3-yne
+CC#CC#CC hexa-2,4-diyne

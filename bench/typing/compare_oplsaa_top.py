@@ -141,8 +141,30 @@ EXPLAINED = {
     ("135", "273"): "acetate's CH3: GROMACS's own carboxylate CH3 273 (-0.28), whose charges sum to -1 with 271 / 272; the topology "
                     "uses 135 with charges of its own",
 }
+BR = "alkyl bromide / iodide (2024 table): its all-atom alkyl bromide 975-979 and iodoalkane 1011-1015, which sum to zero " \
+     "for RCH2X, R2CHX, R3CX; the topologies' 722 (a united-atom Br) / 732 (iodobenzene's I) with 152 / 153 need charges of their own"
+CO3 = "open-chain carbonate (2024 table): its carbonate numbers 771-773 with the methoxy C 789 / 774 and H 777 sum to zero; " \
+      "the topologies' ester types leave each carbonate at -0.08 e with the table's charges"
+EXPLAINED.update({**{p: BR for p in (("152", "976"), ("152", "978"), ("153", "977"), ("722", "975"), ("152", "1012"),
+                                      ("153", "1015"), ("732", "1014"))},
+                  **{p: CO3 for p in (("469", "777"), ("467", "773"), ("490", "774"), ("468", "789"), ("466", "771"), ("465", "772"))},
+                  ("227", "399"): "Cl2C= (2024 table): its own pair 399 (+0.12) / 398 (-0.06), neutral; 227 + 2 x 226 is -0.235 e",
+                  ("226", "398"): "Cl2C= (2024 table): its own pair 399 (+0.12) / 398 (-0.06), neutral; 227 + 2 x 226 is -0.235 e",
+                  ("186", "180"): "vinyl ether O (2024 table): 186 is there the OPLS/2020 acetal O (-0.33, +0.07 e left); the ether O 180 "
+                                  "(-0.40) has the charge the topologies' 186 has"})
+UNBAL = " has no numbers in the table whose charges balance; left untyped, CAPS reports it (with the topology's numbers and the " \
+        "table's charges it would carry a net charge)"
 EXPLAINED_MOLECULE = {"methyloxirane": "epoxide: the table's epoxide types 1025-1029 with three-ring angle terms; the topologies' "
-                                       "ether types put 109.5 deg angles on the ring (about 119 kcal/mol strain, 44 with these)"}
+                                       "ether types put 109.5 deg angles on the ring (about 119 kcal/mol strain, 44 with these)",
+                      "triethyl-phosphate": "a phosphate triester: the table's 440-444 are the dimethyl phosphate anion's (-0.38 e on "
+                                            "triethyl phosphate with their charges); left untyped in both libraries",
+                      "thiophene": "thiophene (2024 table)" + UNBAL + " (furan's C / H with thiazole's S: +0.16 e)",
+                      "bromomethane": "CH3Br (2024 table)" + UNBAL + " (976 with three H: +0.10 e)",
+                      "dibromomethane": "CH2Br2 (2024 table)" + UNBAL,
+                      "dichlorofluoromethane": "a C with F and Cl (2024 table)" + UNBAL,
+                      "3-methylpyridine": "a 3- / 4-alkylpyridine (2024 table)" + UNBAL + " (672 / 674 are a pyridazine's and a pyrimidine's CH3)",
+                      "4-methylpyridine": "a 3- / 4-alkylpyridine (2024 table)" + UNBAL + " (672 / 674 are a pyridazine's and a pyrimidine's CH3)",
+                      "246-trimethylpyridine": "a 3- / 4-alkylpyridine (2024 table)" + UNBAL + " (672 / 674 are a pyridazine's and a pyrimidine's CH3)"}
 
 
 def compare(out, ff, show):
@@ -182,7 +204,7 @@ def compare(out, ff, show):
           f"{untyped} untyped, {full}/{n} molecules fully the same; {len(diffs) - len(unexplained)} differing atoms with a "
           f"stated reason, {len(unexplained)} without")
     for d in unexplained[:show]:
-        print(f"   {d[0]:34s} atom {str(d[1]):4s} ref {d[2]:5s} CAPS {d[3]:8s} {desc.get(d[3], '')[:60]}")
+        print(f"   {d[0]:34s} atom {str(d[1]):4s} ref {d[2]:5s} CAPS {d[3]:8s} {desc.get('opls_' + d[3], desc.get(d[3], ''))[:60]}")
     reasons = {}
     for d in diffs:
         if why(d):

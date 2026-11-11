@@ -29,6 +29,7 @@ for r in [x for x in ALL if not x.get("only2024")]:
     if t not in have:
         dropped.add(t)
         continue
+    r = {k: v for k, v in r.items() if k != "gmx"}
     rules.append({**r, "type": t, **({"overrides": [opls(x) for x in r["overrides"]]} if "overrides" in r else {})})
 # GROMACS's OPLS-AA/L types beyond the general rules (type, priority, smarts, description), as its amino-acid topologies
 # (aminoacids.rtp) and ions.itp use them
@@ -138,7 +139,9 @@ GMX_TERMINI = [
 if __name__ == "__main__":
     for t, p, sm, d in ADD + GMX_TERMINI:   # above the general rules' priorities (0-8)
         rules.append({"type": t, "priority": p + 5, "smarts": sm, "description": d})
-    for name, (o, h, label) in {"spc": ("opls_116", "opls_117", "SPC"), "tip4p": ("opls_113", "opls_114", "TIP4P")}.items():
+    # SPC only: a TIP4P overlay (opls_113 O at 0, opls_114 H at +0.52) has no M site to carry the -1.04, so each water was
+    # +1.04 e; TIP4P water comes from the tip4p-* water libraries, which add their M site
+    for name, (o, h, label) in {"spc": ("opls_116", "opls_117", "SPC")}.items():
         json.dump({"format": "caps-typing", "version": 1, "forcefield": f"OPLS-AA (GROMACS) {label} water",
                    "description": f"{label} water for oplsaa-gromacs (an overlay on its rules)",
                    "rules": [{"type": o, "smarts": "[OX2H2]", "priority": 20, "description": f"{label} water O"},

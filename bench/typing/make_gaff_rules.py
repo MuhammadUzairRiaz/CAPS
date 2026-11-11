@@ -82,13 +82,17 @@ def rules(v2, small_rings=None):
     nh_env = [f"[#7X3;$(*[#6,#7,#8,#16,#15;{RING}])", "[#7X3;$(*[#6X3;$(*=*)])", "[#7X3;$(*[#7X2;$(*=*)])", "[#7X3;$(*[#15X2;$(*=*)])",
               # the =NH2+ of guanidinium / amidinium: antechamber re-perceives the resonance and types it like the other N
               "[#7X3;v4;$(*=[#6X3][#7X3])"]
+    # N in three- and four-membered rings (ni / nj, nk / nl, nm / nn, np / nq): ATOMTYPE_GFF.DEF has them too (lines 136-157),
+    # and gaff.dat 1.81 parameterises them, so GAFF 1.81 (small_rings) types them as antechamber does
     if v2:
         add("ns", f"[#7X3H1;{amide}]", d="amide N with 1 H")
         add("nt", f"[#7X3H2;{amide}]", d="amide N with 2 H")
+    if v2 or small_rings:
         add("ni", f"[#7X3;r3;{amide}]"); add("nj", f"[#7X3;r4;{amide}]")
     add("n", f"[#7X3;{amide}]", d="amide N")
-    if v2:
+    if v2 or small_rings:
         add("nk", "[#7X4;r3]"); add("nl", "[#7X4;r4]")
+    if v2:
         add("nx", "[#7X4H1]"); add("ny", "[#7X4H2]"); add("nz", "[#7X4H3]"); add("n+", "[#7X4H4]")
     add("n4", "[#7X4]", d="sp3 N with 4 connections")
     add("no", "[#7X3](~[#8X1])~[#8X1]", d="nitro N")
@@ -96,11 +100,14 @@ def rules(v2, small_rings=None):
     if v2:
         add("nu", *[x + ";H1]" for x in nh_env], d="amine N on an aromatic / conjugated atom, 1 H")
         add("nv", *[x + ";H2]" for x in nh_env], d="same, 2 H")
+    if v2 or small_rings:
         add("nm", *[x + ";r3]" for x in nh_env]); add("nn", *[x + ";r4]" for x in nh_env])
     add("nh", *[x + "]" for x in nh_env], d="amine N on an aromatic / conjugated atom")
     if v2:
         add("np", "[#7X3H0;r3]"); add("nq", "[#7X3H0;r4]"); add("n5", "[#7X3H1;r3]"); add("n6", "[#7X3H1;r4]")
         add("n7", "[#7X3H1]", d="sp3 amine N with 1 H"); add("n8", "[#7X3H2]", d="with 2 H"); add("n9", "[#7X3H3]", d="ammonia")
+    elif small_rings:   # ATOMTYPE_GFF.DEF: np / nq for any X3 N in a three- / four-membered ring (no n5 / n6 in GAFF)
+        add("np", "[#7X3;r3]"); add("nq", "[#7X3;r4]")
     add("n3", "[#7X3]", d="sp3 N")
     add("nb", "[#7X2;{AR1}]", d="pure aromatic N")
     add("nc", "[#7X2;{AR2},{AR3}]", d="sp2 N in a conjugated ring (with nd)")
@@ -127,7 +134,9 @@ def rules(v2, small_rings=None):
     return R
 
 
-PAIRS = [["cc", "cd"], ["ce", "cf"], ["cp", "cq"], ["nc", "nd"], ["ne", "nf"], ["pc", "pd"], ["pe", "pf"]]
+# cg / ch: sp C of a conjugated C#C (gaff.dat: ch "identical to cg"; cg-ch 1.2056 A is the triple bond, cg-cg 1.3693 A
+# the single bond between two conjugated sp C); the triple bond joins the two members like a double bond (typing.cpp)
+PAIRS = [["cc", "cd"], ["ce", "cf"], ["cg", "ch"], ["cp", "cq"], ["nc", "nd"], ["ne", "nf"], ["pc", "pd"], ["pe", "pf"]]
 # Terms the parameter file lacks, by analogy (as AmberTools' parmchk2 fills missing GAFF terms): the stand-in has the same
 # element and hybridisation and differs only in a label GAFF adds for ring size or conjugation. Every term found this
 # way is listed as estimated in the Field report and the exported files' notes.

@@ -1370,8 +1370,9 @@ TypingResult assign_types(const System& s, const FFDef& ff, const std::vector<st
         for (size_t q = 0; q < p.nb[a].size(); ++q) {
           const uint32_t b = p.nb[a][q];
           const int o = p.order[a][q];
-          if (!member.count(r.types[b]) || (o != 1 && o != 2)) continue;
-          const bool differ = (o == 2) != ff.typing_pairs_double_same;
+          if (!member.count(r.types[b]) || (o != 1 && o != 2 && o != 3)) continue;
+          // a triple bond joins the two members like a double bond (GAFF's cg / ch: tolan's sp carbons cg and ch, as antechamber)
+          const bool differ = (o == 2 || o == 3) != ff.typing_pairs_double_same;
           const int want = differ ? 1 - colour[a] : colour[a];
           if (colour[b] < 0) {
             colour[b] = want;

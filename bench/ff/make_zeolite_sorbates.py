@@ -76,7 +76,10 @@ pairs = [ab("C_om", "H_om", 270160, 563.62), ab("H_om", "H_om", 37131.41, 191.69
          ab("H_om", "O_om", 150169.7, 537.5872), ab("C_om", "O_om", 1061340, 1703.35)]
 pairs += [{"name": f"{a}-{b}", "match": [a, b], "style": "buck", "params": [A * KJ, rho, C * KJ, 10.0],
            "comment": f"A {A:g} kJ/mol, rho {rho} A, C {C} kJ/mol A^6 (Table 3); within 10 A"}
-          for a, b, A, rho, C in (("Si_om", "O_om", 123878.16, 0.149, 2690.01), ("O_om", "O_om", 2196390, 0.32052, 1028.53))]
+          # rho and C as the Sanders-Leslie-Catlow potential the paper takes the framework from (Si-O 1283.907 eV, 0.32052 A,
+          # 10.66158 eV A^6; O-O 22764 eV, 0.149 A, 27.88 eV A^6: sanders1984-sio2, schroder1992-zeolite); they were crossed
+          # between the two pairs here, which left Si-O attractive at its bond length (-152 kJ/mol at 1.61 A, +757 now)
+          for a, b, A, rho, C in (("Si_om", "O_om", 123878.16, 0.32052, 1028.69), ("O_om", "O_om", 2196390, 0.149, 2690.01))]
 pairs = fill_pairs([t for t in types if not t.get("equivalence")], pairs)
 bonds = [{"name": "C_om-H_om", "match": ["C_om", "H_om"], "params": [2990 / 2 * KJ, 1.054], "comment": "1/2 K (r - r0)^2, K 2990 kJ/mol/A^2 (Table 2)"},
          {"name": "C_om-C_om", "match": ["C_om", "C_om"], "params": [5790 / 2 * KJ, 1.405], "comment": "K 5790 kJ/mol/A^2, r0 1.405 A as Table 2 prints it"}]

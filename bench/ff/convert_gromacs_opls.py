@@ -112,6 +112,11 @@ for define, centres, outer, what in [
             imp_rules.append({"name": f"{define}: {o}-*-{cen}-*" if outer else f"{define}: *-*-{cen}-*",
                               "match": ["*", "*", esc(cen), o] if outer else ["*", "*", esc(cen), "*"], "style": "cvff",
                               "params": [k / KJ, -1 if abs(phase - 180) < 1e-6 else 1, int(n)], "comment": what})
+# grompp takes the most specific dihedraltype (fewest X), and among equally specific ones the first in the file; CAPS takes
+# the last rule that matches, so the rules go most-wildcard first and, within a tier, in reverse file order (in file order
+# the X-...-X lines came after the named ones and overrode them: anisole's CA-CA-OS-CT took X-CA-OS-X's 7.25 for its 3.0)
+_dih = list(dihedrals.values())
+DIHEDRALS = [d for _, d in sorted(enumerate(_dih), key=lambda t: (-t[1]["match"].count("*"), -t[0]))]
 doc = {"format": "caps-forcefield", "format_version": 1, "name": arg("--name", "OPLS-AA (GROMACS oplsaa.ff)"),
        "source": "GROMACS share/top/oplsaa.ff (ffnonbonded.itp, ffbonded.itp)", "units": "real",
        "references": ["W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)",
@@ -120,7 +125,7 @@ doc = {"format": "caps-forcefield", "format_version": 1, "name": arg("--name", "
        "mixing": "geometric", "special_lj": [0, 0, 0.5], "special_coul": [0, 0, 0.5], "cutoff": 12,
        "improper_order": "center3_sorted", "equivalence": "replace",
        "atom_types": list(types.values()), "pairs": pairs, "bonds": list(bonds.values()), "angles": list(angles.values()),
-       "dihedrals": list(dihedrals.values()), "impropers": imp_rules,
+       "dihedrals": DIHEDRALS, "impropers": imp_rules,
        "notes": ["converted by CAPS (bench/ff/convert_gromacs_opls.py) from GROMACS's oplsaa.ff (LGPL)"] + notes,
        "version": "OPLS-AA/L (GROMACS oplsaa.ff)"}
 if arg("--typing"):

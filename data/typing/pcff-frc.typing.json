@@ -278,9 +278,9 @@
   },
   {
    "type": "oo",
-   "smarts": "[OX1]=C(O)O",
+   "smarts": "[OX1]=C([OX2])[OX2]",
    "priority": 2,
-   "description": "carbonate carbonyl O"
+   "description": "carbonate ester carbonyl O (oo, 'carbonate only'; an ion's O are o-)"
   },
   {
    "type": "o=",
@@ -627,6 +627,23 @@
    "smarts": "[c;$(c1[n]c[n]c1),$(c1[n]cc[n]1);$(c[nX2])]",
    "priority": 3,
    "description": "imidazole C bonded to the pyridine-like N (as in neutral histidine)"
+  },
+  {
+   "type": "Cl",
+   "smarts": "[Cl-;X0]",
+   "priority": 1,
+   "description": "chloride ion (pcff.frc Cl, chlorine ion)"
+  },
+  {
+   "type": "Br",
+   "smarts": "[Br-;X0]",
+   "priority": 1,
+   "description": "bromide ion (pcff.frc Br, bromine ion)"
+  },
+  {
+   "type": "hp",
+   "smarts": "[H][#15]",
+   "description": "H on P (pcff.frc hp)"
   }
  ]
 }

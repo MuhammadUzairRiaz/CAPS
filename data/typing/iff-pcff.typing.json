@@ -278,9 +278,9 @@
   },
   {
    "type": "oo",
-   "smarts": "[OX1]=C(O)O",
+   "smarts": "[OX1]=C([OX2])[OX2]",
    "priority": 2,
-   "description": "carbonate carbonyl O"
+   "description": "carbonate ester carbonyl O (oo, 'carbonate only'; an ion's O are o-)"
   },
   {
    "type": "o=",
@@ -629,26 +629,43 @@
    "description": "imidazole C bonded to the pyridine-like N (as in neutral histidine)"
   },
   {
+   "type": "Cl",
+   "smarts": "[Cl-;X0]",
+   "priority": 1,
+   "description": "chloride ion (pcff.frc Cl, chlorine ion)"
+  },
+  {
+   "type": "Br",
+   "smarts": "[Br-;X0]",
+   "priority": 1,
+   "description": "bromide ion (pcff.frc Br, bromine ion)"
+  },
+  {
+   "type": "hp",
+   "smarts": "[H][#15]",
+   "description": "H on P (pcff.frc hp)"
+  },
+  {
    "type": "sc4",
-   "smarts": "[SiX4](~[#8])(~[#8])(~[#8])~[#8]",
+   "smarts": "[SiX4;!$(*[OX2][#6])](~[#8])(~[#8])(~[#8])~[#8]",
    "priority": 6,
-   "description": "IFF: Si in silica (four O)"
+   "description": "IFF: Si in silica (four O, none of them on carbon)"
   },
   {
    "type": "oc23",
-   "smarts": "[OX2]([Si;$([SiX4](~[#8])(~[#8])(~[#8])~[#8])])[Si;$([SiX4](~[#8])(~[#8])(~[#8])~[#8])]",
+   "smarts": "[OX2]([Si;$([SiX4;!$(*[OX2][#6])](~[#8])(~[#8])(~[#8])~[#8])])[Si;$([SiX4;!$(*[OX2][#6])](~[#8])(~[#8])(~[#8])~[#8])]",
    "priority": 6,
    "description": "IFF: O in bulk silica, Si-O-Si"
   },
   {
    "type": "oc24",
-   "smarts": "[OX2H1][Si;$([SiX4](~[#8])(~[#8])(~[#8])~[#8])]",
+   "smarts": "[OX2H1][Si;$([SiX4;!$(*[OX2][#6])](~[#8])(~[#8])(~[#8])~[#8])]",
    "priority": 6,
    "description": "IFF: silanol O on a silica surface"
   },
   {
    "type": "hoy",
-   "smarts": "[H][OX2][Si;$([SiX4](~[#8])(~[#8])(~[#8])~[#8])]",
+   "smarts": "[H][OX2][Si;$([SiX4;!$(*[OX2][#6])](~[#8])(~[#8])(~[#8])~[#8])]",
    "priority": 6,
    "description": "IFF: silanol H on a silica surface"
   },

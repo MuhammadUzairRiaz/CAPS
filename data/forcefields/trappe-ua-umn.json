@@ -4420,19 +4420,6 @@
    "comment": "fixed length in TraPPE (M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 102, 2569 (1998))"
   },
   {
-   "name": "CH3_2-C_89",
-   "match": [
-    "CH3_2",
-    "C_89"
-   ],
-   "style": "harmonic",
-   "params": [
-    0.0,
-    1.54
-   ],
-   "comment": "rigid model: run it as a rigid body (M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 102, 2569 (1998))"
-  },
-  {
    "name": "CH3_49-C_47",
    "match": [
     "CH3_49",
@@ -4821,19 +4808,6 @@
     1.16
    ],
    "comment": "rigid model: run it as a rigid body (J.J. Potoff, J.I. Siepmann, AIChE J. 47, 1676 (2001))"
-  },
-  {
-   "name": "C_89-C_89",
-   "match": [
-    "C_89",
-    "C_89"
-   ],
-   "style": "harmonic",
-   "params": [
-    0.0,
-    1.4
-   ],
-   "comment": "rigid model: run it as a rigid body (C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000))"
   },
   {
    "name": "C_90-C_90",
@@ -19369,34 +19343,6 @@
    "comment": "k_theta 62500 K/rad^2; N. Lubna, G. Kamath, J.J. Potoff et al., J. Phys. Chem. B 109, 24100 (2005)"
   },
   {
-   "name": "CH3_2-C_89-CH_88",
-   "match": [
-    "CH3_2",
-    "C_89",
-    "CH_88"
-   ],
-   "style": "harmonic",
-   "params": [
-    0.0,
-    120.0
-   ],
-   "comment": "rigid model: run it as a rigid body; C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
-  },
-  {
-   "name": "CH3_2-C_89-C_89",
-   "match": [
-    "CH3_2",
-    "C_89",
-    "C_89"
-   ],
-   "style": "harmonic",
-   "params": [
-    0.0,
-    120.0
-   ],
-   "comment": "rigid model: run it as a rigid body; C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
-  },
-  {
    "name": "CH3_2-C_99-C_139",
    "match": [
     "CH3_2",
@@ -19719,20 +19665,6 @@
    "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
   },
   {
-   "name": "CH_88-C_89-C_89",
-   "match": [
-    "CH_88",
-    "C_89",
-    "C_89"
-   ],
-   "style": "harmonic",
-   "params": [
-    0.0,
-    120.0
-   ],
-   "comment": "rigid model: run it as a rigid body; C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
-  },
-  {
    "name": "CH_88-C_90-CH_88",
    "match": [
     "CH_88",
@@ -19829,20 +19761,6 @@
     96.0
    ],
    "comment": "k_theta 33830 K/rad^2; N. Lubna, G. Kamath, J.J. Potoff et al., J. Phys. Chem. B 109, 24100 (2005)"
-  },
-  {
-   "name": "C_89-CH_88-C_89",
-   "match": [
-    "C_89",
-    "CH_88",
-    "C_89"
-   ],
-   "style": "harmonic",
-   "params": [
-    0.0,
-    120.0
-   ],
-   "comment": "rigid model: run it as a rigid body; C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
   },
   {
    "name": "F_116-P_117-O_118",

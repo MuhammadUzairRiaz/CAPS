@@ -15,11 +15,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(os.path.dirname(os.path.dirname(HERE)), "data")
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(DATA, "typing")
 
-SILICA_SI = "[SiX4](~[#8])(~[#8])(~[#8])~[#8]"
+SILICA_SI = "[SiX4;!$(*[OX2][#6])](~[#8])(~[#8])(~[#8])~[#8]"   # no O-C: an alkoxysilane (TEOS) keeps the PCFF / CVFF Si, IFF has no sc4-o term
 UNBONDED = "!$(*~[#1,#5,#6,#7,#8,#9,#14,#15,#16,#17,#35,#53])"
 METALS = ["Ag", "Al", "Au", "Cr", "Cu", "Fe", "Mo", "Ni", "Pb", "Pd", "Pt", "Sn", "W"]
 OWN = [
-    {"type": "sc4", "smarts": SILICA_SI, "priority": 6, "description": "IFF: Si in silica (four O)"},
+    {"type": "sc4", "smarts": SILICA_SI, "priority": 6, "description": "IFF: Si in silica (four O, none of them on carbon)"},
     {"type": "oc23", "smarts": f"[OX2]([Si;$({SILICA_SI})])[Si;$({SILICA_SI})]", "priority": 6, "description": "IFF: O in bulk silica, Si-O-Si"},
     {"type": "oc24", "smarts": f"[OX2H1][Si;$({SILICA_SI})]", "priority": 6, "description": "IFF: silanol O on a silica surface"},
     {"type": "hoy", "smarts": f"[H][OX2][Si;$({SILICA_SI})]", "priority": 6, "description": "IFF: silanol H on a silica surface"},

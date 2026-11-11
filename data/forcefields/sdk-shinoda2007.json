@@ -2161,9 +2161,9 @@
  "impropers": [],
  "bead_templates": {
   "W": "[W]",
-  "DMPC": "[NC+1][PH-1][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]",
-  "DPPC": "[NC+1][PH-1][GL]([EST1][CM][CM][CM][CM][CT])[EST2][CM][CM][CM][CM][CT]",
-  "DMPE": "[NH+1][PHE-1][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]",
+  "DMPC": "[NC+1][PH-1][GL]([EST1][CM][CM][CM][CT])[EST2][CM][CM][CM][CT]",
+  "DPPC": "[NC+1][PH-1][GL]([EST1][CM][CM][CM][CM][CT2])[EST2][CM][CM][CM][CM][CT2]",
+  "DMPE": "[NH+1][PHE-1][GL]([EST1][CM][CM][CM][CT])[EST2][CM][CM][CM][CT]",
   "C12E8": "[OA][EO][EO][EO][EO][EO][EO][EO][EO][CM][CM][CM][CT2]",
   "DOD": "[CT][CM][CM][CT]"
  },

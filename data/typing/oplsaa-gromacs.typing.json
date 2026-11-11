@@ -3,7 +3,7 @@
  "version": 1,
  "forcefield": "OPLS-AA (GROMACS oplsaa.ff)",
  "unknown_types": "untyped",
- "description": "CAPS's OPLS-AA rules in GROMACS's opls_NNN names (bench/typing/make_opls_gromacs_rules.py); types the GROMACS file lacks (caps_bza_c, caps_bza_ch, caps_bza_ch2, caps_bze_c, caps_bze_ch, caps_bze_ch2, caps_bzo_c, caps_bzo_ch, caps_bzo_ch2, caps_epx_c, caps_epx_ch, opls_1025, opls_1026, opls_1027, opls_1028, opls_1029, opls_1033, opls_1034, opls_1060, opls_1061, opls_1062, opls_1063, opls_1064, opls_1065, opls_1066, opls_1067, opls_1068, opls_1069, opls_1070, opls_1071, opls_1072, opls_1073, opls_1074, opls_1075, opls_1076, opls_1077, opls_1078, opls_399, opls_489, opls_495, opls_519, opls_789, opls_919, opls_920, opls_921, opls_924, opls_939, opls_966, opls_967, opls_972, opls_973, opls_974, opls_987, opls_988, opls_989, opls_9998, opls_9999) are left untyped",
+ "description": "CAPS's OPLS-AA rules in GROMACS's opls_NNN names (bench/typing/make_opls_gromacs_rules.py); types the GROMACS file lacks (caps_bza_c, caps_bza_ch, caps_bza_ch2, caps_bze_c, caps_bze_ch, caps_bze_ch2, caps_bzo_c, caps_bzo_ch, caps_bzo_ch2, caps_epx_c, caps_epx_ch, opls_1025, opls_1026, opls_1027, opls_1028, opls_1029, opls_1033, opls_1034, opls_1060, opls_1061, opls_1062, opls_1063, opls_1064, opls_1065, opls_1066, opls_1067, opls_1068, opls_1069, opls_1070, opls_1071, opls_1072, opls_1073, opls_1074, opls_1075, opls_1076, opls_1077, opls_1078, opls_399, opls_489, opls_495, opls_519, opls_769, opls_789, opls_919, opls_920, opls_921, opls_924, opls_939, opls_966, opls_967, opls_972, opls_973, opls_974, opls_987, opls_988, opls_989, opls_9998, opls_9999) are left untyped",
  "rules": [
   {
    "type": "opls_135",
@@ -61,9 +61,15 @@
   },
   {
    "type": "opls_145",
-   "smarts": "[c;!$(*~[!#6;!#1])]",
+   "smarts": "[c;!$(*~[!#6;!#1]);$(c1aaaaa1);!$(c1naaaa1);!$(c1anaaa1);!$(c1aanaa1)]",
    "priority": 1,
-   "description": "aromatic C"
+   "description": "aromatic C (six-membered ring without N)"
+  },
+  {
+   "type": "opls_145",
+   "smarts": "[c;!$(*~[!#6;!#1]);!$(c1aaaaa1)]",
+   "priority": 1,
+   "description": "aromatic C (not in a six-membered ring)"
   },
   {
    "type": "opls_146",
@@ -720,28 +726,28 @@
    "description": "carboxylate O"
   },
   {
-   "type": "opls_135",
+   "type": "opls_273",
    "smarts": "[CX4H3;$(*[CX3;$([CX3](~[OX1])~[OX1-])])]",
    "priority": 7,
-   "description": "C alpha to a carboxylate (the alkane types, as the GROMACS OPLS-AA topologies type acetate) (CH3)"
+   "description": "C alpha to a carboxylate ion (CH3)"
   },
   {
-   "type": "opls_136",
+   "type": "opls_274",
    "smarts": "[CX4H2;$(*[CX3;$([CX3](~[OX1])~[OX1-])])]",
    "priority": 7,
-   "description": "C alpha to a carboxylate (the alkane types, as the GROMACS OPLS-AA topologies type acetate) (CH2)"
+   "description": "C alpha to a carboxylate ion (CH2)"
   },
   {
-   "type": "opls_137",
+   "type": "opls_275",
    "smarts": "[CX4H1;$(*[CX3;$([CX3](~[OX1])~[OX1-])])]",
    "priority": 7,
-   "description": "C alpha to a carboxylate (the alkane types, as the GROMACS OPLS-AA topologies type acetate) (CH)"
+   "description": "C alpha to a carboxylate ion (CH)"
   },
   {
-   "type": "opls_139",
+   "type": "opls_276",
    "smarts": "[CX4H0;$(*[CX3;$([CX3](~[OX1])~[OX1-])])]",
    "priority": 7,
-   "description": "C alpha to a carboxylate (the alkane types, as the GROMACS OPLS-AA topologies type acetate) (C)"
+   "description": "C alpha to a carboxylate ion (C)"
   },
   {
    "type": "opls_772",
@@ -1021,21 +1027,21 @@
   },
   {
    "type": "opls_905",
-   "smarts": "[CX4H3;$(*[NX3H0;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "smarts": "[CX4H3;$(*[NX3H0;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])]);!$(*([NX3])[NX3])]",
    "priority": 5,
-   "description": "C on tertiary amine N (CH3)"
+   "description": "C on tertiary amine N (an aminal CH2 between two N, as in hexamethylenetetramine, has no number: each N's three CH2 would be shared) (CH3)"
   },
   {
    "type": "opls_908",
-   "smarts": "[CX4H2;$(*[NX3H0;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "smarts": "[CX4H2;$(*[NX3H0;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])]);!$(*([NX3])[NX3])]",
    "priority": 5,
-   "description": "C on tertiary amine N (CH2)"
+   "description": "C on tertiary amine N (an aminal CH2 between two N, as in hexamethylenetetramine, has no number: each N's three CH2 would be shared) (CH2)"
   },
   {
    "type": "opls_915",
-   "smarts": "[CX4H1;$(*[NX3H0;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "smarts": "[CX4H1;$(*[NX3H0;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])]);!$(*([NX3])[NX3])]",
    "priority": 5,
-   "description": "C on tertiary amine N (CH)"
+   "description": "C on tertiary amine N (an aminal CH2 between two N, as in hexamethylenetetramine, has no number: each N's three CH2 would be shared) (CH)"
   },
   {
    "type": "opls_911",
@@ -1096,6 +1102,12 @@
    "smarts": "[CX4H0;$(*[CX2]#[NX1])]",
    "priority": 6,
    "description": "C alpha to a nitrile (C)"
+  },
+  {
+   "type": "opls_221",
+   "smarts": "c[CX4H2][CX2]#[NX1]",
+   "priority": 7,
+   "description": "ring C of a benzyl nitrile"
   },
   {
    "type": "opls_759",
@@ -1267,7 +1279,7 @@
   },
   {
    "type": "opls_956",
-   "smarts": "[F][CX4;$(*[F]);!$(*(F)F)]",
+   "smarts": "[F][CX4;$(*[F]);!$(*(F)F);!$(*Cl)]",
    "priority": 5,
    "description": "monofluoroalkyl F"
   },
@@ -1297,13 +1309,13 @@
   },
   {
    "type": "opls_965",
-   "smarts": "[F][CX4;$(*(F)F)]",
+   "smarts": "[F][CX4;$(*(F)F);!$(*Cl)]",
    "priority": 6,
    "description": "F of a CF2 / CF3 group"
   },
   {
    "type": "opls_962",
-   "smarts": "[CX4;$(*(F)F);!$(*(F)(F)F);!$(*[H])]",
+   "smarts": "[CX4;$(*(F)F);!$(*(F)(F)F);!$(*[H]);!$(*Cl)]",
    "priority": 6,
    "description": "CF2"
   },
@@ -1722,48 +1734,6 @@
    "description": "H on C of a silyl ether O"
   },
   {
-   "type": "opls_440",
-   "smarts": "[PX4;$(P(=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])]",
-   "priority": 6,
-   "description": "phosphate triester P"
-  },
-  {
-   "type": "opls_441",
-   "smarts": "[OX1]=[PX4;$(P(=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])]",
-   "priority": 6,
-   "description": "phosphate =O"
-  },
-  {
-   "type": "opls_442",
-   "smarts": "[OX2;$(O([#6])[PX4;$(P(=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])])]",
-   "priority": 6,
-   "description": "phosphate ester -O-"
-  },
-  {
-   "type": "opls_443",
-   "smarts": "[CX4H3;$(*[OX2][PX4;$(P(=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])])]",
-   "priority": 6,
-   "description": "C on a phosphate ester O (CH3)"
-  },
-  {
-   "type": "opls_443",
-   "smarts": "[CX4H2;$(*[OX2][PX4;$(P(=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])])]",
-   "priority": 6,
-   "description": "C on a phosphate ester O (CH2)"
-  },
-  {
-   "type": "opls_443",
-   "smarts": "[CX4H1;$(*[OX2][PX4;$(P(=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])])]",
-   "priority": 6,
-   "description": "C on a phosphate ester O (CH)"
-  },
-  {
-   "type": "opls_444",
-   "smarts": "[H][CX4][OX2][PX4;$(P(=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])]",
-   "priority": 6,
-   "description": "H on C of a phosphate ester O"
-  },
-  {
    "type": "opls_925",
    "smarts": "[CX2]#[CX2]",
    "priority": 6,
@@ -2029,9 +1999,15 @@
   },
   {
    "type": "opls_674",
-   "smarts": "[CX4H3;$(*c1ccncc1),$(*c1ncncc1)]",
+   "smarts": "[CX4H3;$(*c1ccncc1)]",
    "priority": 7,
-   "description": "CH3 on pyridine C4 / pyrimidine C4"
+   "description": "CH3 on pyridine C4"
+  },
+  {
+   "type": "opls_674",
+   "smarts": "[CX4H3;$(*c1ncncc1)]",
+   "priority": 7,
+   "description": "CH3 on pyrimidine C4"
   },
   {
    "type": "opls_530",
@@ -2311,19 +2287,19 @@
   },
   {
    "type": "opls_566",
-   "smarts": "[o;r5;$(o1cccc1)]",
+   "smarts": "[o;r5;$(o1cccc1);!$(*@[R2]);!R2]",
    "priority": 7,
    "description": "furan O"
   },
   {
    "type": "opls_567",
-   "smarts": "[c;r5;$(c1occc1)]",
+   "smarts": "[c;r5;$(c1occc1);!$(*@[R2]);!R2]",
    "priority": 7,
    "description": "furan C2"
   },
   {
    "type": "opls_568",
-   "smarts": "[c;r5;$(c1cocc1)]",
+   "smarts": "[c;r5;$(c1cocc1);!$(*@[R2]);!R2]",
    "priority": 7,
    "description": "furan C3"
   },
@@ -2353,19 +2329,19 @@
   },
   {
    "type": "opls_542",
-   "smarts": "[nH1;r5;$(n1cccc1)]",
+   "smarts": "[nH1;r5;$(n1cccc1);!$(*@[R2]);!R2]",
    "priority": 7,
    "description": "pyrrole N"
   },
   {
    "type": "opls_543",
-   "smarts": "[c;r5;$(c1[nH1]ccc1)]",
+   "smarts": "[c;r5;$(c1[nH1]ccc1);!$(*@[R2]);!R2]",
    "priority": 7,
    "description": "pyrrole C2"
   },
   {
    "type": "opls_544",
-   "smarts": "[c;r5;$(c1c[nH1]cc1)]",
+   "smarts": "[c;r5;$(c1c[nH1]cc1);!$(*@[R2]);!R2]",
    "priority": 7,
    "description": "pyrrole C3"
   },

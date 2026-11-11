@@ -11,7 +11,7 @@
 """
 import argparse, os, re, subprocess, sys
 
-TAGS = (("gaff", "gaff-amber16"), ("gaff2", "gaff-amber25"))
+TAGS = (("gaff", "gaff-1.81-ambertools"), ("gaff2", "gaff2-2.2.20-ambertools"))   # the library ids (gaff-amber16 / -25 were renamed)
 REF = {"gaff": "gaff", "gaff2": "gaff2"}   # antechamber's -at for each CAPS entry
 SYM = {"CL": "Cl", "BR": "Br", "SI": "Si", "NA": "Na", "MG": "Mg"}
 

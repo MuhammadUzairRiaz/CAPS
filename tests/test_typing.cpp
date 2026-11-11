@@ -716,3 +716,62 @@ TEST(Typing, DreidingGuanidiniumResonantN) {
   for (int i = 1; i <= 3; ++i) EXPECT_EQ(t.types[i], "N_R") << i;
   EXPECT_EQ(t.types[4], "H__HB");
 }
+
+// Audit of 2026-11-11, second round (bench/typing/check_type_charges.py): OPLS-AA 2024 groups typed with numbers whose
+// charges add up (carboxylate alpha C 273-276, alkyl bromide 975-979, iodoalkane 1011-1015, open-chain carbonate 771-789,
+// Cl2C= 398 / 399, benzyl nitrile 769 / 221, vinyl ether O 180, the pyranose hemiacetal C, allene, terminal alkyne), and
+// groups no numbers balance left untyped (phosphate triester, CH3Br, thiophene, 3-methylpyridine, CCl4)
+TEST(Typing, OplsAa2024GroupsBalanceOrStayUntyped) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsaa2024.json");
+  auto net = [&](const std::string& smi, int* untyped) {
+    System s = build_molecule(smi).system;
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    *untyped = tr.untyped;
+    double q = 0;
+    for (const std::string& t : tr.types)
+      for (const auto& ft : def.types)
+        if (ft.name == t) q += ft.charge;
+    return q;
+  };
+  for (const auto& [smi, z] : std::vector<std::pair<std::string, double>>{
+           {"CC(=O)[O-]", -1}, {"CCC(=O)[O-]", -1}, {"CCCCBr", 0}, {"CC(C)Br", 0}, {"CC(C)(C)Br", 0}, {"CCCCI", 0}, {"CC(C)I", 0},
+           {"COC(=O)OC", 0}, {"CCOC(=O)OCC", 0}, {"C=C(Cl)Cl", 0}, {"N#CCc1ccccc1", 0}, {"C=COCC", 0}, {"C=C=C", 0}, {"CC#C", 0},
+           {"OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O", 0}}) {
+    int u = -1;
+    const double q = net(smi, &u);
+    EXPECT_EQ(u, 0) << smi;
+    EXPECT_NEAR(q, z, 1e-6) << smi;
+  }
+  for (const std::string smi : {"COP(=O)(OC)OC", "CBr", "c1ccsc1", "Cc1cccnc1", "ClC(Cl)(Cl)Cl", "CC(F)(Cl)C"}) {
+    int u = 0;
+    net(smi, &u);
+    EXPECT_GT(u, 0) << smi << " has no balancing numbers and stays untyped";
+  }
+}
+
+// GAFF: a conjugated C#C is cg / ch (tolan), as antechamber; GAFF 1.81 types N in three- and four-membered rings (np, nq,
+// nj) as ATOMTYPE_GFF.DEF does; COMPASS CO2 O is o1=*, CO c1o / o1c; CVFF / PCFF H on P hp
+TEST(Typing, AuditSecondRoundTypes) {
+  const System tolan = build_molecule("c1ccc(cc1)C#Cc1ccccc1").system;
+  for (const char* ff : {"gaff-1.81-ambertools", "gaff2-2.2.20-ambertools"}) {
+    const TypingResult t = type_with(ff, tolan);
+    std::vector<std::string> sp;
+    for (size_t i = 0; i < t.types.size(); ++i)
+      if (t.types[i] == "cg" || t.types[i] == "ch") sp.push_back(t.types[i]);
+    std::sort(sp.begin(), sp.end());
+    EXPECT_EQ(sp, (std::vector<std::string>{"cg", "ch"})) << ff;
+  }
+  EXPECT_EQ(type_with("gaff-1.81-ambertools", build_molecule("CN1CC1").system).types[1], "np");
+  EXPECT_EQ(type_with("gaff-1.81-ambertools", build_molecule("O=C1CCN1").system).types[4], "nj");
+  const TypingResult co2 = type_with("compass-frc", build_molecule("O=C=O").system);
+  EXPECT_EQ(co2.types[0], "o1=*");
+  EXPECT_EQ(co2.types[1], "c2=");
+  const System ph3 = build_molecule("P").system;
+  for (const char* ff : {"cvff-frc", "pcff-frc"}) {
+    const TypingResult t = type_with(ff, ph3);
+    EXPECT_EQ(t.untyped, 0) << ff;
+    EXPECT_EQ(t.types[1], "hp") << ff;
+  }
+}

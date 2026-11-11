@@ -117,7 +117,17 @@ for l in lines[k + 1:]:
     seen_d[key] = d
     dihedrals.append(d)
 # CAPS takes the last rule that matches: X-wildcard rules first, then ?-wildcard ones, then fully named rules
-dihedrals.sort(key=lambda d: 0 if "*" in d["match"] else 1 if any("*" in m.replace("\\*", "") for m in d["match"]) else 2)
+# a class made only of wildcards ("*", or BOSS's "??" written "**") matches every class: those rules are the general tier,
+# ordered most-wildcard first (the last matching rule wins, so the more specific line applies, Jorgensen's convention);
+# then rules with a partial wildcard ("C?" as "C*"), then the exact ones. ("??" lines counted as partial wildcards came
+# after more specific "?" lines and hid them: NB-CA-N2-H's 3.80 took ??-CA-N2-H's 2.133)
+FULL = lambda m: m != "" and set(m) == {"*"}
+def dih_key(d):
+    full = sum(FULL(m) for m in d["match"])
+    if full:
+        return (0, -full)
+    return (1, 0) if any("*" in m.replace("\\*", "") for m in d["match"]) else (2, 0)
+dihedrals.sort(key=dih_key)
 
 bonds, angles, seen_b, seen_a = [], [], {}, {}
 section = "bonds"

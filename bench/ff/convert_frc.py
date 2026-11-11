@@ -150,6 +150,8 @@ IFF_INCREMENTS = [
     {"name": "oc24-hoy", "match": ["oc24", "hoy"], "params": [-0.4, 0.4], "comment": "IFF: from the stated charges oc24 -0.675, hoy +0.4"},
 ]
 IFF_ION_CHARGES = {"na+": 1.0, "k+": 1.0}
+# monatomic ions of cvff.frc / pcff.frc (and IFF's copies), each with its formal charge: (word its description must have, charge)
+FREE_ION_CHARGES = {"ca+": ("alcium", 2.0), "Cl": ("ion", -1.0), "Br": ("ion", -1.0)}   # (cvff.frc's Na is the metal, ver 2.1)
 
 
 def convert(frc, cls, name, version, references, typing, out_name, src=None, extra_rules=None):
@@ -163,13 +165,16 @@ def convert(frc, cls, name, version, references, typing, out_name, src=None, ext
             float(w[0])
         except ValueError:
             continue
-        info.setdefault(w[2][:4], (float(w[3]), w[4], " ".join(w[6:])))
+        # a type given twice (cvff.frc's lp, Na, ci): the highest version, as msi2lmp takes it (lp 1.0 "Lone Pair", not
+        # 0.001097; Na the ver 2.1 sodium metal, 22.99)
+        if w[2][:4] not in info or float(w[0]) >= info[w[2][:4]][3]:
+            info[w[2][:4]] = (float(w[3]), w[4], " ".join(w[6:]), float(w[0]))
     eq = {e[2][0]: e for e in entries(first(secs, "#equivalence"), 6, 0)}
     eqw = {w[2][:4]: [t[:4] for t in w[2:8]] for w in first(secs, "#equivalence") if len(w) >= 8}
     aeq = {w[2][:4]: [t[:4] for t in w[2:12]] for w in first(secs, "#auto_equivalence") if len(w) >= 12}
     types = []
     for t in dict.fromkeys(e[2][0] for e in atoms):
-        mass, el, comment = info[t]
+        mass, el, comment, _ver = info[t]
         if t == "mg" and el == "mg" and mass == 100.0:   # cvff.frc's Magnesium: element 'mg', mass 100.000
             el, mass, comment = "Mg", 24.305, comment + " (cvff.frc gives element 'mg' and mass 100.000: Mg's IUPAC standard atomic weight here)"
         q = {}
@@ -266,6 +271,10 @@ def convert(frc, cls, name, version, references, typing, out_name, src=None, ext
         for t in ff["atom_types"]:
             if t["name"] in IFF_ION_CHARGES:
                 t["charge"] = IFF_ION_CHARGES[t["name"]]
+    # the monatomic ions: their formal charge (an unbonded ion takes no bond increment, so with none it stayed at 0 e)
+    for t in ff["atom_types"]:
+        if t["name"] in FREE_ION_CHARGES and "charge" not in t and FREE_ION_CHARGES[t["name"]][0] in t["description"]:
+            t["charge"] = FREE_ION_CHARGES[t["name"]][1]
     ff["notes"] = [f"converted by CAPS from {frc}: explicit parameters as LAMMPS's msi2lmp assigns them; the .frc file's "
                    "automatic parameters where no explicit entry exists (reported as automatic)"]
     if cls == 1:
