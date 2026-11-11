@@ -48,14 +48,17 @@ def by_h(nums, prio, env, desc, only2024=False, gmx=False):
 # the plain hydrocarbon types only where every neighbour is C or H: a carbon bearing any other atom must match a
 # rule for its group, or stay untyped (its charge would not balance)
 HC_ONLY = "!$(*~[!#6;!#1])"
-add(135, 0, f"[CX4H3;{HC_ONLY}]", "alkane C (CH3)")
-add(136, 0, f"[CX4H2;{HC_ONLY}]", "alkane C (CH2)")
-add(137, 0, f"[CX4H1;{HC_ONLY}]", "alkane C (CH)")
-add(139, 0, f"[CX4H0;{HC_ONLY}]", "alkane C (C)")
+# an sp3 C on an azine ring (pyridine ...) replaces a ring H whose charge is not the alkane H's: only the table's own
+# alkyl-azine numbers (670 / 671, 672 / 674 on pyridazine / pyrimidine) or none
+NOT_ON_AZINE = "!$(*-[c;$(c1naaaa1),$(c1anaaa1),$(c1aanaa1)])"
+add(135, 0, f"[CX4H3;{HC_ONLY};{NOT_ON_AZINE}]", "alkane C (CH3)")
+add(136, 0, f"[CX4H2;{HC_ONLY};{NOT_ON_AZINE}]", "alkane C (CH2)")
+add(137, 0, f"[CX4H1;{HC_ONLY};{NOT_ON_AZINE}]", "alkane C (CH)")
+add(139, 0, f"[CX4H0;{HC_ONLY};{NOT_ON_AZINE}]", "alkane C (C)")
 add(140, 0, "[H][CX4]", "H on sp3 C")
-add(141, 1, f"[CX3H0;{HC_ONLY}]=[CX3]", "alkene C (R2C=)")
-add(142, 1, f"[CX3H1;{HC_ONLY}]=[CX3]", "alkene C (RHC=)")
-add(143, 1, f"[CX3H2;{HC_ONLY}]=[CX3]", "alkene C (H2C=)")
+add(141, 1, f"[CX3H0;{HC_ONLY};!$(*-[CX2]#[NX1])]=[CX3]", "alkene C (R2C=; one carrying a nitrile has its own number or none)")
+add(142, 1, f"[CX3H1;{HC_ONLY};!$(*-[CX2]#[NX1])]=[CX3]", "alkene C (RHC=; one carrying a nitrile has its own number or none)")
+add(143, 1, f"[CX3H2;{HC_ONLY};!$(*-[CX2]#[NX1])]=[CX3]", "alkene C (H2C=; one carrying a nitrile has its own number or none)")
 # conjugated dienes (1,3-butadiene, isoprene): the two central carbons are the table's C= class, 150 (=CH-CH=, -0.115
 # with its H 144) and 178 (=CR-RC=, 0.000), whose CM-C=-C= bends and diene torsions the files have; the ends stay
 # 143 / 142 / 141. Isolated double bonds (the diene rubbers' units) do not match
@@ -72,8 +75,9 @@ add(1157, 2, f"[CX2;{HC_ONLY}](=[CX3])=[CX3]", "allene central C (=C=)", True)
 add(1153, 2, f"[H][CX3;{ALLENE_END}]", "allene H", True)
 add(144, 1, "[H][CX3]=[CX3]", "alkene H")
 # (a ring C of an azine, pyridine to triazine, takes the azine numbers or nothing: benzene's 145 there unbalances the ring)
-add(145, 1, f"[c;{HC_ONLY};$(c1aaaaa1);!$(c1naaaa1);!$(c1anaaa1);!$(c1aanaa1)]", "aromatic C (six-membered ring without N)")
-add(145, 1, f"[c;{HC_ONLY};!$(c1aaaaa1)]", "aromatic C (not in a six-membered ring)")
+SUBST_UNBALANCED = "!$(c-c);!$(c-[CX3]=[CX3]);!$(c-[CX2]);!$(c-[CX4]-c);!$(c-[CX4]-[!#6;!#1])"
+add(145, 1, f"[c;{HC_ONLY};$(c1aaaaa1);!$(c1naaaa1);!$(c1anaaa1);!$(c1aanaa1);{SUBST_UNBALANCED}]", "aromatic C (six-membered ring without N)")
+add(145, 1, f"[c;{HC_ONLY};!$(c1aaaaa1);{SUBST_UNBALANCED}]", "aromatic C (not in a six-membered ring)")
 add(146, 1, "[H]c", "aromatic H")
 add(147, 2, "[c;R2;$(c(:c)(:c):c)]", "fused aromatic C (naphthalene C9)")
 # styrene's ring C(ipso) 165 (0.000): an alkene C on a ring (stilbene, poly(p-phenylene vinylene)) stands in for the H
@@ -83,7 +87,7 @@ add(165, 3, f"[c;{HC_ONLY};$(c[CX3;!a]=[CX3])]", "aromatic C bearing a vinyl C (
 # +0.115 (149 + 2 H, or 516) balances both rings; with 145 on both ipso C each such unit was -0.115 e
 add(1004, 3, f"[c;{HC_ONLY};$(c[CX4]c)]", "ring C on a C bearing two aryl rings (diphenylmethane C(ipso))", True)
 add(519, 3, "[c;$(c-!@c)]", "biphenyl junction C")
-by_h((148, 149, 515, 516), 2, f"$(*c);{HC_ONLY}", "benzylic C")
+by_h((148, 149, 515, 516), 2, f"$(*c);{HC_ONLY};!$(*-[c;$(c1naaaa1),$(c1anaaa1),$(c1aanaa1)])", "benzylic C (on a benzene ring: an azine C has its own alkyl numbers or none)")
 # small rings (OPLS-2020): cyclopropane and cyclobutane carbons have their own CY types; their H stay 140
 by_h((None, 711, 712, 713), 1, f"r3;{HC_ONLY}", "cyclopropane C")
 # (GROMACS's oplsaa.ff gives 714-716 to the cyclopentadienyl anion and radical: its library keeps the alkane numbers)
@@ -92,6 +96,9 @@ by_h((None, 714, 715, 716), 1, f"r4;{HC_ONLY}", "cyclobutane C", True)
 # ---------------------------------------------------------------- alcohols and phenols
 ALC = "$(*[OX2H1])"
 add(154, 5, "[OX2H1][CX4]", "alcohol O")
+# the 2024 table's tertiary alcohol O 160 (-0.65, OPLS/2020) beside its C 159 (0.232): with 154 t-butanol was -0.033 e
+# (GROMACS's file keeps 154 with its own 159 at 0.265, which balances)
+add(160, 6, "[OX2H1][CX4H0;$(*([#6])([#6])[#6])]", "tertiary alcohol O (OPLS/2020)", True)
 add(155, 5, "[H][OX2H1][CX4]", "alcohol H")
 by_h((157, 157, 158, 159), 5, ALC, "alcohol C")
 # glycerol-like triols (three OH on consecutive carbons): the table's triol types
@@ -111,7 +118,6 @@ add(166, 5, "c[OX2H1]", "phenol C(OH)")
 ETHO = "[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3]"
 add(180, 5, f"{ETHO[:-1]};$(O([CX4])[CX4])]", "dialkyl ether O")
 add(179, 5, f"{ETHO[:-1]};$(O(c)[CX4])]", "alkyl aryl ether O (anisole)")
-add(473, 5, f"{ETHO[:-1]};$(O(c)c)]", "diaryl ether O (the phenyl ester O, as the GROMACS OPLS-AA topologies type diphenyl ether)")
 by_h((181, 182, 183, 184), 5, f"$(*{ETHO[:-1]};$(O([CX4])[CX4,c])])", "ether alpha C")
 add(185, 5, f"[H][CX4]{ETHO[:-1]};$(O([CX4])[CX4,c])]", "H on ether alpha C")
 # benzyl ethers (poly(styrene oxide)): no numbers; by the benzyl alcohol increment (218-221: the ring C on the carbinol
@@ -119,11 +125,10 @@ add(185, 5, f"[H][CX4]{ETHO[:-1]};$(O([CX4])[CX4,c])]", "H on ether alpha C")
 # over 182-184 (CAPS's caps_bzo_*: CH2 0.195, CH 0.225, C 0.255), so the aryl group stays neutral
 BZO = f"$(*c);$(*{ETHO[:-1]};$(O([CX4])[CX4,c])])"
 by_h((None, "caps_bzo_ch2", "caps_bzo_ch", "caps_bzo_c"), 6, BZO, "benzyl ether alpha C")
-add(221, 6, f"c[CX4;$(*{ETHO[:-1]};$(O([CX4])[CX4,c])])]", "ring C of a benzyl ether (as a benzyl alcohol's, 221)")
+add(221, 6, f"c[CX4;$(*{ETHO[:-1]};$(O([CX4])[CX4,c])])]", "ring C of a benzyl ether (as a benzyl alcohol's, 221, with the caps_bzo alpha C)", True)
 add(199, 5, f"c{ETHO[:-1]};$(O(c)[CX4])]", "aryl ether C(O)")
-add(472, 5, f"c{ETHO[:-1]};$(O(c)c)]", "diaryl ether C(O) (the phenyl ester C(ipso))")
 # the 2024 table's own diphenyl ether (OPLS/2020): O 177 with each ring C(O) 199, which balance (the phenyl ester pair
-# 472 / 473 above leaves +0.055 a link); GROMACS's file has no 177, so its typing keeps the pair above
+# phenyl ester pair 472 / 473 leaves +0.055 a link); GROMACS's file has no 177, so a diaryl ether stays untyped there
 add(177, 6, f"{ETHO[:-1]};$(O(c)c)]", "diaryl ether O (diphenyl ether, OPLS/2020)", True)
 add(199, 6, f"c{ETHO[:-1]};$(O(c)c)]", "diaryl ether C(O) (as anisole's C(OMe), with diphenyl ether's O 177)", True)
 # vinyl ethers (ethyl vinyl ether): the table has the vinyl C 517/518 but no O; the GROMACS OPLS-AA topologies give the O
@@ -150,11 +155,11 @@ add(192, 7, f"[H][CX4H2;{HEMI}]", "H on hemiacetal C (OCH2OH)")
 add(196, 7, f"[H][CX4H1;{HEMI}]", "H on hemiacetal C (OCHROH)")
 # the 2024 library: a pyranose's anomeric C (glucose) is a hemiacetal C even beside the triol carbons; with the triol
 # types there it was -0.13 e (174 0.205 + 176 against 195 0.295 + 196 0.10)
-by_h((None, 191, 195, 198), 9, HEMI, "hemiacetal C (beside triol C)", True)
-add(192, 9, f"[H][CX4H2;{HEMI}]", "H on hemiacetal C (OCH2OH)", True)
-add(196, 9, f"[H][CX4H1;{HEMI}]", "H on hemiacetal C (OCHROH)", True)
-add(187, 9, f"[OX2H1;$(O[CX4]{ACO})]", "hemiacetal O(H)", True)
-add(188, 9, f"[H][OX2H1;$(O[CX4]{ACO})]", "hemiacetal H(O)", True)
+by_h((None, 191, 195, 198), 9, HEMI, "hemiacetal C (beside triol C)")
+add(192, 9, f"[H][CX4H2;{HEMI}]", "H on hemiacetal C (OCH2OH)")
+add(196, 9, f"[H][CX4H1;{HEMI}]", "H on hemiacetal C (OCHROH)")
+add(187, 9, f"[OX2H1;$(O[CX4]{ACO})]", "hemiacetal O(H)")
+add(188, 9, f"[H][OX2H1;$(O[CX4]{ACO})]", "hemiacetal H(O)")
 add(186, 8, f"{ACO[:-1]};$(O([CX4][OX2])[CX4][OX2]);!$(O[CX4][OX2H1])]", "O between two acetal C (paraldehyde, 1,3,5-trioxane), as those topologies")
 add(180, 7, f"{ACO[:-1]};$(O[CX4][OX2]);!$(O[CX4][OX2H1])]", "acetal ether O (the dialkyl ether O, as the GROMACS OPLS-AA topologies type dimethoxymethane and 1,3-dioxolane)")
 add(186, 7, f"{ACO[:-1]};$(O[CX4][OX2H1])]", "hemiacetal ether O")
@@ -199,29 +204,26 @@ add(231, 7, "[CX3H0](=[OX1])(c)c", "diaryl ketone C (benzophenone)")
 
 # ---------------------------------------------------------------- esters (alkyl or aryl acyl; alkyl or aryl alkoxy)
 ESTC = "[CX3](=[OX1])[OX2][#6]"
-add(465, 6, "[CX3;$(*(=[OX1])[OX2][#6]);$(*[#6,#1]);!$(*[OX2][#6][OX2]);!$(*(O)(O)=O)]", "ester C=O (alkyl acyl)")
-add(471, 7, "[CX3;$(*(=[OX1])[OX2][#6]);$(*c)]", "ester C=O (aryl acyl, benzoate)")
-add(466, 6, "[OX1]=[CX3;$(*[OX2][#6]);!$(*([OX2])[OX2])]", "ester =O")
+add(465, 6, "[CX3;$(*(=[OX1])[OX2][#6]);$(*[#6,#1]);!$(*[OX2][#6][OX2]);!$(*(O)(O)=O);!$(*[OX2][CX3]=[OX1])]", "ester C=O (alkyl acyl; not an anhydride)")
+add(471, 7, "[CX3;$(*(=[OX1])[OX2][#6]);$(*c);!$(*[OX2][CX3]=[OX1])]", "ester C=O (aryl acyl, benzoate; not an anhydride)")
+add(466, 6, "[OX1]=[CX3;$(*[OX2][#6]);!$(*([OX2])[OX2]);!$(*[OX2][CX3]=[OX1])]", "ester =O (not an anhydride)")
 add(467, 6, "[OX2;$(O[CX3](=[OX1])[#6,#1]);$(O[CX4])]", "ester -O- (alkoxy)")
 add(473, 7, "[OX2;$(O[CX3](=[OX1])[#6,#1]);$(Oc)]", "ester -O- (phenyl ester)")
 # vinyl esters (vinyl acetate): the table has no vinyl ester O; the GROMACS OPLS-AA topologies take the phenyl ester O 473
 # and the alkene types for the vinyl group
-add(473, 7, "[OX2;$(O[CX3](=[OX1])[#6,#1]);$(O[CX3]=[CX3])]", "ester -O- (vinyl ester)")
-add(142, 7, "[CX3H1;$(*[OX2][CX3]=[OX1])]=[CX3]", "vinyl ester C(O)= (RHC=)")
-add(141, 7, "[CX3H0;$(*[OX2][CX3]=[OX1])]=[CX3]", "vinyl ester C(O)= (R2C=)")
+add(473, 7, "[OX2;$(O[CX3](=[OX1])[#6,#1]);$(O[CX3]=[CX3])]", "ester -O- (vinyl ester, with CAPS's balanced vinyl C below)", True)
 # the 2024 library: that carbon charged as the phenyl ester's C(ipso) 472 (+0.135) balances the ester group (465 0.49,
 # 466 -0.41, 473 -0.215, R 0): =CH-O +0.135, C +0.020 with its H 0.115; =CR-O C +0.135 (142 / 141 leave vinyl acetate
 # at -0.135 e); class CM and the Lennard-Jones of 142 / 141
 add("caps_cm_ves", 8, "[CX3H1;$(*[OX2][CX3]=[OX1])]=[CX3]", "vinyl ester C(O)= (RHC=), charged as the phenyl ester C(ipso)", True)
 add("caps_cm_ves0", 8, "[CX3H0;$(*[OX2][CX3]=[OX1])]=[CX3]", "vinyl ester C(O)= (R2C=), charged as the phenyl ester C(ipso)", True)
-add(467, 7, "[OX2;$(O([CX3]=[OX1])[CX3]=[OX1])]", "anhydride -O-")
 # anhydrides: the ester types leave C(=O)-O-C(=O) at -0.170 e. CAPS's own types (classes and Lennard-Jones of 465 / 466 /
 # 467) by 1.27 x CM5 on maleic, succinic and acetic anhydride, the C balancing the group (bench/ff/open/oplsaa2024_supplement.json);
 # an opened anhydride (half-ester, acid) matches none of these and takes the ester and acid types
-ANH = "$(*(=[OX1])[OX2][CX3]=[OX1])"
+ANH = "$(*(=[OX1])[OX2][CX3;!$(*c)]=[OX1]);!$(*c)"   # alkyl / vinyl acyl: an aryl anhydride (phthalic) has no balancing numbers
 add("caps_anh_c", 9, f"[CX3;{ANH}]", "anhydride C=O", True)
 add("caps_anh_o", 9, f"[OX1]=[CX3;{ANH}]", "anhydride =O", True)
-add("caps_anh_os", 9, "[OX2;$(O([CX3]=[OX1])[CX3]=[OX1])]", "anhydride -O-", True)
+add("caps_anh_os", 9, "[OX2;$(O([CX3;!$(*c)]=[OX1])[CX3;!$(*c)]=[OX1])]", "anhydride -O-", True)
 add(472, 7, "c[OX2][CX3](=[OX1])[#6,#1]", "phenyl ester C(ipso)")
 by_h((468, 490, 491, 492), 6, "$(*[OX2][CX3](=[OX1])[#6,#1])", "ester alkoxy C")
 add(469, 6, "[H][CX4][OX2][CX3](=[OX1])[#6,#1]", "H on ester alkoxy C")
@@ -230,7 +232,7 @@ add(469, 6, "[H][CX4][OX2][CX3](=[OX1])[#6,#1]", "H on ester alkoxy C")
 # (CAPS's caps_bze_*: CH2 0.245, CH 0.275, C 0.305), so the aryl group stays neutral; it was -0.115 e per benzyl ester
 BZE = "$(*c);$(*[OX2][CX3](=[OX1])[#6,#1])"
 by_h((None, "caps_bze_ch2", "caps_bze_ch", "caps_bze_c"), 7, BZE, "benzyl ester alkoxy C")
-add(221, 7, "c[CX4;$(*[OX2][CX3](=[OX1])[#6,#1])]", "ring C of a benzyl ester (as a benzyl alcohol's, 221)")
+add(221, 7, "c[CX4;$(*[OX2][CX3](=[OX1])[#6,#1])]", "ring C of a benzyl ester (as a benzyl alcohol's, 221, with its balanced alkoxy C)", True)
 
 # ---------------------------------------------------------------- carboxylic acids
 add(267, 7, "[CX3](=[OX1])[OX2H1]", "carboxylic acid C")
@@ -253,9 +255,6 @@ add(771, 7, "[OX1]=[CX3;R]([OX2][CX4])[OX2][CX4]", "cyclic carbonate =O")
 add(773, 7, "[OX2;R;$(O[CX3](=[OX1])[OX2][CX4]);$(O[CX4])]", "cyclic carbonate -O-")
 by_h((789, 774, 775, None), 7, "$(*[OX2;R][CX3](=[OX1])[OX2][CX4])", "cyclic carbonate alkoxy C")
 add(777, 7, "[H][CX4][OX2;R][CX3](=[OX1])[OX2][CX4]", "H on cyclic carbonate alkoxy C")
-add(465, 7, "[CX3;!R](=[OX1])([OX2][CX4])[OX2][CX4]", "open-chain carbonate C=O (ester C)")
-add(466, 7, "[OX1]=[CX3;!R]([OX2][CX4])[OX2][CX4]", "open-chain carbonate =O (ester =O)")
-add(467, 7, "[OX2;!R;$(O[CX3](=[OX1])[OX2][CX4]);$(O[CX4])]", "open-chain carbonate -O- (ester -O-)")
 # the 2024 library: the table's carbonate numbers with its methoxy C in a carbonate 789 (dimethyl carbonate: 772 0.86 +
 # 771 -0.50 + 2 x 773 -0.45 + 2 x (789 0.18 + 3 x 777 0.03) = 0) and 774 for an ethoxy CH2; with the ester types each
 # carbonate was -0.08 e. A secondary alkoxy C (poly(propylene carbonate)) has no number that balances and keeps the ester
@@ -265,9 +264,15 @@ add(772, 8, CO3, "open-chain carbonate C=O (methyl / primary alkyl)", True)
 add(771, 8, f"[OX1]={CO3}", "open-chain carbonate =O", True)
 add(773, 8, f"[OX2;$(O{CO3})]", "open-chain carbonate -O-", True)
 by_h((789, 774, None, None), 8, f"$(*[OX2]{CO3})", "open-chain carbonate alkoxy C", True)
+# GROMACS's file has the carbonate numbers 771-778 but no 789: there an open-chain carbonate balances only with CH2 on both
+# O (diethyl carbonate: 772 + 771 + 2 x 773 + 2 x (774 + 2 x 777) = 0); others stay untyped
+CO3G = "[CX3;!R;$(*(=[OX1])([OX2][CX4H2])[OX2][CX4H2])]"
+add(772, 8, CO3G, "open-chain carbonate C=O (two primary alkoxy groups)")
+add(771, 8, f"[OX1]={CO3G}", "open-chain carbonate =O")
+add(773, 8, f"[OX2;$(O{CO3G})]", "open-chain carbonate -O-")
+by_h((None, 774, None, None), 8, f"$(*[OX2]{CO3G})", "open-chain carbonate alkoxy CH2")
+add(777, 8, f"[H][CX4][OX2]{CO3G}", "H on an open-chain carbonate alkoxy CH2")
 add(777, 8, f"[H][CX4][OX2]{CO3}", "H on an open-chain carbonate alkoxy C", True)
-by_h((468, 490, 491, 492), 7, "$(*[OX2;!R][CX3](=[OX1])[OX2][CX4])", "open-chain carbonate alkoxy C (ester alkoxy C)")
-add(469, 7, "[H][CX4][OX2;!R][CX3](=[OX1])[OX2][CX4]", "H on open-chain carbonate alkoxy C")
 add(778, 8, "[H][CX4H1][OX2;R][CX3](=[OX1])[OX2][CX4]", "H on carbonate alkoxy CH")
 add(776, 7, "[CX4H3;$(*[CX4;R][OX2][CX3](=[OX1])[OX2][CX4])]", "CH3 on a cyclic carbonate ring C (propylene carbonate)")
 add(779, 7, "[H][CX4H3;$(*[CX4;R][OX2][CX3](=[OX1])[OX2][CX4])]", "H of that CH3")
@@ -335,8 +340,6 @@ add(260, 6, "c[CX2]#[NX1]", "benzonitrile C(ipso)")
 # OPLS-AA topologies (Caleman et al. 2012) take them
 add(262, 6, "[NX1]#[CX2][CX3]=[CX3]", "conjugated nitrile N (acrylonitrile)")
 add(261, 6, "[CX2](#[NX1])[CX3]=[CX3]", "conjugated nitrile C (acrylonitrile)")
-add(260, 6, "[CX3;$(*[CX2]#[NX1])]=[CX3]", "alkene C carrying a nitrile (the benzonitrile ipso C, as the GROMACS OPLS-AA topologies type acrylonitrile)")
-add(140, 7, "[H][CX3;$(*[CX2]#[NX1])]=[CX3]", "H on that C (140, as those topologies)")
 # the 2024 library: that C as the alkene carbon it is (class CM: the files' CM-CZ, CM-CM-CZ and CZ-CM-HC terms and
 # enyne torsions), its H the alkene H, charged by benzonitrile's own increment (CN -0.035 against its ipso C +0.035):
 # =CH- +0.035, C -0.080 with H 0.115, so the molecule is neutral (260 with 140 leaves it at +0.06 e)
@@ -351,7 +354,6 @@ add(153, 5, "[H][CX4H2][Cl]", "H on RCH2Cl")
 add(972, 5, "[H][CX4H1][Cl]", "H on R2CHCl")
 # polychlorinated carbons (CH2Cl2, CHCl3, CHCl2-, CCl3-): the table has no numbers of its own; the GROMACS OPLS-AA
 # topologies (Caleman et al. 2012) give every such carbon RCH2Cl's 152, its H 153 and the Cl 151
-by_h((152, 152, 152, 152), 6, "$(*(Cl)Cl);!$(*[F,Br,I])", "polychlorinated C", gmx=True)
 # OPLS-AA's own increment for the 2024 library: each Cl (-0.200) adds +0.200 to its carbon, as 152 / 973 / 974 do
 # with their H at 0.103: CAPS's caps_ccl2 (R2CCl2, +0.400), caps_chcl2 (+0.297), caps_ccl3 (+0.600), caps_chcl3
 # (+0.497) with the H 972, the Cl 151 (poly(vinylidene chloride) stays neutral)
@@ -363,15 +365,8 @@ add("caps_ch2cl2", 7, "[CX4H2;$(*(Cl)Cl)]", "CH2Cl2 C", True)
 add(972, 7, "[H][CX4H1;$(*(Cl)Cl);!$(*[F,Br,I])]", "H on a polychlorinated CH (as R2CHCl; a CH2 keeps 153)", True)
 add(153, 6, "[H][CX4;$(*(Cl)Cl)]", "H on a polychlorinated C")
 # a carbon with both F and Cl (CHFCl2): the fluoroalkyl C by H count, F 965, H 153, as those topologies have it
-by_h((None, 957, 959, 960), 6, "$(*F);$(*Cl);!$(*(F)F)", "fluorochloro C", gmx=True)
-add(965, 7, "[F][CX4;$(*Cl)]", "F on a C that also carries Cl", gmx=True)
-add(153, 7, "[H][CX4;$(*F);$(*Cl)]", "H on a fluorochloro C", gmx=True)
 # alkyl bromides and iodides as the GROMACS OPLS-AA topologies type them: Br 722, I 732, the carbon RCH2Cl's 152 and its
 # H 153 whatever the number of H
-add(722, 5, "[Br][CX4]", "alkyl bromide Br", gmx=True)
-by_h((152, 152, 152, 152), 5, "$(*[Br,I]);!$(*[F,Cl])", "C of an alkyl bromide or iodide", gmx=True)
-add(153, 5, "[H][CX4][Br,I]", "H on an alkyl bromide or iodide C", gmx=True)
-add(732, 5, "[I][CX4]", "alkyl iodide I", gmx=True)
 # the 2024 library: the table's all-atom alkyl bromide (975 Br -0.20, C 976 / 978 / 979, H 977, JPCB 2004, with the
 # chlorides 151-153) and iodoalkane numbers (1014 I -0.13, C 1011 / 1012 / 1013, H 1015): RCH2X, R2CHX and R3CX each sum
 # to zero. CH3Br and CH3I have none (976 / 1011 with three H leave +0.10) and stay untyped, as do C with two halogens
@@ -421,8 +416,6 @@ add(399, 7, "[CX3H0;!$(*(Cl)Cl)]([Cl])([CX4])=[CX3]", "chloroalkene C with an al
 # chloroprene itself (CH2=CCl-CH=CH2): the C(Cl) is also a diene central carbon, which no number covers; CAPS's
 # caps_c_dienecl, the C= class and Lennard-Jones of 178 with the +0.12 that balances its Cl 226 (OPLS-AA's increment)
 add("caps_c_dienecl", 8, "[CX3H0;!$(*(Cl)Cl)]([Cl])(-[CX3]=[CX3])=[CX3]", "chloroprene C(Cl), a diene central C", True)
-add(226, 7, "[Cl][CX3;$(*(Cl)Cl)]=[CX3]", "chloroalkene Cl (Cl2C=: 226, as the GROMACS OPLS-AA topologies type 1,1-dichloroethene)")
-add(227, 7, "[CX3;$(*(Cl)Cl)]=[CX3]", "chloroalkene C (Cl2C=: 227)")
 # the 2024 library: the table's own Cl2C= pair, 399 (+0.12) with Cl 398 (-0.06), which sums to zero (227 + 2 x 226: -0.235 e)
 add(399, 8, "[CX3;$(*(Cl)Cl)]=[CX3]", "chloroalkene C (Cl2-C=)", True)
 add(398, 8, "[Cl][CX3;$(*(Cl)Cl)]=[CX3]", "chloroalkene Cl (Cl2-C=)", True)
@@ -513,8 +506,6 @@ add(185, 6, "[H][CX4][OX2][SiX4;!$(*(O)O)]", "H on C of a silyl ether O")
 # untyped (the GROMACS OPLS-AA topologies use those numbers with charges of their own)
 
 # alkynes: sp C 925 (939 when both ends carry carbon), terminal H 926, the sp3 C on an alkyne C 927-930 (their H 140)
-add(925, 6, "[CX2]#[CX2]", "alkyne C", gmx=True)
-add(939, 7, "[CX2;$(*([#6])#[CX2][#6])]", "alkyne C of RC#CR", gmx=True)
 # the 2024 library: an alkyne on an aryl ring (phenylacetylene, tolan) has no number for the ring C, whose benzene 145
 # (-0.115 without its H) left tolan at -0.23 e; such alkynes stay untyped (GROMACS's file has its 929 for R = phenyl)
 add(925, 6, "[CX2;!$(*c)]#[CX2;!$(*c)]", "alkyne C (not on an aryl ring)", True)
@@ -535,10 +526,8 @@ for z, n, d in (("[Cl-,Cl;X0]", 401, "Cl-"), ("[Br-,Br;X0]", 402, "Br-"), ("[Li+
 # pyrimidine (530-536) and quinoline (603-619) by ring position
 add(520, 4, "[nX2;$(n1ccccc1)]", "pyridine N")
 add(521, 4, "[c;$(c1ncccc1)]", "pyridine C2")
-add(522, 4, "[c;$(c1cnccc1)]", "pyridine C3", gmx=True)
-add(522, 4, "[cH1;$(c1cnccc1)]", "pyridine C3 (with its H: a substituent there has no number that carries the H's charge)", True)
-add(523, 4, "[c;$(c1ccncc1)]", "pyridine C4", gmx=True)
-add(523, 4, "[cH1;$(c1ccncc1)]", "pyridine C4 (with its H)", True)
+add(522, 4, "[cH1;$(c1cnccc1)]", "pyridine C3 (with its H: a substituent there has no number that carries the H's charge)")
+add(523, 4, "[cH1;$(c1ccncc1)]", "pyridine C4 (with its H)")
 add(524, 4, "[H][c;$(c1ncccc1)]", "pyridine H2")
 add(525, 4, "[H][c;$(c1cnccc1)]", "pyridine H3")
 add(526, 4, "[H][c;$(c1ccncc1)]", "pyridine H4")
@@ -587,8 +576,6 @@ add(671, 7, "[CX4H2;$(*c1ncccc1)]", "CH2 on pyridine C2 (2-ethylpyridine)")
 add("caps_pyr2ch", 7, "[CX4H1;$(*c1ncccc1)]", "CH on pyridine C2 (2-isopropylpyridine, poly(2-vinylpyridine))", True)
 # 672 / 674 are the CH3 of 3-methylpyridazine and 4-methylpyrimidine: on pyridine they do not replace the ring H's charge
 # (3-methylpyridine -0.164 e, 4-methyl -0.054 e), so only the GROMACS-named file keeps them, as its topologies do
-add(672, 7, "[CX4H3;$(*c1cnccc1)]", "CH3 on pyridine C3", gmx=True)
-add(674, 7, "[CX4H3;$(*c1ccncc1)]", "CH3 on pyridine C4", gmx=True)
 add(674, 7, "[CX4H3;$(*c1ncncc1)]", "CH3 on pyrimidine C4")
 add(530, 8, "[n;$(n1cnccc1)]", "pyrimidine N")
 add(531, 8, "[c;$(c1ncccn1)]", "pyrimidine C2")
@@ -614,11 +601,6 @@ for c, h in ((611, 619), (604, 613), (605, 614), (606, 615), (607, 616), (608, 6
 
 # thiophene: no numbers of its own in the table; the GROMACS OPLS-AA topologies take furan's C and H and thiazole's S
 # (with the 2024 table's charges, furan's C / H and thiazole's S 633 make thiophene +0.16 e: GROMACS-named file only)
-add(633, 7, "[s;r5;$(s1cccc1)]", "thiophene S", gmx=True)
-add(567, 7, "[c;r5;$(c1sccc1)]", "thiophene C2", gmx=True)
-add(568, 7, "[c;r5;$(c1cscc1)]", "thiophene C3", gmx=True)
-add(569, 7, "[H][c;r5;$(c1sccc1)]", "thiophene H2", gmx=True)
-add(570, 7, "[H][c;r5;$(c1cscc1)]", "thiophene H3", gmx=True)
 
 # five-membered heteroaromatics: OPLS charges of the parent ring; an alkyl at C2 takes a carbon type whose charge
 # stands in for the H it replaces (2-methylfuran, 2-ethylpyrrole)
