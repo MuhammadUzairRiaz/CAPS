@@ -522,6 +522,99 @@ TEST(LammpsData, RigidBodiesBeforeTheBarostat) {
   EXPECT_NE(sh.find("velocity        moving create"), std::string::npos);
 }
 
+// A rigid model with no site (TraPPE-UA's CO2: every bond and angle constant 0, the force field's rigid mark) is a rigid
+// body in the LAMMPS input, as a sited one is: the group, the intra-body exclusion, fix rigid/nvt/small; the data file
+// has it at the model's geometry (C=O 1.16 A, not the builder's). GROMACS refuses it by name, and a half-rigid molecule
+// (TraPPE's thiophene: its CH_80 / S_79 bonds 0 beside the stiff aromatic CH_88 terms) is refused in both. With a LAMMPS
+// on the PATH, 1000 steps of NVT keep every C=O at 1.16 A.
+TEST(LammpsData, RigidModelsWithoutSitesAreRigidBodies) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/trappe-ua-umn.json");
+  const System one = build_molecule("O=C=O").system;
+  System s;
+  s.cell.a = {18, 0, 0}, s.cell.b = {0, 18, 0}, s.cell.c = {0, 0, 18};
+  s.has_mol = true;
+  for (int k = 0; k < 8; ++k) {   // eight molecules on a 2 x 2 x 2 lattice, each turned a little
+    const uint32_t base = uint32_t(s.atoms.size());
+    const Vec3 at{4.5 + 9.0 * (k & 1), 4.5 + 9.0 * ((k >> 1) & 1), 4.5 + 9.0 * ((k >> 2) & 1)};
+    for (const auto& a0 : one.atoms) {
+      Atom a = a0;
+      a.pos = {at[0] + a0.pos[0], at[1] + a0.pos[1] + 0.05 * k * a0.pos[0], at[2] + a0.pos[2]};
+      a.mol = k + 1;
+      s.atoms.push_back(a);
+    }
+    for (const auto& b : one.bonds) s.bonds.push_back({b.i + base, b.j + base, b.order});
+  }
+  std::string ch = "types";
+  prepare_for_forcefield(s, def, ch);
+  const TypingResult tr = assign_types(s, def);
+  ASSERT_EQ(tr.untyped, 0);
+  ParamReport rep;
+  const ForceField ff = parameterize(s, def, tr.types, "types", &rep, false);
+  ASSERT_TRUE(rep.missing.empty());
+  const auto dir = std::filesystem::temp_directory_path() / "caps_rigid_co2";
+  std::filesystem::create_directories(dir);
+  const std::string data = (dir / "co2.data").string(), in = (dir / "co2.in").string();
+  write_lammps_data_ff(s, ff, EnergyOptions{}, data);
+  LammpsRun run;
+  run.kind = LammpsRun::Kind::NVT;
+  run.steps = 1000;
+  write_lammps_input(s, ff, EnergyOptions{}, "co2.data", in, 0, true, run);
+  std::ifstream g(in);
+  const std::string sc((std::istreambuf_iterator<char>(g)), {});
+  EXPECT_NE(sc.find("group           rigid molecule 1:8"), std::string::npos);
+  EXPECT_NE(sc.find("neigh_modify    exclude molecule/intra rigid"), std::string::npos);
+  EXPECT_NE(sc.find("fix             rigid_bodies rigid rigid/nvt/small molecule"), std::string::npos);
+  // the C=O lengths of a data file (atom ids 1-based, two bonds per molecule)
+  auto co_lengths = [](const std::string& path) {
+    std::ifstream f(path);
+    std::string line, sec;
+    std::map<int, Vec3> pos;
+    std::vector<std::pair<int, int>> bonds;
+    while (std::getline(f, line)) {
+      if (line.rfind("Atoms", 0) == 0 || line.rfind("Bonds", 0) == 0 || line.rfind("Velocities", 0) == 0 || line.rfind("Angles", 0) == 0 ||
+          line.rfind("Masses", 0) == 0 || line.rfind("Pair Coeffs", 0) == 0 || line.rfind("PairIJ Coeffs", 0) == 0 ||
+          line.rfind("Bond Coeffs", 0) == 0 || line.rfind("Angle Coeffs", 0) == 0) { sec = line.substr(0, 5); continue; }
+      std::istringstream w(line);
+      if (sec == "Atoms") {
+        int id, mol, type;
+        double q, x, y, z;
+        if (w >> id >> mol >> type >> q >> x >> y >> z) pos[id] = {x, y, z};
+      } else if (sec == "Bonds") {
+        int id, type, i, j;
+        if (w >> id >> type >> i >> j) bonds.push_back({i, j});
+      }
+    }
+    std::vector<double> r;
+    for (const auto& [i, j] : bonds) {
+      Vec3 d = pos[i] - pos[j];
+      for (int k = 0; k < 3; ++k) d[k] -= 18.0 * std::round(d[k] / 18.0);
+      r.push_back(norm(d));
+    }
+    return r;
+  };
+  const auto r0 = co_lengths(data);
+  ASSERT_EQ(r0.size(), 16u);
+  for (double r : r0) EXPECT_NEAR(r, 1.16, 1e-6);
+  EXPECT_THROW(write_gromacs(s, ff, EnergyOptions{}, (dir / "co2").string()), FieldError);
+  // thiophene: half rigid, refused in both exports
+  System th = build_molecule("c1ccsc1").system;
+  std::string ch2 = "types";
+  prepare_for_forcefield(th, def, ch2);
+  const TypingResult tt = assign_types(th, def);
+  ASSERT_EQ(tt.untyped, 0);
+  ParamReport rt;
+  const ForceField ft = parameterize(th, def, tt.types, "types", &rt, false);
+  EXPECT_THROW(write_lammps_input(th, ft, EnergyOptions{}, "th.data", (dir / "th.in").string(), 0, true, run), FieldError);
+  EXPECT_THROW(write_gromacs(th, ft, EnergyOptions{}, (dir / "th").string()), FieldError);
+  // 1000 steps in LAMMPS, when one is installed
+  if (std::system("command -v lmp > /dev/null 2>&1") != 0) GTEST_SKIP() << "no lmp on the PATH: the run is not checked";
+  const std::string cmd = "cd '" + dir.string() + "' && lmp -in co2.in -log co2.log > co2.out 2>&1";
+  ASSERT_EQ(std::system(cmd.c_str()), 0) << "LAMMPS failed: " << dir.string() << "/co2.out";
+  const auto r1 = co_lengths((dir / "final.data").string());
+  ASSERT_EQ(r1.size(), 16u);
+  for (double r : r1) EXPECT_NEAR(r, 1.16, 1e-4);
+}
+
 // Mechanical protocols in the LAMMPS input (each run in LAMMPS on a melt when written): tension by fix deform at an
 // engineering strain rate with the lateral axes barostatted and the run long enough for the strain; creep with the
 // stressed axis at −σ; shear by SLLOD with the box made triclinic before the long-range solver and η = −P_xy/γ̇

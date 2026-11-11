@@ -275,8 +275,39 @@ std::string gromacs_mdp(const System& s, const ForceField& ff, const EnergyOptio
   return m.str();
 }
 
+// A molecule with a zero-constant bond (the force field's mark of a rigid model: TraPPE's CO2, N2, thiophene, EPM2's CO2)
+// has nothing in this topology that holds it together: GROMACS would need it as constraints and virtual sites, which
+// CAPS does not write (LINCS cannot hold linear CO2 or coupled ring triangles). Refused by name; the LAMMPS export carries
+// such a molecule as a rigid body (fix rigid).
+static void refuse_rigid_models(const System& s, const ForceField& ff) {
+  int nm = 0;
+  const auto comp = s.molecules(&nm);
+  std::vector<char> flexible(size_t(std::max(nm, 0)), 0);
+  auto flex = [&](uint32_t a) { if (comp[a] >= 0) flexible[size_t(comp[a])] = 1; };
+  for (const auto& t : ff.bonds) if (t.k != 0) flex(t.i);
+  for (const auto& t : ff.angles) if (t.kt != 0) flex(t.j);
+  for (const auto& t : ff.dihedrals) if (t.v != 0) flex(t.i);
+  for (const auto& t : ff.bonds_x) flex(t.i);
+  for (const auto& t : ff.bonds2) flex(t.i);
+  for (const auto& t : ff.angles2) flex(t.j);
+  for (const auto& t : ff.urey_bradley) flex(t.i);
+  for (const auto& t : ff.bonds) {
+    if (t.k != 0 || comp[t.i] < 0) continue;
+    const int64_t mol = s.has_mol ? s.atoms[t.i].mol : int64_t(comp[t.i]) + 1;
+    const std::string pair = ff.atom_type[t.i] + "-" + ff.atom_type[t.j];
+    if (flexible[size_t(comp[t.i])])
+      throw FieldError(ff.name + ": molecule " + std::to_string(mol) + " has a bond with no constant (" + pair +
+                       ") beside non-zero terms: a rigid model's term on a flexible molecule, which no topology can hold; type the "
+                       "molecule with one model's types");
+    throw FieldError(ff.name + ": molecule " + std::to_string(mol) + " is a rigid model (its bonds, " + pair +
+                     " among them, have no constant): GROMACS needs it written as constraints and virtual sites, which CAPS does not "
+                     "write; use the LAMMPS export, which runs it as a rigid body (fix rigid)");
+  }
+}
+
 std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, const EnergyOptions& e0, const std::string& stem,
                                        const std::vector<Restraint>& restraints) {
+  refuse_rigid_models(s, ff);
   EnergyOptions e = e0;
   if (ff.cutoff > 0) e.cutoff = ff.cutoff;   // the model's own cut-off, as gromacs_mdp writes it: the vacuum box is sized by it
   std::vector<std::string> notes = gromacs_notes(s, ff, e);
