@@ -393,6 +393,13 @@ EXPLAINED = [(ff, t, w) for ff in GAFFS for t, w in [
     (lambda m, r, c, e, i: m == "water" and (r, c) in (("oh", "ow"), ("ho", "hw")),
      "water: CAPS types it as GAFF's own water (ow / hw of gaff.dat), antechamber as an alcohol O-H (make_gaff_rules.py)"),
 ]] + [(ff, (lambda m, r, c, e, i: (num(r), num(c)) in FOYER_OPLS), "foyer") for ff in OPLS] + [
+    ("pcff-frc", lambda m, r, c, e, i: m == "cyclooctatetraene" and c in ("", "?"),
+     "a conjugated chain of four C=C: pcff.frc's c= / c=1 / c=2 carry one inner double bond, and no assignment gives each "
+     "double and single bond of the ring its own term (pysimm's c=2 everywhere puts the double bond's 1.34 A term on the "
+     "single bonds); CAPS refuses it by name"),
+    ("pcff-frc", lambda m, r, c, e, i: m in ("nitromethane", "nitrobenzene") and c in ("", "?"),
+     "nitro group: pcff.frc has no nitro N type (pysimm's n is the amide N, CAPS used to take the ring N npc); CAPS refuses "
+     "the group by name"),
 ]
 
 

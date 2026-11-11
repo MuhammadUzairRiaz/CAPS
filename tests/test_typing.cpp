@@ -692,6 +692,21 @@ TEST(Typing, OplsAlkynesAllenesAndGromacsNumbers) {
 
 // PCFF: hexa-1,3,5-triene's middle double bond c=2=c=2 with c=1-c=2 single bonds (pcff.frc ref 12: c=-c=1 1.34 A,
 // c=1-c=2 1.44 A, c=2-c=2 1.34 A); IFF on PCFF / CVFF types organic atoms with PCFF's / CVFF's own rules
+// PCFF refuses, by name, what pcff.frc has no types or terms for: a fourth conjugated C=C (octatetraene,
+// cyclooctatetraene: c= / c=1 / c=2 carry one inner double bond), a nitro group (no nitro N type), a C=O on an aromatic
+// ring carbon (4-pyridone: the only cp-O term is phenol's C-O); butadiene, hexatriene and benzoquinone stay typed
+TEST(Typing, PcffRefusesPolyenesNitroAndAromaticCarbonyl) {
+  FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/pcff-frc.json");
+  for (const std::string smi : {"C=CC=CC=CC=C", "C1=CC=CC=CC=C1", "C[N+](=O)[O-]", "O=C1C=CNC=C1"}) {
+    const System s = build_molecule(smi).system;
+    const TypingResult tr = assign_types(s, def);
+    EXPECT_GT(tr.untyped, 0) << smi;
+    EXPECT_NE(untyped_message(def, s, tr.untyped, &tr.types).find("refused (atoms"), std::string::npos) << smi;
+  }
+  for (const std::string smi : {"C=CC=C", "C=CC=CC=C", "O=C1C=CC(=O)C=C1"})
+    EXPECT_EQ(assign_types(build_molecule(smi).system, def).untyped, 0) << smi;
+}
+
 TEST(Typing, PcffTrieneAndIffOrganicAsItsBase) {
   const System ht = mol({"C", "C", "C", "C", "C", "C"}, {2, 1, 1, 1, 1, 2}, {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}});
   const TypingResult h = type_with("pcff-frc", ht);
