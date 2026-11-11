@@ -18,6 +18,86 @@ public sealed partial class MainViewModel
 {
     private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     public bool IsMolecule => _module == 9;
+    /// <summary>The 3D view with the Studio's tools: the Studio, and the Molecule module (the sketch beside the view).</summary>
+    public bool IsStudioView => _module is 8 or 9;
+
+    // ---------------------------------------------------------------- the molecule in the Studio view
+    // The Molecule module shows the built molecule in the real Studio view, with every shelf: it is a structure of the project
+    // (one, replaced at each rebuild). An edit made there with the Studio's tools writes the SMILES back, and the sketch
+    // redraws; an edit of the sketch builds the molecule again.
+    private ProjectItem? _molItem;       // the project's structure that is the builder's molecule
+    private ProjectItem? _beforeMol;     // the structure that was active when the Molecule module opened (Insert goes there)
+    private bool _from3D;                // the SMILES was written from the 3D structure: no rebuild
+
+    private void MoleculeModuleChanged(int was, int m)
+    {
+        if (m == 9 && was != 9)
+        {
+            _beforeMol = _activeItem != _molItem ? _activeItem : _beforeMol;
+            if (_molItem != null && ProjectItems.Contains(_molItem) && !_molItem.Doc.IsDisposed) Activate(_molItem);
+            else if (_activeItem != null)
+            {
+                // nothing built yet: the view is empty until the first molecule (the open structure waits in the project)
+                StashActive();
+                foreach (var p in ProjectItems) p.Active = false;
+                _activeItem = null;
+                Document = null;
+                Title = "";
+                RaiseProject();
+            }
+        }
+        else if (was == 9 && m != 9 && _activeItem == null && _beforeMol != null && ProjectItems.Contains(_beforeMol) && !_beforeMol.Doc.IsDisposed)
+            Activate(_beforeMol);   // left without building: the structure that was open comes back
+    }
+
+    /// <summary>The builder's molecule into the view: a single-frame copy of the chosen conformer (the Studio edits one
+    /// structure, not a trajectory), in place of the one shown before (the project keeps one).</summary>
+    private void ShowMoleculeConformer()
+    {
+        if (!IsMolecule || Busy || _molDoc == null || _molDoc.IsDisposed) return;
+        if (_molItem != null && ReferenceEquals(_molItem.Doc, _molDoc) && ProjectItems.Contains(_molItem)) return;   // edited in 3D: it is shown already
+        CapsDocument view;
+        try { view = _molDoc.FrameCopy((MolFormula.Length > 0 ? MolFormula : "molecule") + " · molecule"); }
+        catch (Exception e) { Status = "Could not show the molecule: " + e.Message; return; }
+        var status = Status;
+        var prev = _molItem;
+        if (prev != null && ProjectItems.Contains(prev))
+        {
+            ProjectItems.Remove(prev);
+            if (_activeItem == prev) _activeItem = null;
+        }
+        Show(view, (MolFormula.Length > 0 ? MolFormula : "molecule") + " · molecule");
+        _molItem = _activeItem;
+        if (prev != null && !ReferenceEquals(prev.Doc, _molDoc) && !ReferenceEquals(prev.Doc, view) && !prev.Doc.IsDisposed) prev.Doc.Dispose();
+        Status = status;
+    }
+
+    /// <summary>A Studio edit of the builder's molecule: its SMILES (from the structure, implicit hydrogens) goes to the
+    /// sketch, which redraws; the molecule is not built again.</summary>
+    private void SyncSketchFrom3D()
+    {
+        if (_molItem == null || _doc == null || !ReferenceEquals(_molItem.Doc, _doc)) return;
+        try
+        {
+            var n = (int)_doc.Summary().Atoms;
+            if (n == 0) { _from3D = true; try { MolSmiles = ""; } finally { _from3D = false; } return; }
+            var smiles = _doc.FragmentSmiles(Enumerable.Range(0, n).ToArray());
+            _from3D = true;
+            try { MolSmiles = smiles; } finally { _from3D = false; }
+            // what was edited is the molecule now: Save, Use in Pack, Insert and Open in Studio take it
+            if (!ReferenceEquals(_molDoc, _doc))
+            {
+                var old = _molDoc;
+                MolDoc = _doc;
+                if (old != null && !old.IsDisposed) old.Dispose();
+                MolConformers.Clear();
+                MolConformers.Add(new ConformerRow(1, "—", "edited in the Studio view", false));
+                _molConf = 0;
+                Raise(nameof(MolConf));
+            }
+        }
+        catch (Exception e) { Status += " · the sketch could not follow: " + e.Message; }
+    }
     /// <summary>The rail's Studio entry covers the molecule builder too.</summary>
     public bool IsStudioRail => _module is 8 or 9 or 17 or 19 or 25;   // Build and Export have their own rail entries
 
@@ -61,7 +141,7 @@ public sealed partial class MainViewModel
             SketchGraphChanged?.Invoke(json);
         }
         else if (!_fromSketch && _molSmiles.Trim().Length == 0) SketchGraphChanged?.Invoke("");
-        ScheduleBuild();
+        if (!_from3D) ScheduleBuild();
     }
 
     /// <summary>The sketch was edited: its SMILES replaces the text (the drawing keeps its layout).</summary>
@@ -188,6 +268,7 @@ public sealed partial class MainViewModel
         {
             if (!Set(ref _molConf, value) || _molDoc == null || value < 0) return;
             try { _molDoc.SetFrame(value); } catch { }
+            ShowMoleculeConformer();   // the Studio view shows that conformer
             MolViewChanged?.Invoke();
         }
     }
@@ -213,6 +294,9 @@ public sealed partial class MainViewModel
         if (_molOk) _buildTimer.Start();
     }
 
+    /// <summary>The pending build now (the self-test: no wait for the timer).</summary>
+    internal Task BuildNow() { _buildTimer?.Stop(); return BuildMolecule(); }
+
     /// <summary>Builds the current SMILES (the preview updates as the sketch changes; a newer request wins).</summary>
     public async Task BuildMolecule()
     {
@@ -229,7 +313,7 @@ public sealed partial class MainViewModel
             if (ticket != _buildTicket) { doc.Dispose(); return; }
             var old = _molDoc;
             MolDoc = doc;
-            old?.Dispose();
+            if (old != null && !ReferenceEquals(_doc, old) && !old.IsDisposed) old.Dispose();
             using var js = JsonDocument.Parse(report);
             var r = js.RootElement;
             MolMethodUsed = r.GetProperty("method").GetString() ?? "";
@@ -351,13 +435,14 @@ public sealed partial class MainViewModel
             if (ticket != _buildTicket) { doc.Dispose(); return; }
             var old = _molDoc;
             MolDoc = doc;
-            old?.Dispose();
+            if (old != null && !ReferenceEquals(_doc, old) && !old.IsDisposed) old.Dispose();
             using var js = JsonDocument.Parse(report);
             var r = js.RootElement;
             var beads = r.GetProperty("beads").GetDouble();
             var q = r.GetProperty("charge").GetDouble();
             MolConformers.Clear();
             MolFormula = r.GetProperty("template").GetString() is { Length: > 0 } tn ? tn : "beads";
+            ShowMoleculeConformer();
             MolAtoms = beads.ToString("0", Inv) + " beads";
             MolNotes = $"{beads:0} beads, {r.GetProperty("bonds").GetDouble():0} bonds, charge {q:+0;−0;0} e · {CgForceFields[_cgFf].Name}: bond lengths from the force field; relax it with the force field before a run";
             Status = $"Built {MolFormula} · {beads:0} beads ({CgForceFields[_cgFf].Name})";
@@ -377,13 +462,22 @@ public sealed partial class MainViewModel
     {
         if (_molDoc == null) return;
         if (Busy) { Status = "Wait for the run to finish (or cancel it) first"; return; }
-        var doc = _molDoc;
-        var conf = Math.Max(0, _molConf);
+        // the view holds the chosen conformer (or what was edited there): that structure stays in the project as it is
+        if (_molItem == null || !ProjectItems.Contains(_molItem) || _molItem.Doc.IsDisposed)
+        {
+            _molItem = null;
+            Show(_molDoc.FrameCopy((_molFormula.Length > 0 ? _molFormula : "molecule") + " · built"), (_molFormula.Length > 0 ? _molFormula : "molecule") + " · built");
+        }
+        else if (_activeItem != _molItem) Activate(_molItem);
+        var shown = _activeItem?.Doc;
+        if (_activeItem != null) { _activeItem.Name = (_molFormula.Length > 0 ? _molFormula : "molecule") + " · built"; Title = _activeItem.Name; }
+        // the builder lets go: the next sketch builds a new molecule
+        var builder = _molDoc;
+        _molItem = null;
         _molDoc = null;
+        if (!ReferenceEquals(builder, shown) && !builder.IsDisposed) builder.Dispose();
         Raise(nameof(MolDoc)); Raise(nameof(MolHasDoc)); Raise(nameof(MolCanUse));
         MolConformers.Clear();
-        Show(doc, (_molFormula.Length > 0 ? _molFormula : "molecule") + " · built");
-        if (conf > 0) { Frame = conf; }
         GrownUnsaved = true;
         SetModule(8);
     }
@@ -394,7 +488,9 @@ public sealed partial class MainViewModel
     public void InsertMoleculeIntoDocument()
     {
         if (_molDoc == null) return;
-        if (_doc == null) { OpenMoleculeInStudio(); return; }
+        // into the structure that was open before the Molecule module (the view shows the molecule itself meanwhile)
+        var target = _beforeMol != null && ProjectItems.Contains(_beforeMol) && !_beforeMol.Doc.IsDisposed ? _beforeMol : null;
+        if (target == null) { OpenMoleculeInStudio(); return; }
         if (Busy) { Status = "Wait for the run to finish (or cancel it) first"; return; }
         try
         {
@@ -403,6 +499,7 @@ public sealed partial class MainViewModel
             var json = _molDoc.Piece(new JsonObject { ["atoms"] = "all", ["name"] = name }.ToJsonString());
             AddToTray(json, "molecule builder");
             SetModule(8);
+            Activate(target);
             ArmStamp(Tray[0]);
             Status = $"{name}: click in the view where it goes (the wheel turns it, Esc stops)";
         }

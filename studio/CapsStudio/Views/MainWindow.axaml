@@ -878,6 +878,10 @@
             </ScrollViewer>
           </DockPanel>
         </Border>
+        <!-- Molecule: the 2D sketch left of the view (its width follows the centre: half of it) -->
+        <Border x:Name="MolSketchHost" Grid.Column="0" Width="560" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" IsVisible="{Binding IsMolecule}">
+          <pages:MoleculeSketchPane x:Name="MolSketch" />
+        </Border>
         <!-- the view with its shelf docks (design/boards/Shelves): shelves dragged to an edge of the view dock there -->
         <DockPanel Grid.Column="1" x:Name="ViewDock">
           <StackPanel x:Name="SlotLeft" DockPanel.Dock="Left" Orientation="Horizontal" Spacing="4" Margin="0" />
@@ -1026,11 +1030,19 @@
               </StackPanel>
             </Border>
             <!-- Empty state -->
+            <TextBlock Classes="dim" HorizontalAlignment="Center" VerticalAlignment="Center" Text="Draw on the left or type a SMILES: the molecule appears here, with the Studio's tools">
+              <TextBlock.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                  <Binding Path="NoDocument" />
+                  <Binding Path="IsMolecule" />
+                </MultiBinding>
+              </TextBlock.IsVisible>
+            </TextBlock>
             <TextBlock Classes="dim" HorizontalAlignment="Center" VerticalAlignment="Center" Text="The structure appears here when the run starts">
               <TextBlock.IsVisible>
                 <MultiBinding Converter="{x:Static BoolConverters.And}">
                   <Binding Path="NoDocument" />
-                  <Binding Path="!IsStudio" />
+                  <Binding Path="!IsStudioView" />
                 </MultiBinding>
               </TextBlock.IsVisible>
             </TextBlock>
@@ -1529,6 +1541,7 @@
               <Binding Path="HasDocument" />
               <Binding Path="ShowRdf" />
               <Binding Path="ShowAnalysisPanel" />
+              <Binding Path="!IsMolecule" />
             </MultiBinding>
           </Border.IsVisible>
           <Panel>
@@ -3141,8 +3154,9 @@
       <pages:JobsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsJobs}" />
       <!-- Settings (design/boards/Settings) -->
       <pages:SettingsPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSettings}" />
-      <!-- Molecule (design/boards/Sketch): sketch or SMILES to 3D -->
-      <pages:MoleculePage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsMolecule}" />
+      <!-- Molecule (design/boards/Sketch): its panel in the inspector column; the sketch docks left of the Studio view, which
+           shows the molecule with every shelf -->
+      <pages:MoleculePage Grid.Column="2" Grid.Row="1" IsVisible="{Binding IsMolecule}" />
       <!-- Start (design/boards/Start): the Studio with nothing open -->
       <pages:StartPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2">
         <pages:StartPage.IsVisible>

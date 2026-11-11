@@ -243,7 +243,7 @@ public partial class MainViewModel
     /// <summary>The lens outline for the view: its centre atom's position and radius in view points, and a label.</summary>
     public (double X, double Y, double R, string Label)? LensCircle(CapsCamera cam, CapsRenderOpts opt, double scaling)
     {
-        if (_doc == null || !_lensOn || _lensCentre < 0 || !IsStudio) return null;
+        if (_doc == null || !_lensOn || _lensCentre < 0 || !IsStudioView) return null;
         try
         {
             var p = _doc.ProjectIndices(cam, opt, [_lensCentre]);   // the lens's atom only
@@ -255,7 +255,7 @@ public partial class MainViewModel
     /// <summary>The lens circle from the GPU view's camera fit (one atom looked up; nothing over the whole structure).</summary>
     public (double X, double Y, double R, string Label)? LensCircleFit(in CapsViewFit fit, double scaling)
     {
-        if (_doc == null || !_lensOn || _lensCentre < 0 || !IsStudio) return null;
+        if (_doc == null || !_lensOn || _lensCentre < 0 || !IsStudioView) return null;
         try
         {
             if (AtomXyz(_lensCentre) is not { } p) return null;

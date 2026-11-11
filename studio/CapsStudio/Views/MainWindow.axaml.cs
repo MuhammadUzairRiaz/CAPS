@@ -113,6 +113,8 @@ public partial class MainWindow : Window
         _vm.LoadSettings();
         Panes.Store = _vm.Settings.PaneSizes;   // the settings as loaded (LoadSettings reads the file again)
         InitShelves();                          // after the settings: each workspace's shelf layout
+        // the Molecule module's sketch takes half of the centre, the Studio view the other half
+        Centre.SizeChanged += (_, e) => MolSketchHost.Width = Math.Max(300, Math.Round(e.NewSize.Width * 0.5));
         _vm.HookJobs();
         _vm.LoadRecent();
         _vm.LoadKnownProjects();
@@ -1016,7 +1018,7 @@ public partial class MainWindow : Window
         if (e.Key == Key.W && e.KeyModifiers is KeyModifiers.Meta or KeyModifiers.Control && _vm.Document != null) { _vm.CloseDocument(); e.Handled = true; return; }
         if (_vm.Document == null || _vm.Busy || FocusManager?.GetFocusedElement() is TextBox or ComboBox) return;
         // editing keys in the Studio: ⌘Z / ⇧⌘Z undo and redo, ⇧E the element picker, Delete the picked atoms
-        if (_vm.IsStudio)
+        if (_vm.IsStudioView)
         {
             var cmd = OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control;
             if (e.Key == Key.Z && e.KeyModifiers == cmd) { _vm.UndoEdit(false); e.Handled = true; return; }
@@ -1035,7 +1037,7 @@ public partial class MainWindow : Window
             if (e.KeyModifiers == cmd && e.Key >= Key.D1 && e.Key <= Key.D9) { _vm.GoRailPage(e.Key - Key.D0); e.Handled = true; return; }
             if (e.Key == Key.Tab && e.KeyModifiers == KeyModifiers.Control) { _vm.NextStructure(); e.Handled = true; return; }
             if (e.Key == Key.F1) { _vm.GoModule(41); e.Handled = true; return; }
-            if (_vm.IsStudio)
+            if (_vm.IsStudioView)
             {
                 if (e.Key == Key.I && e.KeyModifiers == cmd) { _vm.InvertSelectionKey(); e.Handled = true; return; }
                 if (e.Key == Key.H && e.KeyModifiers == cmd) { _vm.AddHydrogensAll(); e.Handled = true; return; }
@@ -1059,7 +1061,7 @@ public partial class MainWindow : Window
         if (e.Key == Key.E && e.KeyModifiers == (OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control) && _vm.HasDocument) { _vm.OpenExportDialog(); e.Handled = true; return; }
         // Keyboard walk (design/boards/VisAccess): in the 3D view, or anywhere once an atom has the focus ring
         var focused = FocusManager?.GetFocusedElement();
-        var walk = _vm.IsStudio && (focused == ViewHost || (_vm.HasFocusAtom && focused is not (ListBox or Slider or TreeView or TabItem)));
+        var walk = _vm.IsStudioView && (focused == ViewHost || (_vm.HasFocusAtom && focused is not (ListBox or Slider or TreeView or TabItem)));
         if (e.Key == Key.A && e.KeyModifiers == ((OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control) | KeyModifiers.Shift))
         {
             _vm.AnnounceSelection(); e.Handled = true; return;
@@ -1088,12 +1090,12 @@ public partial class MainWindow : Window
             case Key.F when e.KeyModifiers == KeyModifiers.None: _vm.FrameSelection(); e.Handled = true; break;
             case Key.L when e.KeyModifiers == KeyModifiers.None && _vm.LensOn: _vm.LensHold = true; e.Handled = true; break;
             // the tools by their keys (design/boards/InteractionMap); R stays Reset view
-            case Key.S when e.KeyModifiers == KeyModifiers.None && _vm.IsStudio && _vm.HasDocument: _vm.RunCommand("tool.select"); e.Handled = true; break;
-            case Key.B when e.KeyModifiers == KeyModifiers.None && _vm.IsStudio && _vm.HasDocument: _vm.RunCommand("tool.build"); e.Handled = true; break;
-            case Key.L when e.KeyModifiers == KeyModifiers.None && _vm.IsStudio && _vm.HasDocument: _vm.RunCommand("tool.lasso"); e.Handled = true; break;
-            case Key.G when e.KeyModifiers == KeyModifiers.None && _vm.IsStudio && _vm.HasDocument: _vm.RunCommand("tool.move"); e.Handled = true; break;
-            case Key.M when e.KeyModifiers == KeyModifiers.None && _vm.IsStudio && _vm.HasDocument: _vm.RunCommand("tool.measure"); e.Handled = true; break;
-            case Key.P when e.KeyModifiers == KeyModifiers.None && _vm.IsStudio && _vm.HasDocument: _vm.RunCommand("tool.pin"); e.Handled = true; break;
+            case Key.S when e.KeyModifiers == KeyModifiers.None && _vm.IsStudioView && _vm.HasDocument: _vm.RunCommand("tool.select"); e.Handled = true; break;
+            case Key.B when e.KeyModifiers == KeyModifiers.None && _vm.IsStudioView && _vm.HasDocument: _vm.RunCommand("tool.build"); e.Handled = true; break;
+            case Key.L when e.KeyModifiers == KeyModifiers.None && _vm.IsStudioView && _vm.HasDocument: _vm.RunCommand("tool.lasso"); e.Handled = true; break;
+            case Key.G when e.KeyModifiers == KeyModifiers.None && _vm.IsStudioView && _vm.HasDocument: _vm.RunCommand("tool.move"); e.Handled = true; break;
+            case Key.M when e.KeyModifiers == KeyModifiers.None && _vm.IsStudioView && _vm.HasDocument: _vm.RunCommand("tool.measure"); e.Handled = true; break;
+            case Key.P when e.KeyModifiers == KeyModifiers.None && _vm.IsStudioView && _vm.HasDocument: _vm.RunCommand("tool.pin"); e.Handled = true; break;
             case Key.Escape when _vm.StampArmed: _vm.DisarmStamp(); _vm.Status = "Stamp put away"; e.Handled = true; break;
             case Key.Escape: _vm.ClearAllSelection(); e.Handled = true; break;
         }
@@ -1518,7 +1520,7 @@ public partial class MainWindow : Window
         var right = p.Properties.IsRightButtonPressed;
         var shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         var alt = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
-        var studioView = _host == ViewHost && _vm.IsStudio && _vm.Document != null && !_vm.Busy;
+        var studioView = _host == ViewHost && _vm.IsStudioView && _vm.Document != null && !_vm.Busy;
         if (Ring.IsVisible && !right) { RingClick(p.Position); e.Handled = true; return; }   // the open ring: this click is its action
         if (studioView && !right && _vm.StampArmed) { PlaceStampAt(p.Position, alt); e.Handled = true; return; }   // a stamp under the pointer: placed
         // double-click: the atom's molecule; ⌥ double-click: every atom of its type (⇧ adds)
@@ -1540,7 +1542,7 @@ public partial class MainWindow : Window
         _moveAtoms = null;
         _boxMode = false;
         if (right && studioView) RingPressed(p.Position);
-        if (_host == ViewHost && _vm.IsStudio && _vm.Document is { } doc && !_vm.Busy && !_pan)
+        if (_host == ViewHost && _vm.IsStudioView && _vm.Document is { } doc && !_vm.Busy && !_pan)
         {
             if (alt && _vm.EditTool == 0) { _boxMode = true; _lassoPts = new List<Point> { p.Position }; }
             else if (_vm.EditTool == 4) _lassoPts = new List<Point> { p.Position };
@@ -1708,8 +1710,8 @@ public partial class MainWindow : Window
             var hit = _host == ViewHost ? PickAtView(_vm.Document, pos) : _vm.Document.Pick((int)(pos.X * _scaling), (int)(pos.Y * _scaling));
             if (!_vm.PickAllowed(hit)) hit = -1;   // "Measurements only inside" the lens
             if (_host == FieldViewHost) { if (hit >= 0) _vm.Field.SelectAtom(hit); }
-            else if (_vm.EditTool != 0 && _vm.IsStudio) _vm.ToolClick(hit);
-            else if (!_addPick && _vm.IsStudio) _vm.StartSelection(hit, "click");   // a plain click starts a new selection
+            else if (_vm.EditTool != 0 && _vm.IsStudioView) _vm.ToolClick(hit);
+            else if (!_addPick && _vm.IsStudioView) _vm.StartSelection(hit, "click");   // a plain click starts a new selection
             else _vm.Pick(hit, _addPick);
             RequestRender();
         }
@@ -1934,13 +1936,13 @@ public partial class MainWindow : Window
         _fitting = true;
         try
         {
-            if (!_vm.IsStudio && !Panes.IsHidden(Body, 0) && project > 1 && w - project < PageWidth)
+            if (!_vm.IsStudioView && !Panes.IsHidden(Body, 0) && project > 1 && w - project < PageWidth)
             {
                 Panes.Hide(Body, 0, false);
                 _pageHidPanel = true;
                 _vm.Status = "The project panel folded away to fit this page · ⌘1 or its divider brings it back";
             }
-            else if (_pageHidPanel && (_vm.IsStudio || w - 300 >= PageWidth))
+            else if (_pageHidPanel && (_vm.IsStudioView || w - 300 >= PageWidth))
             {
                 Panes.Show(Body, 0, false);
                 _pageHidPanel = false;

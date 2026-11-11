@@ -187,6 +187,7 @@ public sealed partial class MainViewModel
         // the core keeps the selection when the atoms stay the same (tacticity, clean-up), clears it otherwise
         try { SelectedCount = (int)(JsonNode.Parse(_doc!.SelectionJson())!["count"]?.GetValue<double>() ?? 0); } catch { SelectedCount = 0; }
         Status = what;
+        SyncSketchFrom3D();   // the Molecule module's sketch follows an edit of its molecule
         RenderRequested?.Invoke();
     }
 

@@ -46,7 +46,7 @@ public partial class MainWindow
         Add(new Shelf("tools", "Sketch & edit", "cursor", ToolbarLeft));
         Add(new Shelf("view", "View & panels", "eye", ToolbarRight));
         var modify = new Shelf("modify", "Modify", "atom", ModifyRow);
-        modify.Bind(IsVisibleProperty, new Avalonia.Data.Binding(nameof(MainViewModel.IsStudio)));
+        modify.Bind(IsVisibleProperty, new Avalonia.Data.Binding(nameof(MainViewModel.IsStudioView)));
         Add(modify);
         foreach (var c in _vm.Settings.CustomShelves) AddCustom(c);
         _guide = new Border { Classes = { "shelfguide" }, IsVisible = false, IsHitTestVisible = false };
@@ -60,7 +60,7 @@ public partial class MainWindow
             b.Click += (_, _) => UseWorkspace(w);
             WorkspaceButtons.Children.Add(b);
         }
-        _vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.IsStudio)) UpdateModifyBar(); };
+        _vm.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(MainViewModel.IsStudio) or nameof(MainViewModel.IsStudioView)) UpdateModifyBar(); };
         _vm.SettingsReplaced += () => { Panes.Store = _vm.Settings.PaneSizes; ReloadShelves(); };
         // the first structure opened after shelves arrived: say where they are, once
         _vm.PropertyChanged += (_, e) =>
@@ -289,7 +289,7 @@ public partial class MainWindow
     }
 
     /// <summary>The Modify row keeps its line only while a shelf sits in it (and the Studio shows).</summary>
-    private void UpdateModifyBar() => ModifyBar.IsVisible = _vm.IsStudio && SlotTop2.Children.OfType<Control>().Any(c => c.IsVisible || c is Puck);
+    private void UpdateModifyBar() => ModifyBar.IsVisible = _vm.IsStudioView && SlotTop2.Children.OfType<Control>().Any(c => c.IsVisible || c is Puck);
 
     // ---------------------------------------------------------------- peek and pop-out
     private void PeekShelf(string id, Puck puck)

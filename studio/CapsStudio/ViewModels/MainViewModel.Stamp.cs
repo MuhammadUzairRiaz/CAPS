@@ -24,7 +24,7 @@ public sealed partial class MainViewModel
     public bool HasTray => Tray.Count > 0;
     private bool _trayShown = true;
     public bool TrayShown { get => _trayShown; set { if (Set(ref _trayShown, value)) Raise(nameof(ShowTray)); } }
-    public bool ShowTray => _trayShown && Tray.Count > 0 && IsStudio && _doc != null;
+    public bool ShowTray => _trayShown && Tray.Count > 0 && IsStudioView && _doc != null;
     private const int TrayMax = 8;
     private static string TrayFile => Path.Combine(AppSettings.Override != null ? Path.GetDirectoryName(AppSettings.Override)! : AppSettings.Folder, "tray.json");
 

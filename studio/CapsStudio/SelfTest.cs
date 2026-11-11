@@ -5542,7 +5542,8 @@ internal static class SelfTest
             var mv = w.ViewModel;
             mv.OpenBuilder();
             Pump(30);
-            var page = w.GetVisualDescendants().OfType<Views.Pages.MoleculePage>().First();
+            var page = w.GetVisualDescendants().OfType<Views.Pages.MoleculeSketchPane>().First();
+            var side = w.GetVisualDescendants().OfType<Views.Pages.MoleculePage>().First();
             var skc = page.GetVisualDescendants().OfType<Views.SketchCanvas>().First();
             Point At(Avalonia.Visual v, Point p) => v.TranslatePoint(p, w) ?? default;
             void Click(Point p) { w.MouseMove(p); w.MouseDown(p, Avalonia.Input.MouseButton.Left); w.MouseUp(p, Avalonia.Input.MouseButton.Left); Pump(); }
@@ -5648,13 +5649,29 @@ internal static class SelfTest
                   $"periodic table and other elements: Se → {seSmiles} · Si then grown → {mv.MolSmiles} {mv.MolFormula} {mv.MolValence}");
             Step("6: typing a SMILES in the box with the keyb");
             // typing a SMILES in the box with the keyboard (text input, as the platform delivers it)
-            var box = page.GetVisualDescendants().OfType<Avalonia.Controls.TextBox>().First(b => b.Watermark?.ToString()?.StartsWith("e.g. C=C") == true);
+            var box = side.GetVisualDescendants().OfType<Avalonia.Controls.TextBox>().First(b => b.Watermark?.ToString()?.StartsWith("e.g. C=C") == true);
             box.Text = "";
             Click(At(box, new Point(20, box.Bounds.Height / 2)));
             w.KeyTextInput("CCO");
             Pump(20);
             Check(box.IsFocused && mv.MolSmiles == "CCO" && F() == "C₂H₆O" && skc.AtomCount == 3, $"typed SMILES: '{mv.MolSmiles}' → {F()}, sketch {skc.AtomCount} atoms");
             Step("7: View › Shelves on the Molecule page: the");
+            // the molecule is the Studio view's structure, with the Studio's tools: benzene built, one H made Cl with the Studio's
+            // element replace; the SMILES and the sketch follow the 3D edit (no rebuild: the same structure stays)
+            box.Text = "c1ccccc1";
+            var bt = mv.BuildNow();
+            while (!bt.IsCompleted) Pump(1);
+            Pump(10);
+            var built = mv.Document;
+            var hydrogen = Enumerable.Range(0, 12).First(i => mv.Document!.Atom(i).Element == 1);
+            mv.Pick(hydrogen);
+            mv.BuildElement = "Cl";
+            Step($"edit: doc atoms {mv.Document?.Summary().Atoms} picked H {hydrogen}");
+            mv.ReplacePickedElement();
+            Step($"after edit: status '{mv.Status}' smiles {mv.MolSmiles}");
+            Pump(20);
+            Check(mv.IsMolecule && mv.IsStudioView && ReferenceEquals(mv.Document, built) && mv.MolFormula == "C₆H₅Cl" && skc.AtomCount == 7 && !mv.MolBuilding,
+                  $"Molecule module, Studio edit → sketch: view structure kept {ReferenceEquals(mv.Document, built)} · SMILES {mv.MolSmiles} · {mv.MolFormula} · sketch {skc.AtomCount} atoms · '{mv.Status}'");
             // View › Shelves on the Molecule page: the Studio comes up with the shelf shown, and the status says so
             w.ShowShelf("tools", false);
             w.PickShelf("tools");

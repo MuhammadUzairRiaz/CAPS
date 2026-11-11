@@ -90,7 +90,7 @@ public partial class MainWindow
     private void InitDropTargets()
     {
         DragDrop.SetAllowDrop(this, true);
-        AddHandler(DragDrop.DragEnterEvent, (_, e) => { if (e.Data.GetFiles() != null && _vm.HasDocument && _vm.IsStudio) _vm.DropTargets = true; });
+        AddHandler(DragDrop.DragEnterEvent, (_, e) => { if (e.Data.GetFiles() != null && _vm.HasDocument && _vm.IsStudioView) _vm.DropTargets = true; });
         AddHandler(DragDrop.DragLeaveEvent, (_, e) =>
         {
             // left the window (not just moved between its children)

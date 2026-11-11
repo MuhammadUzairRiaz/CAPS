@@ -40,7 +40,7 @@ public sealed partial class MainViewModel
     /// <summary>What the selection is and how it was made: "molecule 4 · lasso".</summary>
     public string SelBarWhat { get => _barWhat; private set => Set(ref _barWhat, value); }
     public string SelBarHow { get => _barHow; private set => Set(ref _barHow, value); }
-    public bool HasSelBar => _barCount > 0 && _doc != null && IsStudio && !Busy;
+    public bool HasSelBar => _barCount > 0 && _doc != null && IsStudioView && !Busy;
     /// <summary>A spread of the selected atoms (at most 4000) the view projects to place the bar.</summary>
     public int[] SelBarSample
     {

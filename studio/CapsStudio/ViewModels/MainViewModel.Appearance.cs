@@ -309,7 +309,7 @@ public sealed partial class MainViewModel
     /// <summary>Labels to draw after a render: visible atoms (and bonds, at their midpoints), in view pixels (points).</summary>
     public List<ViewLabel> ViewLabels(CapsCamera cam, CapsRenderOpts opt, double scaling)
     {
-        if (_doc == null || !AnyLabels || !IsStudio) { LabelNote = ""; return new List<ViewLabel>(); }
+        if (_doc == null || !AnyLabels || !IsStudioView) { LabelNote = ""; return new List<ViewLabel>(); }
         return LabelsFor(_doc, cam, opt, scaling, true);
     }
 

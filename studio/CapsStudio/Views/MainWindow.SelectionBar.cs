@@ -184,7 +184,7 @@ public partial class MainWindow
     {
         _ringPending = false;
         _ringTimer?.Stop();
-        if (_vm.Document is not { } doc || _vm.Busy || !_vm.IsStudio) return;
+        if (_vm.Document is not { } doc || _vm.Busy || !_vm.IsStudioView) return;
         // nothing selected and an atom under the pointer: the ring acts on it
         if (!_vm.HasSelBar)
         {

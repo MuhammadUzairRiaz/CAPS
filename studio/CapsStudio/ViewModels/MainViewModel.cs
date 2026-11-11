@@ -597,7 +597,8 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsPack));
         Raise(nameof(IsReact));
         Raise(nameof(IsField));
-        Raise(nameof(IsStudio)); Raise(nameof(HasSelBar));
+        MoleculeModuleChanged(was, m);
+        Raise(nameof(IsStudio)); Raise(nameof(IsStudioView)); Raise(nameof(HasSelBar));
         Raise(nameof(IsMolecule));
         Raise(nameof(IsStudioRail));
         Raise(nameof(IsSettings));
