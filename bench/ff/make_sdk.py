@@ -271,9 +271,10 @@ def main():
            "mixing": "arithmetic", "special_lj": [0, 0, 1], "special_coul": [0, 0, 1], "cutoff": 15.0, "timestep": 10,
            "pair_settings": {"model_cutoff": True, "dielectric": 80.0}, "angle_terms": "if_defined", "torsion_terms": "if_defined",
            "atom_types": types, "pairs": pairs, "bonds": bonds, "angles": angles, "dihedrals": [], "impropers": [],
-           "bead_templates": {"W": "[W]", "DMPC": "[NC+1][PH-1][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]",
-                              "DPPC": "[NC+1][PH-1][GL]([EST1][CM][CM][CM][CM][CT])[EST2][CM][CM][CM][CM][CT]",
-                              "DMPE": "[NH+1][PHE-1][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]",
+           # each acyl chain: EST (-CH2CO2-, two C) then the rest: C14 (DMPC, DMPE) 3 CM + CT, C16 (DPPC) 4 CM + CT2
+           "bead_templates": {"W": "[W]", "DMPC": "[NC+1][PH-1][GL]([EST1][CM][CM][CM][CT])[EST2][CM][CM][CM][CT]",
+                              "DPPC": "[NC+1][PH-1][GL]([EST1][CM][CM][CM][CM][CT2])[EST2][CM][CM][CM][CM][CT2]",
+                              "DMPE": "[NH+1][PHE-1][GL]([EST1][CM][CM][CM][CT])[EST2][CM][CM][CM][CT]",
                               "C12E8": "[OA]" + "[EO]" * 8 + "[CM][CM][CM][CT2]", "DOD": "[CT][CM][CM][CT]"},
            "notes": ["built by CAPS (bench/ff/make_sdk.py) from the 2007 and 2010 papers' tables",
                      "LJ12-4 for pairs with W, LJ9-6 for the others; every pair as listed (no mixing); cut-off 15 A",

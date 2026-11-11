@@ -2456,7 +2456,8 @@
   }
  ],
  "notes": [
-  "converted by CAPS (bench/ff/convert_fftool.py) from des.ff"
+  "converted by CAPS (bench/ff/convert_fftool.py) from des.ff",
+  "des.ff gives HC-CT-CT-CO and CT-CT-CT-CO twice, in its carboxylate block (-0.9414; -13.3260 / -3.4518 / 2.0627 kJ/mol) and again, as CO-CT-CT-HC and CO-CT-CT-CT, in its carboxylic-acid block (-0.4184; -8.6190 / -1.3096 / 1.3180); both blocks name the same CO type, so one value serves both and this file keeps the acid block's (the later lines): a carboxylate longer than acetate takes the acid torsions"
  ],
  "version": "des.ff 2025/12/19",
  "typing": "../typing/clandp-des.typing.json"

@@ -325,7 +325,7 @@
    },
    "typing": {
     "rules": "typing/oplsaa-gromacs.typing.json",
-    "evidence": "CAPS's OPLS-AA rules in opls_NNN names plus GROMACS's protein types (bench/typing/make_opls_gromacs_rules.py): aminoacids.rtp 504 / 504 atoms, 46 / 46 residues (PGLU's entry listed as a deviation), methanol.itp exact; every parameter CAPS assigns equals GROMACS's own lookup (bench/ff/check_source_gromacs.py)"
+    "evidence": "CAPS's OPLS-AA rules in opls_NNN names plus GROMACS's protein types (bench/typing/make_opls_gromacs_rules.py): GROMACS 2025.4's aminoacids.rtp 490 / 497 atoms as its residues type them, 43 / 46 residues (bench/ff/validate_rtp_types.py --exclude PGLU,DMSO; the other 7: HISD / HISE ring H, which CAPS gives OPLS-AA's imidazole H 563-565 where the rtp has the generic aromatic H 146, and HOH, SPC in the rtp, TIP3P here with SPC as an overlay). PGLU's entry is a deviation (a four-coordinate amide N); the rtp's 2006 all-atom DMSO residue (united-atom DMSO S / O with charges of its own) is typed with OPLS-AA's sulfoxide types 496-498 instead, neutral with the types' charges, as the GROMACS topologies of Caleman et al. 2012 type DMSO; alkynes take GROMACS's own alkyne numbers (925-931), biphenyl its 145B, methanol.itp exact; every parameter CAPS assigns equals GROMACS's own lookup (bench/ff/check_source_gromacs.py)"
    },
    "list": {
     "label": "OPLS-AA/L (GROMACS)",
@@ -347,11 +347,11 @@
    "status": "validated",
    "file": "oplsaa2024.json",
    "counts": {
-    "atom_types": 1034,
-    "pairs": 1034,
-    "bonds": 467,
-    "angles": 1442,
-    "dihedrals": 1187,
+    "atom_types": 1053,
+    "pairs": 1053,
+    "bonds": 468,
+    "angles": 1446,
+    "dihedrals": 1232,
     "impropers": 4
    },
    "typing": {
@@ -535,9 +535,9 @@
    "counts": {
     "atom_types": 109,
     "pairs": 109,
-    "bonds": 235,
-    "angles": 1069,
-    "dihedrals": 2990,
+    "bonds": 233,
+    "angles": 1065,
+    "dihedrals": 3044,
     "impropers": 0
    },
    "typing": {
@@ -1291,16 +1291,16 @@
    "status": "validated",
    "file": "trappe-eh-umn.json",
    "counts": {
-    "atom_types": 556,
+    "atom_types": 553,
     "pairs": 36,
-    "bonds": 513,
-    "angles": 757,
-    "dihedrals": 935,
+    "bonds": 510,
+    "angles": 752,
+    "dihedrals": 931,
     "impropers": 0
    },
    "typing": {
     "rules": "typing/trappe-eh-umn.typing.json",
-    "evidence": "the 65 TraPPE-EH models (alkanes, amines, amides, nitriles, nitro compounds, aromatics and heteroaromatics), each with its own charges: one CAPS type per symmetry class of a model, typed by a whole-molecule SMARTS (848 / 848 sites as the database types them); every model's bonds, bends and torsions as it lists them (59 / 65 models exact, the rest the database's symmetric-position differences); LAMMPS and GROMACS reproduce CAPS's energies"
+    "evidence": "the 65 TraPPE-EH models (alkanes, amines, amides, nitriles, nitro compounds, aromatics and heteroaromatics), each with its own charges: one CAPS type per symmetry class of a model, typed by a whole-molecule SMARTS (848 / 848 sites as the database types them); every model's bonds, bends and torsions as it lists them (make_trappe_eh.py --check now reports 1 / 65 models with exactly their own list, the others differing by the database's symmetric-position choices; triethylamine, naphthalen-2-ol and naphthalene-2-carbonitrile read with their entries' SMILES where the bond lists made other molecules); LAMMPS and GROMACS reproduce CAPS's energies"
    },
    "list": {
     "label": "TraPPE explicit hydrogen",
@@ -2061,7 +2061,7 @@
     "pairs": 6,
     "bonds": 0,
     "angles": 0,
-    "dihedrals": 7,
+    "dihedrals": 6,
     "impropers": 0
    },
    "group": "organic",

@@ -1305,28 +1305,6 @@
    }
   },
   {
-   "name": "OH-CT-C-OS",
-   "match": [
-    "OH",
-    "CT",
-    "C",
-    "OS"
-   ],
-   "style": "opls",
-   "params": [
-    0.6666,
-    -1.1426,
-    2.1589,
-    -2.1952
-   ],
-   "comment": "CAPS fit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS OH-CT-C-OS 0.46 kcal/mol; ridge 0.001",
-   "fit": {
-    "fragment": "OH-CT-C-OS",
-    "joint": true,
-    "scan": []
-   }
-  },
-  {
    "name": "CA-CT-NT-H",
    "match": [
     "CA",

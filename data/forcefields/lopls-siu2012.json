@@ -188,23 +188,6 @@
    "comment": "Table 2 (Fourier, kJ/mol: 2.697394 -0.896807 0.74567), hexane C5-C8-C11-C14"
   },
   {
-   "name": "??-CM-CM-??",
-   "match": [
-    "??",
-    "CM",
-    "CM",
-    "??"
-   ],
-   "style": "opls",
-   "params": [
-    0.0,
-    12.25026290630975,
-    0.0,
-    0.0
-   ],
-   "comment": "Table 2 (Fourier, kJ/mol: 0.0 51.2551 0.0), cis-3-hexene C5-C8-C10-C12 (X-CM-CM-X)"
-  },
-  {
    "name": "CM-CM-CT-CT",
    "match": [
     "CM",
@@ -294,7 +277,7 @@
  "notes": [
   "built by CAPS (bench/ff/make_lopls.py) from the paper's Table 2 as an overlay on oplsaa2024.json",
   "L-OPLS types for CH3, CH2 and alkene CH of hydrocarbon chains (neutral groups); everything else is OPLS-AA 2024",
-  "the four torsions replace OPLS-AA 2024's for their OPLS torsion types"
+  "the paper's torsions replace OPLS-AA 2024's for the hydrocarbon types: X-CM-CM-X as CT-CM-CM-CT, CT-CM-CM-HC and HC-CM-CM-HC only (as a generic overlay rule it would also replace OPLS-AA 2024's X-CM-CM-Y for other ends)"
  ],
  "version": "2012",
  "status": "validated"

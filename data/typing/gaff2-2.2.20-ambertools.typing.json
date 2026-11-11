@@ -14,6 +14,10 @@
    "cf"
   ],
   [
+   "cg",
+   "ch"
+  ],
+  [
    "cp",
    "cq"
   ],
@@ -87,8 +91,8 @@
   },
   {
    "type": "cp",
-   "smarts": "[#6X3;{AR1};R1](-!@[*;{AR1}])",
-   "description": "aromatic C at a single bond between aromatic rings (biphenyl)"
+   "smarts": "[#6X3;{AR1};{1RG6};$(*(~[{AR1}])(~[{AR1}])~[{AR1}])]",
+   "description": "aromatic C bridging to another aromatic ring (biphenyl, carbazole)"
   },
   {
    "type": "ca",

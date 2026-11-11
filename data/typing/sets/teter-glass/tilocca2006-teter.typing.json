@@ -10,28 +10,56 @@
    "smarts": "[#8]",
    "priority": 50,
    "requires": [],
-   "description": "O (Tilocca's Teter set)"
+   "description": "O (Tilocca's Teter set)",
+   "excludes": [
+    "Al",
+    "Y",
+    "La",
+    "Lu",
+    "Sc"
+   ]
   },
   {
    "type": "Si_tt",
    "smarts": "[#14]",
    "priority": 50,
    "requires": [],
-   "description": "Si (Tilocca's Teter set)"
+   "description": "Si (Tilocca's Teter set)",
+   "excludes": [
+    "Al",
+    "Y",
+    "La",
+    "Lu",
+    "Sc"
+   ]
   },
   {
    "type": "Na_tt",
    "smarts": "[#11]",
    "priority": 50,
    "requires": [],
-   "description": "Na (Tilocca's Teter set)"
+   "description": "Na (Tilocca's Teter set)",
+   "excludes": [
+    "Al",
+    "Y",
+    "La",
+    "Lu",
+    "Sc"
+   ]
   },
   {
    "type": "Ca_tt",
    "smarts": "[#20]",
    "priority": 50,
    "requires": [],
-   "description": "Ca (Tilocca's Teter set)"
+   "description": "Ca (Tilocca's Teter set)",
+   "excludes": [
+    "Al",
+    "Y",
+    "La",
+    "Lu",
+    "Sc"
+   ]
   }
  ]
 }

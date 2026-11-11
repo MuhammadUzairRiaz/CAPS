@@ -884,27 +884,7 @@
    }
   },
   {
-   "name": "C21_198d",
-   "element": "C",
-   "mass": 12.011,
-   "charge": 0.18,
-   "description": "triethylamine: CHx-[C]H2-CH2 (TraPPE-EH type 21); C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)",
-   "equivalence": {
-    "vdw": "C21_eh"
-   }
-  },
-  {
-   "name": "C20_198e",
-   "element": "C",
-   "mass": 12.011,
-   "charge": 0.0,
-   "description": "triethylamine: [C]H3-CHx (TraPPE-EH type 20); C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)",
-   "equivalence": {
-    "vdw": "C20_eh"
-   }
-  },
-  {
-   "name": "H35_198f",
+   "name": "H35_198d",
    "element": "H",
    "mass": 1.008,
    "charge": 0.0,
@@ -914,23 +894,13 @@
    }
   },
   {
-   "name": "H18_198g",
+   "name": "H18_198e",
    "element": "H",
    "mass": 1.008,
    "charge": 0.0,
    "description": "triethylamine: H-[M]-C(methyl) (TraPPE-EH type 18); C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)",
    "equivalence": {
     "vdw": "H18_eh"
-   }
-  },
-  {
-   "name": "H35_198h",
-   "element": "H",
-   "mass": 1.008,
-   "charge": 0.0,
-   "description": "triethylamine: H-[M]-C(methylene) (TraPPE-EH type 35); C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)",
-   "equivalence": {
-    "vdw": "H35_eh"
    }
   },
   {
@@ -6118,10 +6088,10 @@
    "comment": "rigid model: run it as a rigid body (N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013))"
   },
   {
-   "name": "C16_184i-C1_184a",
+   "name": "C16_184i-C1_184b",
    "match": [
     "C16_184i",
-    "C1_184a"
+    "C1_184b"
    ],
    "style": "harmonic",
    "params": [
@@ -6183,10 +6153,10 @@
    "comment": "rigid model: run it as a rigid body (N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013))"
   },
   {
-   "name": "C16_185i-C1_185a",
+   "name": "C16_185i-C1_185b",
    "match": [
     "C16_185i",
-    "C1_185a"
+    "C1_185b"
    ],
    "style": "harmonic",
    "params": [
@@ -9446,6 +9416,19 @@
    "comment": "rigid model: run it as a rigid body (N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013))"
   },
   {
+   "name": "C1_184a-C1_184c",
+   "match": [
+    "C1_184a",
+    "C1_184c"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    1.41
+   ],
+   "comment": "rigid model: run it as a rigid body (N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013))"
+  },
+  {
    "name": "C1_184a-O11_184k",
    "match": [
     "C1_184a",
@@ -9455,19 +9438,6 @@
    "params": [
     0.0,
     1.36
-   ],
-   "comment": "rigid model: run it as a rigid body (N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013))"
-  },
-  {
-   "name": "C1_184b-C1_184c",
-   "match": [
-    "C1_184b",
-    "C1_184c"
-   ],
-   "style": "harmonic",
-   "params": [
-    0.0,
-    1.41
    ],
    "comment": "rigid model: run it as a rigid body (N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013))"
   },
@@ -9628,9 +9598,9 @@
    "comment": "rigid model: run it as a rigid body (N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013))"
   },
   {
-   "name": "C1_185b-C1_185c",
+   "name": "C1_185a-C1_185c",
    "match": [
-    "C1_185b",
+    "C1_185a",
     "C1_185c"
    ],
    "style": "harmonic",
@@ -11578,28 +11548,15 @@
    "comment": "fixed length in TraPPE (B. Chen, J.I. Siepmann, J. Phys. Chem. B 103, 5370 (1999))"
   },
   {
-   "name": "C20_198c-H18_198g",
+   "name": "C20_198c-H18_198e",
    "match": [
     "C20_198c",
-    "H18_198g"
+    "H18_198e"
    ],
    "style": "harmonic",
    "params": [
     600.0,
     0.55
-   ],
-   "comment": "fixed length in TraPPE (B. Chen, J.I. Siepmann, J. Phys. Chem. B 103, 5370 (1999))"
-  },
-  {
-   "name": "C20_198e-C21_198d",
-   "match": [
-    "C20_198e",
-    "C21_198d"
-   ],
-   "style": "harmonic",
-   "params": [
-    600.0,
-    1.535
    ],
    "comment": "fixed length in TraPPE (B. Chen, J.I. Siepmann, J. Phys. Chem. B 103, 5370 (1999))"
   },
@@ -12046,10 +12003,10 @@
    "comment": "fixed length in TraPPE (B. Chen, J.I. Siepmann, J. Phys. Chem. B 103, 5370 (1999))"
   },
   {
-   "name": "C21_198b-H35_198f",
+   "name": "C21_198b-H35_198d",
    "match": [
     "C21_198b",
-    "H35_198f"
+    "H35_198d"
    ],
    "style": "harmonic",
    "params": [
@@ -12062,32 +12019,6 @@
    "name": "C21_198b-N26_198a",
    "match": [
     "C21_198b",
-    "N26_198a"
-   ],
-   "style": "harmonic",
-   "params": [
-    600.0,
-    1.448
-   ],
-   "comment": "fixed length in TraPPE (C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005))"
-  },
-  {
-   "name": "C21_198d-H35_198h",
-   "match": [
-    "C21_198d",
-    "H35_198h"
-   ],
-   "style": "harmonic",
-   "params": [
-    600.0,
-    0.55
-   ],
-   "comment": "fixed length in TraPPE (B. Chen, J.I. Siepmann, J. Phys. Chem. B 103, 5370 (1999))"
-  },
-  {
-   "name": "C21_198d-N26_198a",
-   "match": [
-    "C21_198d",
     "N26_198a"
    ],
    "style": "harmonic",
@@ -12583,20 +12514,6 @@
    "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
   },
   {
-   "name": "C13_185k-C1_185a-C16_185i",
-   "match": [
-    "C13_185k",
-    "C1_185a",
-    "C16_185i"
-   ],
-   "style": "harmonic",
-   "params": [
-    0.0,
-    120.0
-   ],
-   "comment": "not in the TraPPE model (rigid): none"
-  },
-  {
    "name": "C13_185k-C1_185a-C1_185b",
    "match": [
     "C13_185k",
@@ -12609,6 +12526,20 @@
     119.43
    ],
    "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
+  },
+  {
+   "name": "C13_185k-C1_185a-C1_185c",
+   "match": [
+    "C13_185k",
+    "C1_185a",
+    "C1_185c"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    120.0
+   ],
+   "comment": "not in the TraPPE model (rigid): none"
   },
   {
    "name": "C15_163a-C1_163b-C1_163b",
@@ -12947,11 +12878,11 @@
    "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
   },
   {
-   "name": "C16_184i-C1_184a-C1_184b",
+   "name": "C16_184i-C1_184b-C1_184a",
    "match": [
     "C16_184i",
-    "C1_184a",
-    "C1_184b"
+    "C1_184b",
+    "C1_184a"
    ],
    "style": "harmonic",
    "params": [
@@ -12961,11 +12892,11 @@
    "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
   },
   {
-   "name": "C16_184i-C1_184a-O11_184k",
+   "name": "C16_184i-C1_184b-H2_184m",
    "match": [
     "C16_184i",
-    "C1_184a",
-    "O11_184k"
+    "C1_184b",
+    "H2_184m"
    ],
    "style": "harmonic",
    "params": [
@@ -13003,18 +12934,18 @@
    "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
   },
   {
-   "name": "C16_184j-C16_184i-C1_184a",
+   "name": "C16_184j-C16_184i-C1_184b",
    "match": [
     "C16_184j",
     "C16_184i",
-    "C1_184a"
+    "C1_184b"
    ],
    "style": "harmonic",
    "params": [
     0.0,
-    118.32
+    120.0
    ],
-   "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
+   "comment": "not in the TraPPE model (rigid): none"
   },
   {
    "name": "C16_184j-C16_184i-C1_184h",
@@ -13115,11 +13046,11 @@
    "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
   },
   {
-   "name": "C16_185i-C1_185a-C1_185b",
+   "name": "C16_185i-C1_185b-C1_185a",
    "match": [
     "C16_185i",
-    "C1_185a",
-    "C1_185b"
+    "C1_185b",
+    "C1_185a"
    ],
    "style": "harmonic",
    "params": [
@@ -13127,6 +13058,20 @@
     120.89
    ],
    "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
+  },
+  {
+   "name": "C16_185i-C1_185b-H2_185m",
+   "match": [
+    "C16_185i",
+    "C1_185b",
+    "H2_185m"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    120.0
+   ],
+   "comment": "not in the TraPPE model (rigid): none"
   },
   {
    "name": "C16_185i-C1_185h-C1_185g",
@@ -13157,18 +13102,18 @@
    "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
   },
   {
-   "name": "C16_185j-C16_185i-C1_185a",
+   "name": "C16_185j-C16_185i-C1_185b",
    "match": [
     "C16_185j",
     "C16_185i",
-    "C1_185a"
+    "C1_185b"
    ],
    "style": "harmonic",
    "params": [
     0.0,
-    118.14
+    120.0
    ],
-   "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
+   "comment": "not in the TraPPE model (rigid): none"
   },
   {
    "name": "C16_185j-C16_185i-C1_185h",
@@ -15980,7 +15925,7 @@
    "style": "harmonic",
    "params": [
     0.0,
-    188.8
+    118.8
    ],
    "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
   },
@@ -18197,11 +18142,11 @@
    "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
   },
   {
-   "name": "C1_184a-C16_184i-C1_184h",
+   "name": "C1_184a-C1_184b-H2_184m",
    "match": [
     "C1_184a",
-    "C16_184i",
-    "C1_184h"
+    "C1_184b",
+    "H2_184m"
    ],
    "style": "harmonic",
    "params": [
@@ -18211,25 +18156,25 @@
    "comment": "not in the TraPPE model (rigid): none"
   },
   {
-   "name": "C1_184a-C1_184b-C1_184c",
+   "name": "C1_184a-C1_184c-C1_184d",
    "match": [
     "C1_184a",
-    "C1_184b",
-    "C1_184c"
+    "C1_184c",
+    "C1_184d"
    ],
    "style": "harmonic",
    "params": [
     0.0,
-    120.24
+    120.0
    ],
-   "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
+   "comment": "not in the TraPPE model (rigid): none"
   },
   {
-   "name": "C1_184a-C1_184b-H2_184m",
+   "name": "C1_184a-C1_184c-H2_184n",
    "match": [
     "C1_184a",
-    "C1_184b",
-    "H2_184m"
+    "C1_184c",
+    "H2_184n"
    ],
    "style": "harmonic",
    "params": [
@@ -18253,6 +18198,34 @@
    "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
   },
   {
+   "name": "C1_184b-C16_184i-C1_184h",
+   "match": [
+    "C1_184b",
+    "C16_184i",
+    "C1_184h"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    120.0
+   ],
+   "comment": "not in the TraPPE model (rigid): none"
+  },
+  {
+   "name": "C1_184b-C1_184a-C1_184c",
+   "match": [
+    "C1_184b",
+    "C1_184a",
+    "C1_184c"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    120.24
+   ],
+   "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
+  },
+  {
    "name": "C1_184b-C1_184a-O11_184k",
    "match": [
     "C1_184b",
@@ -18267,25 +18240,11 @@
    "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
   },
   {
-   "name": "C1_184b-C1_184c-C1_184d",
+   "name": "C1_184c-C1_184a-O11_184k",
    "match": [
-    "C1_184b",
     "C1_184c",
-    "C1_184d"
-   ],
-   "style": "harmonic",
-   "params": [
-    0.0,
-    120.75
-   ],
-   "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
-  },
-  {
-   "name": "C1_184b-C1_184c-H2_184n",
-   "match": [
-    "C1_184b",
-    "C1_184c",
-    "H2_184n"
+    "C1_184a",
+    "O11_184k"
    ],
    "style": "harmonic",
    "params": [
@@ -18293,20 +18252,6 @@
     120.0
    ],
    "comment": "not in the TraPPE model (rigid): none"
-  },
-  {
-   "name": "C1_184c-C1_184b-H2_184m",
-   "match": [
-    "C1_184c",
-    "C1_184b",
-    "H2_184m"
-   ],
-   "style": "harmonic",
-   "params": [
-    0.0,
-    119.94
-   ],
-   "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
   },
   {
    "name": "C1_184c-C1_184d-H2_184o",
@@ -18477,34 +18422,6 @@
    "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
   },
   {
-   "name": "C1_185a-C16_185i-C1_185h",
-   "match": [
-    "C1_185a",
-    "C16_185i",
-    "C1_185h"
-   ],
-   "style": "harmonic",
-   "params": [
-    0.0,
-    120.0
-   ],
-   "comment": "not in the TraPPE model (rigid): none"
-  },
-  {
-   "name": "C1_185a-C1_185b-C1_185c",
-   "match": [
-    "C1_185a",
-    "C1_185b",
-    "C1_185c"
-   ],
-   "style": "harmonic",
-   "params": [
-    0.0,
-    120.32
-   ],
-   "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
-  },
-  {
    "name": "C1_185a-C1_185b-H2_185m",
    "match": [
     "C1_185a",
@@ -18519,23 +18436,23 @@
    "comment": "not in the TraPPE model (rigid): none"
   },
   {
-   "name": "C1_185b-C1_185c-C1_185d",
+   "name": "C1_185a-C1_185c-C1_185d",
    "match": [
-    "C1_185b",
+    "C1_185a",
     "C1_185c",
     "C1_185d"
    ],
    "style": "harmonic",
    "params": [
     0.0,
-    120.17
+    120.0
    ],
-   "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
+   "comment": "not in the TraPPE model (rigid): none"
   },
   {
-   "name": "C1_185b-C1_185c-H2_185n",
+   "name": "C1_185a-C1_185c-H2_185n",
    "match": [
-    "C1_185b",
+    "C1_185a",
     "C1_185c",
     "H2_185n"
    ],
@@ -18547,16 +18464,30 @@
    "comment": "not in the TraPPE model (rigid): none"
   },
   {
-   "name": "C1_185c-C1_185b-H2_185m",
+   "name": "C1_185b-C16_185i-C1_185h",
    "match": [
-    "C1_185c",
     "C1_185b",
-    "H2_185m"
+    "C16_185i",
+    "C1_185h"
    ],
    "style": "harmonic",
    "params": [
     0.0,
-    120.23
+    120.0
+   ],
+   "comment": "not in the TraPPE model (rigid): none"
+  },
+  {
+   "name": "C1_185b-C1_185a-C1_185c",
+   "match": [
+    "C1_185b",
+    "C1_185a",
+    "C1_185c"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    120.32
    ],
    "comment": "rigid model: run it as a rigid body; N. Rai, J.I. Siepmann, J. Phys. Chem. B 117, 273 (2013)"
   },
@@ -20689,11 +20620,11 @@
    "comment": "rigid in TraPPE (stiff here); C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)"
   },
   {
-   "name": "C20_198c-C21_198b-H35_198f",
+   "name": "C20_198c-C21_198b-H35_198d",
    "match": [
     "C20_198c",
     "C21_198b",
-    "H35_198f"
+    "H35_198d"
    ],
    "style": "harmonic",
    "params": [
@@ -20707,34 +20638,6 @@
    "match": [
     "C20_198c",
     "C21_198b",
-    "N26_198a"
-   ],
-   "style": "harmonic",
-   "params": [
-    56.23788169,
-    109.5
-   ],
-   "comment": "k_theta 56600 K/rad^2; C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)"
-  },
-  {
-   "name": "C20_198e-C21_198d-H35_198h",
-   "match": [
-    "C20_198e",
-    "C21_198d",
-    "H35_198h"
-   ],
-   "style": "harmonic",
-   "params": [
-    37.5243787969,
-    110.7
-   ],
-   "comment": "k_theta 37766 K/rad^2; B. Chen, J.I. Siepmann, J. Phys. Chem. B 103, 5370 (1999)"
-  },
-  {
-   "name": "C20_198e-C21_198d-N26_198a",
-   "match": [
-    "C20_198e",
-    "C21_198d",
     "N26_198a"
    ],
    "style": "harmonic",
@@ -21375,11 +21278,11 @@
    "comment": "k_theta 37766 K/rad^2; B. Chen, J.I. Siepmann, J. Phys. Chem. B 103, 5370 (1999)"
   },
   {
-   "name": "C21_198b-C20_198c-H18_198g",
+   "name": "C21_198b-C20_198c-H18_198e",
    "match": [
     "C21_198b",
     "C20_198c",
-    "H18_198g"
+    "H18_198e"
    ],
    "style": "harmonic",
    "params": [
@@ -21394,20 +21297,6 @@
     "C21_198b",
     "N26_198a",
     "C21_198b"
-   ],
-   "style": "harmonic",
-   "params": [
-    50.0338298654,
-    109.5
-   ],
-   "comment": "k_theta 50356 K/rad^2; C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)"
-  },
-  {
-   "name": "C21_198b-N26_198a-C21_198d",
-   "match": [
-    "C21_198b",
-    "N26_198a",
-    "C21_198d"
    ],
    "style": "harmonic",
    "params": [
@@ -21851,11 +21740,11 @@
    "comment": "k_theta 33234 K/rad^2; B. Chen, J.I. Siepmann, J. Phys. Chem. B 103, 5370 (1999)"
   },
   {
-   "name": "H18_198g-C20_198c-H18_198g",
+   "name": "H18_198e-C20_198c-H18_198e",
    "match": [
-    "H18_198g",
+    "H18_198e",
     "C20_198c",
-    "H18_198g"
+    "H18_198e"
    ],
    "style": "harmonic",
    "params": [
@@ -22845,11 +22734,11 @@
    "comment": "k_theta 33234 K/rad^2; B. Chen, J.I. Siepmann, J. Phys. Chem. B 103, 5370 (1999)"
   },
   {
-   "name": "H35_198f-C21_198b-H35_198f",
+   "name": "H35_198d-C21_198b-H35_198d",
    "match": [
-    "H35_198f",
+    "H35_198d",
     "C21_198b",
-    "H35_198f"
+    "H35_198d"
    ],
    "style": "harmonic",
    "params": [
@@ -22859,38 +22748,10 @@
    "comment": "k_theta 33234 K/rad^2; B. Chen, J.I. Siepmann, J. Phys. Chem. B 103, 5370 (1999)"
   },
   {
-   "name": "H35_198f-C21_198b-N26_198a",
+   "name": "H35_198d-C21_198b-N26_198a",
    "match": [
-    "H35_198f",
+    "H35_198d",
     "C21_198b",
-    "N26_198a"
-   ],
-   "style": "harmonic",
-   "params": [
-    35.0224885832,
-    109.5
-   ],
-   "comment": "k_theta 35248 K/rad^2; C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)"
-  },
-  {
-   "name": "H35_198h-C21_198d-H35_198h",
-   "match": [
-    "H35_198h",
-    "C21_198d",
-    "H35_198h"
-   ],
-   "style": "harmonic",
-   "params": [
-    33.0213738531,
-    107.8
-   ],
-   "comment": "k_theta 33234 K/rad^2; B. Chen, J.I. Siepmann, J. Phys. Chem. B 103, 5370 (1999)"
-  },
-  {
-   "name": "H35_198h-C21_198d-N26_198a",
-   "match": [
-    "H35_198h",
-    "C21_198d",
     "N26_198a"
    ],
    "style": "harmonic",
@@ -23223,46 +23084,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C13_185k-C1_185a-C16_185i-C16_185j",
-   "match": [
-    "C13_185k",
-    "C1_185a",
-    "C16_185i",
-    "C16_185j"
-   ],
-   "style": "fourier",
-   "params": [
-    1,
-    0.0,
-    1,
-    0.0
-   ],
-   "comment": "no torsion in the TraPPE model"
-  },
-  {
-   "name": "C13_185k-C1_185a-C16_185i-C1_185h",
-   "match": [
-    "C13_185k",
-    "C1_185a",
-    "C16_185i",
-    "C1_185h"
-   ],
-   "style": "fourier",
-   "params": [
-    1,
-    0.0,
-    1,
-    0.0
-   ],
-   "comment": "no torsion in the TraPPE model"
-  },
-  {
-   "name": "C13_185k-C1_185a-C1_185b-C1_185c",
+   "name": "C13_185k-C1_185a-C1_185b-C16_185i",
    "match": [
     "C13_185k",
     "C1_185a",
     "C1_185b",
-    "C1_185c"
+    "C16_185i"
    ],
    "style": "fourier",
    "params": [
@@ -23280,6 +23107,40 @@
     "C1_185a",
     "C1_185b",
     "H2_185m"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.0,
+    1,
+    0.0
+   ],
+   "comment": "no torsion in the TraPPE model"
+  },
+  {
+   "name": "C13_185k-C1_185a-C1_185c-C1_185d",
+   "match": [
+    "C13_185k",
+    "C1_185a",
+    "C1_185c",
+    "C1_185d"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.0,
+    1,
+    0.0
+   ],
+   "comment": "no torsion in the TraPPE model"
+  },
+  {
+   "name": "C13_185k-C1_185a-C1_185c-H2_185n",
+   "match": [
+    "C13_185k",
+    "C1_185a",
+    "C1_185c",
+    "H2_185n"
    ],
    "style": "fourier",
    "params": [
@@ -23886,11 +23747,11 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C16_184i-C1_184a-C1_184b-C1_184c",
+   "name": "C16_184i-C1_184b-C1_184a-C1_184c",
    "match": [
     "C16_184i",
-    "C1_184a",
     "C1_184b",
+    "C1_184a",
     "C1_184c"
    ],
    "style": "fourier",
@@ -23903,29 +23764,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C16_184i-C1_184a-C1_184b-H2_184m",
+   "name": "C16_184i-C1_184b-C1_184a-O11_184k",
    "match": [
     "C16_184i",
-    "C1_184a",
     "C1_184b",
-    "H2_184m"
-   ],
-   "style": "fourier",
-   "params": [
-    1,
-    0.0,
-    1,
-    0.0
-   ],
-   "comment": "no torsion in the TraPPE model"
-  },
-  {
-   "name": "C16_184i-C1_184a-O11_184k-H17_184l",
-   "match": [
-    "C16_184i",
     "C1_184a",
-    "O11_184k",
-    "H17_184l"
+    "O11_184k"
    ],
    "style": "fourier",
    "params": [
@@ -23971,12 +23815,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C16_184j-C16_184i-C1_184a-C1_184b",
+   "name": "C16_184j-C16_184i-C1_184b-C1_184a",
    "match": [
     "C16_184j",
     "C16_184i",
-    "C1_184a",
-    "C1_184b"
+    "C1_184b",
+    "C1_184a"
    ],
    "style": "fourier",
    "params": [
@@ -23988,12 +23832,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C16_184j-C16_184i-C1_184a-O11_184k",
+   "name": "C16_184j-C16_184i-C1_184b-H2_184m",
    "match": [
     "C16_184j",
     "C16_184i",
-    "C1_184a",
-    "O11_184k"
+    "C1_184b",
+    "H2_184m"
    ],
    "style": "fourier",
    "params": [
@@ -24039,12 +23883,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C16_184j-C1_184d-C1_184c-C1_184b",
+   "name": "C16_184j-C1_184d-C1_184c-C1_184a",
    "match": [
     "C16_184j",
     "C1_184d",
     "C1_184c",
-    "C1_184b"
+    "C1_184a"
    ],
    "style": "fourier",
    "params": [
@@ -24175,46 +24019,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C16_185i-C1_185a-C13_185k-N12_185l",
+   "name": "C16_185i-C1_185b-C1_185a-C1_185c",
    "match": [
     "C16_185i",
-    "C1_185a",
-    "C13_185k",
-    "N12_185l"
-   ],
-   "style": "fourier",
-   "params": [
-    1,
-    0.0,
-    1,
-    0.0
-   ],
-   "comment": "no torsion in the TraPPE model"
-  },
-  {
-   "name": "C16_185i-C1_185a-C1_185b-C1_185c",
-   "match": [
-    "C16_185i",
-    "C1_185a",
     "C1_185b",
+    "C1_185a",
     "C1_185c"
-   ],
-   "style": "fourier",
-   "params": [
-    1,
-    0.0,
-    1,
-    0.0
-   ],
-   "comment": "no torsion in the TraPPE model"
-  },
-  {
-   "name": "C16_185i-C1_185a-C1_185b-H2_185m",
-   "match": [
-    "C16_185i",
-    "C1_185a",
-    "C1_185b",
-    "H2_185m"
    ],
    "style": "fourier",
    "params": [
@@ -24260,12 +24070,29 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C16_185j-C16_185i-C1_185a-C1_185b",
+   "name": "C16_185j-C16_185i-C1_185b-C1_185a",
    "match": [
     "C16_185j",
     "C16_185i",
-    "C1_185a",
-    "C1_185b"
+    "C1_185b",
+    "C1_185a"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.0,
+    1,
+    0.0
+   ],
+   "comment": "no torsion in the TraPPE model"
+  },
+  {
+   "name": "C16_185j-C16_185i-C1_185b-H2_185m",
+   "match": [
+    "C16_185j",
+    "C16_185i",
+    "C1_185b",
+    "H2_185m"
    ],
    "style": "fourier",
    "params": [
@@ -24311,12 +24138,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C16_185j-C1_185d-C1_185c-C1_185b",
+   "name": "C16_185j-C1_185d-C1_185c-C1_185a",
    "match": [
     "C16_185j",
     "C1_185d",
     "C1_185c",
-    "C1_185b"
+    "C1_185a"
    ],
    "style": "fourier",
    "params": [
@@ -31044,9 +30871,43 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_184a-C16_184i-C16_184j-C1_184d",
+   "name": "C1_184a-C1_184b-C16_184i-C1_184h",
    "match": [
     "C1_184a",
+    "C1_184b",
+    "C16_184i",
+    "C1_184h"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.0,
+    1,
+    0.0
+   ],
+   "comment": "no torsion in the TraPPE model"
+  },
+  {
+   "name": "C1_184a-C1_184c-C1_184d-H2_184o",
+   "match": [
+    "C1_184a",
+    "C1_184c",
+    "C1_184d",
+    "H2_184o"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.0,
+    1,
+    0.0
+   ],
+   "comment": "no torsion in the TraPPE model"
+  },
+  {
+   "name": "C1_184b-C16_184i-C16_184j-C1_184d",
+   "match": [
+    "C1_184b",
     "C16_184i",
     "C16_184j",
     "C1_184d"
@@ -31061,9 +30922,9 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_184a-C16_184i-C16_184j-C1_184e",
+   "name": "C1_184b-C16_184i-C16_184j-C1_184e",
    "match": [
-    "C1_184a",
+    "C1_184b",
     "C16_184i",
     "C16_184j",
     "C1_184e"
@@ -31078,9 +30939,9 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_184a-C16_184i-C1_184h-C1_184g",
+   "name": "C1_184b-C16_184i-C1_184h-C1_184g",
    "match": [
-    "C1_184a",
+    "C1_184b",
     "C16_184i",
     "C1_184h",
     "C1_184g"
@@ -31095,9 +30956,9 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_184a-C16_184i-C1_184h-H2_184s",
+   "name": "C1_184b-C16_184i-C1_184h-H2_184s",
    "match": [
-    "C1_184a",
+    "C1_184b",
     "C16_184i",
     "C1_184h",
     "H2_184s"
@@ -31112,10 +30973,10 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_184a-C1_184b-C1_184c-C1_184d",
+   "name": "C1_184b-C1_184a-C1_184c-C1_184d",
    "match": [
-    "C1_184a",
     "C1_184b",
+    "C1_184a",
     "C1_184c",
     "C1_184d"
    ],
@@ -31129,29 +30990,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_184a-C1_184b-C1_184c-H2_184n",
+   "name": "C1_184b-C1_184a-C1_184c-H2_184n",
    "match": [
-    "C1_184a",
     "C1_184b",
+    "C1_184a",
     "C1_184c",
     "H2_184n"
-   ],
-   "style": "fourier",
-   "params": [
-    1,
-    0.0,
-    1,
-    0.0
-   ],
-   "comment": "no torsion in the TraPPE model"
-  },
-  {
-   "name": "C1_184b-C1_184a-C16_184i-C1_184h",
-   "match": [
-    "C1_184b",
-    "C1_184a",
-    "C16_184i",
-    "C1_184h"
    ],
    "style": "fourier",
    "params": [
@@ -31180,12 +31024,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_184b-C1_184c-C1_184d-H2_184o",
+   "name": "C1_184c-C1_184a-C1_184b-H2_184m",
    "match": [
-    "C1_184b",
     "C1_184c",
-    "C1_184d",
-    "H2_184o"
+    "C1_184a",
+    "C1_184b",
+    "H2_184m"
    ],
    "style": "fourier",
    "params": [
@@ -31197,12 +31041,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_184c-C1_184b-C1_184a-O11_184k",
+   "name": "C1_184c-C1_184a-O11_184k-H17_184l",
    "match": [
     "C1_184c",
-    "C1_184b",
     "C1_184a",
-    "O11_184k"
+    "O11_184k",
+    "H17_184l"
    ],
    "style": "fourier",
    "params": [
@@ -31282,12 +31126,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_184d-C1_184c-C1_184b-H2_184m",
+   "name": "C1_184d-C1_184c-C1_184a-O11_184k",
    "match": [
     "C1_184d",
     "C1_184c",
-    "C1_184b",
-    "H2_184m"
+    "C1_184a",
+    "O11_184k"
    ],
    "style": "fourier",
    "params": [
@@ -31401,12 +31245,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_184h-C16_184i-C1_184a-O11_184k",
+   "name": "C1_184h-C16_184i-C1_184b-H2_184m",
    "match": [
     "C1_184h",
     "C16_184i",
-    "C1_184a",
-    "O11_184k"
+    "C1_184b",
+    "H2_184m"
    ],
    "style": "fourier",
    "params": [
@@ -31435,9 +31279,43 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_185a-C16_185i-C16_185j-C1_185d",
+   "name": "C1_185a-C1_185b-C16_185i-C1_185h",
    "match": [
     "C1_185a",
+    "C1_185b",
+    "C16_185i",
+    "C1_185h"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.0,
+    1,
+    0.0
+   ],
+   "comment": "no torsion in the TraPPE model"
+  },
+  {
+   "name": "C1_185a-C1_185c-C1_185d-H2_185o",
+   "match": [
+    "C1_185a",
+    "C1_185c",
+    "C1_185d",
+    "H2_185o"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.0,
+    1,
+    0.0
+   ],
+   "comment": "no torsion in the TraPPE model"
+  },
+  {
+   "name": "C1_185b-C16_185i-C16_185j-C1_185d",
+   "match": [
+    "C1_185b",
     "C16_185i",
     "C16_185j",
     "C1_185d"
@@ -31452,9 +31330,9 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_185a-C16_185i-C16_185j-C1_185e",
+   "name": "C1_185b-C16_185i-C16_185j-C1_185e",
    "match": [
-    "C1_185a",
+    "C1_185b",
     "C16_185i",
     "C16_185j",
     "C1_185e"
@@ -31469,9 +31347,9 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_185a-C16_185i-C1_185h-C1_185g",
+   "name": "C1_185b-C16_185i-C1_185h-C1_185g",
    "match": [
-    "C1_185a",
+    "C1_185b",
     "C16_185i",
     "C1_185h",
     "C1_185g"
@@ -31486,46 +31364,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_185a-C16_185i-C1_185h-H2_185s",
+   "name": "C1_185b-C16_185i-C1_185h-H2_185s",
    "match": [
-    "C1_185a",
+    "C1_185b",
     "C16_185i",
     "C1_185h",
     "H2_185s"
-   ],
-   "style": "fourier",
-   "params": [
-    1,
-    0.0,
-    1,
-    0.0
-   ],
-   "comment": "no torsion in the TraPPE model"
-  },
-  {
-   "name": "C1_185a-C1_185b-C1_185c-C1_185d",
-   "match": [
-    "C1_185a",
-    "C1_185b",
-    "C1_185c",
-    "C1_185d"
-   ],
-   "style": "fourier",
-   "params": [
-    1,
-    0.0,
-    1,
-    0.0
-   ],
-   "comment": "no torsion in the TraPPE model"
-  },
-  {
-   "name": "C1_185a-C1_185b-C1_185c-H2_185n",
-   "match": [
-    "C1_185a",
-    "C1_185b",
-    "C1_185c",
-    "H2_185n"
    ],
    "style": "fourier",
    "params": [
@@ -31554,12 +31398,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_185b-C1_185a-C16_185i-C1_185h",
+   "name": "C1_185b-C1_185a-C1_185c-C1_185d",
    "match": [
     "C1_185b",
     "C1_185a",
-    "C16_185i",
-    "C1_185h"
+    "C1_185c",
+    "C1_185d"
    ],
    "style": "fourier",
    "params": [
@@ -31571,12 +31415,46 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "C1_185b-C1_185c-C1_185d-H2_185o",
+   "name": "C1_185b-C1_185a-C1_185c-H2_185n",
    "match": [
     "C1_185b",
+    "C1_185a",
     "C1_185c",
-    "C1_185d",
-    "H2_185o"
+    "H2_185n"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.0,
+    1,
+    0.0
+   ],
+   "comment": "no torsion in the TraPPE model"
+  },
+  {
+   "name": "C1_185c-C1_185a-C13_185k-N12_185l",
+   "match": [
+    "C1_185c",
+    "C1_185a",
+    "C13_185k",
+    "N12_185l"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.0,
+    1,
+    0.0
+   ],
+   "comment": "no torsion in the TraPPE model"
+  },
+  {
+   "name": "C1_185c-C1_185a-C1_185b-H2_185m",
+   "match": [
+    "C1_185c",
+    "C1_185a",
+    "C1_185b",
+    "H2_185m"
    ],
    "style": "fourier",
    "params": [
@@ -31645,23 +31523,6 @@
     "C16_185j",
     "C1_185e",
     "H2_185p"
-   ],
-   "style": "fourier",
-   "params": [
-    1,
-    0.0,
-    1,
-    0.0
-   ],
-   "comment": "no torsion in the TraPPE model"
-  },
-  {
-   "name": "C1_185d-C1_185c-C1_185b-H2_185m",
-   "match": [
-    "C1_185d",
-    "C1_185c",
-    "C1_185b",
-    "H2_185m"
    ],
    "style": "fourier",
    "params": [
@@ -31764,6 +31625,23 @@
     "C1_185f",
     "C1_185e",
     "H2_185p"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.0,
+    1,
+    0.0
+   ],
+   "comment": "no torsion in the TraPPE model"
+  },
+  {
+   "name": "C1_185h-C16_185i-C1_185b-H2_185m",
+   "match": [
+    "C1_185h",
+    "C16_185i",
+    "C1_185b",
+    "H2_185m"
    ],
    "style": "fourier",
    "params": [
@@ -34836,76 +34714,6 @@
    "comment": "TraPPE C6 form; C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)"
   },
   {
-   "name": "C20_198c-C21_198b-N26_198a-C21_198d",
-   "match": [
-    "C20_198c",
-    "C21_198b",
-    "N26_198a",
-    "C21_198d"
-   ],
-   "style": "fourier",
-   "params": [
-    7,
-    -4.3480030084,
-    1,
-    0.0,
-    2.7443291383,
-    2,
-    0.0,
-    -1.768611827,
-    3,
-    0.0,
-    0.6537902147,
-    4,
-    0.0,
-    -0.2722469891,
-    5,
-    0.0,
-    0.1045269462,
-    6,
-    0.0,
-    5.7994570291,
-    0,
-    90.0
-   ],
-   "comment": "TraPPE C6 form; C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)"
-  },
-  {
-   "name": "C20_198e-C21_198d-N26_198a-C21_198b",
-   "match": [
-    "C20_198e",
-    "C21_198d",
-    "N26_198a",
-    "C21_198b"
-   ],
-   "style": "fourier",
-   "params": [
-    7,
-    -4.3480030084,
-    1,
-    0.0,
-    2.7443291383,
-    2,
-    0.0,
-    -1.768611827,
-    3,
-    0.0,
-    0.6537902147,
-    4,
-    0.0,
-    -0.2722469891,
-    5,
-    0.0,
-    0.1045269462,
-    6,
-    0.0,
-    5.7994570291,
-    0,
-    90.0
-   ],
-   "comment": "TraPPE C6 form; C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)"
-  },
-  {
    "name": "C21_167b-C21_167c-C21_167b-H35_167e",
    "match": [
     "C21_167b",
@@ -35487,76 +35295,12 @@
    "comment": "TraPPE C6 form; C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)"
   },
   {
-   "name": "C21_198b-N26_198a-C21_198b-H35_198f",
+   "name": "C21_198b-N26_198a-C21_198b-H35_198d",
    "match": [
     "C21_198b",
     "N26_198a",
     "C21_198b",
-    "H35_198f"
-   ],
-   "style": "fourier",
-   "params": [
-    6,
-    -0.0735265591,
-    1,
-    0.0,
-    0.0093199882,
-    2,
-    0.0,
-    -0.2821830106,
-    3,
-    0.0,
-    0.0001987204,
-    4,
-    0.0,
-    -1.9872e-05,
-    5,
-    0.0,
-    0.6919842813,
-    0,
-    90.0
-   ],
-   "comment": "TraPPE C6 form; C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)"
-  },
-  {
-   "name": "C21_198b-N26_198a-C21_198d-H35_198h",
-   "match": [
-    "C21_198b",
-    "N26_198a",
-    "C21_198d",
-    "H35_198h"
-   ],
-   "style": "fourier",
-   "params": [
-    6,
-    -0.0735265591,
-    1,
-    0.0,
-    0.0093199882,
-    2,
-    0.0,
-    -0.2821830106,
-    3,
-    0.0,
-    0.0001987204,
-    4,
-    0.0,
-    -1.9872e-05,
-    5,
-    0.0,
-    0.6919842813,
-    0,
-    90.0
-   ],
-   "comment": "TraPPE C6 form; C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)"
-  },
-  {
-   "name": "C21_198d-N26_198a-C21_198b-H35_198f",
-   "match": [
-    "C21_198d",
-    "N26_198a",
-    "C21_198b",
-    "H35_198f"
+    "H35_198d"
    ],
    "style": "fourier",
    "params": [
@@ -36333,12 +36077,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "H18_198g-C20_198c-C21_198b-H35_198f",
+   "name": "H18_198e-C20_198c-C21_198b-H35_198d",
    "match": [
-    "H18_198g",
+    "H18_198e",
     "C20_198c",
     "C21_198b",
-    "H35_198f"
+    "H35_198d"
    ],
    "style": "fourier",
    "params": [
@@ -36350,9 +36094,9 @@
    "comment": "TraPPE EH form; B. Chen, J.I. Siepmann, J. Phys. Chem. B 103, 5370 (1999)"
   },
   {
-   "name": "H18_198g-C20_198c-C21_198b-N26_198a",
+   "name": "H18_198e-C20_198c-C21_198b-N26_198a",
    "match": [
-    "H18_198g",
+    "H18_198e",
     "C20_198c",
     "C21_198b",
     "N26_198a"
@@ -37962,12 +37706,12 @@
    "comment": "no torsion in the TraPPE model"
   },
   {
-   "name": "H2_184m-C1_184b-C1_184c-H2_184n",
+   "name": "H2_184n-C1_184c-C1_184a-O11_184k",
    "match": [
-    "H2_184m",
-    "C1_184b",
+    "H2_184n",
     "C1_184c",
-    "H2_184n"
+    "C1_184a",
+    "O11_184k"
    ],
    "style": "fourier",
    "params": [
@@ -38036,23 +37780,6 @@
     "C1_184g",
     "C1_184h",
     "H2_184s"
-   ],
-   "style": "fourier",
-   "params": [
-    1,
-    0.0,
-    1,
-    0.0
-   ],
-   "comment": "no torsion in the TraPPE model"
-  },
-  {
-   "name": "H2_185m-C1_185b-C1_185c-H2_185n",
-   "match": [
-    "H2_185m",
-    "C1_185b",
-    "C1_185c",
-    "H2_185n"
    ],
    "style": "fourier",
    "params": [
@@ -39734,28 +39461,27 @@
   "corrected: ethane: bend 2-1-7 read as 1-2-7",
   "corrected: ethane: bend 2-1-8 read as 1-2-8",
   "corrected: propane: torsion 3-1-2-4 read as 3-2-1-4",
-  "corrected: triethylamine: bend 6-7-20 read as 7-6-20",
-  "corrected: triethylamine: bend 6-7-21 read as 7-6-21",
-  "corrected: triethylamine: bend 6-7-22 read as 7-6-22",
+  "corrected: triethylamine: bonds 6-20, 6-21, 6-22 read as 7-20, 7-21, 7-22 (the entry's SMILES; its bond list made another molecule)",
   "corrected: imidazole: bend 9-4-5 read as 4-5-9",
   "corrected: 2-chlorothiophene: its site 1 (the ring S) carries the furan O's type 6 in the database; read as the thiophene S, type 7",
+  "corrected: fluorobenzene: bend F-C1-C2 188.80 deg read as 118.80 (planar ring: (360 - 122.40) / 2)",
+  "corrected: naphthalen-2-ol: bonds 2-3, 9-1 read as 1-3, 9-2 (the entry's SMILES; its bond list made another molecule)",
+  "corrected: naphthalen-2-ol: bend 1-2-3 read as 2-1-3",
+  "corrected: naphthalen-2-ol: bend 9-1-2 read as 1-2-9",
+  "corrected: naphthalene-2-carbonitrile: bonds 2-3, 9-1 read as 1-3, 9-2 (the entry's SMILES; its bond list made another molecule)",
+  "corrected: naphthalene-2-carbonitrile: bend 1-2-3 read as 2-1-3",
+  "corrected: naphthalene-2-carbonitrile: bend 9-1-2 read as 1-2-9",
   "left out: n-octane: torsion 3-4-5-24 (no bonded path through these atoms)",
   "left out: n-dodecane: torsion 3-4-5-36 (no bonded path through these atoms)",
-  "left out: triethylamine: bend 20-7-21 (no bonded path through these atoms)",
-  "left out: triethylamine: bend 21-7-22 (no bonded path through these atoms)",
-  "left out: triethylamine: bend 20-7-22 (no bonded path through these atoms)",
-  "left out: triethylamine: torsion 1-6-7-20 (no bonded path through these atoms)",
-  "left out: triethylamine: torsion 1-6-7-21 (no bonded path through these atoms)",
-  "left out: triethylamine: torsion 1-6-7-22 (no bonded path through these atoms)",
-  "left out: triethylamine: torsion 18-6-7-20 (no bonded path through these atoms)",
-  "left out: triethylamine: torsion 18-6-7-21 (no bonded path through these atoms)",
-  "left out: triethylamine: torsion 18-6-7-22 (no bonded path through these atoms)",
-  "left out: triethylamine: torsion 19-6-7-20 (no bonded path through these atoms)",
-  "left out: triethylamine: torsion 19-6-7-21 (no bonded path through these atoms)",
-  "left out: triethylamine: torsion 19-6-7-22 (no bonded path through these atoms)",
   "left out: pyrazine: bend 7-6-1 (no bonded path through these atoms)",
   "left out: phenol: torsion 4-5-6-7 (no bonded path through these atoms)",
+  "left out: naphthalen-2-ol: bend 2-3-4 (no bonded path through these atoms)",
+  "left out: naphthalen-2-ol: bend 10-9-1 (no bonded path through these atoms)",
+  "left out: naphthalen-2-ol: bend 13-2-3 (no bonded path through these atoms)",
   "left out: naphthalene: bend 13-2-4 (no bonded path through these atoms)",
+  "left out: naphthalene-2-carbonitrile: bend 2-3-4 (no bonded path through these atoms)",
+  "left out: naphthalene-2-carbonitrile: bend 10-9-1 (no bonded path through these atoms)",
+  "left out: naphthalene-2-carbonitrile: bend 13-2-3 (no bonded path through these atoms)",
   "symmetry-equivalent sites with different charges in the database take their mean: 1,3,5-trichlorobenzene sites 2,4,6 (-0.083, -0.086, -0.086 -> -0.0850); 1,3,5-trichlorobenzene sites 10,11,12 (+0.117, +0.120, +0.120 -> +0.1190); 1,4-dihydroxybenzene sites 2,3,5,6 (-0.109, -0.096, -0.109, -0.096 -> -0.1025); 1,4-dihydroxybenzene sites 11,12,13,14 (+0.094, +0.096, +0.094, +0.096 -> +0.0950); phenol sites 3,5 (-0.065, -0.072 -> -0.0685); phenol sites 9,13 (+0.091, +0.092 -> +0.0915); phenol sites 10,12 (+0.097, +0.096 -> +0.0965); isoindole sites 10,12 (+0.100, +0.086 -> +0.0930); isoindole sites 13,16 (+0.089, +0.100 -> +0.0945); isoindole sites 14,15 (+0.089, +0.086 -> +0.0875)"
  ],
  "typing": "../typing/trappe-eh-umn.typing.json"

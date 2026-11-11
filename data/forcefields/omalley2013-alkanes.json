@@ -190,11 +190,11 @@
    "style": "buck",
    "params": [
     29607.590822179733,
-    0.149,
-    642.9278202676865,
+    0.32052,
+    245.862810707457,
     10.0
    ],
-   "comment": "A 123878 kJ/mol, rho 0.149 A, C 2690.01 kJ/mol A^6 (Table 3); within 10 A"
+   "comment": "A 123878 kJ/mol, rho 0.32052 A, C 1028.69 kJ/mol A^6: the Sanders-Leslie-Catlow values the paper's framework takes (rho and C were crossed between Si-O and O-O before); within 10 A"
   },
   {
    "name": "O_om-O_om",
@@ -205,11 +205,11 @@
    "style": "buck",
    "params": [
     524949.808795411,
-    0.32052,
-    245.82456978967494,
+    0.149,
+    642.9278202676865,
     10.0
    ],
-   "comment": "A 2.19639e+06 kJ/mol, rho 0.32052 A, C 1028.53 kJ/mol A^6 (Table 3); within 10 A"
+   "comment": "A 2.19639e+06 kJ/mol, rho 0.149 A, C 2690.01 kJ/mol A^6: the Sanders-Leslie-Catlow values the paper's framework takes (rho and C were crossed between Si-O and O-O before); within 10 A"
   },
   {
    "name": "C_om-Si_om",

@@ -341,6 +341,11 @@
    "smarts": "[CX4H2]([OX2])[OX2]",
    "priority": 3,
    "description": "acetal CH2 (between two ether O)"
+  },
+  {
+   "type": "hp",
+   "smarts": "[H][#15]",
+   "description": "H on P (cvff.frc hp, its terms h's by equivalence)"
   }
  ]
 }

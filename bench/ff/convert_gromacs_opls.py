@@ -26,9 +26,12 @@ D, OUT = sys.argv[1], sys.argv[2]
 arg = lambda k, d=None: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 KJ = 4.184
 esc = lambda t: t.replace("*", "\\*").replace("?", "\\?")   # a literal * in a class name (C*, N*): CAPS's patterns are globs
-ELEMENT = {1: "H", 3: "Li", 6: "C", 7: "N", 8: "O", 9: "F", 11: "Na", 12: "Mg", 14: "Si", 15: "P", 16: "S", 17: "Cl",
-           19: "K", 20: "Ca", 26: "Fe", 29: "Cu", 30: "Zn", 35: "Br", 36: "Kr", 37: "Rb", 53: "I", 54: "Xe", 55: "Cs",
-           2: "He", 10: "Ne", 18: "Ar", 38: "Sr", 56: "Ba", 0: "X"}
+ELEMENT = dict(enumerate(("X H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr "
+                            "Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb "
+                            "Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am").split()))   # 0: a massless site
+# ffnonbonded.itp gives opls_436 (U in UO2+) atomic number 0 and mass 0, like its massless sites: the element and its
+# IUPAC standard atomic weight instead, so a typed U atom has its mass
+FIX_ELEMENT = {"opls_436": ("U", 238.029)}
 
 
 def sections(path):
@@ -60,7 +63,10 @@ for sec, w, c in sections(os.path.join(D, "ffnonbonded.itp")):
     if sec != "atomtypes" or len(w) < 8:
         continue
     name, bt, z, mass, q, sig, eps = w[0], w[1], int(w[2]), float(w[3]), float(w[4]), float(w[6]), float(w[7])
-    types[name] = {"name": name, "element": ELEMENT.get(z, "X"), "mass": mass, "charge": q,
+    el = ELEMENT.get(z, "X")
+    if name in FIX_ELEMENT:
+        el, mass = FIX_ELEMENT[name]
+    types[name] = {"name": name, "element": el, "mass": mass, "charge": q,
                    "description": c, "equivalence": {"bond": bt, "angle": bt, "dihedral": bt, "improper": bt}}
     pairs.append({"name": name, "match": [esc(name)], "params": [eps / KJ, sig * 10]})
 for sec, w, c in sections(os.path.join(D, "ffbonded.itp")):
@@ -106,6 +112,11 @@ for define, centres, outer, what in [
             imp_rules.append({"name": f"{define}: {o}-*-{cen}-*" if outer else f"{define}: *-*-{cen}-*",
                               "match": ["*", "*", esc(cen), o] if outer else ["*", "*", esc(cen), "*"], "style": "cvff",
                               "params": [k / KJ, -1 if abs(phase - 180) < 1e-6 else 1, int(n)], "comment": what})
+# grompp takes the most specific dihedraltype (fewest X), and among equally specific ones the first in the file; CAPS takes
+# the last rule that matches, so the rules go most-wildcard first and, within a tier, in reverse file order (in file order
+# the X-...-X lines came after the named ones and overrode them: anisole's CA-CA-OS-CT took X-CA-OS-X's 7.25 for its 3.0)
+_dih = list(dihedrals.values())
+DIHEDRALS = [d for _, d in sorted(enumerate(_dih), key=lambda t: (-t[1]["match"].count("*"), -t[0]))]
 doc = {"format": "caps-forcefield", "format_version": 1, "name": arg("--name", "OPLS-AA (GROMACS oplsaa.ff)"),
        "source": "GROMACS share/top/oplsaa.ff (ffnonbonded.itp, ffbonded.itp)", "units": "real",
        "references": ["W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)",
@@ -114,7 +125,7 @@ doc = {"format": "caps-forcefield", "format_version": 1, "name": arg("--name", "
        "mixing": "geometric", "special_lj": [0, 0, 0.5], "special_coul": [0, 0, 0.5], "cutoff": 12,
        "improper_order": "center3_sorted", "equivalence": "replace",
        "atom_types": list(types.values()), "pairs": pairs, "bonds": list(bonds.values()), "angles": list(angles.values()),
-       "dihedrals": list(dihedrals.values()), "impropers": imp_rules,
+       "dihedrals": DIHEDRALS, "impropers": imp_rules,
        "notes": ["converted by CAPS (bench/ff/convert_gromacs_opls.py) from GROMACS's oplsaa.ff (LGPL)"] + notes,
        "version": "OPLS-AA/L (GROMACS oplsaa.ff)"}
 if arg("--typing"):

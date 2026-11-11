@@ -109,19 +109,19 @@
   },
   {
    "type": "obos",
-   "smarts": "[O;H0;$(*~[Mg,Fe,Li]);$(*~[Si,Al])]",
+   "smarts": "[O;H0;$(*~[Mg,Li]);$(*~[Si,Al])]",
    "priority": 2,
    "description": "bridging oxygen next to an octahedral substitution"
   },
   {
    "type": "obss",
-   "smarts": "[O;H0;$(*(~[Mg,Fe,Li])~[Mg,Fe,Li]);$(*~[Si,Al])]",
+   "smarts": "[O;H0;$(*(~[Mg,Li])~[Mg,Li]);$(*~[Si,Al])]",
    "priority": 3,
    "description": "bridging oxygen next to two octahedral substitutions"
   },
   {
    "type": "obss",
-   "smarts": "[O;H0;$(*~[Al;X4]);$(*~[Mg,Fe,Li])]",
+   "smarts": "[O;H0;$(*~[Al;X4]);$(*~[Mg,Li])]",
    "priority": 3,
    "description": "bridging oxygen next to a tetrahedral and an octahedral substitution"
   },
@@ -133,7 +133,7 @@
   },
   {
    "type": "ohs",
-   "smarts": "[O;H1;$(*~[Mg,Fe,Li])]",
+   "smarts": "[O;H1;$(*~[Mg,Li])]",
    "priority": 2,
    "description": "hydroxyl oxygen next to an octahedral substitution, in a silicate",
    "requires": [

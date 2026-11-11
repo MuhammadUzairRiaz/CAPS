@@ -73201,7 +73201,8 @@
   "the file's NONBONDED line asks for an energy switch of the Lennard-Jones from 10 to 12 A (vswitch) and shifted electrostatics; CAPS uses CHARMM's force switch over the same range (vfswitch, as later CGenFF releases ask for) and long-range electrostatics",
   "no water or ions: the Supporting Information's files define none (TIP3P comes with the CHARMM36 libraries)",
   "atom types added in later CGenFF releases (thiocarbonyl, sulfone, sulfoxide, thiophosphate, epoxide, cyclobutyl, beta-lactam N, bipyrrole and N-aryl ring types, the terminal alkyne CG1T2) are not in 2a5; its typing rules leave them out",
-  "impropers where the topology's IMPR records put them: 97 centre environments (a centre's type and its neighbours') from 388 residues of top_all36_cgenff.rtf; where residues list one environment differently, the most common listing, with 71 exceptions for deeper environments (up to 6 bonds out) that list otherwise; the 13 parameter entries no IMPR record uses are never applied"
+  "impropers where the topology's IMPR records put them: 97 centre environments (a centre's type and its neighbours') from 388 residues of top_all36_cgenff.rtf; where residues list one environment differently, the most common listing, with 71 exceptions for deeper environments (up to 6 bonds out) that list otherwise; the 13 parameter entries no IMPR record uses are never applied",
+  "par_all36_cgenff.prm gives one DIHEDRALS line with periodicity 0, CG331-CG2N2-NG2P1-NG2P1 30.0 0 180.00, which CHARMM reads as a harmonic K (phi - delta)^2; CAPS has no quadratic dihedral form, so the line is kept as written and adds nothing (K [1 + cos(0 phi - 180)] = 0)"
  ],
  "version": "2a5 (J. Comput. Chem. 2010 Supporting Information)",
  "typing": "../typing/cgenff-2a5-jcc2010.typing.json",

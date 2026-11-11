@@ -152,6 +152,10 @@ def library(fid, name, ref, source, levels, dry):
                  bond(["SC1", "SC1"], 0.30, 5000, "cyclohexane ring (Marrink 2007, section 2.8.1)")]
         angles = [angle(["*", "*", "*"], 180.0, 25, "standard angle (Marrink 2007, section 2.3)"),
                   angle(["*", "C?", "*"], 180.0, 35, "saturated tails 35 kJ/mol (section 3.1)"),
+                  # the angles the generic rule would add to a lipid that the paper does not keep: NC3-PO4-GL1 (Q?-Qa-Na) and
+                  # C1A-GL1-GL2 / GL1-GL2-C1B (C?-Na-Na; at GL1 a third 180 deg beside PO4-GL1-C1A 180 and PO4-GL1-GL2 120 has no geometry)
+                  angle(["Q?", "Qa", "Na"], 180.0, 0, "no angle term: lipid head (Marrink, de Vries & Mark 2004, section 3.3.1)"),
+                  angle(["C?", "Na", "Na"], 180.0, 0, "no angle term: lipid glycerol-tail junction (Marrink, de Vries & Mark 2004, section 3.3.1)"),
                   angle(["C1", "C3", "C1"], 120.0, 45, "cis double bond (Marrink 2007, section 2.3)"),
                   angle(["Qa", "Na", "Na"], 120.0, 25, "the glycerol backbone PO4-GL1-GL2 (Marrink, de Vries & Mark 2004, section 3.3.1)"),
                   angle(["SC1", "SC1", "SC1"], 60.0, 0, "the cyclohexane triangle: no angle term (its beads are all bonded)")]
@@ -160,6 +164,10 @@ def library(fid, name, ref, source, levels, dry):
                  bond(["Na", "Na"], 0.37, 1250, "glycerol backbone 0.37 nm (section 2.8.3)"),
                  bond(["SC1", "SC1"], 0.30, 5000, "cyclohexane ring (section 2.8.1)")]
         angles = [angle(["*", "*", "*"], 180.0, 25, "standard angle (section 2.3)"),
+                  # the angles the generic rule would add to a lipid that the paper does not keep: NC3-PO4-GL1 (Q?-Qa-Na) and
+                  # C1A-GL1-GL2 / GL1-GL2-C1B (C?-Na-Na; at GL1 a third 180 deg beside PO4-GL1-C1A 180 and PO4-GL1-GL2 120 has no geometry)
+                  angle(["Q?", "Qa", "Na"], 180.0, 0, "no angle term: lipid head (Marrink, de Vries & Mark 2004, section 3.3.1)"),
+                  angle(["C?", "Na", "Na"], 180.0, 0, "no angle term: lipid glycerol-tail junction (Marrink, de Vries & Mark 2004, section 3.3.1)"),
                   angle(["C1", "C3", "C1"], 120.0, 45, "cis double bond (section 2.3)"),
                   angle(["Qa", "Na", "Na"], 120.0, 25, "the glycerol backbone PO4-GL1-GL2 (Marrink, de Vries & Mark 2004, section 3.3.1)"),
                   angle(["SC1", "SC1", "SC1"], 60.0, 0, "the cyclohexane triangle: no angle term (its beads are all bonded)")]

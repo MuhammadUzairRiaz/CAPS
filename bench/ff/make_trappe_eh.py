@@ -70,6 +70,22 @@ for e in json.load(open(os.path.join(SITE, "select.json")))["search"]:
             if a["natom"] == "1" and a["nonbonded_ID"] == "6":
                 a.update(nonbonded_ID="7", atomtype="C(aro)-[S](aro)-X(aro)", prtype="S", epsilon="158.00", sigma="3.55")
                 CORRECTED.append("2-chlorothiophene: its site 1 (the ring S) carries the furan O's type 6 in the database; read as the thiophene S, type 7")
+    # bond lists that contradict the entry's own SMILES / InChI (and so typed another molecule):
+    # triethylamine: the M sites 20-22 hang on C6 (the CH2, then seven-connected) where the CH3 C7 carries them;
+    # naphthalen-2-ol / naphthalene-2-carbonitrile: site 1 (the substituted C) is bonded to the fusion C 9, which makes the
+    # 1-isomer; the entries' SMILES are the 2-isomers, read with the fewest changes (bonds 2-3 and 9-1 as 1-3 and 9-2: site 1
+    # between the CH sites 2 and 3, site 2 next to the fusion C)
+    REWIRE = {"triethylamine": {("6", "20"): ("7", "20"), ("6", "21"): ("7", "21"), ("6", "22"): ("7", "22")},
+              "naphthalen-2-ol": {("2", "3"): ("1", "3"), ("9", "1"): ("9", "2")},
+              "naphthalene-2-carbonitrile": {("2", "3"): ("1", "3"), ("9", "1"): ("9", "2")}}
+    if d["name"] in REWIRE:
+        fix = REWIRE[d["name"]]
+        for x in d["stretch"]:
+            k = (x["A"], x["B"])
+            if k in fix:
+                x["A"], x["B"] = fix[k]
+        CORRECTED.append(f"{d['name']}: bonds " + ", ".join(f"{a}-{b}" for a, b in fix) + " read as " +
+                         ", ".join(f"{a}-{b}" for a, b in fix.values()) + " (the entry's SMILES; its bond list made another molecule)")
     d["atoms"] = {int(a["natom"]): a for a in d["nonbonded"]}
     d["el"] = {k: ELEM.get(a["prtype"], a["prtype"]) for k, a in d["atoms"].items()}
     adj = collections.defaultdict(set)
@@ -78,6 +94,12 @@ for e in json.load(open(os.path.join(SITE, "select.json")))["search"]:
         adj[i].add(j)
         adj[j].add(i)
     d["adj"] = adj
+    # fluorobenzene's F-C1-C2 bend: the database gives 188.80 deg; the planar ring (C6-C1-C2 122.40) needs (360 - 122.4) / 2
+    # = 118.80, the same digits transposed (a rigid model: K 0, the angle only sets its geometry)
+    for b in d["bend"]:
+        if d["name"] == "fluorobenzene" and b["bendtype"] == "F-C1-C2" and b["theta"] == "188.80":
+            b["theta"] = "118.80"
+            CORRECTED.append("fluorobenzene: bend F-C1-C2 188.80 deg read as 118.80 (planar ring: (360 - 122.40) / 2)")
     # the database's own slips: a bend or torsion listed with its atoms out of order (ethane's 1-2-3 for the M on C1):
     # read as the one bonded path through the same atoms
     for b in d["bend"]:

@@ -25,13 +25,18 @@ import json, re, sys
 
 PAR, SB, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 arg = lambda k, d=None: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
-ELEMENT = ["X", "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca",
-           "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr",
-           "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba"]
+# by atomic number to Am (95); BOSS writes 99 for its dummies and massless sites (DM, LP, the halogen plus sites)
+ELEMENT = ("X H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb "
+           "Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl "
+           "Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am").split()
 MASS = {"H": 1.008, "He": 4.0026, "Li": 6.941, "Be": 9.012, "B": 10.811, "C": 12.011, "N": 14.007, "O": 15.999, "F": 18.998,
         "Ne": 20.18, "Na": 22.99, "Mg": 24.305, "Al": 26.982, "Si": 28.086, "P": 30.974, "S": 32.065, "Cl": 35.453, "Ar": 39.948,
         "K": 39.098, "Ca": 40.078, "Fe": 55.845, "Cu": 63.546, "Zn": 65.38, "Br": 79.904, "Kr": 83.798, "Rb": 85.468, "Sr": 87.62,
-        "I": 126.904, "Xe": 131.293, "Cs": 132.905, "Ba": 137.327, "X": 0.0}
+        "I": 126.904, "Xe": 131.293, "Cs": 132.905, "Ba": 137.327, "Sc": 44.956, "Ti": 47.867, "V": 50.942, "Cr": 51.996,
+        "Mn": 54.938, "Co": 58.933, "Ni": 58.693, "Ag": 107.868, "Cd": 112.414, "Sn": 118.71, "La": 138.905, "Nd": 144.242,
+        "Eu": 151.964, "Gd": 157.25, "Yb": 173.045, "Hg": 200.592, "Pb": 207.2, "Ac": 227.028, "Th": 232.038, "Am": 243.061,
+        "U": 238.029, "X": 0.0}   # IUPAC standard atomic weights; Ac and Am their longest-lived isotopes
+
 
 
 def cls(t):
@@ -57,7 +62,7 @@ while k < len(lines) and "The following are the Fourier coefficients" not in lin
         num, an, at, q, sig, eps = int(w[0]), int(w[1]), w[2], float(w[3]), float(w[4]), float(w[5])
     except (ValueError, IndexError):
         continue
-    el = ELEMENT[an] if 0 <= an < len(ELEMENT) else "X"
+    el = ELEMENT[an] if 0 <= an < len(ELEMENT) and an != 99 else "X"
     name = "opls_%03d" % num
     types.append({"name": name, "element": el, "mass": MASS.get(el, 0.0), "charge": q, "description": " ".join(w[6:]),
                   "equivalence": {"bond": at, "angle": at, "dihedral": at, "improper": at}})
@@ -112,7 +117,17 @@ for l in lines[k + 1:]:
     seen_d[key] = d
     dihedrals.append(d)
 # CAPS takes the last rule that matches: X-wildcard rules first, then ?-wildcard ones, then fully named rules
-dihedrals.sort(key=lambda d: 0 if "*" in d["match"] else 1 if any("*" in m.replace("\\*", "") for m in d["match"]) else 2)
+# a class made only of wildcards ("*", or BOSS's "??" written "**") matches every class: those rules are the general tier,
+# ordered most-wildcard first (the last matching rule wins, so the more specific line applies, Jorgensen's convention);
+# then rules with a partial wildcard ("C?" as "C*"), then the exact ones. ("??" lines counted as partial wildcards came
+# after more specific "?" lines and hid them: NB-CA-N2-H's 3.80 took ??-CA-N2-H's 2.133)
+FULL = lambda m: m != "" and set(m) == {"*"}
+def dih_key(d):
+    full = sum(FULL(m) for m in d["match"])
+    if full:
+        return (0, -full)
+    return (1, 0) if any("*" in m.replace("\\*", "") for m in d["match"]) else (2, 0)
+dihedrals.sort(key=dih_key)
 
 bonds, angles, seen_b, seen_a = [], [], {}, {}
 section = "bonds"

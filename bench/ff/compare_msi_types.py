@@ -21,6 +21,9 @@ for path in files:
         if len(w) >= 7:
             atoms.append((int(w[0]), int(w[2])))
     atoms.sort()
+    if any(t not in label for _, t in atoms):   # a data file whose Masses carry no type names (hydrogen-class2a)
+        print(f"{os.path.basename(path)}: no type names in its Masses section, skipped")
+        continue
     expect = [label[t] for _, t in atoms]
     out = tempfile.mktemp(suffix=".types")
     r = subprocess.run([CAPS, "ff", "type", path, "--ff", ff, "--typing", rules, "-o", out], capture_output=True, text=True)

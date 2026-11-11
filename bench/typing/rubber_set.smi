@@ -1,0 +1,110 @@
+# Typing set for rubber compounds and their fibres, beside gaff_reference_set.smi: one molecule per line, "SMILES name".
+# A SMILES with [*] is a repeat unit, built as a DP-3 oligomer with hydrogen ends (bench/typing/typing_audit.py).
+# rubber repeat units and chain models
+[*]C/C=C(C)\C[*] natural_rubber_cis_PI
+[*]C/C=C(C)/C[*] trans_polyisoprene
+[*]C/C=C\C[*] cis_BR
+[*]CC([*])C=C vinyl_BR
+[*]CC(C#N)[*] PAN_unit
+[*]CC1(C)OC1C[*] ENR_epoxidised_unit
+[*]CC(C)(C)[*] PIB_unit
+[*]CC(Cl)=CC[*] CR_unit
+[*]CC(C)C[*] EPM_propylene_ethylene
+[*]C/C=C/CC(c1ccccc1)C[*] SBR_dyad
+[*]C/C=C/CCC(C#N)[*] NBR_dyad
+CCC/C=C/CCC(c1ccccc1)CC/C=C\CC SBR_model
+CCC/C=C/CCC(C#N)CC/C=C/CC NBR_model
+CCC/C=C(C)\CCC1(C)OC1CC/C=C(C)\CC ENR_model
+CCCC(C)CC1C2CC(C1CC)C(=CC)C2 EPDM_ENB_model
+CC=C1CC2CC1C=C2 ethylidene_norbornene
+C=CC(C)=C isoprene
+C=CC=C butadiene_monomer
+C=CC#N acrylonitrile_monomer
+C=CC(=C)Cl chloroprene
+CC(C)=C isobutylene
+CC=C(C)C 2-methyl-2-butene
+C/C=C\C cis-2-butene
+CC1OC1(C)C 2-methyl-2_3-epoxybutane
+ClCC1CO1 epichlorohydrin
+C[Si](C)(O[Si](C)(C)C)O[Si](C)(C)C octamethyltrisiloxane
+# vulcanisation: sulfur, sulfur crosslinks, accelerators, activators
+S1SSSSSSS1 cyclooctasulfur
+CSSC dimethyl_disulfide
+CSSSC dimethyl_trisulfide
+CSSSSC dimethyl_tetrasulfide
+CC(C)=CCSSCC=C(C)C diprenyl_disulfide
+CC(C)=CCSCC=C(C)C diprenyl_sulfide
+SC1=Nc2ccccc2S1 MBT
+c1ccc2c(c1)N=C(S2)SSC1=Nc2ccccc2S1 MBTS
+C1CCC(CC1)NSC1=Nc2ccccc2S1 CBS
+CC(C)(C)NSC1=Nc2ccccc2S1 TBBS
+CN(C)C(=S)SSC(=S)N(C)C TMTD
+CN(C)C(=S)SC(=S)N(C)C TMTM
+CCN(CC)C(=S)SSC(=S)N(CC)CC TETD
+N=C(Nc1ccccc1)Nc1ccccc1 DPG
+CCCCCCCCCCCCCCCCCC(=O)O stearic_acid
+C1N2CN3CN1CN(C2)C3 hexamethylenetetramine
+CC(C)(OOC(C)(C)c1ccccc1)c1ccccc1 dicumyl_peroxide
+CC(C)(C)OOC(C)(C)C di-tert-butyl_peroxide
+# antioxidants and antiozonants
+CC(C)CC(C)Nc1ccc(Nc2ccccc2)cc1 6PPD
+CC(C)Nc1ccc(Nc2ccccc2)cc1 IPPD
+CC1=CC(C)(C)Nc2ccccc12 TMQ_unit
+Cc1cc(C(C)(C)C)c(O)c(C(C)(C)C)c1 BHT
+# coupling agents, fillers' surface models, compatibilisers
+CCO[Si](CCCSSSSCCC[Si](OCC)(OCC)OCC)(OCC)OCC TESPT
+CCO[Si](CCCS)(OCC)OCC MPTES
+CCO[Si](OCC)(OCC)OCC TEOS
+C[Si](O)(O)O methylsilanetriol
+O=C1OC(=O)C=C1 maleic_anhydride
+CC1CC(=O)OC1=O methylsuccinic_anhydride
+O=C1OC(=O)c2ccccc12 phthalic_anhydride
+Oc1cccc(O)c1 resorcinol
+# fibres: polyester, polyamides, aramid, cellulose and lignin models
+[*]NCCCCCC(=O)[*] nylon6_unit
+[*]OCCOC(=O)c1ccc(C(=O)[*])cc1 PET_unit
+O=C(Nc1ccccc1)c1ccccc1 benzanilide
+CC(=O)Nc1ccc(NC(C)=O)cc1 diacetyl_p-phenylenediamine
+O=C1CCCCCN1 caprolactam
+OC[C@H]1O[C@@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)O[C@@H]2CO)[C@H](O)[C@@H](O)[C@@H]1O cellobiose
+OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O glucose
+COc1ccccc1O guaiacol
+COc1cc(/C=C/CO)ccc1O coniferyl_alcohol
+COc1cccc(OC)c1O syringol
+COc1ccccc1OC veratrole
+# solvents and plasticisers
+CS(C)=O DMSO
+CN1CCCC1=O NMP
+CN(C)C=O DMF_solvent
+CCOC(C)=O ethyl_acetate
+CC(=O)CC MEK
+C1COCCO1 dioxane
+ClCCl dichloromethane
+ClC(Cl)(Cl)Cl tetrachloromethane
+Cc1ccccc1C o-xylene
+CCCCCC hexane_solvent
+OCCO ethylene_glycol
+CCCCC(CC)COC(=O)c1ccccc1C(=O)OCC(CC)CCCC DEHP
+CCCCCCCCC(=O)OCC ethyl_nonanoate
+# ionic and other groups CAPS's libraries type
+COS(=O)(=O)OC dimethyl_sulfate
+CS(=O)(=O)[O-] methanesulfonate
+CC(=O)[O-] acetate
+C[NH3+] methylammonium
+CC(=O)OC(C)=O acetic_anhydride
+O=C=NCCN=C=O ethylene_diisocyanate
+CN=C=NC dimethylcarbodiimide
+c1ccc2c(c1)[nH]c1ccccc12 carbazole
+c1ccc2c(c1)oc1ccccc12 dibenzofuran
+c1ccc2c(c1)sc1ccccc12 dibenzothiophene
+# GAFF checks: nitrogen in three- and four-membered rings, conjugated C#C (cg / ch)
+C1CN1 aziridine
+CN1CC1 N-methylaziridine
+C1CNC1 azetidine
+O=C1CCN1 2-azetidinone
+CC(=O)N1CC1 N-acetylaziridine
+c1ccc(cc1)N1CC1 N-phenylaziridine
+C[N+]1(C)CC1 dimethylaziridinium
+c1ccc(cc1)C#Cc1ccccc1 tolan
+C=CC#CC=C hexa-1,5-dien-3-yne
+CC#CC#CC hexa-2,4-diyne

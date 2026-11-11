@@ -2,7 +2,7 @@
  "format": "caps-forcefield",
  "format_version": 1,
  "name": "OPLS-AA 2024 rubber backbone refits (CAPS refit, QM)",
- "source": "CAPS fits to RI-MP2/cc-pVTZ//HF/6-31G** relaxed torsion scans (the OPLS-AA/L level) of rubber backbone fragments",
+ "source": "CAPS fits to DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP relaxed torsion scans of rubber backbone fragments (the level each term's comment states)",
  "units": "real",
  "atom_types": [],
  "dihedrals": [

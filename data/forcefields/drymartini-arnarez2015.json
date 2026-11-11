@@ -8346,6 +8346,34 @@
    "comment": "saturated tails 35 kJ/mol (section 3.1)"
   },
   {
+   "name": "Q?-Qa-Na",
+   "match": [
+    "Q?",
+    "Qa",
+    "Na"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    0.0,
+    180.0
+   ],
+   "comment": "no angle term: lipid head (Marrink, de Vries & Mark 2004, section 3.3.1)"
+  },
+  {
+   "name": "C?-Na-Na",
+   "match": [
+    "C?",
+    "Na",
+    "Na"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    0.0,
+    180.0
+   ],
+   "comment": "no angle term: lipid glycerol-tail junction (Marrink, de Vries & Mark 2004, section 3.3.1)"
+  },
+  {
    "name": "C1-C3-C1",
    "match": [
     "C1",

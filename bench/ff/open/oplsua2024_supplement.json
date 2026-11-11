@@ -28,7 +28,8 @@
     "A",
     [
      "C2",
-     "CH"
+     "CH",
+     "CT"
     ],
     "A"
    ],
@@ -37,7 +38,7 @@
     112.0
    ],
    "source": "Jorgensen, Madura & Swenson 1984, Table I (C-C4-C 112.0 deg); K from the 2024 file",
-   "reason": "the paper holds bond angles fixed at Table I's values and gives no force constant; theta0 is the paper's angle at an sp3 carbon (C4) between any two carbons, K = 63.0 the 2024 file's constant for every UA C-C(sp3)-C bend (C2-C2-C3, C2-CH-C2 ...)"
+   "reason": "the paper holds bond angles fixed at Table I's values and gives no force constant; theta0 is the paper's angle at an sp3 carbon (C4) between any two carbons, K = 63.0 the 2024 file's constant for every UA C-C(sp3)-C bend (C2-C2-C3, C2-CH-C2 ...); at the quaternary CT too (the paper's C4 is any sp3 carbon; the 2024 file has no CT-centred UA bend)"
   },
   {
    "match": [
@@ -73,7 +74,8 @@
     "A",
     [
      "C2",
-     "CH"
+     "CH",
+     "CT"
     ],
     "OS"
    ],
@@ -82,7 +84,7 @@
     112.0
    ],
    "source": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (OCC 112.0 deg); K from the 2024 file",
-   "reason": "the paper's fixed O-C-C angle of its acyclic ethers; K = 80.0 the 2024 file's constant for its UA C-C-OS bends. The 2024 file's own C-C-OS bends (109.5 deg) stay"
+   "reason": "the paper's fixed O-C-C angle of its acyclic ethers; K = 80.0 the 2024 file's constant for its UA C-C-OS bends. The 2024 file's own C-C-OS bends (109.5 deg) stay; at the quaternary CT too (the paper's C4 is any sp3 carbon; the 2024 file has no CT-centred UA bend)"
   },
   {
    "match": [
@@ -992,6 +994,18 @@
    "source": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it",
    "reason": "by_analogy: the disulfide S-S bond S~-S~ 166 / 2.038 for an S-S bond to a persulfide S-H sulfur",
    "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "CH",
+    "CT"
+   ],
+   "params": [
+    260,
+    1.526
+   ],
+   "source": "the 2024 file's constant for every UA sp3 C-C bond (C2-CH, C3-CT, C2-CT, CH-CH: 260 / 1.526)",
+   "reason": "by_analogy: the CH-CT bond of a branched alkane (2,2,3-trimethylbutane) has no line in the 2024 file; Jorgensen, Madura & Swenson 1984 fix every C-C at 1.53 A"
   }
  ]
 }

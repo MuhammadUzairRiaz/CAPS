@@ -2,7 +2,7 @@
  "format": "caps-typing",
  "version": 1,
  "forcefield": "COMPASS (compass_published.frc, full class II)",
- "description": "CAPS rules for COMPASS from the published type definitions (Sun, J. Phys. Chem. B 102, 7338 (1998)); among matching rules the highest priority wins. Types this file lacks leave their atoms untyped: c2t, c3-, c3=, c3n, c3o, c4x, cl1, cl12, cl14, f1, f12, f13, h1n, n1t, n2a, n3, n3a, n3h2, n3mh, n4+, o1-, o2c. (for compass_published.frc: rules for c2t, c3-, c3=, c3n, c3o, c4x, cl1, cl12, cl14, f1, f12, f13, h1n, n1t, n2a, n3, n3a, n3h2, n3mh, n4+, o1-, o2c, which it does not define, left out)",
+ "description": "CAPS rules for COMPASS from the published type definitions (Sun, J. Phys. Chem. B 102, 7338 (1998)); among matching rules the highest priority wins. Types the .frc names without a definition this file can read (p4=) or that it lacks leave their atoms untyped: c2t, c3-, c3=, c3n, c3o, c4x, cl1, cl12, cl14, f1, f12, f13, h1n, n1t, n2a, n3, n3a, n3h2, n3mh, n4+, o1-, o2c. (for compass_published.frc: rules for c2t, c3-, c3=, c3n, c3o, c4x, cl1, cl12, cl14, f1, f12, f13, h1n, n1t, n2a, n3, n3a, n3h2, n3mh, n4+, o1-, o2c, which it does not define, left out)",
  "unknown_types": "untyped",
  "rules": [
   {
@@ -166,6 +166,126 @@
    "smarts": "[SiX4H0]",
    "priority": 1,
    "description": "Si with no H attached (siloxanes)"
+  },
+  {
+   "type": "o1=*",
+   "smarts": "[OX1]=[CX2]=[OX1]",
+   "priority": 5,
+   "description": "O in CO2 (compass_published.frc o1=*, its own nonbond 0.067 / 3.36; bonded as o1=)"
+  },
+  {
+   "type": "he",
+   "smarts": "[He]",
+   "priority": 5,
+   "description": "He (compass_published.frc)"
+  },
+  {
+   "type": "ne",
+   "smarts": "[Ne]",
+   "priority": 5,
+   "description": "Ne (compass_published.frc)"
+  },
+  {
+   "type": "ar",
+   "smarts": "[Ar]",
+   "priority": 5,
+   "description": "Ar (compass_published.frc)"
+  },
+  {
+   "type": "kr",
+   "smarts": "[Kr]",
+   "priority": 5,
+   "description": "Kr (compass_published.frc)"
+  },
+  {
+   "type": "xe",
+   "smarts": "[Xe]",
+   "priority": 5,
+   "description": "Xe (compass_published.frc)"
+  },
+  {
+   "type": "n1n",
+   "smarts": "[NX1]#[NX1]",
+   "priority": 5,
+   "description": "N in N2 (compass_published.frc)"
+  },
+  {
+   "type": "o1o",
+   "smarts": "[OX1]=[OX1]",
+   "priority": 5,
+   "description": "O in O2 (compass_published.frc)"
+  },
+  {
+   "type": "c1o",
+   "smarts": "[CX1]#[OX1]",
+   "priority": 5,
+   "description": "C in CO (compass_published.frc)"
+  },
+  {
+   "type": "o1c",
+   "smarts": "[OX1]#[CX1]",
+   "priority": 5,
+   "description": "O in CO (compass_published.frc)"
+  },
+  {
+   "type": "n1o",
+   "smarts": "[NX1]~[OX1]",
+   "priority": 5,
+   "description": "N in NO (compass_published.frc)"
+  },
+  {
+   "type": "o1n",
+   "smarts": "[OX1]~[NX1]",
+   "priority": 5,
+   "description": "O in NO (compass_published.frc)"
+  },
+  {
+   "type": "n2o",
+   "smarts": "[NX2](~[OX1])~[OX1]",
+   "priority": 5,
+   "description": "N in NO2 (compass_published.frc)"
+  },
+  {
+   "type": "s2=",
+   "smarts": "[SX2](=[OX1])=[OX1]",
+   "priority": 5,
+   "description": "S in SO2 (compass_published.frc)"
+  },
+  {
+   "type": "s1=",
+   "smarts": "[SX1]=[CX2]=[SX1]",
+   "priority": 5,
+   "description": "S in CS2 (compass_published.frc)"
+  },
+  {
+   "type": "c2=",
+   "smarts": "[CX2](=[SX1])=[SX1]",
+   "priority": 5,
+   "description": "C in CS2 (compass_published.frc)"
+  },
+  {
+   "type": "n2z",
+   "smarts": "[NX2;$(*[#6])]~[NX2]~[NX1]",
+   "priority": 5,
+   "description": "N first atom in -N3 (azide) (compass_published.frc)"
+  },
+  {
+   "type": "n2t",
+   "smarts": "[NX2](~[NX2;$(*[#6])])~[NX1]",
+   "priority": 5,
+   "description": "N central atom in -N3 (azide) (compass_published.frc)"
+  },
+  {
+   "type": "n1z",
+   "smarts": "[NX1]~[NX2]~[NX2;$(*[#6])]",
+   "priority": 5,
+   "description": "N terminal atom in -N3 (azide) (compass_published.frc)"
+  },
+  {
+   "type": "c4z",
+   "smarts": "[CX4][NX2]~[NX2]~[NX1]",
+   "priority": 5,
+   "description": "sp3 C bonded to -N3 (compass_published.frc)"
   }
  ]
 }

@@ -111,9 +111,60 @@ def prepare(topdir, out):
 GROMACS_TO_2024 = {"145B": "519", "927": "925", "930": "140"}
 # the one deliberate difference: epoxides keep the table's epoxide types (three-ring angle terms); the topologies' ether
 # types give methyloxirane's ring 109.5 deg angles, about 119 kcal/mol of strain against 44
-EXPLAINED = {}
+# (topology number, CAPS type): differences where the force field's own table, not the topology, decides. The topologies
+# set every atom's charge in their [atoms] section, so they could type a group with a nearby number and fix the charge;
+# CAPS takes each type's own charge, so a group must get the number (or CAPS supplement) whose charges balance
+CL = "chlorinated C: the topologies put RCH2Cl's 152 / 153 on every chloroalkane carbon with charges of their own; CAPS's " \
+     "CHCl2 / CH2Cl2 / CCl3 / CHCl3 carbons (supplement, +0.200 per Cl as the table's 152 and 973 have it) keep each molecule " \
+     "neutral, and 972 (H in RCHCl) has 153's class and charge"
+EXPLAINED = {
+    **{(r, c): CL for r, c in (("152", "caps_chcl2"), ("152", "caps_ch2cl2"), ("152", "caps_ccl3"), ("152", "caps_chcl3"), ("153", "972"))},
+    ("180", "186"): "acetal O: the 2024 table's 186 (acetal / hemiacetal ether O, OPLS/2020); the topologies predate it",
+    ("186", "caps_os_acac"): "an O between two acetal C (paraldehyde, trioxane, polyacetal): CAPS supplement at -0.26 so each "
+                             "acetal C group's +0.26 balances (186's -0.33 is for one acetal C)",
+    ("472", "199"): "diphenyl ether: the 2024 table's 177 / 199 (diphenyl ether, anisole C, OPLS/2020); 472 / 473 are a phenyl ester's",
+    ("473", "177"): "diphenyl ether: the 2024 table's 177 / 199 (diphenyl ether, anisole C, OPLS/2020); 472 / 473 are a phenyl ester's",
+    ("145", "165"): "styrene's ring C carrying the vinyl group: the 2024 table's 165 (Cipso in styrene)",
+    ("465", "caps_anh_c"): "anhydride: no OPLS-AA number; CAPS supplement with the ester C / O classes and charges that sum to zero",
+    ("466", "caps_anh_o"): "anhydride: no OPLS-AA number; CAPS supplement with the ester C / O classes and charges that sum to zero",
+    ("467", "caps_anh_os"): "anhydride: no OPLS-AA number; CAPS supplement with the ester C / O classes and charges that sum to zero",
+    ("260", "caps_cm_cn"): "acrylonitrile's alkene C: the topology uses benzonitrile's ring C 260 (class CA); CAPS keeps the alkene "
+                           "class CM (supplement, the files' CM-CZ terms)",
+    ("140", "caps_hc_cn"): "the H on acrylonitrile's alkene C: alkene H 144's class and charge (the topology: alkane H 140)",
+    ("142", "caps_cm_ves"): "vinyl ester C(O)=: CAPS supplement, alkene class CM charged as the table's phenyl ester ipso C",
+    ("484", "136"): "sulfolane: the topology's sulfonamide alpha-C types (484 +0.39, H 485 -0.06) leave it +0.54 with the types' "
+                    "charges; the table has no sulfone alpha-C, so CAPS takes the alkane numbers beside the neutral SO2",
+    ("485", "140"): "sulfolane: the topology's sulfonamide alpha-C types (484 +0.39, H 485 -0.06) leave it +0.54 with the types' "
+                    "charges; the table has no sulfone alpha-C, so CAPS takes the alkane numbers beside the neutral SO2",
+    ("135", "927"): "propyne's CH3 (2024 table): H3C-C#C 927 (+0.02), whose group balances the terminal alkyne's 925 / 925 / 926 "
+                    "(-0.20); the topology's alkane 135 is GROMACS's own alkyne set, where the inner sp C carries the balance",
+    ("135", "273"): "acetate's CH3: GROMACS's own carboxylate CH3 273 (-0.28), whose charges sum to -1 with 271 / 272; the topology "
+                    "uses 135 with charges of its own",
+}
+BR = "alkyl bromide / iodide (2024 table): its all-atom alkyl bromide 975-979 and iodoalkane 1011-1015, which sum to zero " \
+     "for RCH2X, R2CHX, R3CX; the topologies' 722 (a united-atom Br) / 732 (iodobenzene's I) with 152 / 153 need charges of their own"
+CO3 = "open-chain carbonate (2024 table): its carbonate numbers 771-773 with the methoxy C 789 / 774 and H 777 sum to zero; " \
+      "the topologies' ester types leave each carbonate at -0.08 e with the table's charges"
+EXPLAINED.update({**{p: BR for p in (("152", "976"), ("152", "978"), ("153", "977"), ("722", "975"), ("152", "1012"),
+                                      ("153", "1015"), ("732", "1014"))},
+                  **{p: CO3 for p in (("469", "777"), ("467", "773"), ("490", "774"), ("468", "789"), ("466", "771"), ("465", "772"))},
+                  ("227", "399"): "Cl2C= (2024 table): its own pair 399 (+0.12) / 398 (-0.06), neutral; 227 + 2 x 226 is -0.235 e",
+                  ("226", "398"): "Cl2C= (2024 table): its own pair 399 (+0.12) / 398 (-0.06), neutral; 227 + 2 x 226 is -0.235 e",
+                  ("186", "180"): "vinyl ether O (2024 table): 186 is there the OPLS/2020 acetal O (-0.33, +0.07 e left); the ether O 180 "
+                                  "(-0.40) has the charge the topologies' 186 has"})
+UNBAL = " has no numbers in the table whose charges balance; left untyped, CAPS reports it (with the topology's numbers and the " \
+        "table's charges it would carry a net charge)"
 EXPLAINED_MOLECULE = {"methyloxirane": "epoxide: the table's epoxide types 1025-1029 with three-ring angle terms; the topologies' "
-                                       "ether types put 109.5 deg angles on the ring (about 119 kcal/mol strain, 44 with these)"}
+                                       "ether types put 109.5 deg angles on the ring (about 119 kcal/mol strain, 44 with these)",
+                      "triethyl-phosphate": "a phosphate triester: the table's 440-444 are the dimethyl phosphate anion's (-0.38 e on "
+                                            "triethyl phosphate with their charges); left untyped in both libraries",
+                      "thiophene": "thiophene (2024 table)" + UNBAL + " (furan's C / H with thiazole's S: +0.16 e)",
+                      "bromomethane": "CH3Br (2024 table)" + UNBAL + " (976 with three H: +0.10 e)",
+                      "dibromomethane": "CH2Br2 (2024 table)" + UNBAL,
+                      "dichlorofluoromethane": "a C with F and Cl (2024 table)" + UNBAL,
+                      "3-methylpyridine": "a 3- / 4-alkylpyridine (2024 table)" + UNBAL + " (672 / 674 are a pyridazine's and a pyrimidine's CH3)",
+                      "4-methylpyridine": "a 3- / 4-alkylpyridine (2024 table)" + UNBAL + " (672 / 674 are a pyridazine's and a pyrimidine's CH3)",
+                      "246-trimethylpyridine": "a 3- / 4-alkylpyridine (2024 table)" + UNBAL + " (672 / 674 are a pyridazine's and a pyrimidine's CH3)"}
 
 
 def compare(out, ff, show):
@@ -128,13 +179,15 @@ def compare(out, ff, show):
         if not f.endswith(".sdf"):
             continue
         name = f[:-4]
-        ref = [GROMACS_TO_2024.get(t, t) for t in open(os.path.join(out, name + ".ref")).read().split()]
+        ref = open(os.path.join(out, name + ".ref")).read().split()
+        if ff != "oplsaa-gromacs":   # GROMACS's own numbers stay for its own library
+            ref = [GROMACS_TO_2024.get(t, t) for t in ref]
         tf = os.path.join(out, name + ".caps")
         subprocess.run([caps, "ff", "type", os.path.join(out, f), "--ff", ff, "-o", tf], capture_output=True, text=True)
         n += 1
         if not os.path.exists(tf):
             diffs.append((name, "-", "CAPS failed", "")); continue
-        got = [str(int(t[5:])) if re.fullmatch(r"opls_\d+", t) else t for t in open(tf).read().split()]   # opls_NNN: the number
+        got = [t[5:].lstrip("0") or "0" if re.fullmatch(r"opls_\d+[A-Z]?", t) else t for t in open(tf).read().split()]   # opls_NNN: the number
         good = True
         for i, (x, y) in enumerate(zip(ref, got)):
             tot += 1
@@ -151,7 +204,7 @@ def compare(out, ff, show):
           f"{untyped} untyped, {full}/{n} molecules fully the same; {len(diffs) - len(unexplained)} differing atoms with a "
           f"stated reason, {len(unexplained)} without")
     for d in unexplained[:show]:
-        print(f"   {d[0]:34s} atom {str(d[1]):4s} ref {d[2]:5s} CAPS {d[3]:8s} {desc.get(d[3], '')[:60]}")
+        print(f"   {d[0]:34s} atom {str(d[1]):4s} ref {d[2]:5s} CAPS {d[3]:8s} {desc.get('opls_' + d[3], desc.get(d[3], ''))[:60]}")
     reasons = {}
     for d in diffs:
         if why(d):

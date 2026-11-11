@@ -54,6 +54,9 @@ def rule(t, el, others, d):
     return {"type": t, "smarts": f"[#{Z[el]}]", "priority": 0, "requires": others, "description": d}
 
 
+# the cations of the base set Tilocca's Table III does not cover: with any of them present the overlay stays off (its O_tt
+# has Buckingham terms only with Si, Na, Ca; an Al or Y beside O_tt kept no repulsion against O)
+TIL_EXCL = ["Al", "Y", "La", "Lu", "Sc"]
 # ---- teter-glass
 T_CH = {"O": -1.2, "Si": 2.4, "Al": 1.8, "Y": 1.8, "La": 1.8, "Lu": 1.8, "Sc": 1.8, "Na": 0.6}
 # (cation, A eV, rho A, C eV A^6, source)
@@ -83,7 +86,7 @@ for el, (A, rho, C, q) in TIL_T.items():
 els = list(T_CH)
 rules = [rule(f"{el}_te", el, ["O"] if el != "O" else [], f"{el} in an oxide glass") for el in els]
 overlays = {"okhotnikov2013-y": ("Overlay: Okhotnikov's Y-O (Born-Mayer, derived in the paper) in place of Du's", [rule("Y_ok", "Y", ["O"], "Y, Okhotnikov's Y-O")]),
-            "tilocca2006-teter": ("Overlay: Tilocca et al.'s Teter set (Table III) for O, Si, Na, Ca", [rule(f"{el}_tt", el, [], f"{el} (Tilocca's Teter set)") for el in TIL_T])}
+            "tilocca2006-teter": ("Overlay: Tilocca et al.'s Teter set (Table III) for O, Si, Na, Ca", [{**rule(f"{el}_tt", el, [], f"{el} (Tilocca's Teter set)"), "excludes": TIL_EXCL} for el in TIL_T])}
 write("teter-glass", {"name": "Oxide glasses, Teter partial charges (Cormack 2002; Du 2009; Okhotnikov 2013)",
                       "source": f"{CORMACK}, Table 1; {DU}, Table II; {OKH}, Table 1; overlay: {TIL}, Table III",
                       "references": [CORMACK, DU, OKH, TIL], "cutoff": 8, "atom_types": types, "pairs": pairs,

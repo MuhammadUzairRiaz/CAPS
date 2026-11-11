@@ -61,7 +61,7 @@ def main():
            "atom_types": [], "pairs": [], "bonds": [], "angles": [], "dihedrals": [], "impropers": [],
            "notes": ["built by CAPS (bench/ff/make_lopls.py) from the paper's Table 2 as an overlay on oplsaa2024.json",
                      "L-OPLS types for CH3, CH2 and alkene CH of hydrocarbon chains (neutral groups); everything else is OPLS-AA 2024",
-                     "the four torsions replace OPLS-AA 2024's for their OPLS torsion types"],
+                     "the paper's torsions replace OPLS-AA 2024's for the hydrocarbon types: X-CM-CM-X as CT-CM-CM-CT, CT-CM-CM-HC and HC-CM-CM-HC only (as a generic overlay rule it would also replace OPLS-AA 2024's X-CM-CM-Y for other ends)"],
            "version": "2012", "status": "validated"}
     for name, el, mass, q, s_nm, e_kj, eq, smarts, desc in TYPES:
         doc["atom_types"].append({"name": name, "element": el, "mass": mass, "charge": q, "description": desc, "equivalence": eq,
@@ -69,6 +69,9 @@ def main():
         doc["pairs"].append({"name": name, "match": [name], "params": [e_kj / KJ, s_nm * 10],
                              "comment": f"Table 2: sigma {s_nm} nm, epsilon {e_kj:.6f} kJ/mol"})
     for match, (v1, v2, v3), what in TORSIONS:
+        if "??" in match:
+            continue   # X-CM-CM-X: an overlay rule comes after every OPLS-AA 2024 rule and would beat its specific X-CM-CM-Y
+                       # (Cl-CM-CM-Cl, vinyl ethers ...), which L-OPLS never fitted; its value goes to the hydrocarbon ends below
         doc["dihedrals"].append({"name": "-".join(match), "match": match, "style": "opls", "params": [v1 / KJ, v2 / KJ, v3 / KJ, 0.0],
                                  "comment": f"Table 2 (Fourier, kJ/mol: {v1} {v2} {v3}), {what}"})
     v = TORSIONS[1][1]

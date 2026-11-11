@@ -195,20 +195,14 @@
   {
    "type": "O_53",
    "priority": 2,
-   "smarts": "[OX1]~[NX3](~[OX1])[#6]",
+   "smarts": "[OX1]~[NX3](~[OX1])c",
    "description": "CHx-N[O]2 (nitro)"
   },
   {
    "type": "N_54",
    "priority": 2,
-   "smarts": "[NX3](~[OX1])(~[OX1])[#6]",
+   "smarts": "[NX3](~[OX1])(~[OX1])c",
    "description": "CHx-[N]O2 (nitro)"
-  },
-  {
-   "type": "C_59",
-   "priority": 3,
-   "smarts": "[c][NX3](~[OX1])~[OX1]",
-   "description": "CH+[C](-NO2)+CH (aromatic (nitro link))"
   },
   {
    "type": "CH_88",

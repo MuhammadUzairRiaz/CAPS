@@ -192,8 +192,8 @@
   {
    "name": "lp",
    "element": "L",
-   "mass": 0.001097,
-   "description": "Lone Pair (massless)",
+   "mass": 1.0,
+   "description": "Lone Pair",
    "equivalence": {
     "vdw": "h",
     "angle": "h",
@@ -695,7 +695,7 @@
    "name": "ci",
    "element": "C",
    "mass": 12.01115,
-   "description": "Aromatic carbon in a charged imidazole ring (HIS+)",
+   "description": "Sp2 aromatic carbon in charged imidazole ring (His+)",
    "equivalence": {
     "vdw": "c'",
     "angle": "c5",
@@ -1836,7 +1836,8 @@
     "auto_torsion_center": "ca+_",
     "auto_oop_end": "ca+_",
     "auto_oop_center": "ca+_"
-   }
+   },
+   "charge": 2.0
   },
   {
    "name": "f",
@@ -1955,7 +1956,8 @@
     "auto_torsion_center": "Cl_",
     "auto_oop_end": "Cl_",
     "auto_oop_center": "Cl_"
-   }
+   },
+   "charge": -1.0
   },
   {
    "name": "Br",
@@ -1970,13 +1972,14 @@
     "auto_torsion_center": "Br_",
     "auto_oop_end": "Br_",
     "auto_oop_center": "Br_"
-   }
+   },
+   "charge": -1.0
   },
   {
    "name": "Na",
    "element": "Na",
-   "mass": 22.9898,
-   "description": "Sodium ion",
+   "mass": 22.99,
+   "description": "Sodium metal",
    "equivalence": {
     "auto_bond": "Na_",
     "auto_angle_end": "Na_",
@@ -2337,9 +2340,9 @@
   },
   {
    "name": "mg",
-   "element": "mg",
-   "mass": 100.0,
-   "description": "Magnesium",
+   "element": "Mg",
+   "mass": 24.305,
+   "description": "Magnesium (cvff.frc gives element 'mg' and mass 100.000: Mg's IUPAC standard atomic weight here)",
    "equivalence": {
     "bond": "sz",
     "angle": "sz",

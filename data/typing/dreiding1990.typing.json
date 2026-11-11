@@ -85,9 +85,9 @@
   },
   {
    "type": "N_R",
-   "smarts": "[#7X3;$(*-[#6X3]=[#8X1,#16X1]),$(*-c)]",
+   "smarts": "[#7X3;$(*-[#6X3]=[#8X1,#16X1,#7]),$(*=*),$(*-c)]",
    "priority": 2,
-   "description": "resonant N (amide, N on an aromatic ring)"
+   "description": "resonant N (amide, amidine / guanidine and guanidinium N, nitro and iminium N, N on an aromatic ring): a planar sp2 N in resonance, as the paper defines R"
   },
   {
    "type": "O_3",

@@ -58,7 +58,7 @@ RULES = [
     # nitriles
     (47, 2, "[CX2](#[NX1])[CX4]"), (48, 2, "[NX1]#[CX2][CX4]"), (49, 3, "[CX4H3][CX2]#[NX1]"), (50, 3, "[CX4H2][CX2]#[NX1]"),
     # nitro
-    (53, 2, "[OX1]~[NX3](~[OX1])[#6]"), (54, 2, "[NX3](~[OX1])(~[OX1])[#6]"), (59, 3, "[c][NX3](~[OX1])~[OX1]"),
+    (53, 2, "[OX1]~[NX3](~[OX1])c"), (54, 2, "[NX3](~[OX1])(~[OX1])c"),   # nitrobenzene only: the UA set has no CHx-NO2 C (+0.14) (59, 3, "[c][NX3](~[OX1])~[OX1]"),
     # aromatics
     (88, 1, "[cH1]"), (89, 2, "[cH0]-[CX4]"), (90, 2, "[cH0;$(*(:c)(:c)-c),$(*(:c)(:c):c)]"),
     (60, 2, "[nX2;r6]"), (61, 3, "[cH1;r6]:[nX2]"), (62, 4, "[cH1;r6](:[nX2]):[nX2]"),
@@ -764,13 +764,16 @@ for kind, gen, wild, exact in (("bond", G_BONDS, [], BONDS), ("angle", G_ANGLES,
         elif r["style"] == g["style"] and same(r["params"], g["params"]):
             GEN_REPORT[kind, "agrees"] += 1
         elif r["params"][0] == 0.0 and r["style"] == "harmonic" and "rigid model" in r["comment"]:
-            GEN_REPORT[kind, "rigid"] += 1   # a term found only in TraPPE's rigid models keeps K 0 (run them as rigid bodies)
-            print(f"  transferable {kind} {'-'.join(g['match'])}: the database's rigid models hold it with K 0, kept")
+            # the paper's transferable (stiff) term wins over the rigid models' K 0: a flexible molecule with these types
+            # (polystyrene's ring, an alkylbenzene chain) is not a rigid body, and K 0 left its ring bonds without force
+            GEN_REPORT[kind, "rigid"] += 1
+            exact.remove(r)
+            print(f"  transferable {kind} {'-'.join(g['match'])}: the database's rigid models hold it with K 0; the paper's term used")
         else:
             GEN_REPORT[kind, "differs"] += 1
             print(f"  transferable {kind} {'-'.join(g['match'])} {g['params']} differs from the database's {r['name']} {r['params']} ({r['comment']})")
 print("transferable terms: " + "; ".join(f"{kind} {len(gen)} ({GEN_REPORT[kind, 'agrees']} equal to a database model's own term, "
-                                          f"{GEN_REPORT[kind, 'rigid']} rigid-model K 0 kept, {GEN_REPORT[kind, 'differs']} differ, {GEN_REPORT[kind, 'new']} new)"
+                                          f"{GEN_REPORT[kind, 'rigid']} rigid-model K 0 replaced, {GEN_REPORT[kind, 'differs']} differ, {GEN_REPORT[kind, 'new']} new)"
                                           for kind, gen in (("bond", G_BONDS), ("angle", G_ANGLES), ("dihedral", G_DIHEDRALS))))
 for (kind, name), n in sorted(replaced.items()):
     print(f"  CAPS's wildcard {kind} {name} gives way to the papers' terms for {n} type combinations")
