@@ -6,6 +6,41 @@ lede: What changed in CAPS, newest first. Every force field CAPS ships is now bu
 
 ## November 2026 update (version 0.1.0)
 
+### Release build of 12 November
+
+The installers on the release page were rebuilt from this state. Before the build every source and data file was read for bugs, every command was run on test inputs, every Studio control was clicked, and the packages were installed and tested on macOS, Windows 10/11 and seven Linux distributions (Ubuntu 24.04 and 22.04, Debian 13, Fedora 43, openSUSE Leap 16, Arch and AlmaLinux 8). The Linux packages need glibc 2.27 or newer.
+
+Changes that alter results:
+
+- QEq now uses the Slater-orbital kernel of Rappé and Goddard's original model by default. Quartz gets Si +1.26 e, as in the paper, where the Ohno kernel gave about +3.2 e. The Ohno kernel is still an option, and its short-range part is now switched off over a fixed 5 to 7 Å window, so charges no longer change with the cut-off. Force fields that fall back to QEq for missing charges give different charges for those molecules.
+- Shell models: the density counts each ion once (a shell was counted as a second ion).
+- Polymer cells read from CIF are made whole, so Rg and chain statistics agree with the same cell read from a data file.
+- `caps path` (NEB) climbs only from a real interior maximum and stops when the band diverges.
+- Sorption in small cells keeps the whole cut-off by summing periodic images.
+- `caps solve` checks contacts between all atoms against van der Waals distances and refuses cells too small for the molecules.
+- `caps surface` and `caps interface` ignored `--vacuum` and always used 1 Å. This was one of 357 defects fixed after the code audit, along with wrong dihedral-restraint gradients on the middle atoms, bonds as long as the cell after a supercell, and `set_dihedral` breaking long chains in periodic cells.
+- HFA134a torsions are shared over the nine dihedrals of the C-C bond, as the paper's scans were fitted. The barrier is now 4.24 kcal/mol instead of 38.
+- CL&P-DES carboxylates longer than acetate keep des.ff's carboxylate torsions instead of the acid's.
+- OPLS-AA ions heavier than Ba (U, La, Nd, Eu, Gd, Yb, Ac, Th, Am) have their element and mass, and CVFF's Mg weighs 24.305 instead of 100.
+
+Force-field typing:
+
+- OPLS-AA 2024: every fully typed molecule of the 330-molecule test set sums to its formal charge. Groups that no table numbers balance stay untyped and the error names them, with the charge they would carry.
+- OPLS-AA with GROMACS's names keeps GROMACS's numbers wherever they balance a group. Where they don't (biphenyl, diaryl ethers, anhydrides, alkyl bromides and iodides, epoxides, siloxanes and others), the group takes the 2024 table's types, and each borrowed term is marked with its source in the topology.
+- PCFF refuses, by name, what pcff.frc cannot type: conjugated chains of four or more C=C, nitro groups and a C=O on an aromatic carbon.
+- GAFF and GAFF2 agree with antechamber on all 330 molecules. COMPASS gains CO2, CO, N2, O2, NO, NO2, SO2, CS2, azide and noble-gas types.
+
+Exports:
+
+- Rigid models (TraPPE CO2 and ethylene oxide, EPM2 CO2) run as rigid bodies in LAMMPS at the model's own geometry; TraPPE CO2 is written at 1.16 Å instead of 1.23. A molecule that is only partly rigid, such as TraPPE thiophene, is refused by name.
+- GROMACS writes TraPPE N2 and O2 as one constraint with a virtual centre site. Larger rigid models are refused by name and point to the LAMMPS export.
+- GROMACS boxes for single molecules are never narrower than twice the pair-list radius, so grompp accepts flat molecules such as phenol, water and acetonitrile. The vacuum .mdp uses `coulombtype = Cut-off`, so grompp needs no `-maxwarn`; the energies are the same.
+
+Studio:
+
+- The Molecule module's sketch tools, ring clicks and the sketch/view divider work as drawn, and the view no longer jumps at every rebuild. Pane dividers drag from the middle again.
+- Four rounds of page-by-page fixes: text that was cut off, labels that didn't fit, untypeset equations and the retired module slot.
+
 ### Semicrystalline stacks beyond polyethylene
 
 - `caps semicrystalline` now builds lamellar stacks of every crystal in the polymer crystal library: orthorhombic and monoclinic PE, PVDF β and α, iPP α, PEO, POM, nylon 6 and nylon 66, PET, PLLA α, natural rubber and PTFE (phases IV and II). `--polymer list` shows them with their defaults.

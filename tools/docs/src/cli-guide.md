@@ -40,7 +40,7 @@ A trajectory carries no bonds, so commands that read one take `--topology DATA` 
 
 ### Seeds and threads
 
-Everything random takes `--seed` (default 1): the same command, input and seed give the same result on the same build. The commands that run in parallel (`md`, `run`, `pack`) take `--threads N` (default: all cores).
+Everything random takes `--seed` (default 1): the same command, input and seed give the same result on the same build. The commands that run in parallel (`md`, `run`, `pack`, `grow`) take `--threads N`. Without it they use `CAPS_THREADS` or a Slurm job's `SLURM_CPUS_PER_TASK` when either is set. Otherwise `md`, `run` and `pack` use the machine's performance cores (hardware threads where the OS does not say), at most 16, and `grow` scores its trials on up to 8 threads.
 
 ### Provenance
 
@@ -110,7 +110,7 @@ caps job new --title PS_melt --kind md --input cell.data --submit -- caps md cel
 caps job status ~/CAPS/PS_melt/md-1
 ```
 
-A run stopped by its time limit leaves a checkpoint, and `caps job resume DIR --submit` continues it. [Tutorial 08](../tutorials/cluster.html) goes through it all, including the Studio's Run where.
+A run stopped by its time limit leaves a checkpoint, and `caps job resume DIR --submit` continues it. [Tutorial 08](../tutorials/cluster.html) goes through it all, including picking a host on the Studio's run pages.
 
 ## Command line, Python or Studio?
 

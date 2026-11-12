@@ -70,7 +70,6 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <nav class="toc" aria-label="Contents">
   <h2>Getting around</h2>
   <a href="#layout">The window</a>
-  <a href="#strip">Pipeline strip</a>
   <a href="#project">Project tree</a>
   <h2>Pipelines</h2>
   <a href="#p-melt">Amorphous polymer cell</a>
@@ -115,25 +114,12 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
   <h2>The window</h2>
   <p class="lede">Every page shares the same frame.</p>
   <ul>
-    <li><b>Left rail.</b> The main stages in working order: Studio, Build, Polymer cell, Force field, Packing, Minimise, Equilibrate, Dynamics, React, Analyze, Export, Jobs and Bench. The gear at the bottom opens Settings.</li>
+    <li><b>Module tabs.</b> The modules sit as tabs across the top in working order: Studio, Build, Polymer cell, Packing, Force field, Minimise, Equilibrate, Dynamics, React, Analyze, Export, Jobs and Bench. A pip on a tab means that step is done for the active structure. The gear next to the tabs opens Settings.</li>
+    <li><b>Project Explorer.</b> Runs full height on the left. It lists the project, its structures, job folders and their outputs, with Properties and Fragments below. Drag its edge to resize it. The <span class="ui">Clear</span> button (trash icon) in its header closes every open structure so you can start clean. It asks once more before it does anything, and saved files stay on disk.</li>
     <li><b>Tabs.</b> Each open structure has a tab next to <span class="ui">Start</span>. Use <span class="ui">+</span> to open another one.</li>
     <li><b>Command bar.</b> <kbd>⌘K</kbd> finds any page, builder or command by name.</li>
     <li><b>Machine badge.</b> Top right. It shows where runs happen, for example <span class="ui">Local · 10 threads · GPU view</span>.</li>
     <li><b>Status bar.</b> Along the bottom: atom and bond count, selection, cell lengths, the last action and the mouse controls. Click an atom to pick it, drag to rotate, and <kbd>⇧</kbd>-drag to pan.</li>
-  </ul>
-</section>
-
-<section id="strip">
-  <h2>Pipeline strip</h2>
-  <p class="lede">The strip shows how far the open structure has got. A step turns green when it is done. Click any step to go to its page.</p>
-  <div class="strip" aria-label="Pipeline steps">
-    <span class="done">✓ Structure</span><i>→</i><span class="done">✓ Made by</span><i>→</i><span>Force field</span><i>→</i><span>Minimise <i>optional</i></span><i>→</i><span>Equilibrate <i>optional</i></span><i>→</i><span>Dynamics <i>optional</i></span><i>→</i><span>Export</span>
-  </div>
-  <ul>
-    <li><b>Structure</b> and <b>Made by</b> name the open structure and the builder that made it, for example Polymer cell, Nanostructure builder or File.</li>
-    <li><b>Force field</b> stays open until a force field is assigned. You can export once it is assigned. Minimise, Equilibrate and Dynamics are optional.</li>
-    <li><span class="ui">Export now</span> jumps straight to Export.</li>
-    <li><span class="ui">Clear</span> closes every open structure so you can start clean. It asks once more before it does anything. Saved files stay on disk and stay in Recent. Once nothing is open, the strip hides.</li>
   </ul>
 </section>
 
@@ -213,7 +199,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
       </ul></div></li>
     <li><div>Choose the protocol: <i>Polymatic cycle</i> or <i>REACTER-style during MD</i>. <span class="ui">Auto capture</span> widens the capture distance when no pair is found.</div></li>
     <li><div>Press <span class="ui">Crosslink</span>. The live view shows each chain in its own colour with the new links highlighted. The links plot shows progress against the target, and <b>Network</b> reports target vs achieved, ν, Mc, DC, loops and the force field before and after.</div></li>
-    <li><div>To run the reaction in LAMMPS, use <span class="ui">Write fix bond/react files…</span>. It writes pre/post templates and map files cut from your cell and typed with your force field, a data file holding every type the reaction creates, and an input with the fix. Run <code>lmp -in react.in</code>.</div></li>
+    <li><div>To run the reaction in LAMMPS, press <span class="ui">Write files…</span> in the <span class="ui">LAMMPS fix bond/react</span> panel, or <span class="ui">Write and run in LAMMPS…</span> to start the run straight away. It writes pre/post templates and map files cut from your cell and typed with your force field, a data file holding every type the reaction creates, and an input with the fix. Run <code>lmp -in react.in</code>.</div></li>
   </ol>
   <div class="note">CAPS checks the force field. PCFF's main table gives epoxide ring angles general values (104.5–111°), about 108 kcal/mol of strain per ENR epoxide, and the Force field step says so. For epoxidised rubber, GAFF (cx/op) describes the ring properly.</div>
   <figure><button type="button" aria-label="Enlarge"><img src="img/16_react.jpg" alt="React page after crosslinking PCFF polyethylene" loading="lazy"></button>
@@ -247,7 +233,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
     <li><div>Choose the <b>mapping</b>:
       <ul>
         <li><i>1 bead per repeat unit</i>: the unit's centre of mass. This is the common 1:1 model.</li>
-        <li><i>2 beads per unit</i>: a backbone bead and a side-group bead. This is the Harmandaris et al. PS model, and what moltemplate calls a "2-bead polymer". With two bead types, it is a two-bead heteropolymer.</li>
+        <li><i>2 beads per unit</i>: a backbone bead and a side-group bead. This is the Harmandaris et al. PS model. With two bead types, it is a two-bead heteropolymer.</li>
         <li><i>n backbone atoms per bead</i>: for example 3:1 for polyethylene.</li>
       </ul></div></li>
     <li><div>CAPS grows an all-atom reference melt, compresses it to the density and maps every frame to beads. From that it derives the bead model:

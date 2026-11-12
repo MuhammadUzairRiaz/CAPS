@@ -42,7 +42,7 @@
    ],
    "card": "Type a SMILES or a file path, pick a builder, reopen a project, or follow a guided example.",
    "lede": "The first screen: one box that understands a SMILES, a file path or a module name, six builders, your projects and recent files, and guided examples to learn from.",
-   "input": "Nothing — or a SMILES, a file, or a recipe.",
+   "input": "Nothing, or a SMILES, a file, or a recipe.",
    "output": "An open structure in the Studio, or the builder you picked.",
    "shots": [
     {
@@ -54,7 +54,7 @@
     {
      "t": "Type into the quick box",
      "d": [
-      "Paste a SMILES (for example `C=Cc1ccccc1`), a file path, or a page name. The box recognises it — **SMILES detected**, **File found** — and its button changes to [[Build 3D]], [[Build polymer]], [[Open]] or [[Go]]."
+      "Paste a SMILES (for example `C=Cc1ccccc1`), a file path, or a page name. The box recognises it (**SMILES detected**, **File found**) and its button changes to [[Build 3D]], [[Build polymer]], [[Open]] or [[Go]]."
      ]
     },
     {
@@ -146,7 +146,7 @@
     {
      "t": "Check and save",
      "d": [
-      "**Validation** › [[All checks…]] lists every file check. The **File** tab saves as LAMMPS data, PDB, XYZ, mol2, CIF or a VASP POSCAR."
+      "**Validation** › [[All checks…]] lists every file check. The **File** tab saves as LAMMPS data, PDB, XYZ, CIF or a VASP POSCAR; for mol2 use **File › Save as**."
      ]
     },
     {
@@ -302,7 +302,7 @@
     "Build"
    ],
    "card": "114 repeat units and 21 copolymers, or your own SMILES; architecture, sequence, composition, tacticity and end groups.",
-   "lede": "Define the chain: pick a polymer from the library or write a repeat unit, then set the architecture, sequence, composition, tacticity, linkage and end groups — and preview one chain in 3D.",
+   "lede": "Define the chain: pick a polymer from the library or write a repeat unit, then set the architecture, sequence, composition, tacticity, linkage and end groups, and preview one chain in 3D.",
    "input": "A polymer from the library, or a repeat unit as SMILES with two `*` (head first).",
    "output": "One chain in the Studio, or the polymer handed to Polymer cell to grow a cell.",
    "shots": [
@@ -312,7 +312,7 @@
     },
     {
      "img": "04b_composition.jpg",
-     "cap": "**Composition**: PBSA, BS:BA 80:20 by moles at DP 25 — 20 BS and 5 BA in every chain."
+     "cap": "**Composition**: PBSA, BS:BA 80:20 by moles at DP 25: 20 BS and 5 BA in every chain."
     }
    ],
    "steps": [
@@ -375,7 +375,7 @@
     }
    ],
    "tips": [
-    "Several polymers in one cell? Press [[Blend…]] on this page — see the Blend module."
+    "Several polymers in one cell? Press [[Blend…]] on this page (see the Blend module)."
    ],
    "python": "import caps\n\nchain = caps.polymer(\"*CC(*)c1ccccc1\", dp=20, chains=1, tacticity=\"syndiotactic\")\nchain.save(\"sps_chain.pdb\")",
    "next": [
@@ -526,7 +526,7 @@
     "Top bar",
     "Packing"
    ],
-   "card": "Fill a box — or the space around a structure — with molecules, with no two closer than a tolerance.",
+   "card": "Fill a box, or the space around a structure, with molecules, with no two closer than a tolerance.",
    "lede": "CAPS Pack fills an empty box, or the free space around the current structure, with molecules in regions you define, so that no two atoms of different molecules are closer than the tolerance. Packmol inputs open too.",
    "input": "Molecules (SMILES, files, curatives, solvents) and optionally a structure to pack around.",
    "output": "A packed periodic cell, ready to type, minimise or export.",
@@ -540,7 +540,7 @@
     {
      "t": "Choose what to pack into",
      "d": [
-      "[[An empty box]], or [[Around the current structure]] — the structure is kept fixed and molecules fill its cell (solvent in a polymer, gas in a pore)."
+      "[[An empty box]], or [[Around the current structure]]: the structure is kept fixed and molecules fill its cell (solvent in a polymer, gas in a pore)."
      ]
     },
     {
@@ -558,7 +558,7 @@
     {
      "t": "Set the objective",
      "d": [
-      "Tolerance d_tol 2.0 Å. [[Fill to a density…]] sets the count for you; optionally compress the cell afterwards."
+      "Tolerance d_tol 2.0 Å. When you pack around the current structure, enter a target density under Fill to a density and press [[Set the number]]; it sets the last molecule's count from the whole cell's target. In an empty box, tick [[Then compress the cell to]] to compress the cell to a density after packing."
      ]
     },
     {
@@ -644,7 +644,7 @@
     "Crystal…"
    ],
    "card": "Space group, lattice and sites; CIF import; supercells, primitive and Niggli cells, defects and nanowires.",
-   "lede": "Build a crystal from its space group (all 230, in their ITA settings), lattice and asymmetric unit, or import a CIF — then make supercells, find symmetry, reduce cells, cut clusters and add defects.",
+   "lede": "Build a crystal from its space group (all 230, in their ITA settings), lattice and asymmetric unit, or import a CIF, then make supercells, find symmetry, reduce cells, cut clusters and add defects.",
    "input": "A space group with lattice and sites, a CIF, or a structure from the library.",
    "output": "A periodic crystal, savable as CIF or VASP POSCAR.",
    "shots": [
@@ -663,7 +663,7 @@
     {
      "t": "Set the lattice and sites",
      "d": [
-      "a, b, c in Å and α, β, γ in degrees. Under **Asymmetric unit**, [[Add site]] with label, element, x, y, z and occupancy — or [[Import CIF]], or pick one [[From the library]]."
+      "a, b, c in Å and α, β, γ in degrees. Under **Asymmetric unit**, [[Add site]] with label, element, x, y, z and occupancy; or [[Import CIF]], or pick one [[From the library]]."
      ]
     },
     {
@@ -736,7 +736,7 @@
    "card": "Cleave a crystal along (hkl), choose the termination, add vacuum, and grow a polymer film or brush on it.",
    "lede": "Cleave a slab from a crystal, choose its termination and vacuum, and build interfaces: a polymer film grown against the surface, a grafted brush, or a stack of layers with the lattice mismatch shared between them.",
    "input": "A crystal (the open one, or a CIF).",
-   "output": "A slab, or a slab with a polymer film — the surface held in place for Minimise.",
+   "output": "A slab, or a slab with a polymer film, with the surface held in place for Minimise.",
    "shots": [
     {
      "img": "15_surface.jpg",
@@ -803,7 +803,7 @@
     "Nanostructure…"
    ],
    "card": "Graphene and h-BN sheets, nanotubes, particles and pores; graft functional groups; grow a polymer matrix around them.",
-   "lede": "Build fillers — sheets, nanotubes, particles and pores — graft functional groups or silanes onto them, and grow a polymer or rubber matrix around them to make a composite.",
+   "lede": "Build fillers (sheets, nanotubes, particles and pores), graft functional groups or silanes onto them, and grow a polymer or rubber matrix around them to make a composite.",
    "input": "Nothing (choose a type and material), or a crystal for particles and pores.",
    "output": "A filler, a functionalised filler, or a filler–polymer composite.",
    "shots": [
@@ -827,7 +827,7 @@
     {
      "t": "Graft functional groups (optional)",
      "d": [
-      "A preset such as carboxyl, or a SMILES with `*` at the attachment atom; where they go (sidewall, ends, edges); a share of sites or an exact count; a minimum spacing. [[Graft]] — undo with ⌘Z. **Silane coupling agent** grafts silanes onto silanols."
+      "A preset such as carboxyl, or a SMILES with `*` at the attachment atom; where they go (sidewall, ends, edges); a share of sites or an exact count; a minimum spacing. [[Graft]]; undo with ⌘Z. **Silane coupling agent** grafts silanes onto silanols."
      ]
     },
     {
@@ -839,7 +839,7 @@
     {
      "t": "Build",
      "d": [
-      "[[Build sheet]], [[Build nanotube]], [[Build particle]] or [[Build pore]] — or [[Build composite]] with the matrix on."
+      "[[Build sheet]], [[Build nanotube]], [[Build particle]] or [[Build pore]], or [[Build composite]] with the matrix on."
      ]
     },
     {
@@ -862,7 +862,7 @@
    "stage": "build",
    "where": [
     "Build",
-    "Semicrystalline stack"
+    "Semicrystalline stack (lamellae)…"
    ],
    "card": "Crystal lamellae with amorphous layers of loops, bridges and tails, for PE, PVDF, iPP, PEO, POM, nylons, PET, PLLA, natural rubber and PTFE.",
    "lede": "Cut a lamella from a polymer crystal of the library and grow the amorphous layer between it and its periodic image from the crystal's own repeat unit: loops, bridges and tails in the fractions you ask for, at the amorphous density, relaxed with the polymer's force field.",
@@ -954,7 +954,7 @@
     {
      "t": "Composites: one force field per part",
      "d": [
-      "Switch on [[By group]], press [[Suggest groups]] (filler, polymer, blend components), choose a force field — or a literature potential such as Tersoff from a file — for each group, then [[Assign by group]].",
+      "Switch on [[By group]], press [[Suggest groups]] (filler, polymer, blend components), choose a force field (or a literature potential such as Tersoff from a file) for each group, then [[Assign by group]].",
       "Set how cross pairs mix ([[Between groups · ε]], [[σ]], [[1-4 pairs]]) or give pairs explicitly; CAPS writes the cross terms.",
       "A group's force field can change its atoms: TraPPE O₂ and N₂ next to an all-atom polymer get their massless centre sites, and a united-atom group has its hydrogens folded into the carbons. [[Assign by group]] does this as one undo step, and the report gives each group's sites, folded atoms and net charge."
      ]
@@ -1179,7 +1179,7 @@
     "Dynamics"
    ],
    "card": "NVE, NVT, NPT or NPH molecular dynamics in CAPS, with live snapshots, or a LAMMPS / GROMACS deck.",
-   "lede": "Run molecular dynamics directly in CAPS with modern thermostats and barostats, bond constraints and multiple time steps — or write the same run as a deck for LAMMPS or GROMACS.",
+   "lede": "Run molecular dynamics directly in CAPS with modern thermostats and barostats, bond constraints and multiple time steps, or write the same run as a deck for LAMMPS or GROMACS.",
    "input": "A structure with a force field, usually minimised or equilibrated.",
    "output": "A trajectory, thermodynamic log and the final state; or input decks for another engine.",
    "shots": [
@@ -1252,7 +1252,7 @@
     "React"
    ],
    "card": "Crosslink, cure and vulcanise with reaction templates; watch links form; or write LAMMPS fix bond/react files.",
-   "lede": "Build crosslinked networks — sulfur-cured or peroxide-cured rubber, epoxy–amine, ENR with acids or MAH, esterification — with your own force field re-applied after every cycle.",
+   "lede": "Build crosslinked networks (sulfur-cured or peroxide-cured rubber, epoxy–amine, ENR with acids or MAH, esterification) with your own force field re-applied after every cycle.",
    "input": "A cell with a force field (React re-types the network with it after each cycle).",
    "output": "The network, a link map, gel point, ν, Mc, DC and a report; or LAMMPS fix bond/react templates.",
    "shots": [
@@ -1275,7 +1275,7 @@
     {
      "t": "Choose the reaction",
      "d": [
-      "Under **Reaction templates** pick a category and a reaction — C–C crosslink, sulfur donor, peroxide (allylic C–C), ENR epoxide + COOH, epoxide + primary amine, anhydride + alcohol … — then [[Add to the reactions]]. [[Editor…]] shows and edits the template; [[Import LAMMPS…]] reads any fix bond/react pre/post/map set."
+      "Under **Reaction templates** pick a category and a reaction (C–C crosslink, sulfur donor, peroxide (allylic C–C), ENR epoxide + COOH, epoxide + primary amine, anhydride + alcohol …), then [[Add to the reactions]]. [[Editor…]] shows and edits the template; [[Import LAMMPS…]] reads any fix bond/react pre/post/map set."
      ]
     },
     {
@@ -1335,14 +1335,14 @@
     "Build",
     "Coarse-grained melt…"
    ],
-   "card": "Kremer–Grest, MARTINI, or beads derived from your own polymer — then backmap to atoms.",
+   "card": "Kremer–Grest, MARTINI, or beads derived from your own polymer, then backmap to atoms.",
    "lede": "Reach long times and large cells with bead models: a generic Kremer–Grest melt, MARTINI with published bead types, or a model derived from an all-atom melt of your own polymer.",
    "input": "A polymer from the library, or an all-atom cell (and its trajectory) already open.",
    "output": "A coarse-grained melt with its bonded and pair potentials, a LAMMPS deck, and a backmapped all-atom cell.",
    "shots": [
     {
      "img": "17_cg.jpg",
-     "cap": "**Build › Coarse-grained** with the three models and the page's own guide to which model to use."
+     "cap": "**Build › Coarse-grained melt…** with the three models and the page's own guide to which model to use."
     }
    ],
    "steps": [
@@ -1368,7 +1368,7 @@
     {
      "t": "Run or export",
      "d": [
-      "Run the melt in CAPS or write the LAMMPS deck. The model is repulsive only: a starting point for iterative Boltzmann inversion (IBI), which adds the attractions."
+      "Run the melt in CAPS or write the LAMMPS deck. By default the pair is a repulsive WCA, so the model has no attractions. Tick [[Refine the pair by iterative Boltzmann inversion]] and set the iterations and ps per iteration: CAPS then replaces the WCA with a tabulated pair that matches the mapped g(r), and LAMMPS gets it as pair_style table. The bonded terms stay as fitted."
      ]
     },
     {
@@ -1378,7 +1378,7 @@
      ]
     }
    ],
-   "cli": "# chemistry-aware mapping, bonded fits, a CG melt, then back to atoms\ncaps cgmap aa.data --preset ester-cut -o cg/ --dump aa.lammpstrj\ncaps cgfit bonded --help\ncaps cgbuild --units BS=B+S --dp 100 --chains 50 --bonded cg/ --maps cg/map.json -o melt/\ncaps backmap cg/map.json aa.data --cg melt/map.json --frame melt/last.data -o back/",
+   "cli": "# chemistry-aware mapping, bonded fits, a CG melt, then back to atoms\ncaps cgmap aa.data --preset ester-cut -o cg --dump aa.lammpstrj\ncaps cgfit bonded cg/aa.map.json cg/aa.cg.lammpstrj --types cg/types.json -T 300 -o bonded\ncaps cgbuild --units BS=B+S --dp 100 --chains 50 --bonded bonded --maps cg/aa.map.json -o melt\ncaps backmap cg/aa.map.json aa.data --cg melt/melt.map.json --frame melt/melt.cg.data -o back",
    "python": "from caps import build\n\nkg = build.kremer_grest(chains=50, beads=100, density=0.85)\nkg.export_engines(\"kg\", stem=\"melt\", gromacs=False)\n\nps = build.cg_from_polymer(\"*CC(*)c1ccccc1\", name=\"PS\", scheme=\"unit\", chains=10, dp=20)",
    "next": [
     "dpd",
@@ -1635,7 +1635,7 @@
     "⌘K",
     "Go to 2D sheets & terminations"
    ],
-   "card": "2D sheets and terminations, adsorption sets, VASP input sets, cluster runs and results — for surface DFT studies.",
+   "card": "2D sheets and terminations, adsorption sets, VASP input sets, cluster runs and results for surface DFT studies.",
    "lede": "Prepare and follow surface DFT studies: build 2D sheets such as MXenes with terminated faces, place molecules on them, write checked VASP sets, run them on a cluster and collect binding energies, DOS and work functions.",
    "input": "A sheet preset (for example Ti₃C₂) or a layered structure, and adsorbate SMILES.",
    "output": "Validated slabs, adsorption sets, VASP input folders, job status and a results summary.",
@@ -1705,7 +1705,7 @@
     "Top bar",
     "Analyze"
    ],
-   "card": "Density, g(r), chain statistics, Tg, moduli, diffusion, free volume, interfaces and crosslink density — each with CSV.",
+   "card": "Density, g(r), chain statistics, Tg, moduli, diffusion, free volume, interfaces and crosslink density, each with CSV.",
    "lede": "Measure what you built: structure, chain statistics, thermodynamics, mechanics, dynamics, free volume, interfaces and rubber networks, from one frame or a whole trajectory, with error bars and fits.",
    "input": "A structure or a trajectory (CAPS's own, or LAMMPS, GROMACS, AMBER).",
    "output": "Result cards with curves and fits; CSV or LaTeX tables.",
@@ -1950,7 +1950,7 @@
     "Export"
    ],
    "card": "LAMMPS, GROMACS, DL_POLY 4, AMBER/OpenMM and moltemplate decks, checked before they are written.",
-   "lede": "Write the simulation files for the engine you run on — in the force field's own style — with a run protocol, after CAPS has checked that the deck would run.",
+   "lede": "Write the simulation files for the engine you run on, in the force field's own style, with a run protocol, after CAPS has checked that the deck would run.",
    "input": "A structure with a complete force field.",
    "output": "LAMMPS data + input, GROMACS top/itp/gro/mdp, DL_POLY 4, AMBER prmtop/inpcrd, moltemplate .lt.",
    "shots": [
@@ -1981,7 +1981,7 @@
     {
      "t": "Pick the run",
      "d": [
-      "[[Check (single point)]], Minimise, NVT, NPT, a tensile test, creep, shear viscosity (NEMD) or a full equilibration protocol in LAMMPS — with T, P, dt and steps."
+      "[[Check (single point)]], Minimise, NVT, NPT, a tensile test, creep, shear viscosity (NEMD) or a full equilibration protocol in LAMMPS, with T, P, dt and steps."
      ]
     },
     {
@@ -2019,7 +2019,7 @@
     "Jobs"
    ],
    "card": "Every run, local or on a SLURM / PBS cluster, with live progress, logs and recovery hints.",
-   "lede": "Follow every run in one place — on this machine, a workstation over SSH, or a SLURM or PBS cluster — with live progress, logs, provenance and help when something fails.",
+   "lede": "Follow every run in one place (on this machine, a workstation over SSH, or a SLURM or PBS cluster) with live progress, logs, provenance and help when something fails.",
    "input": "Any run page's [[Queue]] button, or [[New]] here.",
    "output": "Running and finished jobs, their logs, results and provenance.",
    "shots": [
@@ -2044,7 +2044,7 @@
     {
      "t": "Follow it",
      "d": [
-      "Filter by state, search by title, kind, structure or host. Each job shows **Progress** live and its **Log**; [[Check now]] polls a remote job."
+      "Filter by state, search by title, kind, structure or host. Each job shows **Progress** live and its **Log**; [[Refresh now]] polls a remote job."
      ]
     },
     {

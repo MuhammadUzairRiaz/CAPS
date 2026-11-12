@@ -42,7 +42,7 @@ caps ff apply ps_md.data --ff oplsaa2024 --types types.txt -o ps_opls.data \
 ```text
 wrote ps_opls.in (the force field's own styles)
 gromacs: CAPS's damped shifted force becomes PME in GROMACS (no DSF there)
-gromacs: the cell is 23.8 Å across, less than 2 r_c (24 Å): GROMACS needs a larger cell (a supercell) or a shorter cut-off
+gromacs: the cell is 23.8 Å across, less than 2 r_c (24 Å): GROMACS needs a larger cell (a supercell) or a shorter cut-off; CAPS sums the further images
 wrote ps_opls.top, ps_opls.gro and ps_opls.mdp
 ```
 

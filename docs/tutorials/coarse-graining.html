@@ -53,7 +53,7 @@ caps cgfit ibi-start cg/pbs_md.map.json --targets targets/targets.json --bonded 
 <p><code>ibi-start</code> writes the starting tables, the LAMMPS decks and <code>run_ibi.sh</code>, which runs the loop on a cluster (<code>bash ibi/run_ibi.sh 20</code>). For small systems, <code>ibi-run</code> runs a few iterations with CAPS's own engine:</p>
 <div class="code" data-lang="shell"><pre><code>caps cgfit ibi-run cg/pbs_md.map.json cg/pbs_md.cg.data --targets targets/targets.json \
   --bonded bonded -T 450 --iterations 2 --steps 1000 -o ibirun</code></pre></div>
-<p>All pairs are updated jointly, with a pressure correction ramp. <code>cgfit fit</code> then fits Lennard-Jones 12-6, 9-6, Morse or Mie forms to the tables, and <code>cgfit calibrate</code> scales σ and ε towards a target density and T\(_g\).</p>
+<p>All pairs are updated jointly, with a pressure correction \(\Delta U = A(1 - r/r_c)\) whose size A comes from the pressure error and the virial (<code>--pcorr ramp</code> gives a fixed-size ramp instead, <code>--pcorr off</code> turns it off). <code>cgfit fit</code> then fits Lennard-Jones 12-6, 9-6, Morse or Mie forms to the tables, and <code>cgfit calibrate</code> scales σ and ε towards a target density and T\(_g\).</p>
 <h2 id="4-build-a-long-chain-melt">4. Build a long-chain melt</h2>
 <div class="code" data-lang="shell"><pre><code>caps cgbuild --units BS=B+S --dp 20 --chains 10 --density 1.2 --bonded bonded \
   --maps cg/pbs_md.map.json -T 450 -o melt cg/pbs_md.map.json cg/pbs_md.cg.lammpstrj</code></pre></div>

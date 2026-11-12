@@ -82,7 +82,7 @@ caps cgfit ibi-run cg/pbs_md.map.json cg/pbs_md.cg.data --targets targets/target
   --bonded bonded -T 450 --iterations 2 --steps 1000 -o ibirun
 ```
 
-All pairs are updated jointly, with a pressure correction ramp. `cgfit fit` then fits Lennard-Jones 12-6, 9-6, Morse or Mie forms to the tables, and `cgfit calibrate` scales σ and ε towards a target density and T\(_g\).
+All pairs are updated jointly, with a pressure correction \(\Delta U = A(1 - r/r_c)\) whose size A comes from the pressure error and the virial (`--pcorr ramp` gives a fixed-size ramp instead, `--pcorr off` turns it off). `cgfit fit` then fits Lennard-Jones 12-6, 9-6, Morse or Mie forms to the tables, and `cgfit calibrate` scales σ and ε towards a target density and T\(_g\).
 
 ## 4. Build a long-chain melt
 

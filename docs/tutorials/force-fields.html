@@ -39,7 +39,7 @@ wrote types.txt</code></pre></div>
   --lammps-input ps_opls.in --lammps-run npt --steps 5000 --gromacs ps_opls</code></pre></div>
 <div class="code" data-lang="output"><pre><code>wrote ps_opls.in (the force field&#x27;s own styles)
 gromacs: CAPS&#x27;s damped shifted force becomes PME in GROMACS (no DSF there)
-gromacs: the cell is 23.8 Å across, less than 2 r_c (24 Å): GROMACS needs a larger cell (a supercell) or a shorter cut-off
+gromacs: the cell is 23.8 Å across, less than 2 r_c (24 Å): GROMACS needs a larger cell (a supercell) or a shorter cut-off; CAPS sums the further images
 wrote ps_opls.top, ps_opls.gro and ps_opls.mdp</code></pre></div>
 <p>The notes matter: this tutorial's cell is smaller than twice the cut-off, which GROMACS refuses. A production cell (thousands of atoms) passes. Run the results with:</p>
 <div class="code" data-lang="shell"><pre><code>lmp -in ps_opls.in

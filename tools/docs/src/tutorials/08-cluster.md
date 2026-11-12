@@ -88,7 +88,7 @@ In Settings › Compute & remote, add a host: its name, the login node, your use
 
 1. Test connection reads caps's version, the node size, the queue and whether workspaces exist.
 2. Install / update caps builds the command line on the host at the Studio's own version, as a short job.
-3. On any simulation page (Dynamics, Equilibrate, Relax, React, Grow, Glass, Mechanics, the pull-out, Pack, Coarse-grain), choose the host in Run where. A panel shows the job's title, cores, memory, time limit, how often frames and thermo rows are written, and the exact caps command that will run.
+3. On any simulation page (Dynamics, Equilibrate, Relax, React, Grow, Glass, Mechanics, the pull-out, Pack, Coarse-grain), pick the host from the host list instead of This machine. On Dynamics and Glass this list is labelled Run on. On the other pages it sits unlabelled next to the run button and appears once a host exists in Settings › Compute & remote. A panel shows the job's title, cores, memory, time limit, how often frames and thermo rows are written, and the exact caps command that will run.
 
 Jobs then shows the queue, the run's own log (follow, search, errors in red), temperature and density as they come in, and the latest frame on request. Copy terminal commands gives you the `ssh` and `caps job tail -f` lines for the same job. Find my jobs adds jobs you started by hand on the cluster.
 

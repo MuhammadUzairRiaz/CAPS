@@ -34,8 +34,8 @@ print(r["notes"])
 ```
 
 ```text
-6 templates for 1 reactions cover 5572 of 26408 candidate pairs (within the survey distance) in this structure
-reaction peroxide_allylic: 1802 rarer environments (20836 candidate pairs) have no template; raise the number of templates to cover them
+6 templates for 1 reactions cover 12378 of 30046 candidate pairs (within the survey distance) in this structure
+reaction peroxide_allylic: 90 rarer environments (17668 candidate pairs) have no template; raise the number of templates to cover them
 stabilize_steps 200 on every reaction (the reacting atoms stay under nve/limit that long after a reaction)
 ```
 
@@ -54,9 +54,13 @@ d.save("nr_xl.data")
 ```
 
 ```text
-link 10 (cycle 5, peroxide_allylic): chain 3 unit 8 — direct bond — chain 6 unit 10
-link 11 (cycle 5, peroxide_allylic): chain 2 unit 6 — direct bond — chain 6 unit 8
+20 reactions in 5 cycles (180 counted sites) · conversion 0.111 · largest cluster 100.0% of the mass · 2.2 s
+18 links between chains (6 chains; 6.00 per chain) · ν = 2635 mol/m³ · Mc ≈ 113.9 g/mol
+...
+link 17 (cycle 5, peroxide_allylic): chain 3 unit 3 — direct bond — chain 4 unit 1
+link 18 (cycle 5, peroxide_allylic): chain 3 unit 2 — direct bond — chain 6 unit 9
 20 byproduct molecules removed
+force field during the run: OPLS-AA 2024 (Jorgensen)
 force field after the run: OPLS-AA 2024 (Jorgensen) · complete
 ```
 

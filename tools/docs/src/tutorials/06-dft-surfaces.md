@@ -42,7 +42,7 @@ A PASS/FAIL report: composition, one complete sheet and its layers, floating or 
 caps adsorb-dft mixed.vasp --smiles 'C#N' --out ads
 ```
 
-CAPS finds anchors by SMARTS (here the nitrile N), places the molecule anchor-down, parallel and upright at several azimuths, lowers it to the contact limits and checks the distance to its periodic images. The `ads` folder holds `slab/`, `molecule/` and one `complex_*` folder per placement, all with the same settings so the adsorption energy is consistent:
+CAPS finds anchors by SMARTS (here the nitrile N), places the molecule anchor-down and parallel at several azimuths (add `upright` to `--modes` for an upright placement), lowers it to the contact limits and checks the distance to its periodic images. The `ads` folder holds `slab/`, `molecule/` and one `complex_*` folder per placement, all with the same settings so the adsorption energy is consistent:
 
 $$
 E_\mathrm{ads} = E_\mathrm{complex} - E_\mathrm{slab} - E_\mathrm{molecule}

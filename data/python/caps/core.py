@@ -1780,10 +1780,10 @@ def _set_pattern(self, smarts: str, bin: float = 0.0) -> int:
 Document.set_pattern = _set_pattern
 
 
-def _charges(self, method: str = "qeq", kernel: str = "ohno", ewald: bool = False, hydrogen: bool = False, bounds=None, cutoff: float = 10.0,
+def _charges(self, method: str = "qeq", kernel: str = "slater", ewald: bool = False, hydrogen: bool = False, bounds=None, cutoff: float = 10.0,
              total: float = 0.0, lam: float = 0.4913, accuracy: float = 1e-7, path: str = "", apply: bool = False) -> dict:
-    """Partial charges: method "gasteiger", "qeq", "forcefield", "file" (path to a .chg) or "keep". For QEq: kernel "ohno"
-    or "slater" (ns Slater densities, ζ = λ(2n+1)/2R), ewald (periodic cells: the long range summed over all images),
+    """Partial charges: method "gasteiger", "qeq", "forcefield", "file" (path to a .chg) or "keep". For QEq: kernel "slater"
+    (the default; ns Slater densities, ζ = λ(2n+1)/2R) or "ohno" (Ohno-Klopman), ewald (periodic cells: the long range summed over all images),
     hydrogen (charge-dependent hydrogen hardness), bounds {"O": (qmin, qmax)}, cutoff Å, total e. apply=True sets them
     on the structure. Returns {method, q, net, max_abs, groups, notes}."""
     o = {"method": method, "path": path, "apply": bool(apply)}

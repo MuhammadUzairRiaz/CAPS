@@ -36,7 +36,7 @@
 <p>A PASS/FAIL report: composition, one complete sheet and its layers, floating or isolated atoms, vacuum, close contacts, termination distances and coordination, O–H bonds, site classes and top/bottom asymmetry. It exits 1 on FAIL, so a batch script can stop on a broken slab.</p>
 <h2 id="4-a-molecule-on-the-slab">4. A molecule on the slab</h2>
 <div class="code" data-lang="shell"><pre><code>caps adsorb-dft mixed.vasp --smiles &#x27;C#N&#x27; --out ads</code></pre></div>
-<p>CAPS finds anchors by SMARTS (here the nitrile N), places the molecule anchor-down, parallel and upright at several azimuths, lowers it to the contact limits and checks the distance to its periodic images. The <code>ads</code> folder holds <code>slab/</code>, <code>molecule/</code> and one <code>complex_*</code> folder per placement, all with the same settings so the adsorption energy is consistent:</p>
+<p>CAPS finds anchors by SMARTS (here the nitrile N), places the molecule anchor-down and parallel at several azimuths (add <code>upright</code> to <code>--modes</code> for an upright placement), lowers it to the contact limits and checks the distance to its periodic images. The <code>ads</code> folder holds <code>slab/</code>, <code>molecule/</code> and one <code>complex_*</code> folder per placement, all with the same settings so the adsorption energy is consistent:</p>
 <div class="eq">$$E_\mathrm{ads} = E_\mathrm{complex} - E_\mathrm{slab} - E_\mathrm{molecule}$$</div>
 <h2 id="5-vasp-case-folders">5. VASP case folders</h2>
 <div class="code" data-lang="shell"><pre><code>caps vasp-set mixed.vasp --out vset --profile generic-slurm</code></pre></div>
