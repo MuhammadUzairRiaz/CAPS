@@ -199,6 +199,10 @@ struct ReactOptions {
   // the template's weight) — each pick chooses a template in proportion to its weight, then its closest free pair
   int selection = 0;
   std::vector<double> weights;
+  // one flag per atom (empty: every atom may react): an atom of a chain forms a bond only where its flag is set, so a
+  // selection of chains 1 and 2 links only those chains and a selection of chosen carbons lets only them react. Atoms of
+  // small molecules (crosslinkers, curatives, sulfur donors) are not restricted; hydrogens and byproducts are not checked.
+  std::vector<char> only_sites;
   // auto capture: when a cycle finds no pair, every template's capture grows by capture_step, up to capture_max
   bool auto_capture = false;
   double capture_step = 0.5, capture_max = 8.0;

@@ -145,7 +145,7 @@ class _ReactOpts(C.Structure):
                 ("field_mode", C.c_int32), ("between_chains", C.c_int32), ("keep_byproducts", C.c_int32), ("selection", C.c_int32),
                 ("weights", C.c_char_p), ("auto_capture", C.c_int32), ("capture_max", C.c_double), ("capture_step", C.c_double),
                 ("target_kind", C.c_int32), ("target_value", C.c_double), ("sites_per_chain", C.c_int32),
-                ("remove_unreacted", C.c_int32), ("remove_pendant", C.c_int32)]
+                ("remove_unreacted", C.c_int32), ("remove_pendant", C.c_int32), ("only_selected", C.c_int32)]
 
 
 class _BuildOpts(C.Structure):
@@ -731,7 +731,7 @@ class Document:
               during_md: bool = False, between_chains: bool = False, keep_byproducts: bool = False, weights=None,
               auto_capture: bool = False, capture_max: float = 0.0, capture_step: float = 0.0, crosslinks=None,
               default_field: bool = False, sites_per_chain: int = 0, remove_unreacted: bool = False,
-              remove_pendant: bool = False) -> str:
+              remove_pendant: bool = False, selection: bool = False) -> str:
         """Crosslinks the current frame cycle by cycle (Polymatic-style; REACTER-style capture and probability) with
         reaction templates: built-in names ("cc_crosslink", "sulfur_allylic", "peroxide_allylic", "polysulfide_allylic",
         "epoxy_amine_primary", "enr_acid_ester", "ester_condensation", "anhydride_alcohol", …; see reaction_templates()) or
@@ -743,7 +743,9 @@ class Document:
         the built-in default, the assignment dropped). sites_per_chain: at most this many of each chain's reactive sites react
         (react_sites() counts them). remove_unreacted: afterwards, molecules made only of S and H (a sulfur donor that never
         reacted: H2S, H-S-S-H, H2Sx) leave the cell; how many is in the report and in removed_unreacted. remove_pendant: afterwards, C-Sx-H groups (a sulfur
-        run on one carbon, capped by hydrogen) leave and the carbon has its hydrogen back (removed_pendant). Returns the report;
+        run on one carbon, capped by hydrogen) leave and the carbon has its hydrogen back (removed_pendant). selection=True:
+        only the selected atoms of the chains may form bonds (select first, e.g. query("chain 1-2"), or chosen
+        carbons); crosslinkers and other small molecules are not restricted. Returns the report;
         network numbers in react_summary()."""
         names = [templates] if isinstance(templates, str) else list(templates)
         text = "\n".join(reaction_template(t) if "\n" not in t and t.strip() in reaction_templates() else t for t in names)
@@ -751,7 +753,7 @@ class Document:
         o = _ReactOpts(int(seed), int(cycles), int(per_cycle), float(target), float(capture), int(relax), int(relax_iterations),
                        float(md_ps), float(temperature), float(cutoff), 1, int(during_md), int(default_field), int(between_chains),
                        int(keep_byproducts), 1 if weights else 0, _enc(",".join(str(w) for w in weights) if weights else ""),
-                       int(auto_capture), float(capture_max), float(capture_step), kind, value, int(sites_per_chain), int(remove_unreacted), int(remove_pendant))
+                       int(auto_capture), float(capture_max), float(capture_step), kind, value, int(sites_per_chain), int(remove_unreacted), int(remove_pendant), int(bool(selection)))
         rep = _report()
         if library().caps_react(self._h, _enc(text), C.byref(o), None, None, rep, len(rep)) < 0:
             raise _error()
@@ -903,7 +905,9 @@ class Document:
 
     def query(self, query: str, op: str = "replace") -> int:
         """Selects by the query grammar (design/boards/SmartSelect): smarts "c1ccccc1", element C N O, type c3,
-        chain 1-4, index 1-20, ring 5, stereo R|S|*, within 5.0 of <query>, sel, combined with and / or / not / ( ).
+        chain 1-4 (the chains as grown: after React joined them, still each chain's own atoms, also from a CAPS LAMMPS data
+        file; other formats keep no record and give the bonded molecules), molecule 2 (the bonded
+        molecule), index 1-20, ring 5, stereo R|S|*, within 5.0 of <query>, sel, combined with and / or / not / ( ).
         op "preview" counts without selecting. Returns the number of atoms."""
         return self.select("query", query, op=op)
 

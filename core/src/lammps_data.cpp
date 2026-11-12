@@ -1950,6 +1950,32 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
              "run 0\n";
       return;
     case K::None:
+      if (!rigid.empty()) {   // no run: the rigid bodies' groups and a ready block, so the input's own run keeps them rigid
+        // nothing but bodies (a box of TraPPE CO2): group mobile is empty, so no integrator is suggested for it
+        const std::vector<int> mol_ob = s.has_mol ? std::vector<int>() : s.molecules();
+        bool bodies_only = held_mol <= 0;
+        for (size_t i = 0; bodies_only && i < s.atoms.size(); ++i)
+          bodies_only = std::find(rigid.begin(), rigid.end(), s.has_mol ? s.atoms[i].mol : int64_t(mol_ob[i]) + 1) != rigid.end();
+        out << "group           mobile subtract all" << (held_mol > 0 ? " held" : "") << " rigid\n";
+        if (held_mol > 0) out << "group           moving subtract all held\n";
+        char rb[1200];
+        std::snprintf(rb, sizeof rb,
+                      "\n# No run is written. Before your own run, uncomment these lines so the rigid bodies move as bodies (fix rigid acts on\n"
+                      "# group rigid; every other integrator must act on group mobile, or it moves the bodies' atoms too):\n"
+                      "# velocity        %s create %.6g %llu mom yes rot yes dist gaussian\n"
+                      "# fix             rigid_bodies rigid rigid/nvt/small molecule temp %.6g %.6g %.6g\n"
+                      "%s"
+                      "# A minimisation does not act through fix rigid: hold the bodies around it with\n"
+                      "# fix             hold_bodies rigid setforce 0.0 0.0 0.0   (and unfix hold_bodies after the minimize)\n",
+                      held_mol > 0 ? "moving" : "all", run.temperature, static_cast<unsigned long long>(run.seed), run.temperature, run.temperature,
+                      run.tdamp * tu, [&] {
+                        if (bodies_only) return std::string("# (every molecule is a rigid body: group mobile is empty and needs no integrator)\n");
+                        char t[160];
+                        std::snprintf(t, sizeof t, "# fix             integrate mobile nvt temp %.6g %.6g %.6g\n", run.temperature, run.temperature, run.tdamp * tu);
+                        return std::string(t);
+                      }().c_str());
+        out << rb;
+      }
       return;
     default:
       break;

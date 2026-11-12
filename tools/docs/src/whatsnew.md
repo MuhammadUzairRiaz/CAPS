@@ -6,6 +6,12 @@ lede: What changed in CAPS, newest first. Every force field CAPS ships is now bu
 
 ## November 2026 update (version 0.1.0)
 
+### After the 12 November build
+
+- `chain N` in selections is the chain as it was grown, also after React has joined the chains into one network and after the network is written to a LAMMPS data file by CAPS and read back (other formats do not keep the record; `chain N` then means the bonded molecule). Before, `chain 1` selected the whole network and `chain 2` nothing. `molecule N` selects the bonded molecule.
+- React can be limited to a selection: atoms of the chains form bonds only where they are selected, so selecting chains 1 and 2 links only those two, and selecting chosen carbons lets only them react. Sulfur donors and other small molecules are not restricted. In the Studio, tick **Only the selected atoms react**; on the command line, `caps react --only "chain 1-2"`; in Python, `react(..., selection=True)`.
+- A LAMMPS input written with no run (`run none`) now defines the `rigid` and `mobile` groups for its rigid bodies and ends with the `velocity`, `fix rigid` and `fix nvt` lines as a commented block. Before, its comment promised a `fix rigid` that was never written.
+
 ### Release build of 12 November
 
 The installers on the release page were rebuilt from this state. Before the build every source and data file was read for bugs, every command was run on test inputs, every Studio control was clicked, and the packages were installed and tested on macOS, Windows 10/11 and seven Linux distributions (Ubuntu 24.04 and 22.04, Debian 13, Fedora 43, openSUSE Leap 16, Arch and AlmaLinux 8). The Linux packages need glibc 2.27 or newer.

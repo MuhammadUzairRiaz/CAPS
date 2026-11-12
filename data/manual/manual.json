@@ -3177,7 +3177,7 @@
    "cites": [],
    "id": "rigid-bodies",
    "title": "Rigid bodies in LAMMPS runs",
-   "summary": "Chosen molecules (filler particles, a rigid additive) move as rigid bodies in the LAMMPS files: their atoms keep their relative positions, the pairs inside a body are not computed, and the bodies have their own thermostat; the other atoms integrate as usual and an NPT barostat dilates only them.",
+   "summary": "Chosen molecules (filler particles, a rigid additive) move as rigid bodies in the LAMMPS files: their atoms keep their relative positions, the pairs inside a body are not computed, and the bodies have their own thermostat; the other atoms integrate as usual and an NPT barostat dilates only them. A rigid model (every bonded constant of the molecule 0, such as TraPPE CO2, O2 and N2) is made a body without being chosen, written at the model's own geometry; a molecule that is only partly rigid is refused. An input written with no run (run none) still defines the groups rigid and mobile and ends with the velocity, fix rigid and fix nvt lines as a commented block for your own run.",
    "equation": "M Ṙ̇ = Σ_i F_i,  dL/dt = Σ_i (r_i − R) × F_i,  N_dof = 3N_free + 6N_bodies − 3",
    "equation_note": "LAMMPS fix rigid/nvt/small molecule (each molecule one body, Nosé–Hoover chains on the bodies; LAMMPS takes the bodies' constrained degrees of freedom out of the temperature); neigh_modify exclude molecule/intra; fix npt … dilate mobile",
    "symbols": [
@@ -3198,7 +3198,7 @@
     ]
    ],
    "when": "Silica or carbon-black particles in a rubber matrix whose internal vibrations do not matter: longer time steps for the matrix are not affected, but the filler's thousands of internal bonds and pairs drop out of the cost.",
-   "tested": "tests/test_relax.cpp LammpsData.RigidBodiesBeforeTheBarostat (the group, the exclusion, the rigid fix before the barostat, velocities for the bodies; a held molecule never rigid); run in LAMMPS: 2 bodies of the polystyrene sample, 200 NPT steps",
+   "tested": "tests/test_relax.cpp LammpsData.RigidBodiesBeforeTheBarostat (the group, the exclusion, the rigid fix before the barostat, velocities for the bodies; a held molecule never rigid); LammpsData.RigidModelsWithoutSitesAreRigidBodies (TraPPE CO2 a body at 1.16 Å, the run-none block); run in LAMMPS: 2 bodies of the polystyrene sample, 200 NPT steps",
    "deviation": "CAPS's own runs have no rigid-body integrator: there the molecules move as atoms (or hold them)",
    "tex": "M\\,\\ddot{\\mathbf R} = \\sum_i \\mathbf F_i,\\qquad \\frac{d\\mathbf L}{dt} = \\sum_i (\\mathbf r_i - \\mathbf R)\\times \\mathbf F_i"
   },

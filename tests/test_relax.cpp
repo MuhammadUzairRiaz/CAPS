@@ -565,6 +565,20 @@ TEST(LammpsData, RigidModelsWithoutSitesAreRigidBodies) {
   EXPECT_NE(sc.find("group           rigid molecule 1:8"), std::string::npos);
   EXPECT_NE(sc.find("neigh_modify    exclude molecule/intra rigid"), std::string::npos);
   EXPECT_NE(sc.find("fix             rigid_bodies rigid rigid/nvt/small molecule"), std::string::npos);
+  {   // run none: no run, but group mobile and a ready block for the user's own run (the comment's "fix rigid below" holds)
+    LammpsRun none;
+    none.kind = LammpsRun::Kind::None;
+    const std::string in_none = (dir / "co2_none.in").string();
+    write_lammps_input(s, ff, EnergyOptions{}, "co2.data", in_none, 0, true, none);
+    std::ifstream gn(in_none);
+    const std::string sn((std::istreambuf_iterator<char>(gn)), {});
+    EXPECT_NE(sn.find("group           rigid molecule 1:8"), std::string::npos);
+    EXPECT_NE(sn.find("group           mobile subtract all rigid"), std::string::npos);
+    EXPECT_NE(sn.find("# fix             rigid_bodies rigid rigid/nvt/small molecule temp 300 300 100"), std::string::npos);
+    EXPECT_EQ(sn.find("# fix             integrate mobile nvt"), std::string::npos);   // all 8 molecules are bodies: mobile is empty
+    EXPECT_NE(sn.find("group mobile is empty"), std::string::npos);
+    EXPECT_EQ(sn.find("\nrun "), std::string::npos);
+  }
   // the C=O lengths of a data file (atom ids 1-based, two bonds per molecule)
   auto co_lengths = [](const std::string& path) {
     std::ifstream f(path);

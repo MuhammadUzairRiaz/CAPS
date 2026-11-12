@@ -332,6 +332,7 @@ public sealed partial class MainViewModel
                 if ((int)_rxSitesPer > 0) notApplied.Add("sites per chain");
                 if (_rxRemoveUnreacted) notApplied.Add("remove unreacted donors");
                 if (_rxRemovePendant) notApplied.Add("remove pendant sulfur");
+                if (_rxOnlySelected) notApplied.Add("only the selected atoms react");
                 if (notApplied.Count > 0)
                     job.Add("Note: a recipe cannot carry these React settings, so the host's run does without them: " + string.Join(", ", notApplied));
             }

@@ -136,6 +136,7 @@ public sealed partial class MainViewModel
         if (_rxKeepBy) sb.Append(" --keep-byproducts");
         if (_rxRemoveUnreacted) sb.Append(" --remove-unreacted");
         if (_rxRemovePendant) sb.Append(" --remove-pendant");
+        if (_rxOnlySelected && SelectionIndexQuery() is { } only) sb.Append($" --only \"{only}\"");
         if (_rxAutoCapture) sb.Append($" --auto-capture --capture-max {C(_rxCaptureMax)}");
         if ((int)_rxSitesPer > 0) sb.Append($" --sites-per-chain {(int)_rxSitesPer}");
         if (RxSeveral && _rxByWeights) sb.Append(" --weights " + string.Join(",", RxReactions.Select(r => r.WeightD.ToString(CultureInfo.InvariantCulture))));
@@ -197,6 +198,26 @@ public sealed partial class MainViewModel
     // ---- and C-Sx-H groups left at one end (caps react --remove-pendant)
     private bool _rxRemovePendant;
     public bool RxRemovePendant { get => _rxRemovePendant; set => Set(ref _rxRemovePendant, value); }
+    // the current selection as the query grammar's "index" ranges (1-based), for a copied command or script; null when empty
+    private string? SelectionIndexQuery()
+    {
+        if (_doc == null) return null;
+        int[] sel;
+        try { sel = System.Text.Json.Nodes.JsonNode.Parse(_doc.SelectionJson())!["indices"]!.AsArray().Select(x => (int)x!.GetValue<double>()).OrderBy(i => i).ToArray(); }
+        catch { return null; }
+        if (sel.Length == 0) return null;
+        var parts = new List<string>();
+        for (int k = 0; k < sel.Length;)
+        {
+            int j = k;
+            while (j + 1 < sel.Length && sel[j + 1] == sel[j] + 1) ++j;
+            parts.Add(j == k ? $"{sel[k] + 1}" : $"{sel[k] + 1}-{sel[j] + 1}");
+            k = j + 1;
+        }
+        return "index " + string.Join(" ", parts);
+    }
+    private bool _rxOnlySelected;   // only the selected atoms of the chains may react (the selection itself is not a command-line option)
+    public bool RxOnlySelected { get => _rxOnlySelected; set => Set(ref _rxOnlySelected, value); }
 
     // ---- MD and equilibration in double precision (caps md / equilibrate --precision double; mixed is the default)
     private bool _mdDouble;

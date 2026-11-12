@@ -8,6 +8,7 @@
 #include "caps/pack.hpp"
 #include "caps/properties.hpp"
 #include "caps/react.hpp"
+#include "caps/query.hpp"
 #include "caps/io.hpp"
 #include "caps/json.hpp"
 #include "caps/bond_react.hpp"
@@ -220,6 +221,103 @@ TEST(React, SameSeedSameNetwork) {
   react(b, o);
   ASSERT_EQ(a.bonds.size(), b.bonds.size());
   for (size_t k = 0; k < a.bonds.size(); ++k) EXPECT_EQ(a.bonds[k].i, b.bonds[k].i);
+}
+
+// "chain N" after a cure is the chain each atom was grown in (React joins them into one molecule); only_sites restricts the
+// chain atoms that may form bonds
+TEST(React, ChainSelectionAndReactionOnASelection) {
+  ChainSpec spec;
+  spec.units = {{"cis-1,4-butadiene", "[*]C/C=C\\C[*]"}};
+  spec.dp = 12;
+  GrowOptions g;
+  g.chains = 4;
+  g.density = 0.7;
+  g.seed = 3;
+  const System melt0 = grow_chains(spec, g);
+  BuildResult donor = build_molecule("SS");
+  PackReport pr;
+  const System melt = insert_molecules(melt0, donor.system, 24, PackOptions{}, &pr);
+  const size_t per_chain = 12 * 10 + 2;
+  for (int k = 1; k <= 4; ++k) {
+    const auto m = select_query(melt, "chain " + std::to_string(k)).atoms;
+    EXPECT_EQ(size_t(std::count(m.begin(), m.end(), 1)), per_chain);
+  }
+  ReactOptions r;
+  r.templates = parse_templates(builtin_template("sulfur_allylic"));
+  r.relax = false;
+  r.max_cycles = 30;
+  r.max_per_cycle = 6;
+  r.remove_unreacted = true;
+  {   // C: every chain keeps its 48 carbons under "chain N" after the cure joined them; "molecule 1" is the network
+    System s = melt;
+    ReactReport rep;
+    react(s, r, &rep);
+    ASSERT_GT(rep.crosslinks, 3);
+    for (int k = 1; k <= 4; ++k) {
+      const auto m = select_query(s, "chain " + std::to_string(k)).atoms;
+      int c = 0, sulfur = 0;
+      for (size_t i = 0; i < m.size(); ++i) if (m[i]) c += s.atoms[i].element == 6, sulfur += s.atoms[i].element == 16;
+      EXPECT_EQ(c, 12 * 4) << "chain " << k;
+      EXPECT_EQ(sulfur, 0) << "chain " << k;   // the bridges' sulfur belongs to its donor, numbered after the chains
+    }
+    const auto net = select_query(s, "molecule 1").atoms;
+    EXPECT_GT(size_t(std::count(net.begin(), net.end(), 1)), 2 * per_chain);
+    // the record survives a data file
+    const auto path = (std::filesystem::temp_directory_path() / "caps_chain_query.data").string();
+    write_lammps_data(s, path);
+    const System back = read_lammps_data(path);
+    for (int k = 1; k <= 4; ++k) {
+      const auto a = select_query(s, "chain " + std::to_string(k)).atoms, b = select_query(back, "chain " + std::to_string(k)).atoms;
+      EXPECT_EQ(a, b) << "chain " << k;
+    }
+  }
+  {   // D: only chains 1 and 2 selected: every link joins chains 1 and 2
+    System s = melt;
+    ReactOptions o = r;
+    o.only_sites = select_query(s, "chain 1-2").atoms;
+    ReactReport rep;
+    react(s, o, &rep);
+    ASSERT_GT(rep.crosslinks, 0);
+    for (const auto& l : rep.links) {
+      EXPECT_TRUE(l.chain_a == 1 || l.chain_a == 2) << l.chain_a;
+      EXPECT_TRUE(l.chain_b == 1 || l.chain_b == 2) << l.chain_b;
+    }
+  }
+  {   // D: a selection of chosen carbons: only those carbons form bonds
+    System s = melt;
+    ReactOptions o = r;
+    o.only_sites.assign(s.atoms.size(), 0);
+    std::vector<uint32_t> chosen;
+    for (uint32_t i = 0; i < s.atoms.size() && chosen.size() < 6; ++i)
+      if (s.atoms[i].element == 6 && s.atoms[i].mol <= 4 && i % 7 == 0) chosen.push_back(i), o.only_sites[i] = 1;
+    // atom ids change when byproduct hydrogens leave: mark the chosen carbons by position
+    std::vector<Vec3> at;
+    for (uint32_t i : chosen) at.push_back(s.atoms[i].pos);
+    ReactReport rep;
+    react(s, o, &rep);
+    std::vector<std::vector<uint32_t>> nb(s.atoms.size());
+    for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+    int reacted = 0;
+    for (uint32_t i = 0; i < s.atoms.size(); ++i) {
+      if (s.atoms[i].element != 6) continue;
+      bool to_s = false;
+      for (uint32_t j : nb[i]) to_s = to_s || s.atoms[j].element == 16;
+      if (!to_s) continue;
+      ++reacted;
+      bool was_chosen = false;
+      for (const auto& p : at) was_chosen = was_chosen || norm(s.cell.minimum_image(s.atoms[i].pos - p)) < 1e-3;
+      EXPECT_TRUE(was_chosen) << "carbon " << i << " reacted without being selected";
+    }
+    EXPECT_GT(reacted, 0);
+    EXPECT_LE(reacted, int(chosen.size()));
+  }
+  {   // a selection without chain atoms is refused
+    System s = melt;
+    ReactOptions o = r;
+    o.only_sites.assign(s.atoms.size(), 0);
+    for (size_t i = 0; i < s.atoms.size(); ++i) if (s.atoms[i].mol > 4) o.only_sites[i] = 1;
+    EXPECT_THROW(react(s, o, nullptr), ReactError);
+  }
 }
 
 TEST(React, SulfurCureOfNaturalRubber) {

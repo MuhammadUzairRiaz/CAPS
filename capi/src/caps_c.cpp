@@ -3911,6 +3911,14 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     }
     caps::System s = d->traj.frame(d->current);
     if (!s.unwrapped) caps::make_molecules_whole(s);
+    if (o->only_selected) {   // v116: only the selected atoms of the chains may react
+      size_t on = 0;
+      for (char c : d->selection) on += c != 0;
+      if (!on) throw std::invalid_argument("react on the selection: nothing is selected");
+      if (d->selection.size() != s.atoms.size())
+        throw std::invalid_argument("react on the selection: the selection was made before the atom count changed: select again");
+      r.only_sites = d->selection;
+    }
     // the atom count changes when atoms leave, so the record is one document per state: keep the start and the end
     std::vector<caps::System> frames{s};
     r.frame = [&](const caps::System& x, int) {
@@ -3965,6 +3973,8 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     refresh(d);
     d->react_chains = rep.chains_after;
     d->react_bonds = d->traj.topology.bonds.size();
+    // atoms left (byproducts, unreacted donors, pendant groups): a selection over the old atoms no longer applies
+    if (!d->selection.empty() && d->selection.size() != d->traj.topology.atoms.size()) d->selection.clear();
     std::string after = "none (assign one in the Force field step)";
     if (kept) {
       kept->overrides.clear();

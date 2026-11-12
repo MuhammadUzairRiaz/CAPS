@@ -1386,7 +1386,7 @@
                     <StackPanel Grid.Column="1" Spacing="3">
                       <TextBlock Text="GRAMMAR" Classes="h3" />
                       <TextBlock Classes="mono dim" FontSize="11" LineHeight="17" TextWrapping="Wrap"
-                                 Text="element C N O&#10;smarts &quot;…&quot;&#10;type c3 ca&#10;within 5.0 of sel&#10;chain 1-4 · index 1-20&#10;ring 5 · stereo R|S|*&#10;and · or · not · ( )" />
+                                 Text="element C N O&#10;smarts &quot;…&quot;&#10;type c3 ca&#10;within 5.0 of sel&#10;chain 1-4 · molecule 2&#10;index 1-20 · ring 5 · stereo R|S|*&#10;and · or · not · ( )" />
                     </StackPanel>
                   </Grid>
                 </Border>

@@ -131,6 +131,8 @@
                           ToolTip.Tip="After the cure, molecules made only of S and H (H₂S, H–Sx–H that never reacted) leave the cell; the summary counts them (caps react --remove-unreacted)" />
                 <CheckBox Classes="toggle" Content="Remove pendant sulfur groups afterwards" IsChecked="{Binding RxRemovePendant}"
                           ToolTip.Tip="After the cure, C–Sx–H groups (a sulfur run on one carbon, capped by hydrogen) leave and the carbon has its hydrogen back; the summary counts them (caps react --remove-pendant)" />
+                <CheckBox Classes="toggle" Content="Only the selected atoms react" IsChecked="{Binding RxOnlySelected}"
+                          ToolTip.Tip="Atoms of the chains form bonds only where they are selected: select chains (chain 1-2) or chosen carbons first. Crosslinkers and other small molecules are not restricted (caps react --only QUERY)" />
                 <CheckBox Classes="toggle" Content="Retype with a force field after every cycle" IsChecked="{Binding RxUseField}" />
                 <StackPanel Spacing="4" IsVisible="{Binding RxUseField}">
                   <TextBlock Text="Force field for the reaction" Classes="label" />

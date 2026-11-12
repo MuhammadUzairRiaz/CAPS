@@ -103,6 +103,7 @@
 #include "caps/measured.hpp"
 #include "caps/reaction_path.hpp"
 #include "caps/yaml.hpp"
+#include "caps/query.hpp"
 #ifdef _WIN32
 #include <io.h>
 // the one Win32 call needed (no <windows.h>: its min/max macros)
@@ -580,7 +581,7 @@ const char* usage_text() {
                "               [--no-relax] [--relax-iterations 500] [--md-ps 0] [--during-md] [--temp 300] [--seed 1] [--cutoff Å] [--no-coulomb]\n"
                "               [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--between-chains] [--crosslinks links|per-chain|density|mc|degree:VALUE]\n"
                "               [--sites-per-chain N] [--weights 2,1] [--auto-capture [--capture-max 8] [--capture-step 0.5]] [--keep-byproducts]\n"
-               "               [--insert SMILES --count N] [--remove-unreacted] [--remove-pendant] [--summary NET.json] [--fa 2 --fb 4 --ratio 1] [--list-templates] [--quiet]\n"
+               "               [--insert SMILES --count N] [--remove-unreacted] [--remove-pendant] [--only QUERY] [--summary NET.json] [--fa 2 --fb 4 --ratio 1] [--list-templates] [--quiet]\n"
                "  caps ml eval FILE [--model M.model] [--json OUT.json]   energy (eV) and forces (eV/A) of a molecule from CAPS's\n"
                "               machine-learned potential (data/ml/caps-mace-v1.model; a build with -DCAPS_WITH_TORCH=ON)\n"
                "  caps ml relax JOBS.json -o OUT.json [--model M.model]   constrained relaxations (bonds / angles / dihedrals held)\n"
@@ -666,7 +667,7 @@ std::vector<std::string> glob_files(const std::string& pattern) {
 const std::set<std::string>& known_options() {
   static const std::set<std::string> k = {
     "--all", "--allow-missing", "--auto-capture", "--auto-scale", "--between-chains", "--capture-max", "--capture-step", "--crosslinks",
-    "--during-md", "--keep-byproducts", "--relax-iterations", "--remove-unreacted", "--remove-pendant", "--sites-per-chain", "--summary", "--axis", "--barostat", "--beads", "--bg", "--bibtex",
+    "--during-md", "--keep-byproducts", "--relax-iterations", "--remove-unreacted", "--remove-pendant", "--only", "--sites-per-chain", "--summary", "--axis", "--barostat", "--beads", "--bg", "--bibtex",
     "--block", "--blocks", "--born", "--branch", "--born-every", "--born-strain", "--box", "--box-relax",
     "--capture", "--cell", "--centre", "--chains", "--charges", "--colour", "--comfortable", "--compare", "--complete",
     "--components", "--conc", "--constraint-solver", "--constraints", "--configs", "--conformers", "--count", "--csv", "--cutoff", "--cycles",
@@ -7297,6 +7298,11 @@ int main(int argc, char** argv) {
         std::fflush(stdout);
         return true;
       };
+      if (o.count("--only")) {   // only these atoms of the chains may form bonds (the selection query grammar: chain 1-2, index ...)
+        r.only_sites = select_query(s, o["--only"]).atoms;
+        if (std::find(r.only_sites.begin(), r.only_sites.end(), 1) == r.only_sites.end())
+          throw std::invalid_argument("--only '" + o["--only"] + "' selects no atom");
+      }
       ReactReport rep;
       react(s, r, &rep);
       // the built-in default is GAFF only while every carbon is one it types (no C=C): the note names the one the network got

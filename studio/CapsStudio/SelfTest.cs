@@ -22,7 +22,7 @@ internal static class SelfTest
         }
         Console.WriteLine($"info Python: {(MainViewModel.PythonAvailable ? MainViewModel.PythonExe : "none")}");
 
-        Check(Native.AbiVersion() == 115, "native ABI version 115");
+        Check(Native.AbiVersion() == 116, "native ABI version 116");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");

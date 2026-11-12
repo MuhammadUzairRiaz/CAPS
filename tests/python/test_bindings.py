@@ -490,6 +490,17 @@ sr.react("sulfur_allylic", cycles=3, per_cycle=2, relax=False, default_field=Tru
 ss = sr.react_summary()
 check(sr.removed_unreacted["molecules"] > 0 and ss["removed_unreacted"] == sr.removed_unreacted["molecules"] and "sulfur" in ss
       and not ss["sulfur"]["free"] and ss["sulfur"] == sr.sulfur_bridges(), f"remove_unreacted in the core: {sr.removed_unreacted} · {ss.get('sulfur')}")
+# ABI 116: "chain N" is the grown chain after a cure, and React restricted to the selection (chains 1 and 2 only)
+sq = caps.polymer("[*]C/C=C\\C[*]", dp=10, chains=4, density=0.7, seed=3)
+sq.insert("SS", 24, seed=3)
+n12 = sq.query("chain 1-2")
+sq.react("sulfur_allylic", cycles=20, per_cycle=4, relax=False, remove_unreacted=True, selection=True)
+sl = sq.react_summary().get("links", [])
+check(n12 == 2 * 102 and sl and all({l["chain_a"], l["chain_b"]} <= {1, 2} for l in sl),
+      f"react on the selection: {len(sl)} links, chains {sorted({(l['chain_a'], l['chain_b']) for l in sl})}")
+_c1 = sq.query("chain 1 and element C")
+check(_c1 == 40 and sq.query("chain 1 and element S") == 0 and sq.query("molecule 1") > 102,
+      f"chain 1 after the cure: {_c1} carbons, molecule 1: {sq.query('molecule 1')} atoms")
 ov = caps.forcefield_overlays("oplsaa2024")
 check(any(o["file"] == "oplsaa2024-lj-refit.json" for o in ov) and all(o["base"] == "oplsaa2024" for o in ov), f"overlays: {[o['file'] for o in ov]}")
 check(isinstance(caps.ml_available(), bool), "ml_available")
@@ -772,7 +783,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 115, "ABI 115")
+check(caps.abi_version() == 116, "ABI 116")
 
 # DPD starts composed from regions (ABI 96): core beads within the droplet, shell amphiphiles heads on its surface
 _dp = caps.dpd([("A", 100, "core"), ("HTT", 60, "core", "in"), ("C", 2500)], regions=[{"name": "core", "shape": "droplet", "radius": 3.0}],

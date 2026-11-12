@@ -150,8 +150,20 @@ struct Parser {
       const auto want = ranges(t, p);
       const auto mol = s.molecules();
       std::set<long> ws(want.begin(), want.end());
+      // "chain N": the chain the atom was built in, as a reaction run records it on the atoms (React joins the chains into
+      // one network, which stays one molecule). Atoms without a record (molecules added since, a crosslinker's sulfur) take
+      // their molecule, numbered after the recorded chains, as react_sites numbers them. Nothing recorded: the molecules.
+      // "molecule N" is always the bonded molecule.
+      std::vector<long> id(n);
+      for (size_t i = 0; i < n; ++i) id[i] = long(mol[i]) + 1;
+      if (w == "chain") {
+        long top = 0;
+        for (const auto& a : s.atoms) top = std::max(top, long(a.chain));
+        if (top > 0)
+          for (size_t i = 0; i < n; ++i) id[i] = s.atoms[i].chain > 0 ? long(s.atoms[i].chain) : top + 1 + long(mol[i]);
+      }
       auto out = none();
-      for (size_t i = 0; i < n; ++i) out[i] = ws.count(long(mol[i]) + 1) ? 1 : 0;
+      for (size_t i = 0; i < n; ++i) out[i] = ws.count(id[i]) ? 1 : 0;
       return out;
     }
     if (w == "index") {

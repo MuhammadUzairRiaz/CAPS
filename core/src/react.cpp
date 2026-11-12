@@ -1297,6 +1297,16 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     name_types(ff);
   };
 
+  // only_sites: the atoms of the chains that may form bonds (empty: all); follows the atoms through every cycle
+  std::vector<char> may(o.only_sites);
+  if (!may.empty()) {
+    if (may.size() != s.atoms.size())
+      throw ReactError("the selection covers " + std::to_string(may.size()) + " atoms, the structure has " + std::to_string(s.atoms.size()));
+    size_t on_chain = 0;
+    for (size_t i = 0; i < may.size(); ++i) if (may[i] && polymer.count(tag[i])) ++on_chain;
+    if (!on_chain) throw ReactError("the selection holds no atom of a chain: select the chains or the atoms that may react");
+    rep.notes.push_back("only the selected atoms of the chains may react (" + std::to_string(on_chain) + " atoms)");
+  }
   std::vector<char> linked(s.atoms.size(), 0);   // atoms of the bonds that joined two chains
   std::vector<char> reacted(s.atoms.size(), 0);  // atoms that formed a bond in this run (a template's "once" atoms react once)
   std::map<int64_t, int> site_used;                // each chain's sites that have reacted (sites_per_chain)
@@ -1329,6 +1339,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     const std::vector<int64_t> keep_carry = carry;
     const std::map<int64_t, int> keep_site_used = site_used;
     const std::vector<char> keep_linked = linked;
+    const std::vector<char> keep_may = may;
     const std::vector<char> keep_reacted = reacted;
     const int reactions_before = rep.reactions, stall_before = stall, links_before = rep.crosslinks, intra_before = rep.intrachain,
               byproducts_before = rep.byproducts;
@@ -1346,6 +1357,20 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       found = 0;
       for (size_t k = 0; k < o.templates.size(); ++k) {
         per[k] = find_matches(s, o.templates[k], int(k), allow, capture_of(k), &tag);   // different molecules: the original ones
+        if (!may.empty()) {   // only_sites: every heavy chain atom that forms a bond must be selected
+          const ReactionTemplate& t = o.templates[k];
+          const std::set<int> by(t.byproduct.begin(), t.byproduct.end());
+          auto ok = [&](const Match& m) {
+            auto at = [&](int map) { for (size_t q = 0; q < t.atoms.size(); ++q) if (t.atoms[q].map == map) return int64_t(m.atoms[q]); return int64_t(-1); };
+            for (auto [x, y] : t.form) {
+              if (by.count(x) && by.count(y)) continue;
+              for (int64_t a : {at(x), at(y)})
+                if (a >= 0 && s.atoms[size_t(a)].element > 1 && polymer.count(tag[size_t(a)]) && !may[size_t(a)]) return false;
+            }
+            return true;
+          };
+          per[k].erase(std::remove_if(per[k].begin(), per[k].end(), [&](const Match& m) { return !ok(m); }), per[k].end());
+        }
         found += per[k].size();
       }
       if (found || !o.auto_capture || top_capture + extra + o.capture_step > o.capture_max + 1e-9) break;
@@ -1496,8 +1521,13 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
         }
       }
       std::vector<char> next, next_r, next_s;
+      std::vector<char> next_m;
       for (size_t i = 0; i < linked.size(); ++i)
-        if (!gone[i]) next.push_back(linked[i]), next_r.push_back(reacted[i]), next_s.push_back(i < site_seeds.size() ? site_seeds[i] : 0);
+        if (!gone[i]) {
+          next.push_back(linked[i]), next_r.push_back(reacted[i]), next_s.push_back(i < site_seeds.size() ? site_seeds[i] : 0);
+          if (!may.empty()) next_m.push_back(may[i]);
+        }
+      if (!may.empty()) may = std::move(next_m);
       linked = std::move(next);
       reacted = std::move(next_r);
       site_seeds = std::move(next_s);
@@ -1571,6 +1601,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       carry = keep_carry;
       site_used = keep_site_used;
       linked = keep_linked;
+      may = keep_may;
       reacted = keep_reacted;
       rep.reactions = reactions_before;
       rep.crosslinks = links_before;

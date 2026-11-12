@@ -303,6 +303,8 @@ public struct CapsReactOpts
     public int RemoveUnreacted;   // molecules of S and H only (unreacted sulfur donors) leave the cell afterwards
     // ABI 115
     public int RemovePendant;     // C-Sx-H groups leave and the carbon has its hydrogen back
+    // ABI 116
+    public int OnlySelected;      // only the selected atoms of the chains may form bonds
 }
 
 [StructLayout(LayoutKind.Sequential)]

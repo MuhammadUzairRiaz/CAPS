@@ -1289,6 +1289,7 @@
      "t": "Set the network target",
      "d": [
       "Keep [[Links only between different chains]] on. [[Stop at]] a conversion, a number of links, links per chain, crosslink density ν, Mc or DC %.",
+      "To cure only part of the cell, select it first (the query `chain 1-2`, or chosen allylic carbons) and tick [[Only the selected atoms react]]: atoms of the chains then form bonds only where they are selected, while the sulfur donors and other small molecules are free to react (`caps react --only \"chain 1-2\"`, Python `react(..., selection=True)`). After a cure, `chain N` still selects chain N as it was grown (also from a LAMMPS data file CAPS wrote; other formats keep no record), and `molecule N` the joined network.",
       "Choose whether byproducts (H₂, H₂O) stay in the cell."
      ]
     },
