@@ -5415,6 +5415,9 @@ internal static class SelfTest
             // DFT workbench: 2D sheet → terminated slab (validated) → VASP set → adsorption set → run monitor → results
             {
                 var dftRoot = Path.Combine(outDir, "dft");
+                // a fresh folder each run: an earlier run's files (the output folder may be a reused temp folder) would make the
+                // adsorption set refuse to clear its folder and the run monitor count stale cases
+                try { if (Directory.Exists(dftRoot)) Directory.Delete(dftRoot, true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
                 vm.DftRoot = dftRoot;
                 vm.OpenSheets();
                 vm.SheetPreset = "Ti3C2";
@@ -5462,7 +5465,7 @@ internal static class SelfTest
                 vm.AdsOut = Path.Combine(dftRoot, "adsorption", "Ti3C2_OH_NBR");
                 vm.BuildAdsorptionSet().GetAwaiter().GetResult();
                 Check(vm.AdsComplexes.Count == 12 && vm.AdsComplexes.All(c => c.Status == "ok") && vm.AdsAnchors.Count >= 2 && vm.HasAdsAudit && vm.AdsComplexes.Count(c => c.Equivalent) == 6,
-                      $"DFT adsorption set: {vm.AdsSummary}");
+                      $"DFT adsorption set: {(vm.AdsSummary.Length > 0 ? vm.AdsSummary : vm.DftStatus)}");
                 // the run monitor sees the cases (none started), the results page says what is missing
                 vm.OpenDftRuns();
                 vm.RunsRoot = dftRoot;
